@@ -5,6 +5,13 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
+ * Travel DOSS design system
+ * Editorial / dossier feel: warm off-white paper, deep navy ink, burnt orange seal.
+ * Inter for UI; Fraunces for trip titles.
+ */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&display=swap");
+
+/*
  * Design system definition.
  *
  * The @theme inline block maps CSS custom properties to Tailwind utility
@@ -26,6 +33,8 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Fraunces", "Cormorant Garamond", ui-serif, Georgia, serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -59,29 +68,44 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-rule: var(--rule);
+  --color-seal: var(--seal);
+  --color-seal-soft: var(--seal-soft);
 }
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.129 0.042 264.695);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.129 0.042 264.695);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
-  --primary-foreground: oklch(0.984 0.003 247.858);
-  --secondary: oklch(0.968 0.007 247.896);
-  --secondary-foreground: oklch(0.208 0.042 265.755);
-  --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.968 0.007 247.896);
-  --accent-foreground: oklch(0.208 0.042 265.755);
-  --destructive: oklch(0.577 0.245 27.325);
+  --radius: 0.5rem;
+
+  /* Travel DOSS palette — warm paper, navy ink, burnt orange */
+  --paper: oklch(0.975 0.012 80);            /* warm off-white */
+  --ink: oklch(0.22 0.04 255);               /* deep navy */
+  --ink-soft: oklch(0.42 0.035 255);         /* navy at lower contrast */
+  --rule: oklch(0.88 0.02 80);               /* hairline divider */
+  --seal: oklch(0.58 0.16 45);               /* burnt orange accent */
+  --seal-soft: oklch(0.92 0.05 60);          /* tinted highlight */
+
+  --background: var(--paper);
+  --foreground: var(--ink);
+  --card: oklch(0.99 0.008 80);
+  --card-foreground: var(--ink);
+  --popover: var(--paper);
+  --popover-foreground: var(--ink);
+  --primary: var(--seal);
+  --primary-foreground: oklch(0.98 0.01 80);
+  --secondary: var(--seal-soft);
+  --secondary-foreground: var(--ink);
+  --muted: oklch(0.945 0.012 80);
+  --muted-foreground: var(--ink-soft);
+  --accent: var(--seal-soft);
+  --accent-foreground: var(--ink);
+  --destructive: oklch(0.55 0.22 30);
   --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(0.929 0.013 255.508);
-  --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.704 0.04 256.788);
+  --border: var(--rule);
+  --input: var(--rule);
+  --ring: var(--seal);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -140,5 +164,13 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    font-family: var(--font-sans);
+    font-feature-settings: "ss01", "cv11";
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .font-serif {
+    font-family: var(--font-serif);
+    font-optical-sizing: auto;
   }
 }
