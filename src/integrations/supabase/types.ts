@@ -14,7 +14,99 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      app_config: {
+        Row: {
+          key: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
+      google_tokens: {
+        Row: {
+          access_token: string
+          expires_at: string
+          google_email: string | null
+          refresh_token: string
+          scope: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          expires_at: string
+          google_email?: string | null
+          refresh_token: string
+          scope: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          expires_at?: string
+          google_email?: string | null
+          refresh_token?: string
+          scope?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      trips: {
+        Row: {
+          created_at: string
+          destination: string
+          doc_id: string | null
+          doc_url: string | null
+          end_date: string
+          hero_image_url: string | null
+          id: string
+          keywords: string | null
+          start_date: string
+          status: Database["public"]["Enums"]["trip_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          destination: string
+          doc_id?: string | null
+          doc_url?: string | null
+          end_date: string
+          hero_image_url?: string | null
+          id?: string
+          keywords?: string | null
+          start_date: string
+          status?: Database["public"]["Enums"]["trip_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          destination?: string
+          doc_id?: string | null
+          doc_url?: string | null
+          end_date?: string
+          hero_image_url?: string | null
+          id?: string
+          keywords?: string | null
+          start_date?: string
+          status?: Database["public"]["Enums"]["trip_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +115,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      trip_status: "draft" | "generated" | "refined"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +242,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      trip_status: ["draft", "generated", "refined"],
+    },
   },
 } as const
