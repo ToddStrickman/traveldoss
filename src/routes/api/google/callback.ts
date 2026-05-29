@@ -101,5 +101,5 @@ function redirectBack(origin: string, status: "connected" | "error", msg?: strin
   const u = new URL("/app", origin);
   u.searchParams.set("drive", status);
   if (msg) u.searchParams.set("msg", msg);
-  return Response.redirect(u.toString(), 302);
+  return new Response(null, { status: 302, headers: { Location: u.toString() } });
 }
