@@ -1,7 +1,7 @@
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Bebas+Neue&family=Cinzel:wght@400;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap");
 
 @custom-variant dark (&:is(.dark *));
 
@@ -32,9 +32,9 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
-  --font-sans: "Cinzel", "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Cinzel", ui-serif, Georgia, serif;
-  --font-display: "Bebas Neue", "Cinzel", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Space Grotesk", ui-serif, Georgia, serif;
+  --font-display: "Space Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -79,32 +79,37 @@
 }
 
 :root {
-  --radius: 0.5rem;
+  --radius: 0.875rem;
 
-  /* TravelDoss — Thorgal saga: aged parchment, ink, ember red */
-  --paper: oklch(0.82 0.04 80);              /* parchment #d4c4a8 */
-  --ink: oklch(0.18 0 0);                    /* near-black #1a1a1a */
-  --ink-soft: oklch(0.38 0.015 60);          /* deep stone */
-  --rule: oklch(0.18 0 0 / 0.18);            /* ink hairline */
-  --seal: oklch(0.42 0.14 30);               /* ember red #8c2b1f */
-  --seal-soft: oklch(0.78 0.045 80);         /* darker parchment */
-  --stone: oklch(0.74 0.04 80);              /* mid parchment */
+  /* TravelDoss — Glassmorphism + Kinetic Minimalism */
+  --paper: oklch(0.18 0.025 255);            /* deep slate canvas */
+  --ink: oklch(0.97 0.01 250);               /* frosted white text */
+  --ink-soft: oklch(0.75 0.018 250);         /* secondary text */
+  --rule: oklch(1 0 0 / 0.12);               /* glass hairline */
+  --seal: oklch(0.72 0.17 245);              /* vivid blue accent */
+  --seal-soft: oklch(0.6 0.18 270);          /* indigo glow */
+  --stone: oklch(0.3 0.04 255);              /* mid slate */
+
+  --gradient-blue: linear-gradient(135deg, oklch(0.72 0.17 245), oklch(0.6 0.18 270));
+  --glass-surface: oklch(1 0 0 / 0.06);
+  --glass-surface-strong: oklch(1 0 0 / 0.1);
+  --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 
   --background: var(--paper);
   --foreground: var(--ink);
-  --card: oklch(0.86 0.035 80);
+  --card: var(--glass-surface);
   --card-foreground: var(--ink);
-  --popover: var(--paper);
+  --popover: oklch(0.22 0.03 255);
   --popover-foreground: var(--ink);
   --primary: var(--seal);
-  --primary-foreground: oklch(0.98 0.01 80);
-  --secondary: var(--seal-soft);
+  --primary-foreground: oklch(0.15 0.02 255);
+  --secondary: var(--glass-surface-strong);
   --secondary-foreground: var(--ink);
-  --muted: oklch(0.78 0.045 80);
+  --muted: var(--glass-surface);
   --muted-foreground: var(--ink-soft);
   --accent: var(--seal-soft);
   --accent-foreground: var(--ink);
-  --destructive: oklch(0.55 0.22 30);
+  --destructive: oklch(0.65 0.22 25);
   --destructive-foreground: oklch(0.984 0.003 247.858);
   --border: var(--rule);
   --input: var(--rule);
