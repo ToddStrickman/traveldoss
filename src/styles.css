@@ -1,6 +1,7 @@
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&display=swap");
 
 @custom-variant dark (&:is(.dark *));
 
@@ -9,8 +10,6 @@
  * Editorial / dossier feel: warm off-white paper, deep navy ink, burnt orange seal.
  * Inter for UI; Fraunces for trip titles.
  */
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&display=swap");
-
 /*
  * Design system definition.
  *
