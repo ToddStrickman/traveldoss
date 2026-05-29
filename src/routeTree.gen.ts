@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TemplatesRouteImport } from './routes/templates'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
@@ -16,6 +17,11 @@ import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/ap
 import { Route as ApiGoogleStartRouteImport } from './routes/api/google/start'
 import { Route as ApiGoogleCallbackRouteImport } from './routes/api/google/callback'
 
+const TemplatesRoute = TemplatesRouteImport.update({
+  id: '/templates',
+  path: '/templates',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -49,6 +55,7 @@ const ApiGoogleCallbackRoute = ApiGoogleCallbackRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/templates': typeof TemplatesRoute
   '/app': typeof AuthenticatedAppRoute
   '/api/google/callback': typeof ApiGoogleCallbackRoute
   '/api/google/start': typeof ApiGoogleStartRoute
@@ -56,6 +63,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/templates': typeof TemplatesRoute
   '/app': typeof AuthenticatedAppRoute
   '/api/google/callback': typeof ApiGoogleCallbackRoute
   '/api/google/start': typeof ApiGoogleStartRoute
@@ -65,6 +73,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
+  '/templates': typeof TemplatesRoute
   '/_authenticated/app': typeof AuthenticatedAppRoute
   '/api/google/callback': typeof ApiGoogleCallbackRoute
   '/api/google/start': typeof ApiGoogleStartRoute
@@ -74,16 +83,24 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/templates'
     | '/app'
     | '/api/google/callback'
     | '/api/google/start'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/app' | '/api/google/callback' | '/api/google/start'
+  to:
+    | '/'
+    | '/login'
+    | '/templates'
+    | '/app'
+    | '/api/google/callback'
+    | '/api/google/start'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/login'
+    | '/templates'
     | '/_authenticated/app'
     | '/api/google/callback'
     | '/api/google/start'
@@ -93,12 +110,20 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
+  TemplatesRoute: typeof TemplatesRoute
   ApiGoogleCallbackRoute: typeof ApiGoogleCallbackRoute
   ApiGoogleStartRoute: typeof ApiGoogleStartRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/templates': {
+      id: '/templates'
+      path: '/templates'
+      fullPath: '/templates'
+      preLoaderRoute: typeof TemplatesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -160,6 +185,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
+  TemplatesRoute: TemplatesRoute,
   ApiGoogleCallbackRoute: ApiGoogleCallbackRoute,
   ApiGoogleStartRoute: ApiGoogleStartRoute,
 }
