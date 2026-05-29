@@ -32,6 +32,50 @@ export type Database = {
         }
         Relationships: []
       }
+      drive_watch_channels: {
+        Row: {
+          channel_id: string
+          created_at: string
+          expiration: string | null
+          id: string
+          resource_id: string
+          resource_uri: string | null
+          token: string
+          trip_id: string
+          user_id: string
+        }
+        Insert: {
+          channel_id: string
+          created_at?: string
+          expiration?: string | null
+          id?: string
+          resource_id: string
+          resource_uri?: string | null
+          token: string
+          trip_id: string
+          user_id: string
+        }
+        Update: {
+          channel_id?: string
+          created_at?: string
+          expiration?: string | null
+          id?: string
+          resource_id?: string
+          resource_uri?: string | null
+          token?: string
+          trip_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drive_watch_channels_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: true
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       google_tokens: {
         Row: {
           access_token: string
@@ -57,6 +101,98 @@ export type Database = {
           google_email?: string | null
           refresh_token?: string
           scope?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      places: {
+        Row: {
+          address: string | null
+          category: Database["public"]["Enums"]["place_category"]
+          created_at: string
+          day_number: number | null
+          google_place_id: string | null
+          id: string
+          lat: number | null
+          lng: number | null
+          name: string
+          notes: string | null
+          order_index: number
+          saved: boolean
+          source_excerpt: string | null
+          trip_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          category?: Database["public"]["Enums"]["place_category"]
+          created_at?: string
+          day_number?: number | null
+          google_place_id?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          name: string
+          notes?: string | null
+          order_index?: number
+          saved?: boolean
+          source_excerpt?: string | null
+          trip_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          category?: Database["public"]["Enums"]["place_category"]
+          created_at?: string
+          day_number?: number | null
+          google_place_id?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          name?: string
+          notes?: string | null
+          order_index?: number
+          saved?: boolean
+          source_excerpt?: string | null
+          trip_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "places_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
           updated_at?: string
           user_id?: string
         }
@@ -115,6 +251,13 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      place_category:
+        | "lodging"
+        | "food"
+        | "activity"
+        | "transport"
+        | "sight"
+        | "other"
       trip_status: "draft" | "generated" | "refined"
     }
     CompositeTypes: {
@@ -243,6 +386,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      place_category: [
+        "lodging",
+        "food",
+        "activity",
+        "transport",
+        "sight",
+        "other",
+      ],
       trip_status: ["draft", "generated", "refined"],
     },
   },
