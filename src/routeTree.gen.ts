@@ -16,6 +16,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
 import { Route as ApiGoogleStartRouteImport } from './routes/api/google/start'
 import { Route as ApiGoogleCallbackRouteImport } from './routes/api/google/callback'
+import { Route as ApiPublicGoogleStartRouteImport } from './routes/api/public/google/start'
+import { Route as ApiPublicGoogleCallbackRouteImport } from './routes/api/public/google/callback'
 
 const TemplatesRoute = TemplatesRouteImport.update({
   id: '/templates',
@@ -51,6 +53,16 @@ const ApiGoogleCallbackRoute = ApiGoogleCallbackRouteImport.update({
   path: '/api/google/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicGoogleStartRoute = ApiPublicGoogleStartRouteImport.update({
+  id: '/api/public/google/start',
+  path: '/api/public/google/start',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicGoogleCallbackRoute = ApiPublicGoogleCallbackRouteImport.update({
+  id: '/api/public/google/callback',
+  path: '/api/public/google/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -59,6 +71,8 @@ export interface FileRoutesByFullPath {
   '/app': typeof AuthenticatedAppRoute
   '/api/google/callback': typeof ApiGoogleCallbackRoute
   '/api/google/start': typeof ApiGoogleStartRoute
+  '/api/public/google/callback': typeof ApiPublicGoogleCallbackRoute
+  '/api/public/google/start': typeof ApiPublicGoogleStartRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -67,6 +81,8 @@ export interface FileRoutesByTo {
   '/app': typeof AuthenticatedAppRoute
   '/api/google/callback': typeof ApiGoogleCallbackRoute
   '/api/google/start': typeof ApiGoogleStartRoute
+  '/api/public/google/callback': typeof ApiPublicGoogleCallbackRoute
+  '/api/public/google/start': typeof ApiPublicGoogleStartRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -77,6 +93,8 @@ export interface FileRoutesById {
   '/_authenticated/app': typeof AuthenticatedAppRoute
   '/api/google/callback': typeof ApiGoogleCallbackRoute
   '/api/google/start': typeof ApiGoogleStartRoute
+  '/api/public/google/callback': typeof ApiPublicGoogleCallbackRoute
+  '/api/public/google/start': typeof ApiPublicGoogleStartRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -87,6 +105,8 @@ export interface FileRouteTypes {
     | '/app'
     | '/api/google/callback'
     | '/api/google/start'
+    | '/api/public/google/callback'
+    | '/api/public/google/start'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -95,6 +115,8 @@ export interface FileRouteTypes {
     | '/app'
     | '/api/google/callback'
     | '/api/google/start'
+    | '/api/public/google/callback'
+    | '/api/public/google/start'
   id:
     | '__root__'
     | '/'
@@ -104,6 +126,8 @@ export interface FileRouteTypes {
     | '/_authenticated/app'
     | '/api/google/callback'
     | '/api/google/start'
+    | '/api/public/google/callback'
+    | '/api/public/google/start'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -113,6 +137,8 @@ export interface RootRouteChildren {
   TemplatesRoute: typeof TemplatesRoute
   ApiGoogleCallbackRoute: typeof ApiGoogleCallbackRoute
   ApiGoogleStartRoute: typeof ApiGoogleStartRoute
+  ApiPublicGoogleCallbackRoute: typeof ApiPublicGoogleCallbackRoute
+  ApiPublicGoogleStartRoute: typeof ApiPublicGoogleStartRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -166,6 +192,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiGoogleCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/google/start': {
+      id: '/api/public/google/start'
+      path: '/api/public/google/start'
+      fullPath: '/api/public/google/start'
+      preLoaderRoute: typeof ApiPublicGoogleStartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/google/callback': {
+      id: '/api/public/google/callback'
+      path: '/api/public/google/callback'
+      fullPath: '/api/public/google/callback'
+      preLoaderRoute: typeof ApiPublicGoogleCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -188,6 +228,8 @@ const rootRouteChildren: RootRouteChildren = {
   TemplatesRoute: TemplatesRoute,
   ApiGoogleCallbackRoute: ApiGoogleCallbackRoute,
   ApiGoogleStartRoute: ApiGoogleStartRoute,
+  ApiPublicGoogleCallbackRoute: ApiPublicGoogleCallbackRoute,
+  ApiPublicGoogleStartRoute: ApiPublicGoogleStartRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -90,7 +90,7 @@ export const pickTemplate = createServerFn({ method: "POST" })
 
     const accessToken = await getFreshGoogleToken(userId);
     if (!accessToken) {
-      return { needsGoogle: true as const, authUrl: "/api/google/start" };
+      return { needsGoogle: true as const, authUrl: "/api/public/google/start" };
     }
 
     // 1. Create empty doc

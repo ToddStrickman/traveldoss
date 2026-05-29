@@ -29,7 +29,7 @@ function Dashboard() {
   };
 
   const onConnectDrive = () => {
-    window.location.href = "/api/google/start";
+    window.location.href = "/api/public/google/start";
   };
 
   // Surface OAuth callback result via query param
