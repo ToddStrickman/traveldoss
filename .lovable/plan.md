@@ -1,81 +1,92 @@
-# Travel DOSS — Build Plan
+## Goal
 
-## ⚠️ Critical: Google OAuth with Gmail/Drive/Docs scopes
+Replace the current saga landing with a three-zone workspace: a left vertical ribbon, a centered "Pick TravelDoss Template" CTA, and a right-side infinite vertical scroll of Google-Doc thumbnails. Add a template-picker carousel (3-up desktop, 1-up mobile) with 10 sample templates. When picked, the template is materialized into the user's own Google Doc and a new trip is created.
 
-The Lovable Cloud "Sign in with Google" broker only requests basic profile/email scopes. It **cannot** request `gmail.readonly`, `drive.file`, or `docs` scopes. To access the user's Gmail and create Docs in their Drive, we need a **custom OAuth flow** (not the broker).
+Keep the Thorgal aesthetic (parchment, ember, Bebas Neue display) the user just approved.
 
-This means **you** must:
-1. Create an OAuth 2.0 Client ID in [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
-2. Enable Gmail API, Drive API, Docs API
-3. Add authorized redirect URI: `https://<your-app-domain>/api/auth/google/callback`
-4. Provide me `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET` as secrets
+## 1. Landing page (`/`) — three-zone layout
 
-I'll build a custom OAuth handler that:
-- Initiates auth with all 4 scopes (gmail.readonly, drive.file, documents, userinfo.email)
-- Stores the user's Google access + refresh token in a `google_tokens` table (encrypted-at-rest by Supabase)
-- Refreshes tokens on demand server-side
+```text
+┌────┬────────────────────────────┬──────────────┐
+│ R  │                            │  ░ Doc 1 ░   │
+│ I  │   TRAVELDOSS               │  ░ Doc 2 ░   │
+│ B  │                            │  ░ Doc 3 ░   │
+│ B  │   [ PICK A TEMPLATE ]      │  ░ Doc 4 ░   │
+│ O  │                            │  ░ Doc 5 ░   │
+│ N  │   tagline                  │  ░ … loop ░  │
+└────┴────────────────────────────┴──────────────┘
+```
 
-(Supabase Auth still handles the user identity layer — but the Google API tokens come from our custom flow, not from Supabase's OAuth provider.)
+- **Left ribbon** (sticky, ~88px): vertical icon+label rail.
+  Items: Browse Places, Templates, Past Trips, Saved Stops, Settings, Enter.
+  Public visitors click → routed to `/login` (the gated routes); the ribbon doubles as a marketing hint.
+- **Center**: oversized wordmark + the stylized "PICK TRAVELDOSS TEMPLATE" button (ember underline, carved-shadow press state) that links to `/templates`. Tagline + Google Doc → Live Map line.
+- **Right rail** (sticky on desktop, hidden < `md`): continuously upward-scrolling column of Google-Doc-style thumbnails (CSS keyframe loop, duplicated list for seamless wrap). Hover pauses, click jumps straight to that template's carousel slide.
 
-## Naming
-Going with the dossier riff: tagline "Your trip, prepared like a dossier." No acronym lock-in, leans into the editorial/intelligence-folder feel that matches the design.
+## 2. Templates catalog (shared module)
 
-## Stack mapping (from your spec → this stack)
+`src/lib/templates.ts` — 10 entries:
 
-| Spec | This build |
+1. Weekend City Break
+2. 7-Day Road Trip
+3. Two-Week Eurail
+4. Honeymoon Itinerary
+5. Family Beach Holiday
+6. Solo Backpacking Trail
+7. Foodie Pilgrimage
+8. Ski Week
+9. Safari + Bush
+10. Multi-City Conference Trip
+
+Each: `id`, `title`, `subtitle`, `days`, `tone`, `accent`, `sections` (Day-1 / Day-2 headings + sample notes), `crawlFields` (which Drive/Gmail fields it pulls — flights, hotel confs, reservation emails, photo references, contact cards), `docTemplate` (an array of paragraph/heading blocks used to populate the Google Doc on selection).
+
+## 3. Template picker (`/templates`)
+
+- Carousel of `TemplateCard`s, 3 visible on desktop (`md`+), 1 on mobile.
+- Built with `motion/react` drag + paged transform (no extra deps).
+- Each card: parchment surface, doc-paper preview, title, day count, "fields we'll crawl" chip row (Gmail, Drive, Maps, Calendar), accent ember stripe.
+- Primary button: "Use this template" → calls `pickTemplate({ templateId })` server fn.
+
+## 4. Materialize template → Google Doc
+
+`src/lib/templates.functions.ts`:
+
+```ts
+pickTemplate({ templateId })
+  // requires Supabase auth + linked Google account (existing /api/google flow)
+  // 1. ensure google_tokens row exists; if not → return { needsGoogle: true, authUrl: '/api/google/start' }
+  // 2. POST to Docs API: create doc titled `${template.title} — ${date}`
+  // 3. batchUpdate to inject the template's sections (headings + paragraphs)
+  // 4. INSERT into public.trips: doc_url, doc_id, destination = template.title, start_date/end_date placeholder, status='draft'
+  // 5. return { tripId, docUrl }
+```
+
+Uses the existing per-user Google OAuth (already in `google_tokens` table) via direct `https://docs.googleapis.com/v1/documents` calls — no Lovable connector, since the docs must live in each end-user's Drive.
+
+After success, navigate the user to `/app?tripId=...` (the authenticated app view) and open the new Doc in a new tab.
+
+## 5. Routes / files
+
+| File | Status |
 |---|---|
-| Next.js App Router | TanStack Start (file-based routes) |
-| `/api/*` route handlers | TanStack server routes under `src/routes/api/` |
-| Server actions | `createServerFn` |
-| Vercel | Cloudflare Workers (Lovable's deploy target) |
-| Supabase | Lovable Cloud (= Supabase) |
-| Gemini direct API | Lovable AI Gateway → `google/gemini-3-flash-preview` |
-| Tailwind | Tailwind v4 (already configured) |
+| `src/routes/index.tsx` | rewrite (three-zone) |
+| `src/routes/templates.tsx` | new (carousel) |
+| `src/lib/templates.ts` | new (10 templates + types) |
+| `src/lib/templates.functions.ts` | new (`pickTemplate` server fn) |
+| `src/components/landing/Ribbon.tsx` | new |
+| `src/components/landing/InfiniteDocs.tsx` | new |
+| `src/components/templates/TemplateCarousel.tsx` | new |
+| `src/components/templates/TemplateCard.tsx` | new |
 
-## Build order (incremental, per your "confirm before polish" instruction)
+No DB migration needed (existing `trips` + `google_tokens` cover this).
 
-### Phase 1 — Foundation (this turn)
-1. Enable Lovable Cloud (Supabase)
-2. DB migration: `trips` table per your schema + `google_tokens` table (user_id, access_token, refresh_token, expires_at, scope)
-3. Design system in `src/styles.css`: warm off-white bg, deep navy text, burnt orange accent, Inter + Fraunces fonts
-4. README scaffold (env vars, Google Cloud setup, redesign-template instructions)
-5. Request secrets: `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, `UNSPLASH_ACCESS_KEY`, `TEMPLATE_DOC_ID` (will be empty until first run creates one)
+## 6. Aesthetic continuity
 
-### Phase 2 — Auth
-6. Custom Google OAuth: `/api/auth/google/start` and `/api/auth/google/callback` server routes
-7. Token-refresh helper (`google.server.ts`)
-8. Sign-in page + auth gate
+- Reuse parchment/ember tokens already in `src/styles.css`.
+- Bebas Neue for the wordmark and the "PICK TRAVELDOSS TEMPLATE" button.
+- Cinzel for ribbon labels and field chips.
+- The infinite-scroll docs are rendered as miniature parchment cards with simulated heading rules — they feel like Doc thumbnails without being literal Google screenshots.
 
-### Phase 3 — Trip CRUD + UI shell
-9. Routes: `/` (sign-in), `/trips` (list), `/trips/new` (form), `/trips/$id` (detail with embedded Doc)
-10. Editorial UI: Fraunces titles, single hero CTA per screen, animated 4-step loader
+## Open question
 
-### Phase 4 — Pipeline server functions
-11. `ingestBookings` — Gmail search + Gemini structured extraction (no hand parser, emails discarded after extraction)
-12. `researchDestination` — Gemini with web grounding, structured day-by-day output
-13. `generateDoc` — On first call: stub template Doc programmatically, save ID. Then: copy template via Drive, batchUpdate replaceAllText, fetch Unsplash hero, save trip.doc_id/doc_url
-14. `refineDoc` — Scan doc for unfilled `{{...}}` tokens, Gemini smart-fill each, fallback to "Open block. Wander, recover…"
-
-### Phase 5 — Polish
-15. Drive embed preview (`https://docs.google.com/document/d/{id}/preview`)
-16. Loading state with the 4 step messages
-17. Error handling (token expiry → re-auth, Gemini 429/402)
-
-## Out of scope (per your hard constraints)
-No invites, no sharing UI, no mobile-specific design, no edit history, no payments, no AI-generated images, no hand-written email parser, no animations in the Doc.
-
-## Technical notes section
-
-- **Why custom OAuth instead of Supabase Google provider:** Supabase's Google provider can request additional scopes via `options.scopes`, but the access token it returns to the client is short-lived and not refreshable through Supabase. For a long-lived background-capable Gmail/Drive/Docs integration we need the refresh token, which means owning the OAuth flow.
-- **Token storage:** `google_tokens` table with RLS so each user only sees their own. Service role key used server-side to read tokens for API calls.
-- **Gemini grounding:** Lovable AI Gateway's Gemini 3 Flash supports Google Search grounding via tool config — I'll wire that for the research step.
-- **Template Doc bootstrap:** First time `generateDoc` runs, if `TEMPLATE_DOC_ID` is empty, create a minimal template programmatically with all the `{{token}}` placeholders, save the ID to the `trips`-related config (or instruct user to add to env). README explains how to redesign it in Google Docs.
-- **Doc embed:** `https://docs.google.com/document/d/{DOC_ID}/preview` in an iframe.
-
-## What I need from you to start Phase 2
-Once Phase 1 is done I'll request the 3 secrets. You'll need to:
-1. Create the OAuth client in Google Cloud Console with the redirect URI I'll give you
-2. Get an Unsplash access key from https://unsplash.com/developers
-3. Paste them into the secret prompt
-
-Ready to start with Phase 1?
+The right-side infinite scroll: should the doc thumbnails be **stylized parchment mock-ups** (consistent with the Thorgal look, ships immediately) or **actual screenshots** of real Google Docs (requires you to provide images)? I'll default to stylized mock-ups unless you say otherwise.
