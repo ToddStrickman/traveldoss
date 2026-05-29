@@ -59,72 +59,92 @@ function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="w-full max-w-sm">
-        <Link to="/" className="mb-8 inline-block text-sm text-muted-foreground hover:text-foreground">
-          ← TravelDoss
+    <div className="min-h-screen bg-background font-light">
+      <div className="h-px w-full bg-border" />
+      <header className="mx-auto flex max-w-[1600px] items-center justify-between px-8 py-6 text-xs uppercase tracking-[0.2em]">
+        <Link to="/" className="font-normal">
+          Travel<span className="text-muted-foreground">/</span>Doss
         </Link>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          {mode === "signin" ? "Welcome back" : "Create your account"}
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {mode === "signin" ? "Sign in to your trips." : "Start planning your next trip."}
+        <Link to="/" className="text-muted-foreground transition-colors hover:text-foreground">
+          ← Back
+        </Link>
+      </header>
+
+      <div className="mx-auto grid min-h-[80vh] max-w-[1600px] grid-cols-12 gap-6 px-8 py-16 md:py-24">
+        <p className="col-span-12 text-xs uppercase tracking-[0.3em] text-muted-foreground md:col-span-3">
+          {mode === "signin" ? "Return" : "Begin"}
         </p>
+        <div className="col-span-12 md:col-span-6">
+          <h1 className="text-5xl font-extralight tracking-[-0.03em] md:text-7xl">
+            {mode === "signin" ? "Welcome back." : "Open a doc."}
+          </h1>
+          <p className="mt-6 max-w-md text-base font-light text-muted-foreground">
+            {mode === "signin" ? "Sign in to your trips." : "Start planning your next trip."}
+          </p>
 
-        <Button
-          type="button"
-          variant="outline"
-          className="mt-6 w-full"
-          onClick={onGoogle}
-          disabled={loading}
-        >
-          Continue with Google
-        </Button>
-
-        <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
-          <div className="h-px flex-1 bg-border" />
-          or
-          <div className="h-px flex-1 bg-border" />
-        </div>
-
-        <form className="space-y-3" onSubmit={onSubmit}>
-          <div>
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              required
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
-          <div>
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              required
-              minLength={6}
-              autoComplete={mode === "signin" ? "current-password" : "new-password"}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
-          <Button type="submit" className="w-full" disabled={loading}>
-            {mode === "signin" ? "Sign in" : "Create account"}
+          <Button
+            type="button"
+            variant="outline"
+            className="mt-12 w-full rounded-none border-foreground py-6 text-xs uppercase tracking-[0.2em]"
+            onClick={onGoogle}
+            disabled={loading}
+          >
+            Continue with Google
           </Button>
-        </form>
 
-        <button
-          type="button"
-          className="mt-4 w-full text-center text-sm text-muted-foreground hover:text-foreground"
-          onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
-        >
-          {mode === "signin"
-            ? "Don't have an account? Sign up"
-            : "Already have an account? Sign in"}
-        </button>
+          <div className="my-8 flex items-center gap-4 text-xs uppercase tracking-[0.3em] text-muted-foreground">
+            <div className="h-px flex-1 bg-border" />
+            or
+            <div className="h-px flex-1 bg-border" />
+          </div>
+
+          <form className="space-y-6" onSubmit={onSubmit}>
+            <div>
+              <Label htmlFor="email" className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                Email
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                required
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="mt-2 rounded-none border-0 border-b border-border px-0 shadow-none focus-visible:ring-0"
+              />
+            </div>
+            <div>
+              <Label htmlFor="password" className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                Password
+              </Label>
+              <Input
+                id="password"
+                type="password"
+                required
+                minLength={6}
+                autoComplete={mode === "signin" ? "current-password" : "new-password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="mt-2 rounded-none border-0 border-b border-border px-0 shadow-none focus-visible:ring-0"
+              />
+            </div>
+            <Button
+              type="submit"
+              className="w-full rounded-none py-6 text-xs uppercase tracking-[0.2em]"
+              disabled={loading}
+            >
+              {mode === "signin" ? "Sign in" : "Create account"}
+            </Button>
+          </form>
+
+          <button
+            type="button"
+            className="mt-8 w-full text-center text-xs uppercase tracking-[0.3em] text-muted-foreground transition-colors hover:text-foreground"
+            onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
+          >
+            {mode === "signin" ? "No account — Sign up" : "Have an account — Sign in"}
+          </button>
+        </div>
       </div>
     </div>
   );
