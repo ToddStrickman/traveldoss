@@ -1,7 +1,7 @@
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&display=swap");
 
 @custom-variant dark (&:is(.dark *));
 
@@ -78,17 +78,17 @@
 :root {
   --radius: 0.5rem;
 
-  /* Travel DOSS palette — warm paper, navy ink, burnt orange */
-  --paper: oklch(0.975 0.012 80);            /* warm off-white */
-  --ink: oklch(0.22 0.04 255);               /* deep navy */
-  --ink-soft: oklch(0.42 0.035 255);         /* navy at lower contrast */
-  --rule: oklch(0.88 0.02 80);               /* hairline divider */
-  --seal: oklch(0.58 0.16 45);               /* burnt orange accent */
-  --seal-soft: oklch(0.92 0.05 60);          /* tinted highlight */
+  /* TravelDoss — AIR-inspired ultra-minimal monochrome */
+  --paper: oklch(1 0 0);                     /* pure white */
+  --ink: oklch(0.15 0 0);                    /* near-black */
+  --ink-soft: oklch(0.55 0 0);               /* muted gray */
+  --rule: oklch(0.92 0 0);                   /* hairline gray */
+  --seal: oklch(0.15 0 0);                   /* accent = ink */
+  --seal-soft: oklch(0.97 0 0);              /* faint surface */
 
   --background: var(--paper);
   --foreground: var(--ink);
-  --card: oklch(0.99 0.008 80);
+  --card: oklch(1 0 0);
   --card-foreground: var(--ink);
   --popover: var(--paper);
   --popover-foreground: var(--ink);
