@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { setCookie } from "@tanstack/react-start/server";
 import { createClient } from "@supabase/supabase-js";
 
 const SCOPES = [
@@ -48,21 +47,6 @@ export const Route = createFileRoute("/api/google/start")({
         const redirectUri = `${origin}/api/google/callback`;
         const state = crypto.randomUUID();
 
-        setCookie("td_oauth_state", state, {
-          httpOnly: true,
-          secure: true,
-          sameSite: "lax",
-          path: "/",
-          maxAge: 600,
-        });
-        setCookie("td_oauth_uid", data.user.id, {
-          httpOnly: true,
-          secure: true,
-          sameSite: "lax",
-          path: "/",
-          maxAge: 600,
-        });
-
         const authUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
         authUrl.searchParams.set("client_id", clientId);
         authUrl.searchParams.set("redirect_uri", redirectUri);
@@ -73,10 +57,16 @@ export const Route = createFileRoute("/api/google/start")({
         authUrl.searchParams.set("include_granted_scopes", "true");
         authUrl.searchParams.set("state", state);
 
-        return new Response(null, {
-          status: 302,
-          headers: { Location: authUrl.toString() },
-        });
+        const headers = new Headers({ Location: authUrl.toString() });
+        headers.append(
+          "Set-Cookie",
+          `td_oauth_state=${state}; Path=/; Max-Age=600; HttpOnly; Secure; SameSite=Lax`,
+        );
+        headers.append(
+          "Set-Cookie",
+          `td_oauth_uid=${data.user.id}; Path=/; Max-Age=600; HttpOnly; Secure; SameSite=Lax`,
+        );
+        return new Response(null, { status: 302, headers });
       },
     },
   },

@@ -1,6 +1,23 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { getCookie, deleteCookie } from "@tanstack/react-start/server";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+
+function parseCookies(header: string | null): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (!header) return out;
+  for (const part of header.split(/;\s*/)) {
+    const i = part.indexOf("=");
+    if (i === -1) continue;
+    out[part.slice(0, i)] = decodeURIComponent(part.slice(i + 1));
+  }
+  return out;
+}
+
+function clearCookieHeaders(): string[] {
+  return [
+    "td_oauth_state=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax",
+    "td_oauth_uid=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax",
+  ];
+}
 
 export const Route = createFileRoute("/api/google/callback")({
   server: {
@@ -12,13 +29,12 @@ export const Route = createFileRoute("/api/google/callback")({
         const err = url.searchParams.get("error");
         const origin = url.origin;
 
+        const cookies = parseCookies(request.headers.get("cookie"));
+        const cookieState = cookies["td_oauth_state"];
+        const uid = cookies["td_oauth_uid"];
+
         if (err) return redirectBack(origin, "error", err);
         if (!code || !state) return redirectBack(origin, "error", "missing_code");
-
-        const cookieState = getCookie("td_oauth_state");
-        const uid = getCookie("td_oauth_uid");
-        deleteCookie("td_oauth_state", { path: "/" });
-        deleteCookie("td_oauth_uid", { path: "/" });
 
         if (!cookieState || cookieState !== state) {
           return redirectBack(origin, "error", "bad_state");
@@ -101,5 +117,7 @@ function redirectBack(origin: string, status: "connected" | "error", msg?: strin
   const u = new URL("/app", origin);
   u.searchParams.set("drive", status);
   if (msg) u.searchParams.set("msg", msg);
-  return new Response(null, { status: 302, headers: { Location: u.toString() } });
+  const headers = new Headers({ Location: u.toString() });
+  for (const c of clearCookieHeaders()) headers.append("Set-Cookie", c);
+  return new Response(null, { status: 302, headers });
 }
