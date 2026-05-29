@@ -73,7 +73,10 @@ export const Route = createFileRoute("/api/google/start")({
         authUrl.searchParams.set("include_granted_scopes", "true");
         authUrl.searchParams.set("state", state);
 
-        return Response.redirect(authUrl.toString(), 302);
+        return new Response(null, {
+          status: 302,
+          headers: { Location: authUrl.toString() },
+        });
       },
     },
   },
