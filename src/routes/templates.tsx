@@ -54,38 +54,38 @@ function TemplateCard({
   return (
     <article
       id={template.id}
-      className="group relative flex h-full flex-col overflow-hidden rounded-3xl border border-white/10 bg-white/[0.05] p-6 shadow-[0_12px_48px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl transition-all duration-500 hover:border-white/20 hover:bg-white/[0.08] md:p-8"
+      className="group relative flex h-full flex-col overflow-hidden border border-ink/10 bg-paper p-7 transition-all duration-500 hover:border-seal/50 md:p-9"
     >
-      <div aria-hidden className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full opacity-40 blur-3xl transition-opacity duration-500 group-hover:opacity-70"
+      <div aria-hidden className="pointer-events-none absolute left-0 top-0 h-px w-0 transition-all duration-700 group-hover:w-full"
            style={{ background: template.accent }} />
 
-      <div className="relative mb-4 flex items-center justify-between text-[10px] font-medium uppercase tracking-[0.35em] text-ink/50">
-        <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-2.5 py-1 backdrop-blur-xl">
-          <span className="h-1.5 w-1.5 rounded-full" style={{ background: template.accent }} />
+      <div className="relative mb-6 flex items-center justify-between text-[9px] font-medium uppercase tracking-[0.45em] text-ink/45">
+        <span className="inline-flex items-center gap-2">
+          <span className="h-1 w-1 rounded-full" style={{ background: template.accent }} />
           Google Doc
         </span>
-        <span>{template.days} days</span>
+        <span>{String(template.days).padStart(2, "0")} Days</span>
       </div>
       <h3
-        className="relative text-3xl font-semibold leading-tight tracking-tight text-ink md:text-4xl"
+        className="relative text-4xl font-normal leading-[1.05] tracking-tight text-ink md:text-5xl"
         style={{ fontFamily: "var(--font-display)" }}
       >
         {template.title}
       </h3>
-      <p className="relative mt-3 text-sm text-ink/65" style={{ fontFamily: "var(--font-body)" }}>
+      <p className="relative mt-4 text-sm leading-relaxed text-ink-soft" style={{ fontFamily: "var(--font-body)" }}>
         {template.subtitle}
       </p>
-      <p className="relative mt-2 text-[10px] uppercase tracking-[0.3em] text-ink/40">
+      <p className="relative mt-3 text-[9px] uppercase tracking-[0.45em] text-ink/35">
         {template.tone}
       </p>
 
       {/* Doc preview */}
-      <div className="relative mt-6 flex-1 space-y-3 rounded-2xl border border-white/10 bg-black/20 p-5 backdrop-blur-xl">
+      <div className="relative mt-7 flex-1 space-y-3 border-t border-ink/10 pt-5">
         {template.doc.slice(0, 6).map((b, i) =>
           b.kind === "heading" ? (
             <div
               key={i}
-              className="font-semibold tracking-tight text-ink"
+              className="font-normal tracking-tight text-ink"
               style={{ fontFamily: "var(--font-display)", fontSize: b.level === 1 ? 18 : 14 }}
             >
               {b.text}
@@ -93,7 +93,7 @@ function TemplateCard({
           ) : (
             <div key={i} className="space-y-1.5">
               {[100, 92, 78].map((w, j) => (
-                <div key={j} className="h-[3px] rounded-full bg-white/15" style={{ width: `${w}%` }} />
+                <div key={j} className="h-px bg-ink/12" style={{ width: `${w}%` }} />
               ))}
             </div>
           ),
@@ -101,8 +101,8 @@ function TemplateCard({
       </div>
 
       {/* Crawl chips */}
-      <div className="relative mt-6">
-        <div className="mb-2 text-[10px] font-medium uppercase tracking-[0.35em] text-seal">
+      <div className="relative mt-7">
+        <div className="mb-3 text-[9px] font-medium uppercase tracking-[0.45em] text-seal">
           We'll crawl
         </div>
         <div className="flex flex-wrap gap-2">
@@ -111,9 +111,9 @@ function TemplateCard({
             return (
               <span
                 key={c}
-                className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.2em] text-ink/70 backdrop-blur-xl"
+                className="inline-flex items-center gap-1.5 border border-ink/15 px-2.5 py-1 text-[9px] font-medium uppercase tracking-[0.3em] text-ink/70"
               >
-                <Icon className="h-3 w-3" strokeWidth={2} />
+                <Icon className="h-3 w-3" strokeWidth={1.5} />
                 {c}
               </span>
             );
@@ -124,9 +124,12 @@ function TemplateCard({
       <button
         onClick={() => onPick(template.id)}
         disabled={picking}
-        className="relative mt-6 inline-flex items-center justify-center gap-3 rounded-full border border-white/15 bg-gradient-to-r from-seal to-seal-soft px-6 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-paper shadow-[0_8px_24px_rgba(80,120,255,0.4)] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_32px_rgba(80,120,255,0.55)] disabled:cursor-wait disabled:opacity-60"
+        className="group/btn relative mt-7 inline-flex items-center justify-between gap-4 border-y border-ink/20 py-4 text-[10px] font-medium uppercase tracking-[0.4em] text-ink transition-colors duration-500 hover:border-seal hover:text-seal disabled:cursor-wait disabled:opacity-50"
       >
-        {picking ? "Opening Doc…" : "Use This Template"}
+        <span>{picking ? "Opening Doc…" : "Use This Template"}</span>
+        <span className="inline-flex h-7 w-7 items-center justify-center border border-ink/20 transition-all duration-500 group-hover/btn:border-seal group-hover/btn:bg-seal group-hover/btn:text-paper">
+          <ChevronRight className="h-3 w-3" />
+        </span>
       </button>
     </article>
   );
@@ -189,46 +192,40 @@ function TemplatesPage() {
   return (
     <div className="relative min-h-screen overflow-hidden bg-background text-foreground selection:bg-seal/40">
       {/* Ambient orbs */}
-      <div aria-hidden className="pointer-events-none fixed inset-0 z-0">
-        <div className="absolute -left-32 top-0 h-[520px] w-[520px] rounded-full opacity-50 blur-[120px]"
-             style={{ background: "radial-gradient(circle, oklch(0.6 0.2 250 / 0.6), transparent 70%)" }} />
-        <div className="absolute -right-20 bottom-0 h-[460px] w-[460px] rounded-full opacity-40 blur-[120px]"
-             style={{ background: "radial-gradient(circle, oklch(0.65 0.2 285 / 0.55), transparent 70%)" }} />
-      </div>
-      <div aria-hidden className="pointer-events-none fixed inset-0 z-0 opacity-[0.08]"
-           style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.4) 1px, transparent 1px)", backgroundSize: "64px 64px" }} />
+      <div aria-hidden className="pointer-events-none fixed inset-0 z-0 opacity-[0.05] mix-blend-overlay"
+           style={{ backgroundImage: "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.6'/></svg>\")" }} />
 
-      <header className="relative z-10 mx-auto flex max-w-[1600px] items-center justify-between px-6 py-6 md:px-12">
+      <header className="relative z-10 mx-auto flex max-w-[1600px] items-center justify-between border-b border-ink/10 px-6 py-6 md:px-12">
         <Link
           to="/"
-          className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-4 py-2 text-[10px] font-medium uppercase tracking-[0.3em] text-ink/70 backdrop-blur-xl transition-colors hover:text-ink"
+          className="inline-flex items-center gap-3 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/60 transition-colors hover:text-seal"
         >
-          ← TravelDoss
+          ← TravelDoss<span className="text-ink/30">®</span>
         </Link>
-        <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-4 py-2 text-[10px] font-medium uppercase tracking-[0.3em] text-ink/70 backdrop-blur-xl">
-          <span className="h-1.5 w-1.5 rounded-full bg-seal" />
-          Pick a Template
+        <span className="inline-flex items-center gap-3 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/60">
+          <span className="h-px w-6 bg-ink/30" />
+          The Library
         </span>
       </header>
 
       <main className="relative z-10 mx-auto max-w-[1600px] px-6 pb-24 md:px-12">
         <h1
-          className="text-[12vw] font-semibold leading-[0.9] tracking-[-0.04em] md:text-[6vw]"
+          className="mt-16 text-[14vw] font-normal leading-[0.95] tracking-[-0.03em] md:text-[7vw]"
           style={{ fontFamily: "var(--font-display)" }}
         >
-          <span className="bg-gradient-to-br from-white via-white to-white/40 bg-clip-text text-transparent">The </span>
-          <span className="bg-gradient-to-br from-seal via-seal-soft to-seal bg-clip-text text-transparent">Library</span>
+          <span className="text-ink">Ten ways </span>
+          <span className="italic text-ink/85">to begin<span className="text-seal">.</span></span>
         </h1>
-        <p className="mt-4 max-w-2xl text-base text-ink/65 md:text-lg">
-          Ten ways to begin. Pick one — we'll open a fresh Google Doc seeded
-          with the structure and tell you what we'll crawl from your Gmail,
+        <p className="mt-6 max-w-xl text-sm leading-relaxed text-ink-soft md:text-base">
+          Pick one — we'll open a fresh Google Doc seeded with the
+          structure and tell you what we'll crawl from your Gmail,
           Drive, and Calendar to fill in the details.
         </p>
 
         {/* Carousel */}
-        <div className="mt-12">
-          <div className="mb-6 flex items-center justify-between">
-            <div className="text-[10px] font-medium uppercase tracking-[0.4em] text-ink/50">
+        <div className="mt-16">
+          <div className="mb-8 flex items-center justify-between border-t border-ink/10 pt-6">
+            <div className="text-[10px] font-medium uppercase tracking-[0.45em] text-ink/50">
               {String(page + 1).padStart(2, "0")} / {String(maxPage + 1).padStart(2, "0")}
             </div>
             <div className="flex gap-3">
@@ -236,7 +233,7 @@ function TemplatesPage() {
                 onClick={() => setPage((p) => Math.max(0, p - 1))}
                 disabled={page === 0}
                 aria-label="Previous"
-                className="rounded-full border border-white/15 bg-white/[0.05] p-3 text-ink backdrop-blur-xl transition-all hover:scale-105 hover:bg-white/[0.1] disabled:opacity-30"
+                className="border border-ink/15 p-3 text-ink transition-colors hover:border-seal hover:text-seal disabled:opacity-25"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
@@ -244,7 +241,7 @@ function TemplatesPage() {
                 onClick={() => setPage((p) => Math.min(maxPage, p + 1))}
                 disabled={page === maxPage}
                 aria-label="Next"
-                className="rounded-full border border-white/15 bg-white/[0.05] p-3 text-ink backdrop-blur-xl transition-all hover:scale-105 hover:bg-white/[0.1] disabled:opacity-30"
+                className="border border-ink/15 p-3 text-ink transition-colors hover:border-seal hover:text-seal disabled:opacity-25"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
@@ -272,14 +269,14 @@ function TemplatesPage() {
           </AnimatePresence>
 
           {/* Dot pager */}
-          <div className="mt-10 flex justify-center gap-2">
+          <div className="mt-12 flex justify-center gap-2">
             {Array.from({ length: maxPage + 1 }).map((_, i) => (
               <button
                 key={i}
                 onClick={() => setPage(i)}
                 aria-label={`Page ${i + 1}`}
-                className={`h-1.5 rounded-full transition-all ${
-                  i === page ? "w-10 bg-gradient-to-r from-seal to-seal-soft" : "w-1.5 bg-white/20 hover:bg-white/40"
+                className={`h-px transition-all ${
+                  i === page ? "w-12 bg-seal" : "w-6 bg-ink/20 hover:bg-ink/40"
                 }`}
               />
             ))}
