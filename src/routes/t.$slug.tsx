@@ -89,6 +89,13 @@ function DossierPage() {
     <>
       {skin.tokens.fontUrl && <link rel="stylesheet" href={skin.tokens.fontUrl} />}
       <skin.Render trip={view} blocks={blocks} />
+      <Link
+        to="/"
+        className="fixed left-4 top-4 z-50 inline-flex items-center gap-2 border border-black/15 bg-white/85 px-3 py-2 text-[10px] font-medium uppercase tracking-[0.3em] text-black backdrop-blur-sm transition-colors hover:border-black hover:bg-white"
+        aria-label="Back to TravelDoss"
+      >
+        ← TravelDoss
+      </Link>
     </>
   );
 }
