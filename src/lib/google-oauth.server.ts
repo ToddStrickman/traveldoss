@@ -51,7 +51,11 @@ async function signState(payload: {
     false,
     ["sign"],
   );
-  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(body));
+  const sig = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    new TextEncoder().encode(body) as unknown as BufferSource,
+  );
   return `${body}.${b64url(sig)}`;
 }
 
@@ -68,8 +72,8 @@ async function verifyState(state: string): Promise<{ uid: string; origin: string
   const ok = await crypto.subtle.verify(
     "HMAC",
     key,
-    b64urlDecode(sig),
-    new TextEncoder().encode(body),
+    b64urlDecode(sig) as unknown as BufferSource,
+    new TextEncoder().encode(body) as unknown as BufferSource,
   );
   if (!ok) return null;
   try {
