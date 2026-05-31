@@ -1,92 +1,56 @@
-## Goal
+## What’s most likely happening
 
-Replace the current saga landing with a three-zone workspace: a left vertical ribbon, a centered "Pick TravelDoss Template" CTA, and a right-side infinite vertical scroll of Google-Doc thumbnails. Add a template-picker carousel (3-up desktop, 1-up mobile) with 10 sample templates. When picked, the template is materialized into the user's own Google Doc and a new trip is created.
+The app is no longer failing on the template server function: that request returns `needsGoogle: true` with `/api/public/google/start`. The recurring 403 is happening after the browser leaves TravelDoss and enters Google’s OAuth flow.
 
-Keep the Thorgal aesthetic (parchment, ember, Bebas Neue display) the user just approved.
+Two problems remain likely:
 
-## 1. Landing page (`/`) — three-zone layout
+1. The current `/api/public/google/start` flow computes the callback from the current preview origin, so the exact callback may differ from the URL you added.
+2. The flow uses a browser “bouncer” to pull the app session from local storage, which is fragile in preview/OAuth handoffs.
 
-```text
-┌────┬────────────────────────────┬──────────────┐
-│ R  │                            │  ░ Doc 1 ░   │
-│ I  │   TRAVELDOSS               │  ░ Doc 2 ░   │
-│ B  │                            │  ░ Doc 3 ░   │
-│ B  │   [ PICK A TEMPLATE ]      │  ░ Doc 4 ░   │
-│ O  │                            │  ░ Doc 5 ░   │
-│ N  │   tagline                  │  ░ … loop ░  │
-└────┴────────────────────────────┴──────────────┘
-```
+Do I know what the issue is? Yes: the app’s Google connection flow is too dependent on preview-domain routing and should be converted to a server-generated OAuth URL tied to the authenticated TravelDoss user.
 
-- **Left ribbon** (sticky, ~88px): vertical icon+label rail.
-  Items: Browse Places, Templates, Past Trips, Saved Stops, Settings, Enter.
-  Public visitors click → routed to `/login` (the gated routes); the ribbon doubles as a marketing hint.
-- **Center**: oversized wordmark + the stylized "PICK TRAVELDOSS TEMPLATE" button (ember underline, carved-shadow press state) that links to `/templates`. Tagline + Google Doc → Live Map line.
-- **Right rail** (sticky on desktop, hidden < `md`): continuously upward-scrolling column of Google-Doc-style thumbnails (CSS keyframe loop, duplicated list for seamless wrap). Hover pauses, click jumps straight to that template's carousel slide.
+## Plan
 
-## 2. Templates catalog (shared module)
+1. **Replace the bouncer-based Google start flow**
+   - Add a protected server function that generates the Google OAuth URL after verifying the logged-in TravelDoss user.
+   - Encode the user id, return path, expiry, and callback origin into a signed OAuth `state` value.
+   - Do not pass the app session token through query params.
 
-`src/lib/templates.ts` — 10 entries:
+2. **Update the Google callback handler**
+   - Verify the signed `state` instead of relying on preview-domain cookies.
+   - Exchange the Google code server-side only.
+   - Save/refresh Google tokens server-side only.
+   - Redirect the user back to `/app?drive=connected` or `/app?drive=error&msg=...`.
 
-1. Weekend City Break
-2. 7-Day Road Trip
-3. Two-Week Eurail
-4. Honeymoon Itinerary
-5. Family Beach Holiday
-6. Solo Backpacking Trail
-7. Foodie Pilgrimage
-8. Ski Week
-9. Safari + Bush
-10. Multi-City Conference Trip
+3. **Wire both entry points to the new flow**
+   - “Use This Template” should return a direct Google authorization URL when Drive is not connected.
+   - “Connect Google Drive” in `/app` should request the same server-generated auth URL.
+   - Keep `/api/public/google/callback` as the callback URL because it bypasses preview protection.
 
-Each: `id`, `title`, `subtitle`, `days`, `tone`, `accent`, `sections` (Day-1 / Day-2 headings + sample notes), `crawlFields` (which Drive/Gmail fields it pulls — flights, hotel confs, reservation emails, photo references, contact cards), `docTemplate` (an array of paragraph/heading blocks used to populate the Google Doc on selection).
+4. **Keep a compatibility route**
+   - Leave `/api/public/google/start` available, but make it redirect through the safer server-side flow or show a clear error rather than using localStorage token extraction.
+   - Remove duplicated legacy callback logic from `/api/google/callback` or route it through the shared callback helper to prevent inconsistent behavior.
 
-## 3. Template picker (`/templates`)
+5. **Add exact diagnostic feedback**
+   - If Google still rejects the OAuth attempt, the app will expose the exact callback URI it is using so you can verify it in Google Cloud.
+   - Expected current callback will be:
+     ```text
+     https://id-preview--096f9178-141f-473d-bf14-38fc2445783f.lovable.app/api/public/google/callback
+     ```
+   - If you later publish, the published callback should also be added:
+     ```text
+     https://project--096f9178-141f-473d-bf14-38fc2445783f.lovable.app/api/public/google/callback
+     ```
 
-- Carousel of `TemplateCard`s, 3 visible on desktop (`md`+), 1 on mobile.
-- Built with `motion/react` drag + paged transform (no extra deps).
-- Each card: parchment surface, doc-paper preview, title, day count, "fields we'll crawl" chip row (Gmail, Drive, Maps, Calendar), accent ember stripe.
-- Primary button: "Use this template" → calls `pickTemplate({ templateId })` server fn.
+## What you may still need to check in Google Cloud
 
-## 4. Materialize template → Google Doc
+Even after the code is made more robust, Google can still show this exact generic 403 if:
 
-`src/lib/templates.functions.ts`:
+- OAuth consent screen is in **Testing** and your Google account is not listed as a test user.
+- Google Docs API or Google Drive API is not enabled on the same Google Cloud project as the OAuth client.
+- The OAuth app is requesting Docs/Drive scopes but the app is restricted by Google Workspace/admin policy or unverified-app policy.
 
-```ts
-pickTemplate({ templateId })
-  // requires Supabase auth + linked Google account (existing /api/google flow)
-  // 1. ensure google_tokens row exists; if not → return { needsGoogle: true, authUrl: '/api/google/start' }
-  // 2. POST to Docs API: create doc titled `${template.title} — ${date}`
-  // 3. batchUpdate to inject the template's sections (headings + paragraphs)
-  // 4. INSERT into public.trips: doc_url, doc_id, destination = template.title, start_date/end_date placeholder, status='draft'
-  // 5. return { tripId, docUrl }
-```
-
-Uses the existing per-user Google OAuth (already in `google_tokens` table) via direct `https://docs.googleapis.com/v1/documents` calls — no Lovable connector, since the docs must live in each end-user's Drive.
-
-After success, navigate the user to `/app?tripId=...` (the authenticated app view) and open the new Doc in a new tab.
-
-## 5. Routes / files
-
-| File | Status |
-|---|---|
-| `src/routes/index.tsx` | rewrite (three-zone) |
-| `src/routes/templates.tsx` | new (carousel) |
-| `src/lib/templates.ts` | new (10 templates + types) |
-| `src/lib/templates.functions.ts` | new (`pickTemplate` server fn) |
-| `src/components/landing/Ribbon.tsx` | new |
-| `src/components/landing/InfiniteDocs.tsx` | new |
-| `src/components/templates/TemplateCarousel.tsx` | new |
-| `src/components/templates/TemplateCard.tsx` | new |
-
-No DB migration needed (existing `trips` + `google_tokens` cover this).
-
-## 6. Aesthetic continuity
-
-- Reuse parchment/ember tokens already in `src/styles.css`.
-- Bebas Neue for the wordmark and the "PICK TRAVELDOSS TEMPLATE" button.
-- Cinzel for ribbon labels and field chips.
-- The infinite-scroll docs are rendered as miniature parchment cards with simulated heading rules — they feel like Doc thumbnails without being literal Google screenshots.
-
-## Open question
-
-The right-side infinite scroll: should the doc thumbnails be **stylized parchment mock-ups** (consistent with the Thorgal look, ships immediately) or **actual screenshots** of real Google Docs (requires you to provide images)? I'll default to stylized mock-ups unless you say otherwise.
+<presentation-actions>
+  <presentation-open-history>View History</presentation-open-history>
+  <presentation-link url="https://docs.lovable.dev/tips-tricks/troubleshooting">Troubleshooting docs</presentation-link>
+</presentation-actions>
