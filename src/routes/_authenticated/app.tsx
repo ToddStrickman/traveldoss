@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-r
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { listTrips, getDriveConnectionStatus } from "@/lib/trips.functions";
+import { getGoogleAuthUrl } from "@/lib/templates.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -19,6 +20,7 @@ function Dashboard() {
   const router = useRouter();
   const listTripsFn = useServerFn(listTrips);
   const driveStatusFn = useServerFn(getDriveConnectionStatus);
+  const getAuthUrlFn = useServerFn(getGoogleAuthUrl);
 
   const tripsQ = useQuery({ queryKey: ["trips"], queryFn: () => listTripsFn() });
   const driveQ = useQuery({ queryKey: ["drive-status"], queryFn: () => driveStatusFn() });
@@ -28,8 +30,13 @@ function Dashboard() {
     navigate({ to: "/" });
   };
 
-  const onConnectDrive = () => {
-    window.location.href = "/api/public/google/start";
+  const onConnectDrive = async () => {
+    try {
+      const { authUrl } = await getAuthUrlFn();
+      window.location.href = authUrl;
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't start Google connect");
+    }
   };
 
   // Surface OAuth callback result via query param
