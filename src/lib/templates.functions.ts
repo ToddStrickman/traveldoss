@@ -1,8 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { getRequest } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { getTemplate, type DocBlock } from "@/lib/templates";
+import { buildGoogleAuthUrl } from "@/lib/google-oauth.server";
 
 async function getFreshGoogleToken(userId: string): Promise<string | null> {
   const { data } = await supabaseAdmin
@@ -78,6 +80,15 @@ export const listTemplatesPublic = createServerFn({ method: "GET" }).handler(asy
   return { ok: true };
 });
 
+export const getGoogleAuthUrl = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const req = getRequest();
+    const origin = new URL(req.url).origin;
+    const authUrl = await buildGoogleAuthUrl(context.userId, origin);
+    return { authUrl };
+  });
+
 export const pickTemplate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
@@ -90,7 +101,10 @@ export const pickTemplate = createServerFn({ method: "POST" })
 
     const accessToken = await getFreshGoogleToken(userId);
     if (!accessToken) {
-      return { needsGoogle: true as const, authUrl: "/api/public/google/start" };
+      const req = getRequest();
+      const origin = new URL(req.url).origin;
+      const authUrl = await buildGoogleAuthUrl(userId, origin);
+      return { needsGoogle: true as const, authUrl };
     }
 
     // 1. Create empty doc
