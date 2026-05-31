@@ -15,7 +15,7 @@ export const Route = createFileRoute("/templates")({
       {
         name: "description",
         content:
-          "Pick a TravelDoss template. We open it as a fresh Google Doc and pin every place on a routed map.",
+          "Pick a TravelDoss template. Get a private, shareable dossier at a unique URL — beautiful enough to send.",
       },
     ],
   }),
@@ -62,7 +62,7 @@ function TemplateCard({
       <div className="relative mb-6 flex items-center justify-between text-[9px] font-medium uppercase tracking-[0.45em] text-ink/45">
         <span className="inline-flex items-center gap-2">
           <span className="h-1 w-1 rounded-full" style={{ background: template.accent }} />
-          Google Doc
+          TravelDoss Dossier
         </span>
         <span>{String(template.days).padStart(2, "0")} Days</span>
       </div>
@@ -126,7 +126,7 @@ function TemplateCard({
         disabled={picking}
         className="group/btn relative mt-7 inline-flex items-center justify-between gap-4 border-y border-ink/20 py-4 text-[10px] font-medium uppercase tracking-[0.4em] text-ink transition-colors duration-500 hover:border-seal hover:text-seal disabled:cursor-wait disabled:opacity-50"
       >
-        <span>{picking ? "Opening Doc…" : "Use This Template"}</span>
+        <span>{picking ? "Preparing dossier…" : "Begin Dossier"}</span>
         <span className="inline-flex h-7 w-7 items-center justify-center border border-ink/20 transition-all duration-500 group-hover/btn:border-seal group-hover/btn:bg-seal group-hover/btn:text-paper">
           <ChevronRight className="h-3 w-3" />
         </span>
@@ -175,15 +175,10 @@ function TemplatesPage() {
     setPicking(id);
     try {
       const result = await pickFn({ data: { templateId: id } });
-      if (result.needsGoogle) {
-        window.location.href = result.authUrl;
-        return;
-      }
-      window.open(result.docUrl, "_blank", "noopener,noreferrer");
-      navigate({ to: "/app" });
+      navigate({ to: "/t/$slug", params: { slug: result.slug } });
     } catch (e) {
       console.error(e);
-      alert("Could not create the doc. Please try again.");
+      alert("Could not create your dossier. Please try again.");
     } finally {
       setPicking(null);
     }
@@ -217,9 +212,9 @@ function TemplatesPage() {
           <span className="italic text-ink/85">to begin<span className="text-seal">.</span></span>
         </h1>
         <p className="mt-6 max-w-xl text-sm leading-relaxed text-ink-soft md:text-base">
-          Pick one — we'll open a fresh Google Doc seeded with the
-          structure and tell you what we'll crawl from your Gmail,
-          Drive, and Calendar to fill in the details.
+          Pick one — we'll mint a private dossier at a unique URL,
+          seeded with the structure. Share the link like a wedding
+          site; we'll fill it in as your trip takes shape.
         </p>
 
         {/* Carousel */}
