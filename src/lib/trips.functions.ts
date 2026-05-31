@@ -8,7 +8,7 @@ export const listTrips = createServerFn({ method: "GET" })
     const { supabase } = context;
     const { data, error } = await supabase
       .from("trips")
-      .select("id, destination, start_date, end_date, doc_url, status, hero_image_url, last_synced_at:updated_at")
+      .select("id, slug, destination, start_date, end_date, status, hero_image_url, last_synced_at:updated_at")
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     return { trips: data ?? [] };

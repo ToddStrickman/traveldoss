@@ -200,46 +200,64 @@ export type Database = {
       }
       trips: {
         Row: {
+          content: Json | null
           created_at: string
           destination: string
           doc_id: string | null
           doc_url: string | null
-          end_date: string
+          end_date: string | null
           hero_image_url: string | null
           id: string
           keywords: string | null
-          start_date: string
+          slug: string
+          start_date: string | null
           status: Database["public"]["Enums"]["trip_status"]
+          subtitle: string | null
+          template_id: string | null
+          tone: string | null
           updated_at: string
           user_id: string
+          visibility: string
         }
         Insert: {
+          content?: Json | null
           created_at?: string
           destination: string
           doc_id?: string | null
           doc_url?: string | null
-          end_date: string
+          end_date?: string | null
           hero_image_url?: string | null
           id?: string
           keywords?: string | null
-          start_date: string
+          slug: string
+          start_date?: string | null
           status?: Database["public"]["Enums"]["trip_status"]
+          subtitle?: string | null
+          template_id?: string | null
+          tone?: string | null
           updated_at?: string
           user_id: string
+          visibility?: string
         }
         Update: {
+          content?: Json | null
           created_at?: string
           destination?: string
           doc_id?: string | null
           doc_url?: string | null
-          end_date?: string
+          end_date?: string | null
           hero_image_url?: string | null
           id?: string
           keywords?: string | null
-          start_date?: string
+          slug?: string
+          start_date?: string | null
           status?: Database["public"]["Enums"]["trip_status"]
+          subtitle?: string | null
+          template_id?: string | null
+          tone?: string | null
           updated_at?: string
           user_id?: string
+          visibility?: string
         }
         Relationships: []
       }
