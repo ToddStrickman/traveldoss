@@ -9,75 +9,91 @@ const SCOPES = [
   "profile",
 ].join(" ");
 
-function parseCookies(header: string | null): Record<string, string> {
-  const out: Record<string, string> = {};
-  if (!header) return out;
-  for (const part of header.split(/;\s*/)) {
-    const i = part.indexOf("=");
-    if (i === -1) continue;
-    out[part.slice(0, i)] = decodeURIComponent(part.slice(i + 1));
-  }
-  return out;
-}
-
-function clearCookieHeaders(): string[] {
-  return [
-    "td_oauth_state=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax",
-    "td_oauth_uid=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax",
-  ];
-}
-
 function redirectBack(origin: string, status: "connected" | "error", msg?: string) {
   const u = new URL("/app", origin);
   u.searchParams.set("drive", status);
   if (msg) u.searchParams.set("msg", msg);
-  const headers = new Headers({ Location: u.toString() });
-  for (const c of clearCookieHeaders()) headers.append("Set-Cookie", c);
-  return new Response(null, { status: 302, headers });
+  return new Response(null, { status: 302, headers: { Location: u.toString() } });
 }
 
-function bouncerHtml(startPath: string) {
-  return `<!doctype html><html><body>
-<script>
-(async () => {
+const CALLBACK_PATH = "/api/public/google/callback";
+
+function b64url(buf: ArrayBuffer | Uint8Array): string {
+  const bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
+  let s = "";
+  for (const b of bytes) s += String.fromCharCode(b);
+  return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+function b64urlDecode(s: string): Uint8Array {
+  const pad = s.length % 4 === 0 ? "" : "=".repeat(4 - (s.length % 4));
+  const b = atob(s.replace(/-/g, "+").replace(/_/g, "/") + pad);
+  const out = new Uint8Array(b.length);
+  for (let i = 0; i < b.length; i++) out[i] = b.charCodeAt(i);
+  return out;
+}
+
+function getStateSecret(): string {
+  const s = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
+  if (!s) throw new Error("Missing GOOGLE_OAUTH_CLIENT_SECRET");
+  return s;
+}
+
+async function signState(payload: {
+  uid: string;
+  origin: string;
+  exp: number;
+}): Promise<string> {
+  const body = b64url(new TextEncoder().encode(JSON.stringify(payload)));
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(getStateSecret()),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(body));
+  return `${body}.${b64url(sig)}`;
+}
+
+async function verifyState(state: string): Promise<{ uid: string; origin: string } | null> {
+  const [body, sig] = state.split(".");
+  if (!body || !sig) return null;
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(getStateSecret()),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["verify"],
+  );
+  const ok = await crypto.subtle.verify(
+    "HMAC",
+    key,
+    b64urlDecode(sig),
+    new TextEncoder().encode(body),
+  );
+  if (!ok) return null;
   try {
-    const raw = Object.keys(localStorage).find(k => k.startsWith('sb-') && k.endsWith('-auth-token'));
-    if (!raw) { location.href = '/login'; return; }
-    const parsed = JSON.parse(localStorage.getItem(raw));
-    const token = parsed?.access_token;
-    if (!token) { location.href = '/login'; return; }
-    location.href = '${startPath}?token=' + encodeURIComponent(token);
-  } catch (e) { location.href = '/login'; }
-})();
-</script>
-Redirecting…</body></html>`;
+    const payload = JSON.parse(new TextDecoder().decode(b64urlDecode(body))) as {
+      uid: string;
+      origin: string;
+      exp: number;
+    };
+    if (Date.now() > payload.exp) return null;
+    return { uid: payload.uid, origin: payload.origin };
+  } catch {
+    return null;
+  }
 }
 
-export async function handleGoogleOAuthStart(request: Request, startPath: string, callbackPath: string) {
+export async function buildGoogleAuthUrl(userId: string, origin: string): Promise<string> {
   const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
-  const supaUrl = process.env.SUPABASE_URL;
-  const supaKey = process.env.SUPABASE_PUBLISHABLE_KEY;
-  if (!clientId) return new Response("Missing GOOGLE_OAUTH_CLIENT_ID", { status: 500 });
-  if (!supaUrl || !supaKey) return new Response("Backend env missing", { status: 500 });
-
-  const url = new URL(request.url);
-  const token = url.searchParams.get("token");
-  const authHeader = request.headers.get("authorization") ?? (token ? `Bearer ${token}` : null);
-  if (!authHeader) {
-    return new Response(bouncerHtml(startPath), {
-      status: 200,
-      headers: { "content-type": "text/html; charset=utf-8" },
-    });
-  }
-
-  const supabase = createClient(supaUrl, supaKey, {
-    global: { headers: { Authorization: authHeader } },
+  if (!clientId) throw new Error("Missing GOOGLE_OAUTH_CLIENT_ID");
+  const state = await signState({
+    uid: userId,
+    origin,
+    exp: Date.now() + 10 * 60_000,
   });
-  const { data, error } = await supabase.auth.getUser();
-  if (error || !data.user) return new Response("Unauthorized", { status: 401 });
-
-  const redirectUri = `${url.origin}${callbackPath}`;
-  const state = crypto.randomUUID();
+  const redirectUri = `${origin}${CALLBACK_PATH}`;
   const authUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
   authUrl.searchParams.set("client_id", clientId);
   authUrl.searchParams.set("redirect_uri", redirectUri);
@@ -87,17 +103,11 @@ export async function handleGoogleOAuthStart(request: Request, startPath: string
   authUrl.searchParams.set("prompt", "consent");
   authUrl.searchParams.set("include_granted_scopes", "true");
   authUrl.searchParams.set("state", state);
+  return authUrl.toString();
+}
 
-  const headers = new Headers({ Location: authUrl.toString() });
-  headers.append(
-    "Set-Cookie",
-    `td_oauth_state=${state}; Path=/; Max-Age=600; HttpOnly; Secure; SameSite=Lax`,
-  );
-  headers.append(
-    "Set-Cookie",
-    `td_oauth_uid=${data.user.id}; Path=/; Max-Age=600; HttpOnly; Secure; SameSite=Lax`,
-  );
-  return new Response(null, { status: 302, headers });
+export function getGoogleCallbackPath(): string {
+  return CALLBACK_PATH;
 }
 
 export async function handleGoogleOAuthCallback(request: Request, callbackPath: string) {
@@ -107,14 +117,11 @@ export async function handleGoogleOAuthCallback(request: Request, callbackPath: 
   const err = url.searchParams.get("error");
   const origin = url.origin;
 
-  const cookies = parseCookies(request.headers.get("cookie"));
-  const cookieState = cookies["td_oauth_state"];
-  const uid = cookies["td_oauth_uid"];
-
   if (err) return redirectBack(origin, "error", err);
   if (!code || !state) return redirectBack(origin, "error", "missing_code");
-  if (!cookieState || cookieState !== state) return redirectBack(origin, "error", "bad_state");
-  if (!uid) return redirectBack(origin, "error", "no_session");
+  const verified = await verifyState(state);
+  if (!verified) return redirectBack(origin, "error", "bad_state");
+  const uid = verified.uid;
 
   const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
