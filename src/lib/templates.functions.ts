@@ -2,7 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { getTemplate } from "@/lib/templates";
+import { getSkin } from "@/lib/skins/registry";
+import { DEMO_BLOCKS } from "@/lib/skins/demo";
 
 function randomSuffix(len = 6) {
   const alphabet = "abcdefghjkmnpqrstuvwxyz23456789";
@@ -17,6 +18,11 @@ export const listTemplatesPublic = createServerFn({ method: "GET" }).handler(asy
   return { ok: true };
 });
 
+/**
+ * Mints a new trip with the chosen skin (template_id).
+ * v1 monetization (step 4) wraps this behind a $1 Stripe checkout —
+ * for now it creates the trip directly so the gallery is navigable.
+ */
 export const pickTemplate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
@@ -24,23 +30,27 @@ export const pickTemplate = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { userId } = context;
-    const template = getTemplate(data.templateId);
-    if (!template) throw new Error("Unknown template");
+    const skin = getSkin(data.templateId);
+    if (!skin) throw new Error("Unknown skin");
 
-    const slug = `${template.id}-${randomSuffix()}`;
+    const slug = `${skin.meta.id}-${randomSuffix()}`;
+    // 30-day default expiry; refined once start/end dates are set.
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
     const { data: trip, error } = await supabaseAdmin
       .from("trips")
       .insert({
         user_id: userId,
-        destination: template.title,
-        subtitle: template.subtitle,
-        tone: template.tone,
-        template_id: template.id,
+        destination: "Untitled Trip",
+        subtitle: skin.meta.personality,
+        tone: skin.meta.codename,
+        template_id: skin.meta.id,
+        original_template_id: skin.meta.id,
         slug,
         visibility: "unlisted",
         status: "draft",
-        content: { blocks: template.doc, accent: template.accent, crawl: template.crawl, days: template.days },
+        expires_at: expiresAt,
+        content: { blocks: DEMO_BLOCKS, skin: skin.meta.id },
       })
       .select("id, slug")
       .single();
@@ -60,12 +70,13 @@ export const getDossierBySlug = createServerFn({ method: "GET" })
     const { data: trip, error } = await supabaseAdmin
       .from("trips")
       .select(
-        "id, slug, destination, subtitle, tone, template_id, hero_image_url, start_date, end_date, content, visibility, status",
+        "id, slug, destination, subtitle, tone, template_id, hero_image_url, start_date, end_date, content, visibility, status, expires_at",
       )
       .eq("slug", data.slug)
       .neq("visibility", "private")
       .maybeSingle();
     if (error) throw new Error(error.message);
     if (!trip) return { trip: null };
-    return { trip };
+    const expired = trip.expires_at ? new Date(trip.expires_at).getTime() < Date.now() : false;
+    return { trip, expired };
   });

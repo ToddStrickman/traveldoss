@@ -1,0 +1,65 @@
+import type { ComponentType } from "react";
+
+export type Block =
+  | { kind: "hero"; title: string; subtitle?: string; eyebrow?: string }
+  | { kind: "section"; title: string }
+  | { kind: "paragraph"; text: string }
+  | { kind: "day"; n: number; label: string; notes?: string }
+  | {
+      kind: "place";
+      name: string;
+      address?: string;
+      note?: string;
+      category?: "stay" | "eat" | "see" | "do" | "drink" | "other";
+    }
+  | { kind: "quote"; text: string; attribution?: string }
+  | { kind: "note"; text: string };
+
+export type TripView = {
+  destination: string;
+  subtitle?: string | null;
+  slug: string;
+  start_date?: string | null;
+  end_date?: string | null;
+  hero_image_url?: string | null;
+  days?: number;
+};
+
+export type SkinTokens = {
+  /** Background / canvas color */
+  bg: string;
+  /** Primary text color */
+  ink: string;
+  /** Secondary / muted text */
+  inkSoft: string;
+  /** Accent / seal color */
+  accent: string;
+  /** Hairline / border color */
+  rule: string;
+  /** CSS font-family for display headings */
+  fontDisplay: string;
+  /** CSS font-family for body */
+  fontBody: string;
+  /** Optional Google Fonts CSS url to inject */
+  fontUrl?: string;
+};
+
+export type SkinMeta = {
+  id: string;
+  codename: string;
+  /** One-line personality hook describing the type of person */
+  personality: string;
+};
+
+export type SkinRenderProps = {
+  trip: TripView;
+  blocks: Block[];
+};
+
+export type SkinModule = {
+  meta: SkinMeta;
+  tokens: SkinTokens;
+  Render: ComponentType<SkinRenderProps>;
+  /** Used by the gallery tile so users compare design, not content */
+  previewFixture: { trip: TripView; blocks: Block[] };
+};

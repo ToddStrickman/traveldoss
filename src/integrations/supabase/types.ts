@@ -198,6 +198,53 @@ export type Database = {
         }
         Relationships: []
       }
+      trip_entitlements: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          currency: string
+          id: string
+          purchased_at: string
+          status: string
+          stripe_session_id: string | null
+          template_id: string
+          trip_id: string
+          user_id: string
+        }
+        Insert: {
+          amount_cents?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          purchased_at?: string
+          status?: string
+          stripe_session_id?: string | null
+          template_id: string
+          trip_id: string
+          user_id: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          purchased_at?: string
+          status?: string
+          stripe_session_id?: string | null
+          template_id?: string
+          trip_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_entitlements_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trips: {
         Row: {
           content: Json | null
@@ -206,9 +253,11 @@ export type Database = {
           doc_id: string | null
           doc_url: string | null
           end_date: string | null
+          expires_at: string | null
           hero_image_url: string | null
           id: string
           keywords: string | null
+          original_template_id: string | null
           slug: string
           start_date: string | null
           status: Database["public"]["Enums"]["trip_status"]
@@ -226,9 +275,11 @@ export type Database = {
           doc_id?: string | null
           doc_url?: string | null
           end_date?: string | null
+          expires_at?: string | null
           hero_image_url?: string | null
           id?: string
           keywords?: string | null
+          original_template_id?: string | null
           slug: string
           start_date?: string | null
           status?: Database["public"]["Enums"]["trip_status"]
@@ -246,9 +297,11 @@ export type Database = {
           doc_id?: string | null
           doc_url?: string | null
           end_date?: string | null
+          expires_at?: string | null
           hero_image_url?: string | null
           id?: string
           keywords?: string | null
+          original_template_id?: string | null
           slug?: string
           start_date?: string | null
           status?: Database["public"]["Enums"]["trip_status"]
