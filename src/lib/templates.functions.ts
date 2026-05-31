@@ -66,6 +66,6 @@ export const getDossierBySlug = createServerFn({ method: "GET" })
       .neq("visibility", "private")
       .maybeSingle();
     if (error) throw new Error(error.message);
-    if (!trip) return { trip: null as const };
+    if (!trip) return { trip: null };
     return { trip };
   });
