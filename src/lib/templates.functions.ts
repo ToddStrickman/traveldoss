@@ -75,7 +75,10 @@ export const getDossierBySlug = createServerFn({ method: "GET" })
       .eq("slug", data.slug)
       .neq("visibility", "private")
       .maybeSingle();
-    if (error) throw new Error(error.message);
+    if (error) {
+      console.error("[getDossierBySlug] trip fetch failed", error);
+      throw new Error("Failed to load dossier");
+    }
     if (!trip) return { trip: null };
     const expired = trip.expires_at ? new Date(trip.expires_at).getTime() < Date.now() : false;
     return { trip, expired };
