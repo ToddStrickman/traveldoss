@@ -79,12 +79,33 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:title", content: "TravelDoss — Trip planning from a Google Doc" },
       { property: "og:description", content: "Plan trips in a Google Doc. TravelDoss turns your doc into a live map." },
       { property: "og:type", content: "website" },
+      { property: "og:site_name", content: "TravelDoss" },
       { name: "twitter:card", content: "summary" },
     ],
     links: [
       {
         rel: "stylesheet",
         href: appCss,
+      },
+    ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@type": "Organization",
+              name: "TravelDoss",
+              url: "https://traveldoss.lovable.app",
+            },
+            {
+              "@type": "WebSite",
+              name: "TravelDoss",
+              url: "https://traveldoss.lovable.app",
+            },
+          ],
+        }),
       },
     ],
   }),

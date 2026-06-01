@@ -16,6 +16,30 @@ export const Route = createFileRoute("/templates")({
         content:
           "Pick a TravelDoss skin. Each is a distinct editorial design for your trip's dossier — one URL, one dollar, one month.",
       },
+      {
+        property: "og:title",
+        content: "TravelDoss Skins — Editorial Designs for Your Trip",
+      },
+      {
+        property: "og:description",
+        content:
+          "Eight editorial skins for your trip dossier. One dollar, one URL, one month — designed like a magazine.",
+      },
+      { property: "og:url", content: "https://traveldoss.lovable.app/templates" },
+    ],
+    links: [{ rel: "canonical", href: "https://traveldoss.lovable.app/templates" }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "CollectionPage",
+          name: "TravelDoss Skins",
+          description:
+            "Gallery of editorial dossier skins for TravelDoss trips.",
+          url: "https://traveldoss.lovable.app/templates",
+        }),
+      },
     ],
   }),
 });
@@ -78,12 +102,12 @@ function SkinCard({
           />
           Skin
         </div>
-        <h3
+        <h2
           className="mt-3 text-4xl font-normal leading-[1.05] tracking-tight text-ink md:text-5xl"
           style={{ fontFamily: "var(--font-display)" }}
         >
           {skin.meta.codename}
-        </h3>
+        </h2>
         <p
           className="mt-3 text-sm italic leading-relaxed text-ink-soft md:text-base"
           style={{ fontFamily: "var(--font-display)" }}

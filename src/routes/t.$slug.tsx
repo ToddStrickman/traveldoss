@@ -20,19 +20,38 @@ export const Route = createFileRoute("/t/$slug")({
     const title = `${trip.destination} — A TravelDoss Dossier`;
     const description =
       trip.subtitle ?? `A travel dossier for ${trip.destination}.`;
+    const url = `https://traveldoss.lovable.app/t/${trip.slug}`;
     const meta: Array<Record<string, string>> = [
       { title },
       { name: "description", content: description },
       { property: "og:title", content: title },
       { property: "og:description", content: description },
       { property: "og:type", content: "article" },
+      { property: "og:url", content: url },
       { name: "twitter:card", content: "summary_large_image" },
     ];
     if (trip.hero_image_url) {
       meta.push({ property: "og:image", content: trip.hero_image_url });
       meta.push({ name: "twitter:image", content: trip.hero_image_url });
     }
-    return { meta };
+    const ldImage = trip.hero_image_url ? { image: trip.hero_image_url } : {};
+    return {
+      meta,
+      links: [{ rel: "canonical", href: url }],
+      scripts: [
+        {
+          type: "application/ld+json",
+          children: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Article",
+            headline: trip.destination,
+            description,
+            url,
+            ...ldImage,
+          }),
+        },
+      ],
+    };
   },
   component: DossierPage,
   notFoundComponent: () => (

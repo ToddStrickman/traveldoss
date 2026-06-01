@@ -10,10 +10,12 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TemplatesRouteImport } from './routes/templates'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TSlugRouteImport } from './routes/t.$slug'
+import { Route as GuideGoogleDocsTravelItineraryTemplateRouteImport } from './routes/guide.google-docs-travel-itinerary-template'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
 import { Route as ApiPublicGoogleStartRouteImport } from './routes/api/public/google/start'
 import { Route as ApiPublicGoogleCallbackRouteImport } from './routes/api/public/google/callback'
@@ -21,6 +23,11 @@ import { Route as ApiPublicGoogleCallbackRouteImport } from './routes/api/public
 const TemplatesRoute = TemplatesRouteImport.update({
   id: '/templates',
   path: '/templates',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -42,6 +49,12 @@ const TSlugRoute = TSlugRouteImport.update({
   path: '/t/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GuideGoogleDocsTravelItineraryTemplateRoute =
+  GuideGoogleDocsTravelItineraryTemplateRouteImport.update({
+    id: '/guide/google-docs-travel-itinerary-template',
+    path: '/guide/google-docs-travel-itinerary-template',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedAppRoute = AuthenticatedAppRouteImport.update({
   id: '/app',
   path: '/app',
@@ -61,8 +74,10 @@ const ApiPublicGoogleCallbackRoute = ApiPublicGoogleCallbackRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/templates': typeof TemplatesRoute
   '/app': typeof AuthenticatedAppRoute
+  '/guide/google-docs-travel-itinerary-template': typeof GuideGoogleDocsTravelItineraryTemplateRoute
   '/t/$slug': typeof TSlugRoute
   '/api/public/google/callback': typeof ApiPublicGoogleCallbackRoute
   '/api/public/google/start': typeof ApiPublicGoogleStartRoute
@@ -70,8 +85,10 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/templates': typeof TemplatesRoute
   '/app': typeof AuthenticatedAppRoute
+  '/guide/google-docs-travel-itinerary-template': typeof GuideGoogleDocsTravelItineraryTemplateRoute
   '/t/$slug': typeof TSlugRoute
   '/api/public/google/callback': typeof ApiPublicGoogleCallbackRoute
   '/api/public/google/start': typeof ApiPublicGoogleStartRoute
@@ -81,8 +98,10 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/templates': typeof TemplatesRoute
   '/_authenticated/app': typeof AuthenticatedAppRoute
+  '/guide/google-docs-travel-itinerary-template': typeof GuideGoogleDocsTravelItineraryTemplateRoute
   '/t/$slug': typeof TSlugRoute
   '/api/public/google/callback': typeof ApiPublicGoogleCallbackRoute
   '/api/public/google/start': typeof ApiPublicGoogleStartRoute
@@ -92,8 +111,10 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/sitemap.xml'
     | '/templates'
     | '/app'
+    | '/guide/google-docs-travel-itinerary-template'
     | '/t/$slug'
     | '/api/public/google/callback'
     | '/api/public/google/start'
@@ -101,8 +122,10 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/sitemap.xml'
     | '/templates'
     | '/app'
+    | '/guide/google-docs-travel-itinerary-template'
     | '/t/$slug'
     | '/api/public/google/callback'
     | '/api/public/google/start'
@@ -111,8 +134,10 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/login'
+    | '/sitemap.xml'
     | '/templates'
     | '/_authenticated/app'
+    | '/guide/google-docs-travel-itinerary-template'
     | '/t/$slug'
     | '/api/public/google/callback'
     | '/api/public/google/start'
@@ -122,7 +147,9 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TemplatesRoute: typeof TemplatesRoute
+  GuideGoogleDocsTravelItineraryTemplateRoute: typeof GuideGoogleDocsTravelItineraryTemplateRoute
   TSlugRoute: typeof TSlugRoute
   ApiPublicGoogleCallbackRoute: typeof ApiPublicGoogleCallbackRoute
   ApiPublicGoogleStartRoute: typeof ApiPublicGoogleStartRoute
@@ -135,6 +162,13 @@ declare module '@tanstack/react-router' {
       path: '/templates'
       fullPath: '/templates'
       preLoaderRoute: typeof TemplatesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -163,6 +197,13 @@ declare module '@tanstack/react-router' {
       path: '/t/$slug'
       fullPath: '/t/$slug'
       preLoaderRoute: typeof TSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/guide/google-docs-travel-itinerary-template': {
+      id: '/guide/google-docs-travel-itinerary-template'
+      path: '/guide/google-docs-travel-itinerary-template'
+      fullPath: '/guide/google-docs-travel-itinerary-template'
+      preLoaderRoute: typeof GuideGoogleDocsTravelItineraryTemplateRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/app': {
@@ -205,7 +246,10 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   TemplatesRoute: TemplatesRoute,
+  GuideGoogleDocsTravelItineraryTemplateRoute:
+    GuideGoogleDocsTravelItineraryTemplateRoute,
   TSlugRoute: TSlugRoute,
   ApiPublicGoogleCallbackRoute: ApiPublicGoogleCallbackRoute,
   ApiPublicGoogleStartRoute: ApiPublicGoogleStartRoute,
