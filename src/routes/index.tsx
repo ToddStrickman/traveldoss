@@ -13,7 +13,18 @@ export const Route = createFileRoute("/")({
         content:
           "Write your trip in a Google Doc. TravelDoss pins, categorizes, and routes every place by day on a live Google Map.",
       },
+      {
+        property: "og:title",
+        content: "TravelDoss — Plan trips in a Google Doc, see them on a map",
+      },
+      {
+        property: "og:description",
+        content:
+          "Write your trip in a Google Doc. TravelDoss pins, categorizes, and routes every place by day on a live Google Map.",
+      },
+      { property: "og:url", content: "https://traveldoss.lovable.app/" },
     ],
+    links: [{ rel: "canonical", href: "https://traveldoss.lovable.app/" }],
   }),
 });
 
