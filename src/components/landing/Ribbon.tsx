@@ -30,8 +30,9 @@ export function Ribbon() {
             to={to}
             className="group relative flex h-11 w-11 items-center justify-center text-ink/45 transition-colors duration-300 hover:text-seal"
             title={label}
+            aria-label={label}
           >
-            <Icon className="h-4 w-4" strokeWidth={1.25} />
+            <Icon className="h-4 w-4" strokeWidth={1.25} aria-hidden="true" />
             <span className="pointer-events-none absolute left-full ml-4 whitespace-nowrap border border-ink/15 bg-paper px-3 py-1.5 text-[9px] font-medium uppercase tracking-[0.3em] text-ink opacity-0 transition-opacity duration-200 group-hover:opacity-100">
               {label}
             </span>
