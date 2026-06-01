@@ -76,11 +76,11 @@ export const Route = createFileRoute("/t/$slug")({
       </div>
     </div>
   ),
-  errorComponent: ({ error }) => (
+  errorComponent: () => (
     <div className="flex min-h-screen items-center justify-center bg-background px-6 text-center">
       <div>
         <h1 className="text-2xl text-ink">Couldn't load this dossier</h1>
-        <p className="mt-2 text-sm text-ink-soft">{error.message}</p>
+        <p className="mt-2 text-sm text-ink-soft">Please try again later.</p>
       </div>
     </div>
   ),
