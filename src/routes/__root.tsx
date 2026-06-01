@@ -73,14 +73,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "TravelDoss — Trip planning from a Google Doc" },
-      { name: "description", content: "Plan trips in a Google Doc. TravelDoss turns your doc into a live map with saved, pinned, categorized places routed by day." },
+      { title: "TravelDoss - Your trip in a beautiful dossier" },
+      { name: "description", content: "Transform text, email, call recordings, and AI outputs into a polished trip dossier and exportable microsite for online or offline access." },
       { name: "author", content: "TravelDoss" },
-      { property: "og:title", content: "TravelDoss — Trip planning from a Google Doc" },
-      { property: "og:description", content: "Plan trips in a Google Doc. TravelDoss turns your doc into a live map." },
+      { property: "og:title", content: "TravelDoss - Your trip in a beautiful dossier" },
+      { property: "og:description", content: "Transform text, email, call recordings, and AI outputs into a polished trip dossier and exportable microsite for online or offline access." },
       { property: "og:type", content: "website" },
       { property: "og:site_name", content: "TravelDoss" },
       { name: "twitter:card", content: "summary" },
+      { name: "twitter:title", content: "TravelDoss - Your trip in a beautiful dossier" },
+      { name: "twitter:description", content: "Transform text, email, call recordings, and AI outputs into a polished trip dossier and exportable microsite for online or offline access." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d68b6039-25b0-47d1-b3a4-12f4524dc2b9/id-preview-74fa5ff6--096f9178-141f-473d-bf14-38fc2445783f.lovable.app-1780348785317.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d68b6039-25b0-47d1-b3a4-12f4524dc2b9/id-preview-74fa5ff6--096f9178-141f-473d-bf14-38fc2445783f.lovable.app-1780348785317.png" },
     ],
     links: [
       {
