@@ -9,7 +9,24 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
-  head: () => ({ meta: [{ title: "Sign in — TravelDoss" }] }),
+  head: () => ({
+    meta: [
+      { title: "Sign in — TravelDoss" },
+      {
+        name: "description",
+        content:
+          "Sign in to TravelDoss to access your trip dossiers and start planning your next journey.",
+      },
+      { property: "og:title", content: "Sign in — TravelDoss" },
+      {
+        property: "og:description",
+        content: "Access your TravelDoss trip dossiers and continue planning your journey.",
+      },
+      { property: "og:url", content: "https://traveldoss.lovable.app/login" },
+      { name: "robots", content: "noindex,follow" },
+    ],
+    links: [{ rel: "canonical", href: "https://traveldoss.lovable.app/login" }],
+  }),
 });
 
 function LoginPage() {
