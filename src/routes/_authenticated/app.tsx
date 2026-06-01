@@ -10,7 +10,17 @@ import { LogOut, Plus, MapPin, ExternalLink } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/app")({
   component: Dashboard,
-  head: () => ({ meta: [{ title: "Your trips — TravelDoss" }] }),
+  head: () => ({
+    meta: [
+      { title: "Your trips — TravelDoss" },
+      {
+        name: "description",
+        content:
+          "View and manage your personal TravelDoss trip dossiers and planning documents.",
+      },
+      { name: "robots", content: "noindex,nofollow" },
+    ],
+  }),
 });
 
 function Dashboard() {
