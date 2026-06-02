@@ -35,7 +35,8 @@
 .tds-day-notes { margin-top: 10px; font-size: 16px; line-height: 1.7; color: var(--tds-soft); }
 
 .tds-place { border-left: 2px solid var(--tds-accent); padding-left: 16px; margin: var(--tds-s2) 0; }
-.tds-cat { font-size: 10px; letter-spacing: .4em; text-transform: uppercase; color: var(--tds-soft); }
+.tds-cat { display: inline-flex; align-items: center; gap: 8px; font-size: 10px; letter-spacing: .4em; text-transform: uppercase; color: var(--tds-soft); }
+.tds-cat-icon { font-size: 14px; color: var(--tds-accent); flex: none; }
 .tds-place-name { font-family: var(--tds-fontDisplay); font-size: 22px; margin-top: 4px; }
 .tds-place-addr { font-size: 13px; color: var(--tds-soft); margin-top: 2px; }
 .tds-place-note { font-size: 15px; color: var(--tds-ink); margin-top: 6px; font-style: italic; }
