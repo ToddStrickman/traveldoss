@@ -139,8 +139,6 @@ function DayHeader({ block, onChange }: { block: Extract<Block, { kind: "day" }>
 }
 
 function BlockView({ block, onChange }: { block: Block; index: number; onChange: (p: Partial<Block>) => void }) {
-  const change = (p: Partial<Block>): ReactNode => null && p;
-  void change;
   switch (block.kind) {
     case "section":
       return (
