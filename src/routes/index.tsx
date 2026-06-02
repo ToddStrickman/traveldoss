@@ -45,11 +45,16 @@ function Landing() {
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="mb-10 inline-flex items-center gap-3 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/55"
+          className="mb-10 inline-flex flex-col items-center gap-3 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/55"
         >
-          <span className="h-px w-8 bg-ink/30" />
-          TravelDoss<span className="text-ink/30">®</span>
-          <span className="h-px w-8 bg-ink/30" />
+          <span className="inline-flex items-center gap-3">
+            <span className="h-px w-8 bg-ink/30" />
+            TravelDoss<span className="text-ink/30">®</span>
+            <span className="h-px w-8 bg-ink/30" />
+          </span>
+          <span className="border border-ink/10 px-2.5 py-1 text-[9px] tracking-[0.35em] text-ink/35">
+            Under Construction
+          </span>
         </motion.span>
 
         <motion.h1
