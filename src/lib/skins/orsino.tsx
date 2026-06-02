@@ -199,6 +199,24 @@ function BlockRender({ block }: { block: Block }) {
           {block.note && <div style={{ fontSize: 14, marginTop: 8 }}>{block.note}</div>}
         </div>
       );
+    case "flight":
+      return (
+        <div
+          className="tds"
+          style={{
+            maxWidth: 580,
+            ["--tds-bg" as any]: tokens.bg,
+            ["--tds-ink" as any]: tokens.ink,
+            ["--tds-soft" as any]: tokens.inkSoft,
+            ["--tds-accent" as any]: tokens.accent,
+            ["--tds-rule" as any]: tokens.rule,
+            ["--tds-fontDisplay" as any]: tokens.fontDisplay,
+            ["--tds-fontBody" as any]: tokens.fontBody,
+          }}
+        >
+          <FlightInline flight={block} />
+        </div>
+      );
     case "quote":
       return (
         <div style={{ borderLeft: `4px solid ${tokens.accent}`, paddingLeft: 20, maxWidth: 640 }}>
