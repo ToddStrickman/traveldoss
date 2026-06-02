@@ -2,6 +2,7 @@ import type { CSSProperties } from "react";
 import type { Block, SkinTokens, TripView } from "../types";
 import "./skin.css";
 import { CategoryIcon, categoryLabel } from "./CategoryIcon";
+import { FlightInline, FlightsSummary, collectFlights } from "./FlightsSummary";
 
 export type SkinView = "vertical" | "horizontal" | "grid";
 
@@ -21,6 +22,7 @@ export type SkinFrameProps = {
 export function SkinFrame({ trip, blocks, tokens, view = "vertical" }: SkinFrameProps) {
   const hero = blocks.find((b) => b.kind === "hero") as Extract<Block, { kind: "hero" }> | undefined;
   const body = blocks.filter((b) => b.kind !== "hero");
+  const flights = collectFlights(blocks);
 
   const vars = {
     "--tds-bg": tokens.bg,
@@ -69,6 +71,7 @@ export function SkinFrame({ trip, blocks, tokens, view = "vertical" }: SkinFrame
                 <BlockView key={i} block={item.block} />
               ),
             )}
+        <FlightsSummary flights={flights} />
       </div>
 
       <footer className="tds-foot">Prepared with TravelDoss · /t/{trip.slug}</footer>
@@ -114,6 +117,8 @@ function BlockView({ block }: { block: Block }) {
           {block.note ? <div className="tds-place-note">{block.note}</div> : null}
         </div>
       );
+    case "flight":
+      return <FlightInline flight={block} />;
     case "quote":
       return (
         <figure className="tds-quote" data-block="quote">
