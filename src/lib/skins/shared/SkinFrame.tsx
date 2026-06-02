@@ -1,10 +1,8 @@
 import type { CSSProperties } from "react";
-import type { Block, SkinTokens, TripView } from "../types";
+import type { Block, SkinTokens, SkinView, TripView } from "../types";
 import "./skin.css";
 import { CategoryIcon, categoryLabel } from "./CategoryIcon";
 import { FlightInline, FlightsSummary, collectFlights } from "./FlightsSummary";
-
-export type SkinView = "vertical" | "horizontal" | "grid";
 
 export type SkinFrameProps = {
   trip: TripView;
