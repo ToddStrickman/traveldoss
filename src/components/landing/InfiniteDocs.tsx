@@ -1,17 +1,51 @@
 import { Link } from "@tanstack/react-router";
-import { SKINS } from "@/lib/skins/registry";
+import { SKINS, type SkinModule } from "@/lib/skins/registry";
 
-function DocThumb({ codename, personality, accent }: { codename: string; personality: string; accent: string }) {
+function SkinMiniPreview({ skin }: { skin: SkinModule }) {
+  const { Render, previewFixture, tokens } = skin;
+  return (
+    <div
+      className="relative h-[110px] w-full overflow-hidden"
+      style={{ background: tokens.bg }}
+      aria-hidden
+    >
+      <div
+        className="absolute left-0 top-0 origin-top-left"
+        style={{
+          width: "1400px",
+          transform: "scale(0.18)",
+          transformOrigin: "top left",
+          pointerEvents: "none",
+        }}
+      >
+        {tokens.fontUrl && <link rel="stylesheet" href={tokens.fontUrl} />}
+        <Render trip={previewFixture.trip} blocks={previewFixture.blocks} />
+      </div>
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.55) 100%)",
+        }}
+      />
+    </div>
+  );
+}
+
+function DocThumb({ skin }: { skin: SkinModule }) {
+  const { codename, personality } = skin.meta;
+  const accent = skin.tokens.accent;
   return (
     <article
-      className="relative h-[240px] w-full overflow-hidden border border-ink/10 bg-paper p-5 transition-all duration-500 hover:border-seal/40"
+      className="relative w-full overflow-hidden border border-ink/10 bg-paper transition-all duration-500 hover:border-seal/40"
     >
       <div
         className="absolute left-0 top-0 h-full w-px"
         style={{ background: accent }}
         aria-hidden
       />
-      <div className="mb-4 flex items-center justify-between">
+      <SkinMiniPreview skin={skin} />
+      <div className="flex items-center justify-between px-5 pt-4">
         <span className="text-[8px] font-medium uppercase tracking-[0.4em] text-ink/35">
           Skin
         </span>
@@ -20,15 +54,18 @@ function DocThumb({ codename, personality, accent }: { codename: string; persona
         </span>
       </div>
       <h4
-        className="mb-4 text-xl font-normal leading-tight tracking-tight text-ink"
+        className="mt-3 px-5 text-xl font-normal leading-tight tracking-tight text-ink"
         style={{ fontFamily: "var(--font-display)" }}
       >
         {codename}
       </h4>
-      <p className="text-xs italic leading-relaxed text-ink-soft" style={{ fontFamily: "var(--font-display)" }}>
+      <p
+        className="mt-2 px-5 pb-10 text-xs italic leading-relaxed text-ink-soft"
+        style={{ fontFamily: "var(--font-display)" }}
+      >
         "{personality}"
       </p>
-      <div className="absolute bottom-4 left-5 right-5 flex justify-between text-[8px] uppercase tracking-[0.4em] text-ink/25">
+      <div className="absolute bottom-3 left-5 right-5 flex justify-between text-[8px] uppercase tracking-[0.4em] text-ink/25">
         <span>preview</span>
         <span>tap to open</span>
       </div>
@@ -60,11 +97,7 @@ export function InfiniteDocs() {
             hash={s.meta.id}
             className="td-marquee-item block"
           >
-            <DocThumb
-              codename={s.meta.codename}
-              personality={s.meta.personality}
-              accent={s.tokens.accent}
-            />
+            <DocThumb skin={s} />
           </Link>
         ))}
       </div>
