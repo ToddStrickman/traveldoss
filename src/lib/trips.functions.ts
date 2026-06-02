@@ -96,7 +96,12 @@ export const updateDossier = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const patch: Record<string, unknown> = {};
+    const patch: {
+      destination?: string;
+      subtitle?: string;
+      template_id?: string;
+      content?: { blocks: unknown[]; skin?: string };
+    } = {};
     if (data.destination !== undefined) patch.destination = data.destination;
     if (data.subtitle !== undefined) patch.subtitle = data.subtitle;
     if (data.templateId !== undefined) patch.template_id = data.templateId;
