@@ -257,6 +257,8 @@ export type Database = {
           hero_image_url: string | null
           id: string
           keywords: string | null
+          locked_at: string | null
+          locked_snapshot: Json | null
           original_template_id: string | null
           slug: string
           start_date: string | null
@@ -279,6 +281,8 @@ export type Database = {
           hero_image_url?: string | null
           id?: string
           keywords?: string | null
+          locked_at?: string | null
+          locked_snapshot?: Json | null
           original_template_id?: string | null
           slug: string
           start_date?: string | null
@@ -301,6 +305,8 @@ export type Database = {
           hero_image_url?: string | null
           id?: string
           keywords?: string | null
+          locked_at?: string | null
+          locked_snapshot?: Json | null
           original_template_id?: string | null
           slug?: string
           start_date?: string | null
