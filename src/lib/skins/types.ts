@@ -10,7 +10,18 @@ export type Block =
       name: string;
       address?: string;
       note?: string;
-      category?: "stay" | "eat" | "see" | "do" | "drink" | "other";
+      category?:
+        | "stay"
+        | "eat"
+        | "see"
+        | "do"
+        | "drink"
+        | "other"
+        | "hotel"
+        | "airfare"
+        | "currency"
+        | "walking"
+        | "food";
     }
   | { kind: "quote"; text: string; attribution?: string }
   | { kind: "note"; text: string };
