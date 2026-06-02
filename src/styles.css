@@ -32,8 +32,8 @@
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Instrument Serif", ui-serif, Georgia, serif;
-  --font-display: "Instrument Serif", ui-serif, Georgia, serif;
+  --font-serif: "Playfair Display", Georgia, serif;
+  --font-display: "Playfair Display", Georgia, serif;
   --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -75,34 +75,45 @@
   --color-seal: var(--seal);
   --color-seal-soft: var(--seal-soft);
   --color-stone: var(--stone);
+  --color-surface: var(--surface);
+  --color-taupe: var(--taupe);
 }
 
 :root {
   --radius: 0.875rem;
 
-  /* TravelDoss — Editorial luxury (Unseen-inspired). Near-black canvas,
-   * warm off-white ink, champagne accent. No glass, no gradients. */
-  --paper: oklch(0.145 0.004 60);            /* near-black canvas */
-  --ink: oklch(0.94 0.012 75);               /* warm off-white text */
-  --ink-soft: oklch(0.62 0.012 75);          /* muted secondary */
-  --rule: oklch(1 0 0 / 0.08);               /* hairline */
-  --seal: oklch(0.82 0.07 80);               /* champagne accent */
-  --seal-soft: oklch(0.72 0.08 60);          /* burnished brass */
-  --stone: oklch(0.22 0.005 60);             /* mid charcoal */
+  /* TravelDoss — Dark-Mode Skeuomorphic Revival.
+   * Deep Navy canvas, Ivory ink, Champagne Gold accent. */
+  --paper: oklch(0.19 0.04 260);             /* #0B1325 Deep Navy canvas */
+  --surface: oklch(0.24 0.045 260);          /* #151F36 Elevated Navy */
+  --ink: oklch(0.96 0.012 85);               /* #F7F3ED Ivory */
+  --ink-soft: oklch(0.72 0.018 75);          /* #A89D8C Muted Taupe */
+  --taupe: oklch(0.72 0.018 75);
+  --rule: oklch(1 0 0 / 0.05);               /* white/5 hairline */
+  --seal: oklch(0.83 0.06 85);               /* #D6C29C Champagne Gold */
+  --seal-soft: oklch(0.74 0.07 80);          /* burnished brass */
+  --stone: oklch(0.28 0.04 260);             /* mid navy */
 
-  --gradient-blue: linear-gradient(135deg, oklch(0.82 0.07 80), oklch(0.72 0.08 60));
-  --glass-surface: oklch(1 0 0 / 0.025);
-  --glass-surface-strong: oklch(1 0 0 / 0.05);
+  --gradient-blue: linear-gradient(135deg, oklch(0.83 0.06 85), oklch(0.74 0.07 80));
+  --glass-surface: var(--surface);
+  --glass-surface-strong: oklch(0.28 0.045 260);
   --shadow-glass: 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+
+  /* Skeuomorphic depth tokens */
+  --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-elev: 0 10px 30px -8px rgba(0, 0, 0, 0.55), 0 2px 8px -2px rgba(0, 0, 0, 0.4);
+  --highlight-inset: inset 0 1px 1px rgba(247, 243, 237, 0.15);
+  --highlight-inset-strong: inset 0 1px 1px rgba(247, 243, 237, 0.25);
+  --ease-elegant: cubic-bezier(0.4, 0, 0.2, 1);
 
   --background: var(--paper);
   --foreground: var(--ink);
-  --card: var(--glass-surface);
+  --card: var(--surface);
   --card-foreground: var(--ink);
-  --popover: oklch(0.22 0.03 255);
+  --popover: var(--surface);
   --popover-foreground: var(--ink);
   --primary: var(--seal);
-  --primary-foreground: oklch(0.15 0.02 255);
+  --primary-foreground: oklch(0.19 0.04 260);
   --secondary: var(--glass-surface-strong);
   --secondary-foreground: var(--ink);
   --muted: var(--glass-surface);
@@ -180,5 +191,34 @@
   .font-serif {
     font-family: var(--font-serif);
     font-optical-sizing: auto;
+  }
+}
+
+@layer utilities {
+  .transition-elegant {
+    transition: all 0.4s ease-in-out;
+  }
+  .shadow-soft {
+    box-shadow: var(--shadow-soft);
+  }
+  .shadow-elev {
+    box-shadow: var(--shadow-elev);
+  }
+  .shadow-skeuo {
+    box-shadow: var(--highlight-inset), var(--shadow-soft);
+  }
+  .shadow-skeuo-strong {
+    box-shadow: var(--highlight-inset-strong), var(--shadow-elev);
+  }
+  .surface-card {
+    background-color: var(--surface);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: var(--highlight-inset), var(--shadow-soft);
+    transition: all 0.4s ease-in-out;
+  }
+  .surface-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--highlight-inset-strong), var(--shadow-elev);
+    border-color: color-mix(in oklab, var(--seal) 50%, transparent);
   }
 }
