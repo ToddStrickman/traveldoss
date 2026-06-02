@@ -76,93 +76,114 @@ function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background font-light">
-      <div className="h-px w-full bg-border" />
-      <header className="mx-auto flex max-w-[1600px] items-center justify-between px-8 py-6 text-xs uppercase tracking-[0.2em]">
-        <Link to="/" className="font-normal">
-          Travel<span className="text-muted-foreground">/</span>Doss
+    <div className="relative min-h-screen overflow-hidden bg-background text-foreground selection:bg-seal/40">
+      <div aria-hidden className="td-grain fixed inset-0 z-0" />
+      <div aria-hidden className="td-vignette fixed inset-0 z-0" />
+
+      <header className="relative z-10 mx-auto flex max-w-[1600px] items-center justify-between border-b border-ink/10 px-8 py-6">
+        <Link to="/" className="inline-flex items-center gap-3 td-eyebrow text-ink/70 transition-colors hover:text-seal">
+          <span className="h-px w-6 bg-ink/30" />
+          TravelDoss<span className="text-ink/30">®</span>
         </Link>
-        <Link to="/" className="text-muted-foreground transition-colors hover:text-foreground">
+        <Link to="/" className="td-eyebrow text-ink/45 transition-colors hover:text-seal">
           ← Back
         </Link>
       </header>
 
-      <div className="mx-auto grid min-h-[80vh] max-w-[1600px] grid-cols-12 gap-6 px-8 py-16 md:py-24">
-        <p className="col-span-12 text-xs uppercase tracking-[0.3em] text-muted-foreground md:col-span-3">
-          {mode === "signin" ? "Return" : "Begin"}
-        </p>
-        <div className="col-span-12 md:col-span-6">
-          <h1 className="text-5xl font-extralight tracking-[-0.03em] md:text-7xl">
-            {mode === "signin" ? "Welcome back." : "Open a doc."}
+      <main className="relative z-10 mx-auto grid min-h-[82vh] max-w-[1400px] grid-cols-12 gap-10 px-8 py-20 md:py-28">
+        <aside className="col-span-12 md:col-span-5 md:border-r md:border-ink/10 md:pr-10">
+          <span className="td-eyebrow text-ink/50">
+            {mode === "signin" ? "Members · Return" : "Members · Begin"}
+          </span>
+          <h1 className="td-headline mt-6 text-6xl text-ink md:text-7xl">
+            {mode === "signin" ? (
+              <>
+                Welcome <span className="italic text-ink/85">back<span className="text-seal">.</span></span>
+              </>
+            ) : (
+              <>
+                Open a <span className="italic text-ink/85">dossier<span className="text-seal">.</span></span>
+              </>
+            )}
           </h1>
-          <p className="mt-6 max-w-md text-base font-light text-muted-foreground">
-            {mode === "signin" ? "Sign in to your trips." : "Start planning your next trip."}
+          <p className="mt-8 max-w-sm text-sm leading-relaxed text-ink-soft">
+            {mode === "signin"
+              ? "Sign in to your private library of travel dossiers. Quiet, owned, and yours."
+              : "Begin your library. Each trip becomes its own quietly composed dossier — a private URL to share like a wedding site."}
           </p>
-
-          <Button
-            type="button"
-            variant="outline"
-            className="mt-12 w-full rounded-none border-foreground py-6 text-xs uppercase tracking-[0.2em]"
-            onClick={onGoogle}
-            disabled={loading}
-          >
-            Continue with Google
-          </Button>
-
-          <div className="my-8 flex items-center gap-4 text-xs uppercase tracking-[0.3em] text-muted-foreground">
-            <div className="h-px flex-1 bg-border" />
-            or
-            <div className="h-px flex-1 bg-border" />
+          <div className="mt-12 flex items-center gap-3 td-eyebrow text-ink/35">
+            <span className="h-px w-10 bg-ink/15" />
+            Composed in London &amp; New York
           </div>
+        </aside>
 
-          <form className="space-y-6" onSubmit={onSubmit}>
-            <div>
-              <Label htmlFor="email" className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                Email
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                required
-                autoComplete="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-2 rounded-none border-0 border-b border-border px-0 shadow-none focus-visible:ring-0"
-              />
-            </div>
-            <div>
-              <Label htmlFor="password" className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                Password
-              </Label>
-              <Input
-                id="password"
-                type="password"
-                required
-                minLength={6}
-                autoComplete={mode === "signin" ? "current-password" : "new-password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="mt-2 rounded-none border-0 border-b border-border px-0 shadow-none focus-visible:ring-0"
-              />
-            </div>
+        <section className="col-span-12 md:col-span-7">
+          <div className="surface-card mx-auto max-w-md rounded-none p-8 md:p-10">
             <Button
-              type="submit"
-              className="w-full rounded-none py-6 text-xs uppercase tracking-[0.2em]"
+              type="button"
+              variant="outline"
+              className="w-full rounded-none border-ink/15 bg-transparent py-6 text-[10px] uppercase tracking-[0.4em] text-ink hover:border-seal hover:bg-seal hover:text-paper"
+              onClick={onGoogle}
               disabled={loading}
             >
-              {mode === "signin" ? "Sign in" : "Create account"}
+              Continue with Google
             </Button>
-          </form>
 
-          <button
-            type="button"
-            className="mt-8 w-full text-center text-xs uppercase tracking-[0.3em] text-muted-foreground transition-colors hover:text-foreground"
-            onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
-          >
-            {mode === "signin" ? "No account — Sign up" : "Have an account — Sign in"}
-          </button>
-        </div>
-      </div>
+            <div className="my-7 flex items-center gap-4 td-eyebrow text-ink/40">
+              <div className="h-px flex-1 bg-ink/10" />
+              or
+              <div className="h-px flex-1 bg-ink/10" />
+            </div>
+
+            <form className="space-y-6" onSubmit={onSubmit}>
+              <div>
+                <Label htmlFor="email" className="td-eyebrow text-ink/55">
+                  Email
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  required
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="mt-3 rounded-none border-0 border-b border-ink/20 bg-transparent px-0 text-base text-ink shadow-none focus-visible:border-seal focus-visible:ring-0"
+                />
+              </div>
+              <div>
+                <Label htmlFor="password" className="td-eyebrow text-ink/55">
+                  Password
+                </Label>
+                <Input
+                  id="password"
+                  type="password"
+                  required
+                  minLength={6}
+                  autoComplete={mode === "signin" ? "current-password" : "new-password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="mt-3 rounded-none border-0 border-b border-ink/20 bg-transparent px-0 text-base text-ink shadow-none focus-visible:border-seal focus-visible:ring-0"
+                />
+              </div>
+              <Button
+                type="submit"
+                className="mt-4 w-full rounded-none bg-seal py-6 text-[10px] uppercase tracking-[0.4em] text-paper hover:bg-seal-soft"
+                disabled={loading}
+              >
+                {mode === "signin" ? "Sign in" : "Create account"}
+              </Button>
+            </form>
+
+            <button
+              type="button"
+              className="mt-8 w-full text-center td-eyebrow text-ink/45 transition-colors hover:text-seal"
+              onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
+            >
+              {mode === "signin" ? "No account — Sign up" : "Have an account — Sign in"}
+            </button>
+          </div>
+        </section>
+      </main>
     </div>
   );
 }
