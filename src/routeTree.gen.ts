@@ -20,6 +20,7 @@ import { Route as GuideGoogleDocsTravelItineraryTemplateRouteImport } from './ro
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
 import { Route as ApiPublicGoogleStartRouteImport } from './routes/api/public/google/start'
 import { Route as ApiPublicGoogleCallbackRouteImport } from './routes/api/public/google/callback'
+import { Route as ApiPublicExportGdocsRouteImport } from './routes/api/public/export/gdocs'
 
 const TemplatesRoute = TemplatesRouteImport.update({
   id: '/templates',
@@ -76,6 +77,11 @@ const ApiPublicGoogleCallbackRoute = ApiPublicGoogleCallbackRouteImport.update({
   path: '/api/public/google/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicExportGdocsRoute = ApiPublicExportGdocsRouteImport.update({
+  id: '/api/public/export/gdocs',
+  path: '/api/public/export/gdocs',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -86,6 +92,7 @@ export interface FileRoutesByFullPath {
   '/app': typeof AuthenticatedAppRoute
   '/guide/google-docs-travel-itinerary-template': typeof GuideGoogleDocsTravelItineraryTemplateRoute
   '/t/$slug': typeof TSlugRoute
+  '/api/public/export/gdocs': typeof ApiPublicExportGdocsRoute
   '/api/public/google/callback': typeof ApiPublicGoogleCallbackRoute
   '/api/public/google/start': typeof ApiPublicGoogleStartRoute
 }
@@ -98,6 +105,7 @@ export interface FileRoutesByTo {
   '/app': typeof AuthenticatedAppRoute
   '/guide/google-docs-travel-itinerary-template': typeof GuideGoogleDocsTravelItineraryTemplateRoute
   '/t/$slug': typeof TSlugRoute
+  '/api/public/export/gdocs': typeof ApiPublicExportGdocsRoute
   '/api/public/google/callback': typeof ApiPublicGoogleCallbackRoute
   '/api/public/google/start': typeof ApiPublicGoogleStartRoute
 }
@@ -112,6 +120,7 @@ export interface FileRoutesById {
   '/_authenticated/app': typeof AuthenticatedAppRoute
   '/guide/google-docs-travel-itinerary-template': typeof GuideGoogleDocsTravelItineraryTemplateRoute
   '/t/$slug': typeof TSlugRoute
+  '/api/public/export/gdocs': typeof ApiPublicExportGdocsRoute
   '/api/public/google/callback': typeof ApiPublicGoogleCallbackRoute
   '/api/public/google/start': typeof ApiPublicGoogleStartRoute
 }
@@ -126,6 +135,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/guide/google-docs-travel-itinerary-template'
     | '/t/$slug'
+    | '/api/public/export/gdocs'
     | '/api/public/google/callback'
     | '/api/public/google/start'
   fileRoutesByTo: FileRoutesByTo
@@ -138,6 +148,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/guide/google-docs-travel-itinerary-template'
     | '/t/$slug'
+    | '/api/public/export/gdocs'
     | '/api/public/google/callback'
     | '/api/public/google/start'
   id:
@@ -151,6 +162,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app'
     | '/guide/google-docs-travel-itinerary-template'
     | '/t/$slug'
+    | '/api/public/export/gdocs'
     | '/api/public/google/callback'
     | '/api/public/google/start'
   fileRoutesById: FileRoutesById
@@ -164,6 +176,7 @@ export interface RootRouteChildren {
   TemplatesRoute: typeof TemplatesRoute
   GuideGoogleDocsTravelItineraryTemplateRoute: typeof GuideGoogleDocsTravelItineraryTemplateRoute
   TSlugRoute: typeof TSlugRoute
+  ApiPublicExportGdocsRoute: typeof ApiPublicExportGdocsRoute
   ApiPublicGoogleCallbackRoute: typeof ApiPublicGoogleCallbackRoute
   ApiPublicGoogleStartRoute: typeof ApiPublicGoogleStartRoute
 }
@@ -247,6 +260,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicGoogleCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/export/gdocs': {
+      id: '/api/public/export/gdocs'
+      path: '/api/public/export/gdocs'
+      fullPath: '/api/public/export/gdocs'
+      preLoaderRoute: typeof ApiPublicExportGdocsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -272,9 +292,20 @@ const rootRouteChildren: RootRouteChildren = {
   GuideGoogleDocsTravelItineraryTemplateRoute:
     GuideGoogleDocsTravelItineraryTemplateRoute,
   TSlugRoute: TSlugRoute,
+  ApiPublicExportGdocsRoute: ApiPublicExportGdocsRoute,
   ApiPublicGoogleCallbackRoute: ApiPublicGoogleCallbackRoute,
   ApiPublicGoogleStartRoute: ApiPublicGoogleStartRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

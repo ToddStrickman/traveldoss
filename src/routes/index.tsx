@@ -1,7 +1,17 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { motion } from "motion/react";
 import { Ribbon } from "@/components/landing/Ribbon";
 import { InfiniteDocs } from "@/components/landing/InfiniteDocs";
+import { TemplateGallery } from "@/components/flow/TemplateGallery";
+import { IngestionModal } from "@/components/flow/IngestionModal";
+import { GenerationLoader } from "@/components/GenerationLoader";
+import type { SkinModule } from "@/lib/skins/registry";
+import type { Block } from "@/lib/skins/types";
+import { createTripFromIngestion } from "@/lib/trips.functions";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({
   component: Landing,
@@ -29,6 +39,38 @@ export const Route = createFileRoute("/")({
 });
 
 function Landing() {
+  const [picked, setPicked] = useState<SkinModule | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [genSteps, setGenSteps] = useState<string[] | null>(null);
+  const [pendingSlug, setPendingSlug] = useState<string | null>(null);
+  const create = useServerFn(createTripFromIngestion);
+  const navigate = useNavigate();
+
+  function openWithTemplate(skin: SkinModule) {
+    setPicked(skin);
+    setModalOpen(true);
+  }
+
+  async function handleGenerate(blocks: Block[], firstStep: string) {
+    if (!picked) return;
+    const { data: u } = await supabase.auth.getUser();
+    if (!u.user) {
+      toast.message("Sign in to mint a dossier", { description: "Free — keeps your trip with you." });
+      navigate({ to: "/login" });
+      return;
+    }
+    setModalOpen(false);
+    setGenSteps([firstStep, "Crafting your dossier…", "Designing the pages…"]);
+    try {
+      const r = await create({ data: { templateId: picked.meta.id, blocks } });
+      setPendingSlug(r.slug);
+    } catch (e) {
+      console.error(e);
+      toast.error("Couldn't create your dossier", { description: String(e) });
+      setGenSteps(null);
+    }
+  }
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-background text-foreground selection:bg-seal/40">
       {/* Film grain + vignette */}
@@ -86,8 +128,8 @@ function Landing() {
           transition={{ duration: 0.8, delay: 0.4 }}
           className="relative mt-14"
         >
-          <Link
-            to="/templates"
+          <a
+            href="#templates"
             className="group surface-card relative inline-flex items-center gap-5 rounded-md py-5 pl-5 pr-3 text-[11px] font-medium uppercase tracking-[0.4em] text-ink transition-elegant hover:text-seal"
           >
             <span className="text-seal/70 transition-elegant group-hover:text-seal">01</span>
@@ -97,7 +139,7 @@ function Landing() {
                 <path d="M5 12h14M13 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </span>
-          </Link>
+          </a>
         </motion.div>
 
         <div className="mt-16 flex items-center gap-4 text-[9px] font-medium uppercase tracking-[0.45em] text-ink/35">
@@ -124,7 +166,29 @@ function Landing() {
         </div>
       </main>
 
-      <InfiniteDocs />
+      <InfiniteDocs onPickTemplate={openWithTemplate} />
+
+      <div id="templates" />
+      <TemplateGallery onPick={openWithTemplate} />
+
+      <IngestionModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        template={picked}
+        onGenerate={handleGenerate}
+      />
+
+      <GenerationLoader
+        open={genSteps !== null}
+        steps={genSteps ?? []}
+        onDone={() => {
+          if (pendingSlug) {
+            navigate({ to: "/t/$slug", params: { slug: pendingSlug }, search: { mode: "edit" } });
+          }
+          setGenSteps(null);
+          setPendingSlug(null);
+        }}
+      />
     </div>
   );
 }
