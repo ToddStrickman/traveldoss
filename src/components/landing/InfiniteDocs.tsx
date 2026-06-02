@@ -36,9 +36,7 @@ function DocThumb({ skin }: { skin: SkinModule }) {
   const { codename, personality } = skin.meta;
   const accent = skin.tokens.accent;
   return (
-    <article
-      className="relative w-full overflow-hidden border border-ink/10 bg-paper transition-all duration-500 hover:border-seal/40"
-    >
+    <article className="surface-card relative w-full overflow-hidden rounded-lg">
       <div
         className="absolute left-0 top-0 h-full w-px"
         style={{ background: accent }}
