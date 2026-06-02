@@ -44,6 +44,7 @@ export type Block =
       fareClass?: string;
       baggage?: string;
       price?: string;
+      gate?: string;
       note?: string;
     }
   | { kind: "quote"; text: string; attribution?: string }

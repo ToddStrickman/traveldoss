@@ -64,6 +64,8 @@
 .tds-flight-k { color: var(--tds-soft); }
 .tds-flight-v { color: var(--tds-ink); }
 .tds-flight-note { margin-top: 12px; font-style: italic; font-size: 13px; color: var(--tds-soft); }
+.tds-flight-missing { font-style: italic; color: var(--tds-soft); opacity: .85; }
+.tds-flight-warn { color: var(--tds-accent); opacity: .9; }
 
 /* ==========================================================================
    VIEW: Horizontal Board (≥768px) — days become column cards
