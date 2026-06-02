@@ -49,6 +49,22 @@
 
 .tds-foot { max-width: 1080px; margin: 0 auto; padding: var(--tds-s3) var(--tds-s4) var(--tds-s5); border-top: 2px double var(--tds-ink); text-align: center; font-size: 10px; letter-spacing: .4em; text-transform: uppercase; color: var(--tds-soft); }
 
+/* ---- flights summary ---- */
+.tds-flights { margin-top: var(--tds-s5); }
+.tds-flights-grid { display: grid; grid-template-columns: 1fr; gap: var(--tds-s3); margin-top: var(--tds-s3); }
+@media (min-width: 768px) { .tds-flights-grid { grid-template-columns: 1fr 1fr; } }
+.tds-flight-card { border: 1px solid var(--tds-rule); border-radius: 10px; padding: 20px; background: color-mix(in srgb, var(--tds-ink) 3%, var(--tds-bg)); }
+.tds-flight-head { padding-bottom: 12px; border-bottom: 1px solid var(--tds-rule); margin-bottom: 12px; }
+.tds-flight-title { font-family: var(--tds-fontDisplay); font-size: 22px; margin-top: 6px; }
+.tds-flight-route { font-size: 12px; letter-spacing: .2em; text-transform: uppercase; color: var(--tds-soft); margin-top: 4px; }
+.tds-flight-section { padding: 10px 0; border-top: 1px dashed var(--tds-rule); }
+.tds-flight-section:first-of-type { border-top: 0; padding-top: 0; }
+.tds-flight-sec-label { font-size: 10px; letter-spacing: .35em; text-transform: uppercase; color: var(--tds-accent); margin-bottom: 8px; }
+.tds-flight-row { display: grid; grid-template-columns: 130px 1fr; gap: 12px; font-size: 13px; line-height: 1.6; padding: 3px 0; }
+.tds-flight-k { color: var(--tds-soft); }
+.tds-flight-v { color: var(--tds-ink); }
+.tds-flight-note { margin-top: 12px; font-style: italic; font-size: 13px; color: var(--tds-soft); }
+
 /* ==========================================================================
    VIEW: Horizontal Board (≥768px) — days become column cards
    ========================================================================== */
