@@ -3,10 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { listTrips } from "@/lib/trips.functions";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { LogOut, Plus, MapPin, ExternalLink } from "lucide-react";
+import { LogOut, Plus, ArrowUpRight } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/app")({
   component: Dashboard,
@@ -35,76 +32,113 @@ function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-border">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <Link to="/app" className="flex items-center gap-2 font-semibold tracking-tight">
-            <span className="inline-block size-2 rounded-full bg-primary" />
-            TravelDoss
+    <div className="relative min-h-screen overflow-hidden bg-background text-foreground selection:bg-seal/40">
+      <div aria-hidden className="td-grain fixed inset-0 z-0" />
+      <div aria-hidden className="td-vignette fixed inset-0 z-0" />
+
+      <header className="relative z-10 mx-auto flex max-w-[1500px] items-center justify-between border-b border-ink/10 px-8 py-6">
+        <Link to="/app" className="inline-flex items-center gap-3 td-eyebrow text-ink/70 transition-colors hover:text-seal">
+          <span className="h-px w-6 bg-ink/30" />
+          TravelDoss<span className="text-ink/30">®</span>
+        </Link>
+        <div className="flex items-center gap-6">
+          <Link to="/templates" className="td-eyebrow text-ink/55 transition-colors hover:text-seal">
+            Templates
           </Link>
-          <Button variant="ghost" size="sm" onClick={onSignOut}>
-            <LogOut className="size-4" />
+          <button
+            type="button"
+            onClick={onSignOut}
+            className="inline-flex items-center gap-2 td-eyebrow text-ink/55 transition-colors hover:text-seal"
+          >
+            <LogOut className="h-3.5 w-3.5" strokeWidth={1.25} />
             Sign out
-          </Button>
+          </button>
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-6 py-10">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-semibold tracking-tight">Your trips</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Each trip is a private dossier at its own unique URL — shareable like a wedding site.
+      <main className="relative z-10 mx-auto max-w-[1500px] px-8 pb-28 pt-16">
+        <div className="grid grid-cols-12 gap-10">
+          <div className="col-span-12 md:col-span-7">
+            <span className="td-eyebrow text-ink/50">The Library</span>
+            <h1 className="td-headline mt-6 text-6xl text-ink md:text-7xl">
+              Your <span className="italic text-ink/85">dossiers<span className="text-seal">.</span></span>
+            </h1>
+            <p className="mt-6 max-w-md text-sm leading-relaxed text-ink-soft">
+              Each trip lives at its own private URL — quietly composed, shareable like a wedding site,
+              yours for a month.
             </p>
           </div>
-          <Button onClick={() => navigate({ to: "/templates" })}>
-            <Plus className="size-4" />
-            New dossier
-          </Button>
+          <div className="col-span-12 flex md:col-span-5 md:items-end md:justify-end">
+            <button
+              onClick={() => navigate({ to: "/templates" })}
+              className="surface-card group inline-flex items-center gap-5 rounded-md py-5 pl-5 pr-3 td-eyebrow text-ink transition-elegant hover:text-seal"
+            >
+              <span className="text-seal/70 transition-elegant group-hover:text-seal">+</span>
+              <span>Mint a new dossier</span>
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-sm border border-white/10 bg-paper/40 transition-elegant group-hover:border-seal group-hover:bg-seal group-hover:text-paper">
+                <Plus className="h-3.5 w-3.5" strokeWidth={1.5} />
+              </span>
+            </button>
+          </div>
         </div>
 
-        {/* Trips list */}
-        <div className="mt-8">
-          {tripsQ.isLoading && <p className="text-sm text-muted-foreground">Loading trips…</p>}
-          {tripsQ.data && tripsQ.data.trips.length === 0 && (
-            <Card className="flex flex-col items-center gap-3 p-12 text-center">
-              <MapPin className="size-8 text-muted-foreground" />
-              <h3 className="font-medium">No dossiers yet</h3>
-              <p className="max-w-sm text-sm text-muted-foreground">
-                Begin from a template. Every trip becomes a private,
-                editorial dossier at its own URL — yours to share.
-              </p>
-              <Button className="mt-2" onClick={() => navigate({ to: "/templates" })}>
-                Browse templates
-              </Button>
-            </Card>
+        <div className="mt-14 flex items-center gap-4 td-eyebrow text-ink/35">
+          <div className="td-rule w-10" />
+          {tripsQ.data ? `${tripsQ.data.trips.length} on file` : "Loading the archive"}
+          <div className="td-rule flex-1" />
+        </div>
+
+        <div className="mt-10">
+          {tripsQ.isLoading && (
+            <p className="td-eyebrow text-ink/40">Loading the archive…</p>
           )}
+
+          {tripsQ.data && tripsQ.data.trips.length === 0 && (
+            <div className="surface-card flex flex-col items-center gap-5 px-10 py-20 text-center">
+              <span className="td-eyebrow text-ink/40">Empty</span>
+              <h3 className="td-headline text-4xl text-ink">
+                Nothing on the <span className="italic">shelf<span className="text-seal">.</span></span>
+              </h3>
+              <p className="max-w-md text-sm leading-relaxed text-ink-soft">
+                Begin from a template. Every trip becomes a private, editorial dossier at its own URL — yours to share.
+              </p>
+              <button
+                onClick={() => navigate({ to: "/templates" })}
+                className="mt-4 inline-block border-y border-ink/20 py-3 px-6 td-eyebrow text-ink transition-colors hover:border-seal hover:text-seal"
+              >
+                Browse the Templates
+              </button>
+            </div>
+          )}
+
           {tripsQ.data && tripsQ.data.trips.length > 0 && (
-            <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {tripsQ.data.trips.map((t) => (
+            <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {tripsQ.data.trips.map((t, i) => (
                 <li key={t.id}>
                   <Link
                     to="/t/$slug"
                     params={{ slug: t.slug }}
-                    className="block transition-opacity hover:opacity-80"
+                    className="surface-card group block rounded-md p-6"
                   >
-                    <Card className="p-5">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="font-medium">{t.destination}</div>
-                        <ExternalLink className="size-3.5 text-muted-foreground" />
-                      </div>
-                      <div className="mt-1 text-xs text-muted-foreground">
-                        {t.start_date && t.end_date
-                          ? `${t.start_date} → ${t.end_date}`
-                          : "Dates not set"}
-                      </div>
-                      <div className="mt-1 text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
-                        /t/{t.slug}
-                      </div>
-                      <Badge className="mt-3" variant="secondary">
-                        {t.status}
-                      </Badge>
-                    </Card>
+                    <div className="flex items-center justify-between td-eyebrow text-ink/35">
+                      <span>№ {String(i + 1).padStart(2, "0")}</span>
+                      <span className="capitalize text-ink/45">{t.status}</span>
+                    </div>
+                    <h2 className="td-headline mt-5 text-3xl text-ink">
+                      {t.destination}
+                    </h2>
+                    <p className="mt-3 text-[11px] uppercase tracking-[0.3em] text-ink/50">
+                      {t.start_date && t.end_date
+                        ? `${t.start_date} → ${t.end_date}`
+                        : "Dates not set"}
+                    </p>
+                    <div className="mt-8 flex items-center justify-between border-t border-white/10 pt-4 td-eyebrow text-ink/40">
+                      <span className="truncate">/t/{t.slug}</span>
+                      <ArrowUpRight
+                        className="h-3.5 w-3.5 shrink-0 text-ink/40 transition-colors group-hover:text-seal"
+                        strokeWidth={1.5}
+                      />
+                    </div>
                   </Link>
                 </li>
               ))}
