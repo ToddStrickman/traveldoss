@@ -1,0 +1,79 @@
+/* ==========================================================================
+   TravelDoss shared skin engine — one renderer, three views, themed by tokens.
+   Ported from the parallel Next.js build. Classes are prefixed `tds-` so they
+   never collide with the app's Tailwind/global styles. Colors/fonts come from
+   CSS custom properties set per-skin from SkinTokens (see SkinFrame).
+   ========================================================================== */
+
+.tds {
+  background: var(--tds-bg);
+  color: var(--tds-ink);
+  font-family: var(--tds-fontBody);
+  min-height: 100%;
+  --tds-s1: 8px; --tds-s2: 14px; --tds-s3: 22px; --tds-s4: 34px; --tds-s5: 52px;
+  --tds-measure: 64ch;
+}
+
+.tds-canvas { max-width: 1080px; margin: 0 auto; padding: var(--tds-s5) var(--tds-s4) 96px; }
+
+/* ---- hero ---- */
+.tds-hero { padding-bottom: var(--tds-s3); border-bottom: 2px double var(--tds-ink); margin-bottom: var(--tds-s3); }
+.tds-eyebrow { font-size: 10px; letter-spacing: .42em; text-transform: uppercase; color: var(--tds-accent); font-weight: 600; }
+.tds-title { font-family: var(--tds-fontDisplay); font-weight: 700; font-size: clamp(44px, 8vw, 104px); line-height: .95; letter-spacing: -.02em; margin: 12px 0 0; }
+.tds-title .tds-dot { color: var(--tds-accent); }
+.tds-dek { font-family: var(--tds-fontDisplay); font-style: italic; font-size: clamp(18px, 2.4vw, 24px); color: var(--tds-soft); margin-top: 18px; max-width: 560px; }
+.tds-byline { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 18px; font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--tds-soft); }
+
+/* ---- blocks ---- */
+.tds-section { margin: var(--tds-s5) 0 var(--tds-s3); border-top: 1px solid var(--tds-rule); padding-top: var(--tds-s2); }
+.tds-section h2 { font-family: var(--tds-fontDisplay); font-weight: 600; font-size: 30px; letter-spacing: -.01em; }
+.tds-p { max-width: var(--tds-measure); font-size: 18px; line-height: 1.7; margin: var(--tds-s2) 0; }
+
+.tds-day { margin: 0 0 var(--tds-s4); }
+.tds-day-no { font-size: 10px; letter-spacing: .45em; text-transform: uppercase; color: var(--tds-accent); }
+.tds-day-label { font-family: var(--tds-fontDisplay); font-weight: 700; font-size: 28px; margin-top: 6px; letter-spacing: -.01em; }
+.tds-day-notes { margin-top: 10px; font-size: 16px; line-height: 1.7; color: var(--tds-soft); }
+
+.tds-place { border-left: 2px solid var(--tds-accent); padding-left: 16px; margin: var(--tds-s2) 0; }
+.tds-cat { font-size: 10px; letter-spacing: .4em; text-transform: uppercase; color: var(--tds-soft); }
+.tds-place-name { font-family: var(--tds-fontDisplay); font-size: 22px; margin-top: 4px; }
+.tds-place-addr { font-size: 13px; color: var(--tds-soft); margin-top: 2px; }
+.tds-place-note { font-size: 15px; color: var(--tds-ink); margin-top: 6px; font-style: italic; }
+
+.tds-quote { margin: var(--tds-s4) 0; border-left: 1px solid var(--tds-rule); padding-left: 20px; }
+.tds-quote blockquote { font-family: var(--tds-fontDisplay); font-style: italic; font-size: clamp(22px, 3vw, 28px); line-height: 1.4; }
+.tds-quote figcaption { margin-top: 10px; font-size: 11px; letter-spacing: .3em; text-transform: uppercase; color: var(--tds-soft); }
+
+.tds-note { margin: var(--tds-s3) 0; font-size: 13px; color: var(--tds-soft); padding: 12px 16px; border-left: 2px solid var(--tds-accent); background: color-mix(in srgb, var(--tds-accent) 8%, transparent); }
+
+.tds-foot { max-width: 1080px; margin: 0 auto; padding: var(--tds-s3) var(--tds-s4) var(--tds-s5); border-top: 2px double var(--tds-ink); text-align: center; font-size: 10px; letter-spacing: .4em; text-transform: uppercase; color: var(--tds-soft); }
+
+/* ==========================================================================
+   VIEW: Horizontal Board (≥768px) — days become column cards
+   ========================================================================== */
+@media (min-width: 768px) {
+  .tds[data-view="horizontal"] .tds-canvas { max-width: 1320px; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 20px; }
+  .tds[data-view="horizontal"] .tds-hero,
+  .tds[data-view="horizontal"] .tds-section,
+  .tds[data-view="horizontal"] .tds-quote,
+  .tds[data-view="horizontal"] .tds-p { flex: 0 0 100%; }
+  .tds[data-view="horizontal"] .tds-daycard { flex: 0 0 300px; background: color-mix(in srgb, var(--tds-ink) 4%, var(--tds-bg)); border: 1px solid var(--tds-rule); border-radius: 14px; padding: 18px; }
+  .tds[data-view="horizontal"] .tds-daycard .tds-place { margin: 10px 0 0; }
+}
+
+/* ==========================================================================
+   VIEW: Grid (≥768px) — day cards in a responsive matrix
+   ========================================================================== */
+@media (min-width: 768px) {
+  .tds[data-view="grid"] .tds-canvas { max-width: 1320px; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; align-items: start; }
+  .tds[data-view="grid"] .tds-hero,
+  .tds[data-view="grid"] .tds-section,
+  .tds[data-view="grid"] .tds-quote { grid-column: 1 / -1; }
+  .tds[data-view="grid"] .tds-daycard { background: color-mix(in srgb, var(--tds-ink) 4%, var(--tds-bg)); border: 1px solid var(--tds-rule); border-radius: 14px; padding: 18px; }
+  .tds[data-view="grid"] .tds-daycard .tds-place { margin: 10px 0 0; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .tds .tds-canvas > * { animation: tds-enter .4s ease both; }
+  @keyframes tds-enter { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+}

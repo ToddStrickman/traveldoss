@@ -1,0 +1,18 @@
+import type { SkinMeta, SkinModule, SkinTokens } from "../types";
+import { DEMO_BLOCKS, DEMO_TRIP } from "../demo";
+import { SkinFrame } from "./SkinFrame";
+
+/**
+ * Builds a SkinModule from just meta + tokens. The renderer is shared
+ * (SkinFrame); a new skin is one file of tokens. The Render conforms to the
+ * existing SkinRenderProps ({ trip, blocks }) and defaults to the vertical
+ * view; the view switcher (next PR) threads a `view` prop through SkinFrame.
+ */
+export function makeSkin(meta: SkinMeta, tokens: SkinTokens): SkinModule {
+  return {
+    meta,
+    tokens,
+    Render: ({ trip, blocks }) => <SkinFrame trip={trip} blocks={blocks} tokens={tokens} />,
+    previewFixture: { trip: DEMO_TRIP, blocks: DEMO_BLOCKS },
+  };
+}

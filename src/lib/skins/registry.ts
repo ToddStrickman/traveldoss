@@ -1,13 +1,32 @@
 import type { SkinModule } from "./types";
 import { epictetus } from "./epictetus";
 import { orsino } from "./orsino";
+// Token-driven skins (shared SkinFrame engine). Adding one is a single tokens file.
+import { marguerite } from "./marguerite";
+import { vesper } from "./vesper";
+import { marcello } from "./marcello";
+import { shishu } from "./shishu";
+import { halcyon } from "./halcyon";
+import { calliope } from "./calliope";
+import { cassian } from "./cassian";
+import { solveig } from "./solveig";
 
 /**
- * v1 ships with 2 fully-built reference skins. The remaining 6
- * (Shishu, Marcello, Calliope, Vesper, Halcyon, Marguerite) land in
- * step 7 of the build plan.
+ * The full cast. epictetus + orsino are the original hand-built reference
+ * skins; the rest render through the shared token-driven SkinFrame engine.
  */
-export const SKINS: SkinModule[] = [epictetus, orsino];
+export const SKINS: SkinModule[] = [
+  epictetus,
+  orsino,
+  marguerite,
+  vesper,
+  marcello,
+  shishu,
+  halcyon,
+  calliope,
+  cassian,
+  solveig,
+];
 
 export const getSkin = (id: string): SkinModule | undefined =>
   SKINS.find((s) => s.meta.id === id);
