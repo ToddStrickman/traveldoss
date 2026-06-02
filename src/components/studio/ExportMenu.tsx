@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link2, Printer, FileText, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-export function ExportMenu({ slug, disabled }: { slug: string; disabled?: boolean }) {
+export function ExportMenu({ slug, canPushToDocs = true }: { slug: string; canPushToDocs?: boolean }) {
   const [busy, setBusy] = useState<null | "gdocs">(null);
 
   function copyLink() {
@@ -44,14 +44,14 @@ export function ExportMenu({ slug, disabled }: { slug: string; disabled?: boolea
   }
 
   return (
-    <div className="fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full border border-white/10 bg-paper/85 p-1.5 text-ink backdrop-blur-md">
+    <div data-print="hide" className="fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full border border-white/10 bg-paper/85 p-1.5 text-ink backdrop-blur-md">
       <ExportButton onClick={copyLink} icon={<Link2 className="h-3.5 w-3.5" />} label="Live URL" />
       <ExportButton onClick={printPdf} icon={<Printer className="h-3.5 w-3.5" />} label="PDF" />
       <ExportButton
         onClick={pushToDocs}
         icon={busy === "gdocs" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileText className="h-3.5 w-3.5" />}
         label="Google Docs"
-        disabled={disabled || busy === "gdocs"}
+        disabled={!canPushToDocs || busy === "gdocs"}
       />
     </div>
   );

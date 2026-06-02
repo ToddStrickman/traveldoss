@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { getDossierBySlug } from "@/lib/templates.functions";
 import { updateDossier } from "@/lib/trips.functions";
@@ -99,6 +99,7 @@ export const Route = createFileRoute("/t/$slug")({
 function DossierPage() {
   const { trip, expired } = Route.useLoaderData();
   const { mode } = Route.useSearch();
+  const navigate = useNavigate();
   const [layout, setLayout] = useState<SkinView>("vertical");
   const initial = (trip.content ?? {}) as { blocks?: Block[]; skin?: string };
   const [blocks, setBlocks] = useState<Block[]>(initial.blocks ?? []);
@@ -112,13 +113,23 @@ function DossierPage() {
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
-      if (data.user && trip && (trip as { user_id?: string }).user_id === data.user.id) setIsOwner(true);
-      else if (data.user) setIsOwner(true); // RLS will reject if not actually owner
+      const tripOwner = (trip as { user_id?: string }).user_id;
+      if (data.user && tripOwner && tripOwner === data.user.id) setIsOwner(true);
+      else setIsOwner(false);
     });
   }, [trip]);
 
   const phase = getTemporalPhase(trip.start_date, trip.end_date);
   const canEdit = isOwner && phase !== "archive" && !expired;
+
+  function openDrawer() {
+    setDrawerOpen(true);
+    navigate({ to: "/t/$slug", params: { slug: trip.slug }, search: { mode: "edit" }, replace: true });
+  }
+  function closeDrawer() {
+    setDrawerOpen(false);
+    navigate({ to: "/t/$slug", params: { slug: trip.slug }, search: {}, replace: true });
+  }
 
   function queueSave(nextBlocks: Block[], nextTemplate: string) {
     if (!canEdit) return;
@@ -170,6 +181,7 @@ function DossierPage() {
       <skin.Render trip={view} blocks={blocks} view={layout} />
       <Link
         to="/"
+        data-print="hide"
         className="fixed left-4 top-4 z-50 inline-flex items-center gap-2 border border-black/15 bg-white/85 px-3 py-2 text-[10px] font-medium uppercase tracking-[0.3em] text-black backdrop-blur-sm transition-colors hover:border-black hover:bg-white"
         aria-label="Back to TravelDoss"
       >
@@ -178,7 +190,8 @@ function DossierPage() {
       <ViewSwitch value={layout} onChange={setLayout} tokens={skin.tokens} />
       {canEdit && !drawerOpen && (
         <button
-          onClick={() => setDrawerOpen(true)}
+          onClick={openDrawer}
+          data-print="hide"
           className="fixed left-4 bottom-4 z-40 rounded-full border border-seal/40 bg-paper/90 px-4 py-2 text-[10px] uppercase tracking-[0.3em] text-seal backdrop-blur-md hover:bg-seal hover:text-paper"
         >
           Edit
@@ -192,10 +205,10 @@ function DossierPage() {
           saving={saving}
           onBlocksChange={onBlocksChange}
           onTemplateChange={onTemplateChange}
-          onClose={() => setDrawerOpen(false)}
+          onClose={closeDrawer}
         />
       )}
-      <ExportMenu slug={trip.slug} />
+      <ExportMenu slug={trip.slug} canPushToDocs={isOwner} />
     </>
   );
 }
@@ -216,6 +229,7 @@ function ViewSwitch({
     <div
       role="radiogroup"
       aria-label="Layout"
+      data-print="hide"
       className="fixed left-1/2 top-4 z-50 flex -translate-x-1/2 gap-1 rounded-full p-1 backdrop-blur-sm"
       style={{ background: `${tokens.bg}d9`, border: `1px solid ${tokens.rule}` }}
     >
