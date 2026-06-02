@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { CSSProperties } from "react";
 import type { Block, SkinTokens, SkinView, TripView } from "../types";
 import "./skin.css";
 import { CategoryIcon, categoryLabel } from "./CategoryIcon";
