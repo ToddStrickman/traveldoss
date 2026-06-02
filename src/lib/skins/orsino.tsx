@@ -2,6 +2,8 @@ import type { Block, SkinModule, SkinRenderProps, SkinTokens } from "./types";
 import { DEMO_BLOCKS, DEMO_TRIP } from "./demo";
 import { CategoryIcon, categoryLabel } from "./shared/CategoryIcon";
 import { FlightInline, FlightsSummary, collectFlights } from "./shared/FlightsSummary";
+import { EditableText, SortableBlocks, useEditing } from "./shared/Editable";
+import { Plus } from "lucide-react";
 import "./shared/skin.css";
 
 const tokens: SkinTokens = {
@@ -17,14 +19,24 @@ const tokens: SkinTokens = {
 };
 
 function Render({ trip, blocks }: SkinRenderProps) {
-  const hero = blocks.find((b) => b.kind === "hero") as Extract<Block, { kind: "hero" }> | undefined;
-  const body = blocks.filter((b) => b.kind !== "hero");
+  const { editing, onBlockChange, onBlockAdd, onTripChange } = useEditing();
+  const heroIndex = blocks.findIndex((b) => b.kind === "hero");
+  const body: Block[] = heroIndex >= 0 ? blocks.filter((_, i) => i !== heroIndex) : blocks;
+  const realIndex = (b: Block) => blocks.indexOf(b);
   const flights = collectFlights(blocks);
 
   return (
     <div
-      className="min-h-full"
+      className="min-h-full tds"
+      data-editing={editing ? "true" : undefined}
       style={{
+        ["--tds-bg" as string]: tokens.bg,
+        ["--tds-ink" as string]: tokens.ink,
+        ["--tds-soft" as string]: tokens.inkSoft,
+        ["--tds-accent" as string]: tokens.accent,
+        ["--tds-rule" as string]: tokens.rule,
+        ["--tds-fontDisplay" as string]: tokens.fontDisplay,
+        ["--tds-fontBody" as string]: tokens.fontBody,
         background: tokens.bg,
         color: tokens.ink,
         fontFamily: tokens.fontBody,
@@ -43,22 +55,6 @@ function Render({ trip, blocks }: SkinRenderProps) {
       </header>
 
       <section className="mx-auto max-w-[1400px] px-6 pt-10 md:px-10">
-        {hero?.eyebrow && (
-          <div
-            style={{
-              display: "inline-block",
-              background: tokens.accent,
-              color: "#0a0a0a",
-              padding: "4px 10px",
-              fontFamily: tokens.fontDisplay,
-              fontSize: 11,
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
-            }}
-          >
-            {hero.eyebrow}
-          </div>
-        )}
         <h1
           style={{
             fontFamily: tokens.fontDisplay,
@@ -70,13 +66,11 @@ function Render({ trip, blocks }: SkinRenderProps) {
             wordBreak: "break-word",
           }}
         >
-          {hero?.title ?? trip.destination}
+          <EditableText as="span" value={trip.destination} placeholder="Trip title" onChange={(v) => onTripChange("destination", v)} />
         </h1>
-        {hero?.subtitle && (
-          <p style={{ maxWidth: 640, marginTop: 24, fontSize: 15, lineHeight: 1.6, color: tokens.inkSoft }}>
-            // {hero.subtitle}
-          </p>
-        )}
+        <p style={{ maxWidth: 640, marginTop: 24, fontSize: 15, lineHeight: 1.6, color: tokens.inkSoft }}>
+          // <EditableText as="span" multiline value={trip.subtitle ?? ""} placeholder="One sentence about this trip's ethos…" onChange={(v) => onTripChange("subtitle", v)} />
+        </p>
       </section>
 
       <main className="mx-auto max-w-[1400px] px-6 py-20 md:px-10">
@@ -93,9 +87,22 @@ function Render({ trip, blocks }: SkinRenderProps) {
             ▸ LOGBOOK
           </div>
           <div className="space-y-12">
-            {body.map((b, i) => (
-              <BlockRender key={i} block={b} />
-            ))}
+            <SortableBlocks
+              blocks={body}
+              renderBlock={(b) => (
+                <BlockRender block={b} onChange={(patch) => onBlockChange(realIndex(b), patch)} />
+              )}
+            />
+            {editing ? (
+              <button
+                type="button"
+                className="tds-add-block"
+                data-print="hide"
+                onClick={() => onBlockAdd(blocks.length - 1, "paragraph")}
+              >
+                <Plus size={12} /> Add block
+              </button>
+            ) : null}
             {flights.length > 0 && (
               <div
                 className="tds"
@@ -131,7 +138,7 @@ function Render({ trip, blocks }: SkinRenderProps) {
   );
 }
 
-function BlockRender({ block }: { block: Block }) {
+function BlockRender({ block, onChange }: { block: Block; onChange: (p: Partial<Block>) => void }) {
   switch (block.kind) {
     case "section":
       return (
@@ -146,11 +153,15 @@ function BlockRender({ block }: { block: Block }) {
             display: "inline-block",
           }}
         >
-          {block.title}
+          <EditableText as="span" value={block.title} placeholder="Section title" onChange={(v) => onChange({ title: v } as Partial<Block>)} />
         </h2>
       );
     case "paragraph":
-      return <p style={{ fontSize: 15, lineHeight: 1.7, maxWidth: 640 }}>{block.text}</p>;
+      return (
+        <p style={{ fontSize: 15, lineHeight: 1.7, maxWidth: 640 }}>
+          <EditableText as="span" multiline value={block.text} placeholder="Write a paragraph…" onChange={(v) => onChange({ text: v } as Partial<Block>)} />
+        </p>
+      );
     case "day":
       return (
         <div style={{ display: "grid", gridTemplateColumns: "80px 1fr", gap: 24 }}>
@@ -173,13 +184,11 @@ function BlockRender({ block }: { block: Block }) {
                 letterSpacing: "-0.01em",
               }}
             >
-              {block.label}
+              <EditableText as="span" value={block.label} placeholder="Day label" onChange={(v) => onChange({ label: v } as Partial<Block>)} />
             </div>
-            {block.notes && (
-              <div style={{ marginTop: 10, fontSize: 14, lineHeight: 1.7, color: tokens.inkSoft, maxWidth: 580 }}>
-                {block.notes}
-              </div>
-            )}
+            <div style={{ marginTop: 10, fontSize: 14, lineHeight: 1.7, color: tokens.inkSoft, maxWidth: 580 }}>
+              <EditableText as="span" multiline value={block.notes ?? ""} placeholder="Notes for the day…" onChange={(v) => onChange({ notes: v } as Partial<Block>)} />
+            </div>
           </div>
         </div>
       );
@@ -191,12 +200,14 @@ function BlockRender({ block }: { block: Block }) {
             <span>{categoryLabel(block.category)}</span>
           </div>
           <div style={{ fontFamily: tokens.fontDisplay, fontSize: 20, textTransform: "uppercase", marginTop: 6 }}>
-            {block.name}
+            <EditableText as="span" value={block.name} placeholder="Place name" onChange={(v) => onChange({ name: v } as Partial<Block>)} />
           </div>
-          {block.address && (
-            <div style={{ fontSize: 12, color: tokens.inkSoft, marginTop: 4 }}>{block.address}</div>
-          )}
-          {block.note && <div style={{ fontSize: 14, marginTop: 8 }}>{block.note}</div>}
+          <div style={{ fontSize: 12, color: tokens.inkSoft, marginTop: 4 }}>
+            <EditableText as="span" value={block.address ?? ""} placeholder="Address" onChange={(v) => onChange({ address: v } as Partial<Block>)} />
+          </div>
+          <div style={{ fontSize: 14, marginTop: 8 }}>
+            <EditableText as="span" multiline value={block.note ?? ""} placeholder="Note" onChange={(v) => onChange({ note: v } as Partial<Block>)} />
+          </div>
         </div>
       );
     case "flight":
@@ -221,13 +232,11 @@ function BlockRender({ block }: { block: Block }) {
       return (
         <div style={{ borderLeft: `4px solid ${tokens.accent}`, paddingLeft: 20, maxWidth: 640 }}>
           <div style={{ fontFamily: tokens.fontDisplay, fontSize: 24, lineHeight: 1.3, textTransform: "uppercase" }}>
-            "{block.text}"
+            "<EditableText as="span" multiline value={block.text} placeholder="A quote…" onChange={(v) => onChange({ text: v } as Partial<Block>)} />"
           </div>
-          {block.attribution && (
-            <div style={{ fontSize: 11, letterSpacing: "0.3em", textTransform: "uppercase", color: tokens.inkSoft, marginTop: 10 }}>
-              — {block.attribution}
-            </div>
-          )}
+          <div style={{ fontSize: 11, letterSpacing: "0.3em", textTransform: "uppercase", color: tokens.inkSoft, marginTop: 10 }}>
+            — <EditableText as="span" value={block.attribution ?? ""} placeholder="Attribution" onChange={(v) => onChange({ attribution: v } as Partial<Block>)} />
+          </div>
         </div>
       );
     case "note":
@@ -243,7 +252,7 @@ function BlockRender({ block }: { block: Block }) {
             fontFamily: tokens.fontBody,
           }}
         >
-          ! {block.text}
+          ! <EditableText as="span" multiline value={block.text} placeholder="Note" onChange={(v) => onChange({ text: v } as Partial<Block>)} />
         </div>
       );
     default:
