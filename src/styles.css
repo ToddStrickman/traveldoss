@@ -222,3 +222,13 @@
     border-color: color-mix(in oklab, var(--seal) 50%, transparent);
   }
 }
+
+/* ---- Print / PDF export ---- */
+@media print {
+  @page { margin: 18mm; }
+  body { background: #fff !important; color: #111 !important; }
+  body.td-print-mode aside,
+  body.td-print-mode .fixed { display: none !important; }
+  body.td-print-mode .tds { background: #fff !important; color: #111 !important; }
+  body.td-print-mode a { color: #1a4fb2 !important; text-decoration: underline; }
+}
