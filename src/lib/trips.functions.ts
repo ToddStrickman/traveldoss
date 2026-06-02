@@ -96,16 +96,21 @@ export const updateDossier = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    type TripUpdate = Parameters<ReturnType<typeof supabase.from<"trips">>["update"]>[0];
-    const patch: TripUpdate = {};
+    const patch: {
+      destination?: string;
+      subtitle?: string;
+      template_id?: string;
+      content?: unknown;
+    } = {};
     if (data.destination !== undefined) patch.destination = data.destination;
     if (data.subtitle !== undefined) patch.subtitle = data.subtitle;
     if (data.templateId !== undefined) patch.template_id = data.templateId;
     if (data.blocks !== undefined) {
-      patch.content = { blocks: data.blocks, skin: data.templateId } as TripUpdate["content"];
+      patch.content = { blocks: data.blocks, skin: data.templateId };
     }
     if (Object.keys(patch).length === 0) return { ok: true };
-    const { error } = await supabase.from("trips").update(patch).eq("slug", data.slug);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await supabase.from("trips").update(patch as any).eq("slug", data.slug);
     if (error) throw new Error(error.message);
     return { ok: true, savedAt: new Date().toISOString() };
   });
