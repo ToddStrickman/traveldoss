@@ -117,7 +117,9 @@ function DossierPage() {
       >
         ← TravelDoss
       </Link>
-      <ViewSwitch value={layout} onChange={setLayout} tokens={skin.tokens} />
+      {skin.meta.supportsViews && (
+        <ViewSwitch value={layout} onChange={setLayout} tokens={skin.tokens} />
+      )}
     </>
   );
 }
