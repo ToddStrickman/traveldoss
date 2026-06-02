@@ -84,10 +84,6 @@ export type SkinMeta = {
   codename: string;
   /** One-line personality hook describing the type of person */
   personality: string;
-  /** Whether this skin renders the 3 layouts (vertical/horizontal/grid).
-   *  Token-driven skins do; the hand-built epictetus/orsino don't, so the
-   *  dossier hides the view switcher for them rather than showing a dead control. */
-  supportsViews?: boolean;
 };
 
 /** The three interchangeable layouts a skin can render the same content in. */

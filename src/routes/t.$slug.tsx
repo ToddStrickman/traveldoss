@@ -1,8 +1,16 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { z } from "zod";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { getDossierBySlug } from "@/lib/templates.functions";
+import { updateDossier } from "@/lib/trips.functions";
 import { FALLBACK_SKIN, getSkin } from "@/lib/skins/registry";
 import type { Block, SkinView, TripView } from "@/lib/skins/types";
+import { supabase } from "@/integrations/supabase/client";
+import { StudioDrawer } from "@/components/studio/StudioDrawer";
+import { ExportMenu } from "@/components/studio/ExportMenu";
+import { CompanionToday } from "@/components/studio/CompanionToday";
+import { getTemporalPhase, phaseCopy } from "@/lib/itinerary/temporal";
 
 type DossierContent = {
   blocks?: Block[];
@@ -10,6 +18,7 @@ type DossierContent = {
 };
 
 export const Route = createFileRoute("/t/$slug")({
+  validateSearch: z.object({ mode: z.enum(["edit", "view"]).optional() }),
   loader: async ({ params }) => {
     const { trip, expired } = await getDossierBySlug({ data: { slug: params.slug } });
     if (!trip) throw notFound();
@@ -89,13 +98,56 @@ export const Route = createFileRoute("/t/$slug")({
 
 function DossierPage() {
   const { trip, expired } = Route.useLoaderData();
+  const { mode } = Route.useSearch();
   const [layout, setLayout] = useState<SkinView>("vertical");
+  const initial = (trip.content ?? {}) as { blocks?: Block[]; skin?: string };
+  const [blocks, setBlocks] = useState<Block[]>(initial.blocks ?? []);
+  const [templateId, setTemplateId] = useState<string>(trip.template_id ?? FALLBACK_SKIN.meta.id);
+  const [isOwner, setIsOwner] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(mode === "edit");
+  const [savedAt, setSavedAt] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const save = useServerFn(updateDossier);
+  const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user && trip && (trip as { user_id?: string }).user_id === data.user.id) setIsOwner(true);
+      else if (data.user) setIsOwner(true); // RLS will reject if not actually owner
+    });
+  }, [trip]);
+
+  const phase = getTemporalPhase(trip.start_date, trip.end_date);
+  const canEdit = isOwner && phase !== "archive" && !expired;
+
+  function queueSave(nextBlocks: Block[], nextTemplate: string) {
+    if (!canEdit) return;
+    if (debounce.current) clearTimeout(debounce.current);
+    setSaving(true);
+    debounce.current = setTimeout(async () => {
+      try {
+        const r = await save({ data: { slug: trip.slug, blocks: nextBlocks, templateId: nextTemplate } });
+        if (r.savedAt) setSavedAt(r.savedAt);
+      } catch (e) {
+        console.error("[autosave]", e);
+      } finally {
+        setSaving(false);
+      }
+    }, 1000);
+  }
+
+  function onBlocksChange(next: Block[]) {
+    setBlocks(next);
+    queueSave(next, templateId);
+  }
+  function onTemplateChange(id: string) {
+    setTemplateId(id);
+    queueSave(blocks, id);
+  }
 
   if (expired) return <ExpiredDossier slug={trip.slug} destination={trip.destination} />;
 
-  const content = (trip.content ?? {}) as DossierContent;
-  const blocks: Block[] = content.blocks ?? [];
-  const skin = getSkin(trip.template_id ?? "") ?? FALLBACK_SKIN;
+  const skin = getSkin(templateId) ?? FALLBACK_SKIN;
 
   const view: TripView = {
     destination: trip.destination,
@@ -109,6 +161,12 @@ function DossierPage() {
   return (
     <>
       {skin.tokens.fontUrl && <link rel="stylesheet" href={skin.tokens.fontUrl} />}
+      {phase === "active" && <CompanionToday blocks={blocks} />}
+      {phase === "archive" && (
+        <div className="sticky top-0 z-30 border-b border-ink/15 bg-paper/85 px-6 py-3 text-center text-[10px] uppercase tracking-[0.4em] text-ink-soft backdrop-blur-md">
+          {phaseCopy("archive").label} · {phaseCopy("archive").tagline}
+        </div>
+      )}
       <skin.Render trip={view} blocks={blocks} view={layout} />
       <Link
         to="/"
@@ -117,9 +175,27 @@ function DossierPage() {
       >
         ← TravelDoss
       </Link>
-      {skin.meta.supportsViews && (
-        <ViewSwitch value={layout} onChange={setLayout} tokens={skin.tokens} />
+      <ViewSwitch value={layout} onChange={setLayout} tokens={skin.tokens} />
+      {canEdit && !drawerOpen && (
+        <button
+          onClick={() => setDrawerOpen(true)}
+          className="fixed left-4 bottom-4 z-40 rounded-full border border-seal/40 bg-paper/90 px-4 py-2 text-[10px] uppercase tracking-[0.3em] text-seal backdrop-blur-md hover:bg-seal hover:text-paper"
+        >
+          Edit
+        </button>
       )}
+      {canEdit && drawerOpen && (
+        <StudioDrawer
+          blocks={blocks}
+          templateId={templateId}
+          savedAt={savedAt}
+          saving={saving}
+          onBlocksChange={onBlocksChange}
+          onTemplateChange={onTemplateChange}
+          onClose={() => setDrawerOpen(false)}
+        />
+      )}
+      <ExportMenu slug={trip.slug} />
     </>
   );
 }
