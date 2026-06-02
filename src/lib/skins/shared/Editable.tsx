@@ -100,29 +100,25 @@ export const EditableText = forwardRef<HTMLElement, EditableTextProps>(function 
     if (next !== value) onChange(next);
   }, [value, onChange]);
 
-  const Tag = as as keyof HTMLElementTagNameMap;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const Tag = as as any;
+  const setRef = (n: HTMLElement | null) => {
+    localRef.current = n;
+    if (typeof ref === "function") ref(n);
+    else if (ref) (ref as { current: HTMLElement | null }).current = n;
+  };
 
   if (!editing) {
-    const empty = !value;
-    const props = {
-      className,
-      style,
-      ref: (n: HTMLElement | null) => {
-        localRef.current = n;
-        if (typeof ref === "function") ref(n);
-        else if (ref) (ref as { current: HTMLElement | null }).current = n;
-      },
-    } as Record<string, unknown>;
-    return <Tag {...props}>{empty ? "" : value}</Tag>;
+    return (
+      <Tag ref={setRef} className={className} style={style}>
+        {value}
+      </Tag>
+    );
   }
 
   return (
     <Tag
-      ref={(n: HTMLElement | null) => {
-        localRef.current = n;
-        if (typeof ref === "function") ref(n);
-        else if (ref) (ref as { current: HTMLElement | null }).current = n;
-      }}
+      ref={setRef}
       contentEditable
       suppressContentEditableWarning
       role="textbox"
@@ -131,9 +127,9 @@ export const EditableText = forwardRef<HTMLElement, EditableTextProps>(function 
       className={`tds-edit${value ? "" : " tds-edit-empty"}${className ? ` ${className}` : ""}`}
       style={style}
       onBlur={commit}
-      onKeyDown={(e) => {
+      onKeyDown={(e: React.KeyboardEvent<HTMLElement>) => {
         if (e.key === "Enter") {
-          if (!multiline || (multiline && (e.metaKey || e.ctrlKey))) {
+          if (!multiline || e.metaKey || e.ctrlKey) {
             e.preventDefault();
             (e.currentTarget as HTMLElement).blur();
           }
@@ -145,8 +141,7 @@ export const EditableText = forwardRef<HTMLElement, EditableTextProps>(function 
           (e.currentTarget as HTMLElement).blur();
         }
       }}
-      onPaste={(e) => {
-        // strip rich formatting
+      onPaste={(e: React.ClipboardEvent<HTMLElement>) => {
         e.preventDefault();
         const text = e.clipboardData.getData("text/plain");
         document.execCommand("insertText", false, text);
