@@ -21,8 +21,23 @@ import type { Block } from "@/lib/skins/types";
 type BlockId = string;
 type IndexedBlock = Block & { __id: BlockId };
 
-function tagBlocks(blocks: Block[]): IndexedBlock[] {
-  return blocks.map((b, i) => ({ ...(b as object), __id: `${i}-${b.kind}` } as IndexedBlock));
+/** Mint a stable per-instance id for each Block object. Re-used across renders
+ *  so dnd-kit + editor rows don't remount on reorder/edit. */
+function useBlockIds(blocks: Block[]): IndexedBlock[] {
+  const map = useRef<WeakMap<Block, string>>(new WeakMap());
+  const counter = useRef(0);
+  return useMemo(
+    () =>
+      blocks.map((b) => {
+        let id = map.current.get(b);
+        if (!id) {
+          id = `blk-${++counter.current}`;
+          map.current.set(b, id);
+        }
+        return Object.assign({ __id: id }, b as object) as IndexedBlock;
+      }),
+    [blocks],
+  );
 }
 
 export function StudioDrawer({
@@ -42,7 +57,7 @@ export function StudioDrawer({
   onTemplateChange: (id: string) => void;
   onClose: () => void;
 }) {
-  const tagged = useMemo(() => tagBlocks(blocks), [blocks]);
+  const tagged = useBlockIds(blocks);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
   function handleDragEnd(e: DragEndEvent) {
@@ -78,7 +93,7 @@ export function StudioDrawer({
   }
 
   return (
-    <aside className="fixed left-0 top-0 z-40 flex h-screen w-[380px] flex-col border-r border-white/10 bg-paper/95 text-ink backdrop-blur-md">
+    <aside data-print="hide" className="fixed left-0 top-0 z-40 flex h-screen w-[380px] flex-col border-r border-white/10 bg-paper/95 text-ink backdrop-blur-md">
       <header className="flex items-center justify-between border-b border-white/10 px-5 py-4">
         <div>
           <p className="text-[9px] uppercase tracking-[0.4em] text-ink/45">Live Studio</p>

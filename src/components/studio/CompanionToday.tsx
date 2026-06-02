@@ -4,15 +4,16 @@ import type { Block } from "@/lib/skins/types";
  *  with its confirmation # and a maps link. */
 export function CompanionToday({ blocks }: { blocks: Block[] }) {
   const next = pickNext(blocks);
+  if (!next) return null;
   return (
-    <div className="sticky top-0 z-30 border-b border-seal/30 bg-paper/95 px-6 py-4 backdrop-blur-md">
+    <div data-print="hide" className="sticky top-0 z-30 border-b border-seal/30 bg-paper/95 px-6 py-4 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-seal" />
           <div>
             <p className="text-[9px] uppercase tracking-[0.4em] text-seal">Today</p>
             <p className="text-sm text-ink" style={{ fontFamily: "var(--font-display)" }}>
-              {next ? next.title : "Enjoy the trip."}
+              {next.title}
             </p>
             {next?.sub && <p className="text-[11px] text-ink-soft">{next.sub}</p>}
           </div>

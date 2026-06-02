@@ -70,7 +70,7 @@ export const getDossierBySlug = createServerFn({ method: "GET" })
     const { data: trip, error } = await supabaseAdmin
       .from("trips")
       .select(
-        "id, slug, destination, subtitle, tone, template_id, hero_image_url, start_date, end_date, content, visibility, status, expires_at",
+        "id, slug, destination, subtitle, tone, template_id, hero_image_url, start_date, end_date, content, visibility, status, expires_at, user_id",
       )
       .eq("slug", data.slug)
       .neq("visibility", "private")
