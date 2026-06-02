@@ -23,6 +23,29 @@ export type Block =
         | "walking"
         | "food";
     }
+  | {
+      kind: "flight";
+      direction?: "outbound" | "inbound";
+      airline?: string;
+      flightNumber?: string;
+      confirmation?: string;
+      from?: string;        // IATA code, e.g. JFK
+      to?: string;          // IATA code, e.g. LIS
+      fromCity?: string;
+      toCity?: string;
+      departTime?: string;  // local, e.g. "14:20"
+      arriveTime?: string;
+      date?: string;        // ISO or display
+      arriveDate?: string;  // if next-day
+      passenger?: string;
+      seat?: string;
+      boardingGroup?: string;
+      boardingTime?: string;
+      fareClass?: string;
+      baggage?: string;
+      price?: string;
+      note?: string;
+    }
   | { kind: "quote"; text: string; attribution?: string }
   | { kind: "note"; text: string };
 
