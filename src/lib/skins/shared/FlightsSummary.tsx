@@ -55,12 +55,43 @@ export function FlightsSummary({ flights }: { flights: Flight[] }) {
   );
 }
 
-function Row({ label, value }: { label: string; value?: string }) {
-  if (!value) return null;
+const PLACEHOLDERS: Record<string, string> = {
+  Confirmation:
+    "Not provided — check your confirmation email or airline app",
+  "Flight #":
+    "Not provided — check your confirmation email",
+  Airline:
+    "Not provided — check your confirmation email",
+  Gate:
+    "Usually not on confirmation; check airport boards or airline app closer to departure (gates can change)",
+  Passenger:
+    "Not provided — check your confirmation email",
+  Seat:
+    "Not assigned yet — check your boarding pass after check-in",
+  "Boarding group":
+    "Not provided — check your boarding pass after check-in",
+  "Boarding time":
+    "Not provided — check your boarding pass after check-in",
+  "Fare class":
+    "Not provided — check your confirmation email",
+  Baggage:
+    "Not provided — check your confirmation email or airline website",
+  Price:
+    "Not provided — check your confirmation email",
+};
+
+function SmartRow({ label, value, warn }: { label: string; value?: string; warn?: boolean }) {
+  const hasValue = typeof value === "string" && value.trim().length > 0;
   return (
     <div className="tds-flight-row">
       <span className="tds-flight-k">{label}</span>
-      <span className="tds-flight-v">{value}</span>
+      {hasValue ? (
+        <span className="tds-flight-v">{value}</span>
+      ) : (
+        <span className={`tds-flight-v tds-flight-missing${warn ? " tds-flight-warn" : ""}`}>
+          {PLACEHOLDERS[label] ?? "Not provided"}
+        </span>
+      )}
     </div>
   );
 }
@@ -82,37 +113,42 @@ function FlightCard({ flight: f }: { flight: Flight }) {
 
       <div className="tds-flight-section">
         <div className="tds-flight-sec-label">Core</div>
-        <Row label="Confirmation" value={f.confirmation} />
-        <Row label="Flight #" value={f.flightNumber} />
-        <Row label="Airline" value={f.airline} />
-        <Row
+        <SmartRow label="Confirmation" value={f.confirmation} warn />
+        <SmartRow label="Flight #" value={f.flightNumber} warn />
+        <SmartRow label="Airline" value={f.airline} />
+        <SmartRow
           label="Depart"
-          value={[f.from || f.fromCity, [f.date, f.departTime].filter(Boolean).join(" ")]
-            .filter(Boolean)
-            .join(" · ")}
+          value={
+            [f.from || f.fromCity, [f.date, f.departTime].filter(Boolean).join(" ")]
+              .filter(Boolean)
+              .join(" · ") || undefined
+          }
         />
-        <Row
+        <SmartRow
           label="Arrive"
-          value={[f.to || f.toCity, [f.arriveDate ?? f.date, f.arriveTime].filter(Boolean).join(" ")]
-            .filter(Boolean)
-            .join(" · ")}
+          value={
+            [f.to || f.toCity, [f.arriveDate ?? f.date, f.arriveTime].filter(Boolean).join(" ")]
+              .filter(Boolean)
+              .join(" · ") || undefined
+          }
         />
-        <Row label="Date" value={f.date} />
+        <SmartRow label="Date" value={f.date} />
+        <SmartRow label="Gate" value={f.gate} />
       </div>
 
       <div className="tds-flight-section">
-        <div className="tds-flight-sec-label">Passenger & seat</div>
-        <Row label="Passenger" value={f.passenger} />
-        <Row label="Seat" value={f.seat} />
-        <Row label="Boarding group" value={f.boardingGroup} />
-        <Row label="Boarding time" value={f.boardingTime} />
+        <div className="tds-flight-sec-label">Passenger &amp; seat</div>
+        <SmartRow label="Passenger" value={f.passenger} />
+        <SmartRow label="Seat" value={f.seat} />
+        <SmartRow label="Boarding group" value={f.boardingGroup} />
+        <SmartRow label="Boarding time" value={f.boardingTime} />
       </div>
 
       <div className="tds-flight-section">
-        <div className="tds-flight-sec-label">Fare & baggage</div>
-        <Row label="Fare class" value={f.fareClass} />
-        <Row label="Baggage" value={f.baggage} />
-        <Row label="Price" value={f.price} />
+        <div className="tds-flight-sec-label">Fare &amp; baggage</div>
+        <SmartRow label="Fare class" value={f.fareClass} />
+        <SmartRow label="Baggage" value={f.baggage} />
+        <SmartRow label="Price" value={f.price} />
       </div>
 
       {f.note ? <div className="tds-flight-note">{f.note}</div> : null}
