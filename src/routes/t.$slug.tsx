@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
@@ -7,10 +7,11 @@ import { updateDossier } from "@/lib/trips.functions";
 import { FALLBACK_SKIN, getSkin } from "@/lib/skins/registry";
 import type { Block, SkinView, TripView } from "@/lib/skins/types";
 import { supabase } from "@/integrations/supabase/client";
-import { StudioDrawer } from "@/components/studio/StudioDrawer";
+import { StudioBar } from "@/components/studio/StudioBar";
 import { ExportMenu } from "@/components/studio/ExportMenu";
 import { CompanionToday } from "@/components/studio/CompanionToday";
 import { getTemporalPhase, phaseCopy } from "@/lib/itinerary/temporal";
+import { EditingProvider, arrayMove } from "@/lib/skins/shared/Editable";
 
 type DossierContent = {
   blocks?: Block[];
@@ -98,14 +99,14 @@ export const Route = createFileRoute("/t/$slug")({
 
 function DossierPage() {
   const { trip, expired } = Route.useLoaderData();
-  const { mode } = Route.useSearch();
-  const navigate = useNavigate();
+  useNavigate();
   const [layout, setLayout] = useState<SkinView>("vertical");
   const initial = (trip.content ?? {}) as { blocks?: Block[]; skin?: string };
   const [blocks, setBlocks] = useState<Block[]>(initial.blocks ?? []);
   const [templateId, setTemplateId] = useState<string>(trip.template_id ?? FALLBACK_SKIN.meta.id);
+  const [destination, setDestination] = useState<string>(trip.destination);
+  const [subtitle, setSubtitle] = useState<string>(trip.subtitle ?? "");
   const [isOwner, setIsOwner] = useState(false);
-  const [drawerOpen, setDrawerOpen] = useState(mode === "edit");
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const save = useServerFn(updateDossier);
@@ -122,47 +123,95 @@ function DossierPage() {
   const phase = getTemporalPhase(trip.start_date, trip.end_date);
   const canEdit = isOwner && phase !== "archive" && !expired;
 
-  function openDrawer() {
-    setDrawerOpen(true);
-    navigate({ to: "/t/$slug", params: { slug: trip.slug }, search: { mode: "edit" }, replace: true });
-  }
-  function closeDrawer() {
-    setDrawerOpen(false);
-    navigate({ to: "/t/$slug", params: { slug: trip.slug }, search: {}, replace: true });
-  }
-
-  function queueSave(nextBlocks: Block[], nextTemplate: string) {
+  const queueSave = useCallback((patch: {
+    blocks?: Block[];
+    templateId?: string;
+    destination?: string;
+    subtitle?: string;
+  }) => {
     if (!canEdit) return;
     if (debounce.current) clearTimeout(debounce.current);
     setSaving(true);
     debounce.current = setTimeout(async () => {
       try {
-        const r = await save({ data: { slug: trip.slug, blocks: nextBlocks, templateId: nextTemplate } });
+        const r = await save({ data: { slug: trip.slug, ...patch } });
         if (r.savedAt) setSavedAt(r.savedAt);
       } catch (e) {
         console.error("[autosave]", e);
       } finally {
         setSaving(false);
       }
-    }, 1000);
-  }
+    }, 800);
+  }, [canEdit, save, trip.slug]);
 
-  function onBlocksChange(next: Block[]) {
-    setBlocks(next);
-    queueSave(next, templateId);
-  }
   function onTemplateChange(id: string) {
     setTemplateId(id);
-    queueSave(blocks, id);
+    queueSave({ blocks, templateId: id });
   }
+
+  const editingCtx = useMemo(
+    () => ({
+      editing: canEdit,
+      onBlockChange: (index: number, patch: Partial<Block>) => {
+        setBlocks((curr) => {
+          const next = curr.slice();
+          next[index] = { ...(next[index] as object), ...(patch as object) } as Block;
+          queueSave({ blocks: next, templateId });
+          return next;
+        });
+      },
+      onBlockRemove: (index: number) => {
+        setBlocks((curr) => {
+          const next = curr.filter((_, i) => i !== index);
+          queueSave({ blocks: next, templateId });
+          return next;
+        });
+      },
+      onBlockAdd: (afterIndex: number, kind: Block["kind"]) => {
+        const fresh: Block =
+          kind === "day"
+            ? { kind: "day", n: 1, label: "New day" }
+            : kind === "place"
+            ? { kind: "place", name: "New place", category: "other" }
+            : kind === "section"
+            ? { kind: "section", title: "New section" }
+            : kind === "note"
+            ? { kind: "note", text: "" }
+            : { kind: "paragraph", text: "" };
+        setBlocks((curr) => {
+          const next = curr.slice();
+          next.splice(Math.max(0, afterIndex + 1), 0, fresh);
+          queueSave({ blocks: next, templateId });
+          return next;
+        });
+      },
+      onReorder: (from: number, to: number) => {
+        setBlocks((curr) => {
+          const next = arrayMove(curr, from, to);
+          queueSave({ blocks: next, templateId });
+          return next;
+        });
+      },
+      onTripChange: (field: "destination" | "subtitle", value: string) => {
+        if (field === "destination") {
+          setDestination(value);
+          queueSave({ destination: value });
+        } else {
+          setSubtitle(value);
+          queueSave({ subtitle: value });
+        }
+      },
+    }),
+    [canEdit, queueSave, templateId],
+  );
 
   if (expired) return <ExpiredDossier slug={trip.slug} destination={trip.destination} />;
 
   const skin = getSkin(templateId) ?? FALLBACK_SKIN;
 
   const view: TripView = {
-    destination: trip.destination,
-    subtitle: trip.subtitle,
+    destination,
+    subtitle,
     slug: trip.slug,
     start_date: trip.start_date,
     end_date: trip.end_date,
@@ -170,7 +219,7 @@ function DossierPage() {
   };
 
   return (
-    <>
+    <EditingProvider value={editingCtx}>
       {skin.tokens.fontUrl && <link rel="stylesheet" href={skin.tokens.fontUrl} />}
       {phase === "active" && <CompanionToday blocks={blocks} />}
       {phase === "archive" && (
@@ -188,28 +237,16 @@ function DossierPage() {
         ← TravelDoss
       </Link>
       <ViewSwitch value={layout} onChange={setLayout} tokens={skin.tokens} />
-      {canEdit && !drawerOpen && (
-        <button
-          onClick={openDrawer}
-          data-print="hide"
-          className="fixed left-4 bottom-4 z-40 rounded-full border border-seal/40 bg-paper/90 px-4 py-2 text-[10px] uppercase tracking-[0.3em] text-seal backdrop-blur-md hover:bg-seal hover:text-paper"
-        >
-          Edit
-        </button>
-      )}
-      {canEdit && drawerOpen && (
-        <StudioDrawer
-          blocks={blocks}
+      {canEdit && (
+        <StudioBar
           templateId={templateId}
-          savedAt={savedAt}
           saving={saving}
-          onBlocksChange={onBlocksChange}
+          savedAt={savedAt}
           onTemplateChange={onTemplateChange}
-          onClose={closeDrawer}
         />
       )}
       <ExportMenu slug={trip.slug} canPushToDocs={isOwner} />
-    </>
+    </EditingProvider>
   );
 }
 
