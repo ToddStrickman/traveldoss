@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import type { Block, SkinTokens, TripView } from "../types";
 import "./skin.css";
+import { CategoryIcon, categoryLabel } from "./CategoryIcon";
 
 export type SkinView = "vertical" | "horizontal" | "grid";
 
@@ -104,7 +105,10 @@ function BlockView({ block }: { block: Block }) {
     case "place":
       return (
         <div className="tds-place" data-block="place">
-          <div className="tds-cat">{block.category ?? "place"}</div>
+          <div className="tds-cat">
+            <CategoryIcon category={block.category} className="tds-cat-icon" />
+            <span>{categoryLabel(block.category)}</span>
+          </div>
           <div className="tds-place-name">{block.name}</div>
           {block.address ? <div className="tds-place-addr">{block.address}</div> : null}
           {block.note ? <div className="tds-place-note">{block.note}</div> : null}

@@ -1,5 +1,6 @@
 import type { Block, SkinModule, SkinRenderProps, SkinTokens } from "./types";
 import { DEMO_BLOCKS, DEMO_TRIP } from "./demo";
+import { CategoryIcon, categoryLabel } from "./shared/CategoryIcon";
 
 const tokens: SkinTokens = {
   bg: "#f3efe7",
@@ -130,8 +131,9 @@ function BlockRender({ block }: { block: Block }) {
     case "place":
       return (
         <div style={{ borderLeft: `2px solid ${tokens.accent}`, paddingLeft: 16 }}>
-          <div style={{ fontSize: 10, letterSpacing: "0.4em", textTransform: "uppercase", color: tokens.inkSoft }}>
-            {block.category ?? "place"}
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 10, letterSpacing: "0.4em", textTransform: "uppercase", color: tokens.inkSoft }}>
+            <CategoryIcon category={block.category} style={{ fontSize: 14, color: tokens.accent }} />
+            <span>{categoryLabel(block.category)}</span>
           </div>
           <div style={{ fontFamily: tokens.fontDisplay, fontSize: 22, marginTop: 4 }}>{block.name}</div>
           {block.address && (
