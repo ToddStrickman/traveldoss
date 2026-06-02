@@ -1,7 +1,8 @@
+import { useState } from "react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { getDossierBySlug } from "@/lib/templates.functions";
 import { FALLBACK_SKIN, getSkin } from "@/lib/skins/registry";
-import type { Block, TripView } from "@/lib/skins/types";
+import type { Block, SkinView, TripView } from "@/lib/skins/types";
 
 type DossierContent = {
   blocks?: Block[];
@@ -88,6 +89,7 @@ export const Route = createFileRoute("/t/$slug")({
 
 function DossierPage() {
   const { trip, expired } = Route.useLoaderData();
+  const [layout, setLayout] = useState<SkinView>("vertical");
 
   if (expired) return <ExpiredDossier slug={trip.slug} destination={trip.destination} />;
 
@@ -107,7 +109,7 @@ function DossierPage() {
   return (
     <>
       {skin.tokens.fontUrl && <link rel="stylesheet" href={skin.tokens.fontUrl} />}
-      <skin.Render trip={view} blocks={blocks} />
+      <skin.Render trip={view} blocks={blocks} view={layout} />
       <Link
         to="/"
         className="fixed left-4 top-4 z-50 inline-flex items-center gap-2 border border-black/15 bg-white/85 px-3 py-2 text-[10px] font-medium uppercase tracking-[0.3em] text-black backdrop-blur-sm transition-colors hover:border-black hover:bg-white"
@@ -115,7 +117,46 @@ function DossierPage() {
       >
         ← TravelDoss
       </Link>
+      <ViewSwitch value={layout} onChange={setLayout} tokens={skin.tokens} />
     </>
+  );
+}
+
+/** Live Vertical · Horizontal · Grid control. Styled from the active skin's
+ *  tokens; fixed, centered at the top. Switching never mutates content. */
+function ViewSwitch({
+  value,
+  onChange,
+  tokens,
+}: {
+  value: SkinView;
+  onChange: (v: SkinView) => void;
+  tokens: { bg: string; ink: string; accent: string; rule: string };
+}) {
+  const opts: SkinView[] = ["vertical", "horizontal", "grid"];
+  return (
+    <div
+      role="radiogroup"
+      aria-label="Layout"
+      className="fixed left-1/2 top-4 z-50 flex -translate-x-1/2 gap-1 rounded-full p-1 backdrop-blur-sm"
+      style={{ background: `${tokens.bg}d9`, border: `1px solid ${tokens.rule}` }}
+    >
+      {opts.map((o) => {
+        const on = o === value;
+        return (
+          <button
+            key={o}
+            role="radio"
+            aria-checked={on}
+            onClick={() => onChange(o)}
+            className="rounded-full px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.15em] transition-colors"
+            style={{ color: on ? tokens.bg : tokens.ink, background: on ? tokens.accent : "transparent" }}
+          >
+            {o}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 

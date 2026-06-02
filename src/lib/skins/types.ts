@@ -51,9 +51,15 @@ export type SkinMeta = {
   personality: string;
 };
 
+/** The three interchangeable layouts a skin can render the same content in. */
+export type SkinView = "vertical" | "horizontal" | "grid";
+
 export type SkinRenderProps = {
   trip: TripView;
   blocks: Block[];
+  /** Optional layout mode. Token-driven skins honor it; hand-built skins
+   *  (epictetus, orsino) ignore it and stay single-layout. Defaults to vertical. */
+  view?: SkinView;
 };
 
 export type SkinModule = {

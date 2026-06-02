@@ -12,7 +12,7 @@ export function makeSkin(meta: SkinMeta, tokens: SkinTokens): SkinModule {
   return {
     meta,
     tokens,
-    Render: ({ trip, blocks }) => <SkinFrame trip={trip} blocks={blocks} tokens={tokens} />,
+    Render: ({ trip, blocks, view }) => <SkinFrame trip={trip} blocks={blocks} tokens={tokens} view={view} />,
     previewFixture: { trip: DEMO_TRIP, blocks: DEMO_BLOCKS },
   };
 }
