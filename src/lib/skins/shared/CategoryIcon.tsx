@@ -79,24 +79,38 @@ export function FoodIcon(props: IconProps) {
   );
 }
 
+export function SeeIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      {/* eye: simple almond + pupil */}
+      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
+      <circle cx="12" cy="12" r="2.5" />
+    </svg>
+  );
+}
+
 const ICONS = {
   hotel: HotelIcon,
   stay: HotelIcon,
   airfare: AirfareIcon,
+  flight: AirfareIcon,
   currency: CurrencyIcon,
   walking: WalkingIcon,
   food: FoodIcon,
   eat: FoodIcon,
+  see: SeeIcon,
 } as const;
 
 const LABELS: Record<string, string> = {
   hotel: "Hotel",
   stay: "Hotel",
-  airfare: "Airfare",
+  airfare: "Flight",
+  flight: "Flight",
   currency: "Currency",
   walking: "Walking",
   food: "Food",
   eat: "Food",
+  see: "See",
 };
 
 export function CategoryIcon({ category, ...props }: IconProps & { category?: string }) {

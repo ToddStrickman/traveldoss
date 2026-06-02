@@ -1,6 +1,8 @@
 import type { Block, SkinModule, SkinRenderProps, SkinTokens } from "./types";
 import { DEMO_BLOCKS, DEMO_TRIP } from "./demo";
 import { CategoryIcon, categoryLabel } from "./shared/CategoryIcon";
+import { FlightInline, FlightsSummary, collectFlights } from "./shared/FlightsSummary";
+import "./shared/skin.css";
 
 const tokens: SkinTokens = {
   bg: "#0a0a0a",
@@ -17,6 +19,7 @@ const tokens: SkinTokens = {
 function Render({ trip, blocks }: SkinRenderProps) {
   const hero = blocks.find((b) => b.kind === "hero") as Extract<Block, { kind: "hero" }> | undefined;
   const body = blocks.filter((b) => b.kind !== "hero");
+  const flights = collectFlights(blocks);
 
   return (
     <div
@@ -93,6 +96,22 @@ function Render({ trip, blocks }: SkinRenderProps) {
             {body.map((b, i) => (
               <BlockRender key={i} block={b} />
             ))}
+            {flights.length > 0 && (
+              <div
+                className="tds"
+                style={{
+                  ["--tds-bg" as any]: tokens.bg,
+                  ["--tds-ink" as any]: tokens.ink,
+                  ["--tds-soft" as any]: tokens.inkSoft,
+                  ["--tds-accent" as any]: tokens.accent,
+                  ["--tds-rule" as any]: tokens.rule,
+                  ["--tds-fontDisplay" as any]: tokens.fontDisplay,
+                  ["--tds-fontBody" as any]: tokens.fontBody,
+                }}
+              >
+                <FlightsSummary flights={flights} />
+              </div>
+            )}
           </div>
         </div>
       </main>
@@ -178,6 +197,24 @@ function BlockRender({ block }: { block: Block }) {
             <div style={{ fontSize: 12, color: tokens.inkSoft, marginTop: 4 }}>{block.address}</div>
           )}
           {block.note && <div style={{ fontSize: 14, marginTop: 8 }}>{block.note}</div>}
+        </div>
+      );
+    case "flight":
+      return (
+        <div
+          className="tds"
+          style={{
+            maxWidth: 580,
+            ["--tds-bg" as any]: tokens.bg,
+            ["--tds-ink" as any]: tokens.ink,
+            ["--tds-soft" as any]: tokens.inkSoft,
+            ["--tds-accent" as any]: tokens.accent,
+            ["--tds-rule" as any]: tokens.rule,
+            ["--tds-fontDisplay" as any]: tokens.fontDisplay,
+            ["--tds-fontBody" as any]: tokens.fontBody,
+          }}
+        >
+          <FlightInline flight={block} />
         </div>
       );
     case "quote":
