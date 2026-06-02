@@ -97,7 +97,7 @@ function Landing() {
 
         <div className="mt-16 flex items-center gap-4 text-[9px] font-medium uppercase tracking-[0.45em] text-ink/35">
           <div className="h-px w-10 bg-ink/15" />
-          Google Docs → Live Map
+          Do your itinerary justice.
           <div className="h-px w-10 bg-ink/15" />
         </div>
 
