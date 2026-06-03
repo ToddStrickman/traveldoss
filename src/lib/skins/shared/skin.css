@@ -170,6 +170,13 @@
   outline: 1px dashed var(--tds-accent);
   outline-offset: -4px;
 }
+/* Drop-target affordance for vertical part rails and grid table cells. */
+.tds-part[data-drop-over="true"],
+.tds-table-day td[data-drop-over="true"] {
+  background: var(--tds-pop);
+  outline: 1px dashed var(--tds-accent);
+  outline-offset: -4px;
+}
 .tds-board-bucket .tds-part-head { margin-bottom: 8px; }
 .tds-board-bucket-list { display: flex; flex-direction: column; gap: 8px; }
 .tds-board-empty {

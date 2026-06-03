@@ -2,12 +2,13 @@ import type { Block, TripView } from "../../types";
 import { buildItinerary } from "../itinerary";
 import { EditableText, useEditing } from "../Editable";
 import { ActivityRow, FlightStrip, PartHeading, partOrder } from "./parts";
+import { ActivityDndContext, DraggableActivity, DroppableBucket } from "./dnd";
 
 /** Chronological vertical reading view.
  *  Outbound flight → Day 01 (morning/afternoon/evening) → … → Inbound flight. */
 export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[] }) {
   const it = buildItinerary(blocks);
-  const { onBlockChange } = useEditing();
+  const { onBlockChange, editing } = useEditing();
   const dates = [trip.start_date, trip.end_date].filter(Boolean).join(" – ");
   return (
     <div className="tds-vertical">
@@ -38,6 +39,7 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
         </section>
       ) : null}
 
+      <ActivityDndContext blocks={blocks}>
       {it.days.map((d) => (
         <section key={d.dayIndex} className="tds-day-section" data-block="day">
           <header className="tds-day-head">
@@ -65,28 +67,41 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
 
           {partOrder.map((part) => {
             const list = d[part];
-            if (list.length === 0) return null;
+            if (list.length === 0 && !editing) return null;
             return (
-              <div key={part} className="tds-part">
+              <DroppableBucket
+                key={part}
+                dayIndex={d.dayIndex}
+                part={part}
+                className="tds-part"
+              >
                 <PartHeading part={part} />
                 <div className="tds-part-rows">
                   {list.map(({ activity, index }) => (
-                    <ActivityRow key={index} activity={activity} index={index} />
+                    <DraggableActivity key={index} index={index}>
+                      <ActivityRow activity={activity} index={index} />
+                    </DraggableActivity>
                   ))}
+                  {list.length === 0 ? (
+                    <div className="tds-board-empty">Drop activity here</div>
+                  ) : null}
                 </div>
-              </div>
+              </DroppableBucket>
             );
           })}
 
           {d.unassigned.length > 0 ? (
             <div className="tds-part-rows">
               {d.unassigned.map(({ activity, index }) => (
-                <ActivityRow key={index} activity={activity} index={index} />
+                <DraggableActivity key={index} index={index}>
+                  <ActivityRow activity={activity} index={index} />
+                </DraggableActivity>
               ))}
             </div>
           ) : null}
         </section>
       ))}
+      </ActivityDndContext>
 
       <FlightStrip inbound={it.flights.inbound} />
     </div>
