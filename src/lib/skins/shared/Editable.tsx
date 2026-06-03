@@ -26,6 +26,7 @@ import {
 import { CSS as DndCSS } from "@dnd-kit/utilities";
 import { GripVertical, Trash2, Plus } from "lucide-react";
 import type { Block } from "../types";
+import type { PartOfDay } from "./itinerary";
 
 /* ------------------------------------------------------------------ */
 /* Editing context                                                     */
@@ -38,6 +39,13 @@ export type EditingCtx = {
   onBlockAdd: (afterIndex: number, kind: Block["kind"]) => void;
   onReorder: (from: number, to: number) => void;
   onTripChange: (field: "destination" | "subtitle", value: string) => void;
+  /** Move an activity to a different day/part-of-day (horizontal kanban DnD). */
+  onMoveActivity: (
+    srcIndex: number,
+    dayIndex: number,
+    part: PartOfDay,
+    beforeIndex?: number,
+  ) => void;
 };
 
 const noop = () => {};
@@ -48,6 +56,7 @@ const Ctx = createContext<EditingCtx>({
   onBlockAdd: noop,
   onReorder: noop,
   onTripChange: noop,
+  onMoveActivity: noop,
 });
 
 export function EditingProvider({ value, children }: { value: EditingCtx; children: ReactNode }) {

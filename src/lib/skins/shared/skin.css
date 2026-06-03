@@ -165,6 +165,11 @@
 .tds-board-col-head .tds-day-label { font-size: 18px; margin-top: 4px; }
 .tds-board-bucket { padding: 12px 12px 16px; border-top: 1px dashed var(--tds-rule); }
 .tds-board-bucket:first-of-type { border-top: 0; }
+.tds-board-bucket[data-drop-over="true"] {
+  background: var(--tds-pop);
+  outline: 1px dashed var(--tds-accent);
+  outline-offset: -4px;
+}
 .tds-board-bucket .tds-part-head { margin-bottom: 8px; }
 .tds-board-bucket-list { display: flex; flex-direction: column; gap: 8px; }
 .tds-board-empty {

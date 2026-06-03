@@ -92,3 +92,99 @@ export const PART_LABEL: Record<PartOfDay, string> = {
   afternoon: "Afternoon",
   evening: "Evening",
 };
+
+const PART_ORDER: Record<PartOfDay, number> = {
+  morning: 0,
+  afternoon: 1,
+  evening: 2,
+};
+
+/**
+ * Move an activity block to a different day and part-of-day, returning a new
+ * flat block array. Used by the horizontal kanban drag-and-drop.
+ *
+ * @param blocks       Current flat block list
+ * @param srcIndex     Index of the activity (place) block being moved
+ * @param dayIndex     Index of the destination day block in `blocks`
+ * @param part         Destination part-of-day bucket
+ * @param beforeIndex  Optional index of an existing activity to insert before.
+ *                     When omitted, the moved activity is appended to the bucket.
+ */
+export function moveActivity(
+  blocks: Block[],
+  srcIndex: number,
+  dayIndex: number,
+  part: PartOfDay,
+  beforeIndex?: number,
+): Block[] {
+  if (srcIndex < 0 || srcIndex >= blocks.length) return blocks;
+  const src = blocks[srcIndex];
+  if (src.kind !== "place") return blocks;
+
+  const next = blocks.slice();
+  next.splice(srcIndex, 1);
+
+  // Adjust indices that were past the removed block.
+  const adjust = (i: number) => (i > srcIndex ? i - 1 : i);
+  let day = adjust(dayIndex);
+  let before = beforeIndex == null ? -1 : adjust(beforeIndex);
+
+  if (day < 0 || day >= next.length || next[day].kind !== "day") return blocks;
+
+  // End of this day's range (exclusive).
+  let dayEnd = next.length;
+  for (let i = day + 1; i < next.length; i++) {
+    if (next[i].kind === "day") {
+      dayEnd = i;
+      break;
+    }
+  }
+
+  // Find (or create) the part-of-day section within the day range.
+  let sectionIdx = -1;
+  for (let i = day + 1; i < dayEnd; i++) {
+    const b = next[i];
+    if (b.kind === "section" && b.partOfDay === part) {
+      sectionIdx = i;
+      break;
+    }
+  }
+  if (sectionIdx === -1) {
+    // Insert a new section in part order.
+    let insertAt = dayEnd;
+    for (let i = day + 1; i < dayEnd; i++) {
+      const b = next[i];
+      if (b.kind === "section" && b.partOfDay && PART_ORDER[b.partOfDay] > PART_ORDER[part]) {
+        insertAt = i;
+        break;
+      }
+    }
+    next.splice(insertAt, 0, {
+      kind: "section",
+      title: PART_LABEL[part],
+      partOfDay: part,
+    });
+    sectionIdx = insertAt;
+    dayEnd += 1;
+    if (before >= insertAt) before += 1;
+  }
+
+  // End of this part's range (next section/day, or day end).
+  let partEnd = dayEnd;
+  for (let i = sectionIdx + 1; i < dayEnd; i++) {
+    const b = next[i];
+    if (b.kind === "section" || b.kind === "day") {
+      partEnd = i;
+      break;
+    }
+  }
+
+  let insertAt: number;
+  if (before >= sectionIdx + 1 && before < partEnd) {
+    insertAt = before;
+  } else {
+    insertAt = partEnd;
+  }
+  next.splice(insertAt, 0, src);
+  return next;
+}
