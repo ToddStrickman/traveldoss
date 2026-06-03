@@ -86,7 +86,7 @@ function LoginPage() {
       <div aria-hidden className="td-grain fixed inset-0 z-0" />
       <div aria-hidden className="td-vignette fixed inset-0 z-0" />
 
-      <header className="relative z-10 mx-auto flex max-w-[1600px] items-center justify-between border-b border-ink/10 px-8 py-6">
+      <header className="relative z-10 mx-auto flex max-w-[1600px] items-center justify-between border-b border-ink/10 px-5 py-5 md:px-8 md:py-6">
         <Link to="/" className="inline-flex items-center gap-3 td-eyebrow text-ink/70 transition-colors hover:text-seal">
           <span className="h-px w-6 bg-ink/30" />
           TravelDoss<span className="text-ink/30">®</span>
@@ -96,7 +96,7 @@ function LoginPage() {
         </Link>
       </header>
 
-      <main className="relative z-10 mx-auto grid min-h-[82vh] max-w-[1400px] grid-cols-12 gap-10 px-8 py-20 md:py-28">
+      <main className="relative z-10 mx-auto grid min-h-[82vh] max-w-[1400px] grid-cols-12 gap-6 md:gap-10 px-5 py-12 md:px-8 md:py-20 md:py-28">
         <aside className="col-span-12 md:col-span-5 md:border-r md:border-ink/10 md:pr-10">
           <span className="td-eyebrow text-ink/50">
             {mode === "signin" ? "Members · Return" : "Members · Begin"}

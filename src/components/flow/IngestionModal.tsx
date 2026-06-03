@@ -147,7 +147,7 @@ export function IngestionModal({
         ) : (
           <>
         {/* Letterhead */}
-        <div className="relative border-b border-ink/10 px-10 pb-8 pt-10">
+        <div className="relative border-b border-ink/10 px-5 sm:px-8 md:px-10 pb-8 pt-10">
           <div className="flex items-start justify-between gap-8">
             <div className="flex flex-col gap-4">
               <div className="td-eyebrow flex items-center gap-3 text-ink/55">
@@ -185,7 +185,7 @@ export function IngestionModal({
         </div>
 
         {/* Serialised steps */}
-        <div className="px-10 pt-8">
+        <div className="px-5 sm:px-8 md:px-10 pt-8">
           <div className="td-eyebrow mb-4 flex items-center justify-between text-ink/45">
             <span>Step {tabIndex + 1} of {TABS.length}</span>
             <span>Choose a source</span>
@@ -222,7 +222,7 @@ export function IngestionModal({
           </div>
         </div>
 
-        <div className="px-10 pt-8">
+        <div className="px-5 sm:px-8 md:px-10 pt-8">
           {tab === "paste" && (
             <div className="flex flex-col gap-3">
               <p
@@ -279,7 +279,7 @@ export function IngestionModal({
             </div>
           )}
           {tab === "inbox" && (
-            <div className="rounded-md border border-ink/15 bg-paper/60 px-7 py-8">
+            <div className="rounded-md border border-ink/15 bg-paper/60 px-5 py-6 sm:px-7 sm:py-8">
               <p
                 className="text-[19px] leading-[1.3] text-ink/85"
                 style={{ fontFamily: "var(--font-display)" }}
@@ -295,7 +295,7 @@ export function IngestionModal({
         </div>
 
         {/* Footer */}
-        <div className="mt-10 flex items-center justify-between gap-4 border-t border-ink/10 bg-paper/40 px-10 py-5">
+        <div className="mt-10 flex items-center justify-between gap-4 border-t border-ink/10 bg-paper/40 px-5 sm:px-8 md:px-10 py-5">
           <div className="flex items-center gap-4">
             <button
               onClick={() => onOpenChange(false)}
@@ -393,7 +393,7 @@ function ReviewStage({
 
   return (
     <>
-      <div className="relative border-b border-ink/10 px-10 pb-7 pt-9">
+      <div className="relative border-b border-ink/10 px-5 sm:px-8 md:px-10 pb-7 pt-9">
         <div className="flex items-start justify-between gap-8">
           <div className="flex flex-col gap-3">
             <div className="td-eyebrow flex items-center gap-3 text-ink/55">
@@ -424,7 +424,7 @@ function ReviewStage({
         </div>
       </div>
 
-      <div className="px-10 pt-6">
+      <div className="px-5 sm:px-8 md:px-10 pt-6">
         <div className="mb-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px] text-ink-soft">
           <span className="td-eyebrow text-ink/45">Summary</span>
           {Object.entries(counts).map(([k, n]) => (
@@ -480,7 +480,7 @@ function ReviewStage({
         </div>
       </div>
 
-      <div className="mt-8 flex items-center justify-between gap-4 border-t border-ink/10 bg-paper/40 px-10 py-5">
+      <div className="mt-8 flex items-center justify-between gap-4 border-t border-ink/10 bg-paper/40 px-5 sm:px-8 md:px-10 py-5">
         <div className="flex items-center gap-4">
           <button
             onClick={onBack}

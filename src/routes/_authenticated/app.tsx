@@ -36,7 +36,7 @@ function Dashboard() {
       <div aria-hidden className="td-grain fixed inset-0 z-0" />
       <div aria-hidden className="td-vignette fixed inset-0 z-0" />
 
-      <header className="relative z-10 mx-auto flex max-w-[1500px] items-center justify-between border-b border-ink/10 px-8 py-6">
+      <header className="relative z-10 mx-auto flex max-w-[1500px] items-center justify-between border-b border-ink/10 px-5 py-5 md:px-8 md:py-6">
         <Link to="/" className="inline-flex items-center gap-3 td-eyebrow text-ink/70 transition-colors hover:text-seal">
           <span className="h-px w-6 bg-ink/30" />
           TravelDoss<span className="text-ink/30">®</span>
@@ -56,8 +56,8 @@ function Dashboard() {
         </div>
       </header>
 
-      <main className="relative z-10 mx-auto max-w-[1500px] px-8 pb-28 pt-16">
-        <div className="grid grid-cols-12 gap-10">
+      <main className="relative z-10 mx-auto max-w-[1500px] px-5 pb-24 pt-10 md:px-8 md:pb-28 md:pt-16">
+        <div className="grid grid-cols-12 gap-6 md:gap-10">
           <div className="col-span-12 md:col-span-7">
             <span className="td-eyebrow text-ink/50">The Library</span>
             <h1 className="td-headline mt-6 text-6xl text-ink md:text-7xl">
@@ -100,7 +100,7 @@ function Dashboard() {
           )}
 
           {tripsQ.data && tripsQ.data.trips.length === 0 && (
-            <div className="surface-card flex flex-col items-center gap-5 px-10 py-20 text-center">
+            <div className="surface-card flex flex-col items-center gap-5 px-5 sm:px-8 md:px-10 py-20 text-center">
               <span className="td-eyebrow text-ink/40">The studio is quiet</span>
               <h3 className="td-headline text-4xl text-ink">
                 No journeys <span className="italic">composed yet<span className="text-seal">.</span></span>

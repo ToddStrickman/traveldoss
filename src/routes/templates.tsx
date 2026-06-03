@@ -24,7 +24,7 @@ function TemplatesSkeleton() {
         <div className="h-3 w-24 animate-pulse rounded bg-ink/10" />
       </header>
 
-      <main className="relative z-10 mx-auto max-w-[1600px] px-6 pb-24 md:px-12">
+      <main className="relative z-10 mx-auto max-w-[1600px] px-5 pb-16 sm:px-6 sm:pb-24 md:px-12">
         <div className="mt-8 h-3 w-16 animate-pulse rounded bg-ink/10" />
 
         <div className="mt-16 h-[14vw] w-3/4 animate-pulse rounded bg-ink/10 md:h-[7vw]" />
@@ -351,7 +351,7 @@ function TemplatesPage() {
         </span>
       </header>
 
-      <main className="relative z-10 mx-auto max-w-[1600px] px-6 pb-24 md:px-12">
+      <main className="relative z-10 mx-auto max-w-[1600px] px-5 pb-16 sm:px-6 sm:pb-24 md:px-12">
         <button
           onClick={() => window.history.back()}
           className="mt-8 inline-flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/60 transition-colors hover:text-seal"
