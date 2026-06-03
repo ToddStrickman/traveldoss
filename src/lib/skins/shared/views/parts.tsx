@@ -24,20 +24,33 @@ export function FlightStrip({
 function FlightRow({ flight, label }: { flight: FlightBlock; label: string }) {
   const route = [flight.from, flight.to].filter(Boolean).join(" → ");
   const carrier = [flight.airline, flight.flightNumber].filter(Boolean).join(" ");
+  const fields: Array<{ label: string; value: string }> = [];
+  if (carrier) fields.push({ label: "Carrier", value: carrier });
+  if (flight.date) fields.push({ label: "Date", value: flight.date });
+  if (flight.departTime) fields.push({ label: "Depart", value: flight.departTime });
+  if (flight.arriveTime) fields.push({ label: "Arrive", value: flight.arriveTime });
+  if (flight.seat) fields.push({ label: "Seat", value: flight.seat });
+  if (flight.confirmation) fields.push({ label: "Conf.", value: flight.confirmation });
+
   return (
     <div className="tds-flightstrip-row">
-      <span className="tds-flightstrip-icon" aria-hidden>
-        <AirfareIcon />
-      </span>
-      <span className="tds-flightstrip-label">{label}</span>
-      <span className="tds-flightstrip-route">{route || "—"}</span>
-      <span className="tds-flightstrip-meta">
-        {carrier ? <span>{carrier}</span> : null}
-        {flight.date ? <span>{flight.date}</span> : null}
-        {flight.departTime ? <span>{flight.departTime}</span> : null}
-        {flight.arriveTime ? <span>→ {flight.arriveTime}</span> : null}
-        {flight.confirmation ? <span>· {flight.confirmation}</span> : null}
-      </span>
+      <div className="tds-flightstrip-leg">
+        <span className="tds-flightstrip-icon" aria-hidden>
+          <AirfareIcon />
+        </span>
+        <span className="tds-flightstrip-label">{label}</span>
+      </div>
+      <div className="tds-flightstrip-route" aria-label={`Route ${route || "unknown"}`}>
+        {route || "—"}
+      </div>
+      <dl className="tds-flightstrip-fields">
+        {fields.map((f) => (
+          <div key={f.label} className="tds-flightstrip-field">
+            <dt>{f.label}</dt>
+            <dd>{f.value}</dd>
+          </div>
+        ))}
+      </dl>
     </div>
   );
 }
