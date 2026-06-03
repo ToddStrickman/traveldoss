@@ -176,15 +176,19 @@ function Flashlight({
 }
 
 /* Dark-stroke variant for the reveal layer (over ivory).
- * Slightly tighter scale + heavier strokes so the contour reads on paper. */
+ * Rust-brown contours over ivory paper, with a pale blue river overlay —
+ * matches the cartographic reference. */
 function topoUrlDark() {
   const svg = topoSvg
-    .replace(/%23F7F3ED/g, "%230B1325")
-    .replace(/stroke-opacity='[0-9.]+'/g, "stroke-opacity='0.4'");
+    // Ivory strokes → dark rust brown
+    .replace(/%23F7F3ED/g, "%236B3A2A")
+    .replace(/stroke-opacity='[0-9.]+'/g, "stroke-opacity='0.55'");
   return `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`;
 }
 
-/* Hand-drawn-feeling concentric topographic loops. Ivory strokes, navy-transparent fills. */
+/* Hand-drawn-feeling concentric topographic loops with a meandering river.
+ * Ivory strokes are recolored to rust-brown for the cursor reveal; the river
+ * path stays pale blue. */
 const topoSvg = `<svg xmlns='http://www.w3.org/2000/svg' width='900' height='900' viewBox='0 0 900 900'>
   <g fill='none' stroke='%23F7F3ED' stroke-width='1' stroke-opacity='0.55'>
     <path d='M120,300 C220,180 380,160 500,230 C640,310 720,470 640,600 C560,720 380,740 260,660 C140,580 60,420 120,300 Z'/>
@@ -204,5 +208,9 @@ const topoSvg = `<svg xmlns='http://www.w3.org/2000/svg' width='900' height='900
 
     <path d='M120,760 C200,700 320,705 380,755 C435,805 410,860 320,860 C220,860 80,820 120,760 Z' stroke-opacity='0.4'/>
     <path d='M150,775 C220,725 315,725 365,765 C415,810 395,850 320,850 C235,850 100,820 150,775 Z' stroke-opacity='0.4'/>
+  </g>
+  <g fill='none' stroke='%237DB7D6' stroke-width='2.25' stroke-opacity='0.75' stroke-linecap='round'>
+    <path d='M520,40 C500,140 540,230 470,330 C400,430 430,540 380,650 C340,750 360,830 320,900'/>
+    <path d='M820,420 C760,470 700,520 690,610 C685,690 740,760 720,860'/>
   </g>
 </svg>`;
