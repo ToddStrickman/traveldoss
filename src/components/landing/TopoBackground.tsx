@@ -15,34 +15,70 @@ export function TopoBackground() {
     const el = spotRef.current;
     if (!el) return;
 
+    // Disable on touch / reduced-motion devices — spotlight is decorative.
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
+    if (reduceMotion || coarsePointer) {
+      el.style.opacity = "0";
+      return;
+    }
+
+    const SIZE = 720;
+    const HALF = SIZE / 2;
+    const EASE = 0.06;
+    const EPS = 0.5; // px — stop RAF when settled
+
     let raf = 0;
+    let running = false;
     let tx = window.innerWidth / 2;
     let ty = window.innerHeight / 2;
     let cx = tx;
     let cy = ty;
+    let lastDim = false;
+    el.style.transform = `translate3d(${cx - HALF}px, ${cy - HALF}px, 0)`;
+
+    const start = () => {
+      if (running || document.hidden) return;
+      running = true;
+      raf = requestAnimationFrame(tick);
+    };
+
+    const tick = () => {
+      const dx = tx - cx;
+      const dy = ty - cy;
+      cx += dx * EASE;
+      cy += dy * EASE;
+      el.style.transform = `translate3d(${cx - HALF}px, ${cy - HALF}px, 0)`;
+      if (Math.abs(dx) < EPS && Math.abs(dy) < EPS) {
+        running = false;
+        return;
+      }
+      raf = requestAnimationFrame(tick);
+    };
 
     const onMove = (e: PointerEvent) => {
       tx = e.clientX;
       ty = e.clientY;
       const t = e.target as Element | null;
-      dimRef.current = !!t?.closest(
+      const dim = !!t?.closest(
         'a, button, [role="button"], [data-clickable], input, textarea, select, label'
       );
+      if (dim !== lastDim) {
+        lastDim = dim;
+        el.style.opacity = dim ? "0.35" : "1";
+      }
+      start();
     };
 
-    const tick = () => {
-      cx += (tx - cx) * 0.04;
-      cy += (ty - cy) * 0.04;
-      const opacity = dimRef.current ? 0.35 : 1;
-      el.style.transform = `translate3d(${cx - 360}px, ${cy - 360}px, 0)`;
-      el.style.opacity = String(opacity);
-      raf = requestAnimationFrame(tick);
+    const onVisibility = () => {
+      if (!document.hidden) start();
     };
 
     window.addEventListener("pointermove", onMove, { passive: true });
-    raf = requestAnimationFrame(tick);
+    document.addEventListener("visibilitychange", onVisibility);
     return () => {
       window.removeEventListener("pointermove", onMove);
+      document.removeEventListener("visibilitychange", onVisibility);
       cancelAnimationFrame(raf);
     };
   }, []);
@@ -81,8 +117,8 @@ export function TopoBackground() {
         style={{
           background:
             "radial-gradient(circle at center, rgba(247,243,237,0.22) 0%, rgba(214,194,156,0.10) 28%, rgba(247,243,237,0.04) 55%, transparent 72%)",
-          filter: "blur(2px)",
           mixBlendMode: "screen",
+          contain: "layout paint size",
         }}
       />
 
