@@ -68,7 +68,6 @@ export function TopoBackground() {
     };
   }, [mx, my, reduceMotion]);
 
-  const topoUrl = `url("data:image/svg+xml;utf8,${encodeURIComponent(topoSvg)}")`;
   const trackingEnabled = !reduceMotion && !coarsePointer;
 
   return (
