@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, useScroll, useTransform, useSpring } from "motion/react";
+import { Link } from "@tanstack/react-router";
 
 type Step = {
   n: string;
@@ -282,6 +283,11 @@ function Visual({ variant, index }: { variant: Step["visual"]; index: number }) 
   if (variant === "template") {
     return (
       <motion.div {...base} className="relative h-full w-full">
+        <Link
+          to="/templates"
+          aria-label="Browse templates"
+          className="absolute inset-0 z-20 cursor-pointer rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-seal/60"
+        />
         {[0, 1, 2].map((i) => (
           <motion.div
             key={i}
