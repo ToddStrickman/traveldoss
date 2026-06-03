@@ -21,12 +21,11 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-type Tab = "paste" | "transcript" | "inbox";
+type Tab = "paste" | "transcript";
 
 const TABS: { id: Tab; n: string; label: string; sub: string }[] = [
   { id: "paste", n: "I", label: "Paste Itinerary", sub: "ChatGPT, Claude, notes." },
   { id: "transcript", n: "II", label: "Upload Transcript", sub: "Text or .vtt / .srt files." },
-  { id: "inbox", n: "III", label: "Scan Inbox", sub: "Bookings, last six months." },
 ];
 
 function serial() {
@@ -61,10 +60,6 @@ export function IngestionModal({
 
   function submit() {
     if (!template) return;
-    if (tab === "inbox") {
-      window.location.href = "/api/public/google/start";
-      return;
-    }
     const trimmed = text.trim();
     if (trimmed.length < 8) {
       toast.error("Add a few lines first so we have something to craft.");
