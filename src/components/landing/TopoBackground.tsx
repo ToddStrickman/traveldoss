@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, useMotionValue, useMotionTemplate, useSpring, useReducedMotion } from "motion/react";
 
 /**
@@ -13,14 +13,20 @@ export function TopoBackground() {
   const reduceMotion = useReducedMotion();
   const [coarsePointer, setCoarsePointer] = useState(false);
   const [radius, setRadius] = useState(360);
+  const [moving, setMoving] = useState(false);
 
   // Motion values follow the cursor; spring gives a damped, plush trail.
   const initialX = typeof window !== "undefined" ? window.innerWidth / 2 : 0;
   const initialY = typeof window !== "undefined" ? window.innerHeight / 2 : 0;
   const mx = useMotionValue(initialX);
   const my = useMotionValue(initialY);
-  const sx = useSpring(mx, { stiffness: 120, damping: 24, mass: 0.6 });
-  const sy = useSpring(my, { stiffness: 120, damping: 24, mass: 0.6 });
+  // While moving: soft + heavy → long, plush trail.
+  // When stopped: stiffer + lighter → calm, quick settle (no overshoot).
+  const springConfig = moving
+    ? { stiffness: 55, damping: 22, mass: 1.1 }
+    : { stiffness: 140, damping: 28, mass: 0.5 };
+  const sx = useSpring(mx, springConfig);
+  const sy = useSpring(my, springConfig);
 
   // Cursor-tracked radial mask. Multi-stop falloff (ease-out cubic-ish) so the
   // edge dissolves into the navy with no visible ring. Radius scales with the
@@ -46,14 +52,19 @@ export function TopoBackground() {
     window.addEventListener("resize", computeRadius);
 
     if (reduceMotion) return;
+    let idleTimer: ReturnType<typeof setTimeout> | undefined;
     const onMove = (e: PointerEvent) => {
       mx.set(e.clientX);
       my.set(e.clientY);
+      setMoving(true);
+      if (idleTimer) clearTimeout(idleTimer);
+      idleTimer = setTimeout(() => setMoving(false), 140);
     };
     window.addEventListener("pointermove", onMove, { passive: true });
     return () => {
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("resize", computeRadius);
+      if (idleTimer) clearTimeout(idleTimer);
     };
   }, [mx, my, reduceMotion]);
 
