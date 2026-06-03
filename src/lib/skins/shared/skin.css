@@ -105,20 +105,43 @@
 }
 @media (max-width: 860px) {
   .tds-flightstrip-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 12px;
     padding: 14px 16px;
   }
-  .tds-flightstrip-route { white-space: normal; }
+  .tds-flightstrip-route {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
   .tds-flightstrip-fields {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: max-content minmax(0, 1fr);
+    column-gap: 14px;
+    row-gap: 6px;
     border-top: 1px dashed var(--tds-rule);
     padding-top: 10px;
   }
   .tds-flightstrip-field {
-    padding: 4px 0;
-    border-left: 0;
+    display: contents;
   }
+  .tds-flightstrip-field dt {
+    align-self: baseline;
+    padding: 0;
+  }
+  .tds-flightstrip-field dd {
+    align-self: baseline;
+    text-align: right;
+    white-space: normal;
+    overflow: visible;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    min-width: 0;
+  }
+}
+@media (max-width: 420px) {
+  .tds-flightstrip-row { padding: 12px 14px; }
+  .tds-flightstrip-fields { column-gap: 10px; }
+  .tds-flightstrip-route { font-size: 18px; }
 }
 
 /* =============================================================
