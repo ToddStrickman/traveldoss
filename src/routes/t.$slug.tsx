@@ -70,7 +70,7 @@ export const Route = createFileRoute("/t/$slug")({
   },
   component: DossierPage,
   notFoundComponent: () => (
-    <div className="flex min-h-screen items-center justify-center bg-background px-6 text-center">
+    <div className="flex min-h-dvh items-center justify-center bg-background px-6 text-center">
       <div>
         <p className="text-[10px] uppercase tracking-[0.4em] text-ink/45">404</p>
         <h1
@@ -92,7 +92,7 @@ export const Route = createFileRoute("/t/$slug")({
     </div>
   ),
   errorComponent: () => (
-    <div className="flex min-h-screen items-center justify-center bg-background px-6 text-center">
+    <div className="flex min-h-dvh items-center justify-center bg-background px-6 text-center">
       <div>
         <h1 className="text-2xl text-ink">Couldn't load this dossier</h1>
         <p className="mt-2 text-sm text-ink-soft">Please try again later.</p>
@@ -387,7 +387,7 @@ function ViewSwitch({
 
 function ExpiredDossier({ slug, destination }: { slug: string; destination: string }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-6 text-center">
+    <div className="flex min-h-dvh items-center justify-center bg-background px-6 text-center">
       <div className="max-w-md">
         <p className="text-[10px] uppercase tracking-[0.4em] text-ink/45">Expired</p>
         <h1
