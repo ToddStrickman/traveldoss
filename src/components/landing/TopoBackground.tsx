@@ -1,94 +1,49 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
+import { motion, useMotionValue, useMotionTemplate, useSpring, useReducedMotion } from "motion/react";
 
 /**
- * Plush, navy topographic background with a mouse-following spotlight.
- * - Fixed, sits behind all content (z-0). Page content should be z-10+.
- * - Ignores pointer events so clicks pass through to UI.
- * - The spotlight dims when hovering over clickable elements
- *   (a, button, [role="button"], [data-clickable]) so interactives stay crisp.
+ * Cursor-reveal topographic background.
+ * - Base: deep navy theme wash (lives below).
+ * - Reveal layer: ivory paper with topo contours, masked to a soft radial
+ *   under the cursor — like a flashlight on parchment.
+ * - Honors prefers-reduced-motion (static low-opacity reveal, no tracking).
+ * - pointer-events: none everywhere; clicks pass through.
  */
 export function TopoBackground() {
-  const spotRef = useRef<HTMLDivElement>(null);
-  const dimRef = useRef(false);
+  const reduceMotion = useReducedMotion();
+  const [coarsePointer, setCoarsePointer] = useState(false);
+
+  // Motion values follow the cursor; spring gives a damped, plush trail.
+  const initialX = typeof window !== "undefined" ? window.innerWidth / 2 : 0;
+  const initialY = typeof window !== "undefined" ? window.innerHeight / 2 : 0;
+  const mx = useMotionValue(initialX);
+  const my = useMotionValue(initialY);
+  const sx = useSpring(mx, { stiffness: 120, damping: 24, mass: 0.6 });
+  const sy = useSpring(my, { stiffness: 120, damping: 24, mass: 0.6 });
+
+  // CSS mask that tracks the cursor — black reveals, transparent hides.
+  const mask = useMotionTemplate`radial-gradient(circle 320px at ${sx}px ${sy}px, black 0%, rgba(0,0,0,0.85) 35%, rgba(0,0,0,0.35) 65%, transparent 100%)`;
 
   useEffect(() => {
-    const el = spotRef.current;
-    if (!el) return;
-
-    // Disable on touch / reduced-motion devices — spotlight is decorative.
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
-    if (reduceMotion || coarsePointer) {
-      el.style.opacity = "0";
-      return;
-    }
-
-    const SIZE = 720;
-    const HALF = SIZE / 2;
-    const EASE = 0.06;
-    const EPS = 0.5; // px — stop RAF when settled
-
-    let raf = 0;
-    let running = false;
-    let tx = window.innerWidth / 2;
-    let ty = window.innerHeight / 2;
-    let cx = tx;
-    let cy = ty;
-    let lastDim = false;
-    el.style.transform = `translate3d(${cx - HALF}px, ${cy - HALF}px, 0)`;
-
-    const start = () => {
-      if (running || document.hidden) return;
-      running = true;
-      raf = requestAnimationFrame(tick);
-    };
-
-    const tick = () => {
-      const dx = tx - cx;
-      const dy = ty - cy;
-      cx += dx * EASE;
-      cy += dy * EASE;
-      el.style.transform = `translate3d(${cx - HALF}px, ${cy - HALF}px, 0)`;
-      if (Math.abs(dx) < EPS && Math.abs(dy) < EPS) {
-        running = false;
-        return;
-      }
-      raf = requestAnimationFrame(tick);
-    };
-
+    setCoarsePointer(window.matchMedia("(pointer: coarse)").matches);
+    if (reduceMotion) return;
     const onMove = (e: PointerEvent) => {
-      tx = e.clientX;
-      ty = e.clientY;
-      const t = e.target as Element | null;
-      const dim = !!t?.closest(
-        'a, button, [role="button"], [data-clickable], input, textarea, select, label'
-      );
-      if (dim !== lastDim) {
-        lastDim = dim;
-        el.style.opacity = dim ? "0.35" : "1";
-      }
-      start();
+      mx.set(e.clientX);
+      my.set(e.clientY);
     };
-
-    const onVisibility = () => {
-      if (!document.hidden) start();
-    };
-
     window.addEventListener("pointermove", onMove, { passive: true });
-    document.addEventListener("visibilitychange", onVisibility);
-    return () => {
-      window.removeEventListener("pointermove", onMove);
-      document.removeEventListener("visibilitychange", onVisibility);
-      cancelAnimationFrame(raf);
-    };
-  }, []);
+    return () => window.removeEventListener("pointermove", onMove);
+  }, [mx, my, reduceMotion]);
+
+  const topoUrl = `url("data:image/svg+xml;utf8,${encodeURIComponent(topoSvg)}")`;
+  const trackingEnabled = !reduceMotion && !coarsePointer;
 
   return (
     <div
       aria-hidden
       className="pointer-events-none fixed inset-0 z-0 overflow-hidden"
     >
-      {/* Deep navy wash */}
+      {/* Base: deep navy wash */}
       <div
         className="absolute inset-0"
         style={{
@@ -97,30 +52,46 @@ export function TopoBackground() {
         }}
       />
 
-      {/* Topographic contour lines — repeated SVG, ivory on navy */}
+      {/* Always-on faint contours so the navy never feels flat */}
       <div
-        className="absolute inset-0 opacity-[0.18]"
+        className="absolute inset-0 opacity-[0.07]"
         style={{
-          backgroundImage: `url("data:image/svg+xml;utf8,${encodeURIComponent(
-            topoSvg
-          )}")`,
+          backgroundImage: topoUrl,
           backgroundSize: "900px 900px",
           backgroundRepeat: "repeat",
           mixBlendMode: "screen",
         }}
       />
 
-      {/* Mouse spotlight — illuminates the topo beneath the cursor */}
-      <div
-        ref={spotRef}
-        className="absolute left-0 top-0 h-[720px] w-[720px] will-change-transform transition-opacity duration-300"
-        style={{
-          background:
-            "radial-gradient(circle at center, rgba(247,243,237,0.22) 0%, rgba(214,194,156,0.10) 28%, rgba(247,243,237,0.04) 55%, transparent 72%)",
-          mixBlendMode: "screen",
-          contain: "layout paint size",
-        }}
-      />
+      {/* Cursor-reveal layer: ivory paper + dark topo contours, masked to a soft disc */}
+      {trackingEnabled ? (
+        <motion.div
+          className="absolute inset-0 will-change-[mask-image]"
+          style={{
+            backgroundColor: "#FFFFF0",
+            backgroundImage: `${topoUrlDark()}`,
+            backgroundSize: "640px 640px",
+            backgroundRepeat: "repeat",
+            WebkitMaskImage: mask,
+            maskImage: mask,
+            mixBlendMode: "screen",
+            opacity: 0.55,
+            contain: "layout paint",
+          }}
+        />
+      ) : (
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundColor: "#FFFFF0",
+            backgroundImage: topoUrlDark(),
+            backgroundSize: "640px 640px",
+            backgroundRepeat: "repeat",
+            mixBlendMode: "screen",
+            opacity: 0.06,
+          }}
+        />
+      )}
 
       {/* Subtle vignette to keep edges plush */}
       <div
@@ -132,6 +103,17 @@ export function TopoBackground() {
       />
     </div>
   );
+}
+
+/* Dark-stroke variant for the reveal layer (over ivory).
+ * Slightly tighter scale + heavier strokes so the contour reads on paper. */
+function topoUrlDark() {
+  const svg = topoSvg
+    .replace(/%23F7F3ED/g, "%230B1325")
+    .replace(/stroke-opacity='0\.55'/g, "stroke-opacity='0.45'")
+    .replace(/stroke-opacity='0\.45'/g, "stroke-opacity='0.38'")
+    .replace(/stroke-opacity='0\.4'/g, "stroke-opacity='0.32'");
+  return `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`;
 }
 
 /* Hand-drawn-feeling concentric topographic loops. Ivory strokes, navy-transparent fills. */
