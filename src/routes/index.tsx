@@ -7,7 +7,7 @@ import { InfiniteDocs } from "@/components/landing/InfiniteDocs";
 import { TemplateGallery } from "@/components/flow/TemplateGallery";
 import { IngestionModal } from "@/components/flow/IngestionModal";
 import { GenerationLoader } from "@/components/GenerationLoader";
-import type { SkinModule } from "@/lib/skins/registry";
+import { SKINS, type SkinModule } from "@/lib/skins/registry";
 import type { Block } from "@/lib/skins/types";
 import { createTripFromIngestion } from "@/lib/trips.functions";
 import { supabase } from "@/integrations/supabase/client";
