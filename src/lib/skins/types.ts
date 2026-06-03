@@ -17,25 +17,57 @@ export type Block =
       note?: string;
       /** Optional clock time, e.g. "08:30" — used by all three views. */
       time?: string;
-      /** Operational metadata for the grid/table view. */
+      /** Operational metadata shared by every category. */
       phone?: string;
       website?: string;
       hours?: string;
       mapsUrl?: string;
-      /** Optional reservation hint (e.g. "Confirmation #L-882, party of 2"). */
+      /** Booking / confirmation reference (e.g. "Conf #L-882, party of 2"). */
       reservation?: string;
+      /**
+       * Standardized trip-component categories. The first six are the canonical
+       * set every template/skin renders consistently. The remainder are legacy
+       * aliases kept for backward compatibility (auto-mapped to canonical
+       * icons + labels).
+       */
       category?:
-        | "stay"
-        | "eat"
-        | "see"
-        | "do"
-        | "drink"
-        | "other"
-        | "hotel"
-        | "airfare"
-        | "currency"
-        | "walking"
-        | "food";
+        // ── Canonical six ─────────────────────────────────────────
+        | "transit"        // Travel vendors: taxi, ferry, train, transfer
+        | "restaurant"     // Restaurants & dining
+        | "walk"           // Walks & hikes
+        | "event"          // Concerts, theater, sports
+        | "accommodation"  // Hotels & rentals
+        | "culture"        // Cultural sites & museums
+        // ── Legacy aliases (auto-mapped) ──────────────────────────
+        | "stay" | "eat" | "see" | "do" | "drink" | "other"
+        | "hotel" | "airfare" | "currency" | "walking" | "food";
+      // ── Transit (taxi / ferry / transfer) ────────────────────────
+      vendor?: string;             // operating company
+      pickup?: string;             // pickup / departure location
+      dropoff?: string;            // drop-off / arrival location
+      // ── Restaurant ───────────────────────────────────────────────
+      dressCode?: string;          // e.g. "Smart casual"
+      mustOrder?: string;          // editorial: must-order dish
+      // ── Walk / hike ──────────────────────────────────────────────
+      trailhead?: string;          // trailhead address
+      distance?: string;           // e.g. "6.4 km"
+      duration?: string;           // e.g. "~2h"
+      difficulty?: string;         // "Easy" / "Moderate" / "Hard"
+      waypoints?: string;          // notable sights along the way
+      prep?: string;               // preparation note (bring water etc.)
+      // ── Event (concert / theater / sport) ────────────────────────
+      venue?: string;              // venue name (when different from `name`)
+      doorOpen?: string;           // doors open time
+      ticketLink?: string;         // ticket / wallet URL
+      seat?: string;               // section / row / seat
+      venueRules?: string;         // bag policy / venue rules
+      // ── Accommodation ────────────────────────────────────────────
+      checkIn?: string;            // check-in time
+      checkOut?: string;           // check-out time
+      amenities?: string;          // notable amenities
+      // ── Culture / museum ─────────────────────────────────────────
+      ticketRequirement?: string;  // "Pre-booked entry" / "Walk-in"
+      tourDetails?: string;        // guided tour info
     }
   | {
       kind: "flight";
