@@ -56,10 +56,37 @@ function Landing() {
       return;
     }
 
+    const pendingBlocks = window.sessionStorage.getItem("td_pending_blocks");
+    const pendingStep = window.sessionStorage.getItem("td_pending_step") ?? "Reading your itinerary…";
     window.sessionStorage.removeItem("td_pending_template");
-    setPicked(skin);
-    setModalOpen(true);
-  }, []);
+    window.sessionStorage.removeItem("td_pending_blocks");
+    window.sessionStorage.removeItem("td_pending_step");
+
+    if (!pendingBlocks) {
+      setPicked(skin);
+      setModalOpen(true);
+      return;
+    }
+
+    const resume = async () => {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) {
+        setPicked(skin);
+        setModalOpen(true);
+        return;
+      }
+      setGenSteps([pendingStep, "Crafting your dossier…", "Designing the pages…"]);
+      try {
+        const r = await create({ data: { templateId: skin.meta.id, blocks: JSON.parse(pendingBlocks) as Block[] } });
+        setPendingSlug(r.slug);
+      } catch (e) {
+        console.error(e);
+        toast.error("Couldn't create your dossier", { description: String(e) });
+        setGenSteps(null);
+      }
+    };
+    void resume();
+  }, [create]);
 
   function openWithTemplate(skin: SkinModule) {
     setPicked(skin);
@@ -71,6 +98,8 @@ function Landing() {
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) {
       window.sessionStorage.setItem("td_pending_template", picked.meta.id);
+      window.sessionStorage.setItem("td_pending_blocks", JSON.stringify(blocks));
+      window.sessionStorage.setItem("td_pending_step", firstStep);
       toast.message("Sign in to compose your dossier", { description: "Your studio, your journeys — quiet and owned." });
       navigate({ to: "/login", search: { redirect: "/" } });
       return;
