@@ -143,8 +143,28 @@ function SkinCard({
 function TemplatesPage() {
   const [picking, setPicking] = useState<string | null>(null);
   const [authed, setAuthed] = useState<boolean | null>(null);
+  const [query, setQuery] = useState("");
+  const [activeTag, setActiveTag] = useState<string | null>(null);
   const pickFn = useServerFn(pickTemplate);
   const navigate = useNavigate();
+
+  const allTags = useMemo(
+    () => Array.from(new Set(SKINS.flatMap((s) => s.meta.tags))).sort(),
+    []
+  );
+
+  const filteredSkins = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return SKINS.filter((skin) => {
+      const matchesSearch =
+        !q ||
+        skin.meta.codename.toLowerCase().includes(q) ||
+        skin.meta.personality.toLowerCase().includes(q) ||
+        skin.meta.tags.some((t) => t.toLowerCase().includes(q));
+      const matchesTag = !activeTag || skin.meta.tags.includes(activeTag);
+      return matchesSearch && matchesTag;
+    });
+  }, [query, activeTag]);
 
   useEffect(() => {
     let mounted = true;
@@ -225,8 +245,70 @@ function TemplatesPage() {
           {SKINS.length} of 8 live · more landing this week
         </p>
 
-        <div className="mt-16 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-          {SKINS.map((skin) => (
+        {/* Search + Filter */}
+        <div className="mt-10 flex flex-col gap-6">
+          {/* Search bar */}
+          <div className="relative max-w-md">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/30" />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search by name, mood, or style…"
+              className="w-full rounded-none border border-ink/10 bg-surface py-3 pl-10 pr-10 text-sm text-ink placeholder:text-ink/30 focus:border-seal/50 focus:outline-none"
+            />
+            {query && (
+              <button
+                onClick={() => setQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-ink/30 hover:text-ink"
+                aria-label="Clear search"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Tag chips */}
+          <div className="flex flex-wrap items-center gap-2">
+            {allTags.map((tag) => {
+              const active = activeTag === tag;
+              return (
+                <button
+                  key={tag}
+                  onClick={() => setActiveTag(active ? null : tag)}
+                  className={`rounded-full border px-3.5 py-1.5 text-[10px] font-medium uppercase tracking-[0.25em] transition-colors duration-300 ${
+                    active
+                      ? "border-seal bg-seal/10 text-seal"
+                      : "border-ink/10 text-ink/50 hover:border-ink/30 hover:text-ink"
+                  }`}
+                >
+                  {tag}
+                </button>
+              );
+            })}
+            {(query || activeTag) && (
+              <button
+                onClick={() => {
+                  setQuery("");
+                  setActiveTag(null);
+                }}
+                className="ml-2 text-[10px] font-medium uppercase tracking-[0.25em] text-ink/40 underline-offset-4 transition-colors hover:text-seal"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+
+          {/* Result count */}
+          <p className="text-[10px] uppercase tracking-[0.4em] text-ink/40">
+            {filteredSkins.length} template{filteredSkins.length !== 1 ? "s" : ""}
+            {activeTag ? ` · ${activeTag}` : ""}
+            {query ? ` · “${query.trim()}”` : ""}
+          </p>
+        </div>
+
+        <div className="mt-10 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+          {filteredSkins.map((skin) => (
             <SkinCard
               key={skin.meta.id}
               skin={skin}
@@ -234,6 +316,22 @@ function TemplatesPage() {
               picking={picking === skin.meta.id}
             />
           ))}
+          {filteredSkins.length === 0 && (
+            <div className="col-span-full py-20 text-center">
+              <p className="text-sm text-ink-soft">
+                No templates match your search.
+              </p>
+              <button
+                onClick={() => {
+                  setQuery("");
+                  setActiveTag(null);
+                }}
+                className="mt-4 text-[10px] font-medium uppercase tracking-[0.4em] text-seal underline-offset-4 hover:underline"
+              >
+                Clear filters
+              </button>
+            </div>
+          )}
         </div>
       </main>
     </div>
