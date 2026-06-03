@@ -63,6 +63,9 @@ async function dragCard(page: Page, fromText: string, toSelector: string) {
 for (const skin of SKINS) {
   test.describe(`kanban DnD · skin=${skin}`, () => {
     test.beforeEach(async ({ page }) => {
+      // Wipe persisted harness state so each test starts from the fixture.
+      await page.goto(`/e2e/kanban?skin=${skin}&fixture=full`);
+      await page.evaluate(() => window.localStorage.clear());
       await page.goto(`/e2e/kanban?skin=${skin}&fixture=full`);
       await expect(page.locator('[data-testid="kanban-harness"]')).toBeVisible();
     });
