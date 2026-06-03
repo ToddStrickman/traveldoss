@@ -3,6 +3,7 @@ import { DEMO_BLOCKS, DEMO_TRIP } from "./demo";
 import { CategoryIcon, categoryLabel } from "./shared/CategoryIcon";
 import { FlightInline, FlightsSummary, collectFlights } from "./shared/FlightsSummary";
 import { EditableText, SortableBlocks, useEditing } from "./shared/Editable";
+import { groupForBoard } from "./shared/groupForBoard";
 import { Plus } from "lucide-react";
 import "./shared/skin.css";
 
@@ -28,6 +29,7 @@ function Render({ trip, blocks, view = "vertical" }: SkinRenderProps) {
   return (
     <div
       className="min-h-full tds"
+      data-view={view}
       data-editing={editing ? "true" : undefined}
       style={{
         ["--tds-bg" as string]: tokens.bg,
@@ -40,6 +42,8 @@ function Render({ trip, blocks, view = "vertical" }: SkinRenderProps) {
         background: tokens.bg,
         color: tokens.ink,
         fontFamily: tokens.fontBody,
+        // Used by the View Transitions wrapper in t.$slug.tsx
+        viewTransitionName: "tds-canvas",
       }}
     >
       <header
@@ -58,7 +62,7 @@ function Render({ trip, blocks, view = "vertical" }: SkinRenderProps) {
         <h1
           style={{
             fontFamily: tokens.fontDisplay,
-            fontSize: "clamp(56px, 9vw, 132px)",
+            fontSize: "var(--tds-fs-display)",
             lineHeight: 0.95,
             letterSpacing: "-0.025em",
             fontWeight: 400,
@@ -76,7 +80,7 @@ function Render({ trip, blocks, view = "vertical" }: SkinRenderProps) {
           style={{
             fontFamily: tokens.fontDisplay,
             fontStyle: "italic",
-            fontSize: 22,
+            fontSize: "var(--tds-fs-h3)",
             marginTop: 28,
             maxWidth: 560,
             color: tokens.ink,
@@ -92,90 +96,35 @@ function Render({ trip, blocks, view = "vertical" }: SkinRenderProps) {
         </p>
       </section>
 
-      <main
-        className={
-          view === "grid" || view === "horizontal"
-            ? "mx-auto max-w-[1200px] px-6 py-24 md:px-10"
-            : "mx-auto max-w-[760px] px-6 py-24 md:px-10"
-        }
-      >
-        <div
-          className={
-            view === "grid"
-              ? "grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
-              : view === "horizontal"
-              ? "flex snap-x snap-mandatory gap-6 overflow-x-auto pb-6"
-              : "space-y-10"
-          }
-          style={
-            view === "horizontal"
-              ? { scrollPaddingInline: 24 }
-              : undefined
-          }
-        >
-          <SortableBlocks
-            blocks={body}
-            renderBlock={(b) => {
-              const card = (
-                <BlockRender
-                  block={b}
-                  onChange={(patch) => onBlockChange(realIndex(b), patch)}
-                />
-              );
-              if (view === "grid") {
-                return (
-                  <div
-                    className="rounded-lg p-5"
-                    style={{ background: "rgba(0,0,0,0.025)", border: `1px solid ${tokens.rule}` }}
-                  >
-                    {card}
-                  </div>
-                );
-              }
-              if (view === "horizontal") {
-                return (
-                  <div
-                    className="shrink-0 snap-start rounded-lg p-5"
-                    style={{
-                      width: "min(360px, 80vw)",
-                      background: "rgba(0,0,0,0.025)",
-                      border: `1px solid ${tokens.rule}`,
-                    }}
-                  >
-                    {card}
-                  </div>
-                );
-              }
-              return card;
-            }}
+      <main className="mx-auto w-full px-6 py-24 md:px-10" style={{ maxWidth: 1320 }}>
+        {view === "vertical" ? (
+          <div className="mx-auto space-y-10" style={{ maxWidth: 760 }}>
+            <SortableBlocks
+              blocks={body}
+              renderBlock={(b) => (
+                <BlockRender block={b} onChange={(patch) => onBlockChange(realIndex(b), patch)} />
+              )}
+            />
+            {editing ? (
+              <button
+                type="button"
+                className="tds-add-block tds-tap"
+                data-print="hide"
+                onClick={() => onBlockAdd(blocks.length - 1, "paragraph")}
+              >
+                <Plus size={12} /> Add block
+              </button>
+            ) : null}
+            {flights.length > 0 && <FlightsSummary flights={flights} />}
+          </div>
+        ) : (
+          <BoardView
+            view={view}
+            body={body}
+            flights={flights}
+            onChange={(b, patch) => onBlockChange(realIndex(b), patch)}
           />
-          {editing ? (
-            <button
-              type="button"
-              className="tds-add-block"
-              data-print="hide"
-              onClick={() => onBlockAdd(blocks.length - 1, "paragraph")}
-            >
-              <Plus size={12} /> Add block
-            </button>
-          ) : null}
-          {flights.length > 0 && (
-            <div
-              className="tds"
-              style={{
-                ["--tds-bg" as any]: tokens.bg,
-                ["--tds-ink" as any]: tokens.ink,
-                ["--tds-soft" as any]: tokens.inkSoft,
-                ["--tds-accent" as any]: tokens.accent,
-                ["--tds-rule" as any]: tokens.rule,
-                ["--tds-fontDisplay" as any]: tokens.fontDisplay,
-                ["--tds-fontBody" as any]: tokens.fontBody,
-              }}
-            >
-              <FlightsSummary flights={flights} />
-            </div>
-          )}
-        </div>
+        )}
       </main>
 
       <footer
@@ -184,6 +133,79 @@ function Render({ trip, blocks, view = "vertical" }: SkinRenderProps) {
       >
         Prepared with TravelDoss · /t/{trip.slug}
       </footer>
+    </div>
+  );
+}
+
+/** Grid + Horizontal share the same item set; CSS does the layout work via
+ *  the `.tds[data-view="..."]` selectors in skin.css. */
+function BoardView({
+  view,
+  body,
+  flights,
+  onChange,
+}: {
+  view: "grid" | "horizontal";
+  body: Block[];
+  flights: ReturnType<typeof collectFlights>;
+  onChange: (block: Block, patch: Partial<Block>) => void;
+}) {
+  const items = groupForBoard(body);
+  return (
+    <div className="tds-canvas" data-view={view}>
+      {items.map((item, i) => {
+        if (item.type === "day") {
+          return (
+            <section key={`d-${i}`} className="tds-card tds-daycard" data-block="day">
+              <DayHeader block={item.day} onChange={(p) => onChange(item.day, p)} />
+              {item.places.map((p, j) => (
+                <BlockRender key={`p-${j}`} block={p} onChange={(patch) => onChange(p, patch)} />
+              ))}
+            </section>
+          );
+        }
+        const b = item.block;
+        // Standalone place/flight: render as a card so it lives on the board.
+        if (b.kind === "place" || b.kind === "flight") {
+          return (
+            <section key={`b-${i}`} className="tds-card" data-block={b.kind}>
+              <BlockRender block={b} onChange={(patch) => onChange(b, patch)} />
+            </section>
+          );
+        }
+        // Sections, paragraphs, quotes, notes span the full canvas width
+        // via skin.css `grid-column: 1 / -1` / `flex: 0 0 100%` rules.
+        return (
+          <BlockRender
+            key={`b-${i}`}
+            block={b}
+            onChange={(patch) => onChange(b, patch)}
+          />
+        );
+      })}
+      {flights.length > 0 && <FlightsSummary flights={flights} />}
+    </div>
+  );
+}
+
+function DayHeader({
+  block,
+  onChange,
+}: {
+  block: Extract<Block, { kind: "day" }>;
+  onChange: (p: Partial<Block>) => void;
+}) {
+  return (
+    <div>
+      <div style={{ fontSize: "var(--tds-fs-meta)", letterSpacing: "0.45em", textTransform: "uppercase", color: tokens.accent }}>
+        Day {String(block.n).padStart(2, "0")}
+      </div>
+      <h3 style={{ fontFamily: tokens.fontDisplay, fontSize: "var(--tds-fs-h3)", marginTop: 6, letterSpacing: "-0.01em" }}>
+        <EditableText as="span" value={block.label} placeholder="Day label" onChange={(v) => onChange({ label: v } as Partial<Block>)} />
+      </h3>
+      <p style={{ marginTop: 10, fontSize: "var(--tds-fs-body)", lineHeight: 1.7, color: tokens.inkSoft }}>
+        <EditableText as="span" multiline value={block.notes ?? ""} placeholder="Notes for the day…" onChange={(v) => onChange({ notes: v } as Partial<Block>)} />
+      </p>
     </div>
   );
 }
