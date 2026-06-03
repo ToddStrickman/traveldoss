@@ -198,10 +198,9 @@ function TemplatesPage() {
           <span className="italic text-ink/85">template<span className="text-seal">.</span></span>
         </motion.h1>
         <p className="mt-6 max-w-xl text-sm leading-relaxed text-ink-soft md:text-base">
-          Eight named designs for your trip's microsite. One dollar mints a
-          private URL for a month. Fill it yourself, scan your inbox, or paste
-          in what ChatGPT gave you — the skin makes it look like a magazine
-          either way.
+          Eight named designs for your trip's quiet studio. One dollar mints a
+          private URL for a month — mapped routes, day-by-day plans, reservations,
+          and editorial notes composed into one shareable dossier.
         </p>
         <p className="mt-3 max-w-xl text-[10px] uppercase tracking-[0.4em] text-ink/40">
           {SKINS.length} of 8 live · more landing this week

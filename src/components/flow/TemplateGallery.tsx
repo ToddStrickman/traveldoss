@@ -10,7 +10,7 @@ export function TemplateGallery({ onPick }: { onPick: (skin: SkinModule) => void
           The Templates
         </div>
         <p className="hidden text-[11px] uppercase tracking-[0.3em] text-ink/40 md:block">
-          Pick one to begin
+          Begin your journey
         </p>
       </div>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">

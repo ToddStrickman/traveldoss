@@ -64,8 +64,8 @@ function Dashboard() {
               Your <span className="italic text-ink/85">dossiers<span className="text-seal">.</span></span>
             </h1>
             <p className="mt-6 max-w-md text-sm leading-relaxed text-ink-soft">
-              Each trip lives at its own private URL — quietly composed, shareable like a wedding site,
-              yours for a month.
+              Every trip becomes a quiet studio — mapped routes, day-by-day plans, reservations,
+              and editorial notes at a private URL you can share like a wedding site.
             </p>
           </div>
           <div className="col-span-12 flex md:col-span-5 md:items-end md:justify-end">
@@ -84,29 +84,30 @@ function Dashboard() {
 
         <div className="mt-14 flex items-center gap-4 td-eyebrow text-ink/35">
           <div className="td-rule w-10" />
-          {tripsQ.data ? `${tripsQ.data.trips.length} on file` : "Loading the archive"}
+          {tripsQ.data ? `${tripsQ.data.trips.length} on file` : "Retrieving your dossiers…"}
           <div className="td-rule flex-1" />
         </div>
 
         <div className="mt-10">
           {tripsQ.isLoading && (
-            <p className="td-eyebrow text-ink/40">Loading the archive…</p>
+            <p className="td-eyebrow text-ink/40">Retrieving your dossiers…</p>
           )}
 
           {tripsQ.data && tripsQ.data.trips.length === 0 && (
             <div className="surface-card flex flex-col items-center gap-5 px-10 py-20 text-center">
-              <span className="td-eyebrow text-ink/40">Empty</span>
+              <span className="td-eyebrow text-ink/40">The studio is quiet</span>
               <h3 className="td-headline text-4xl text-ink">
-                Nothing on the <span className="italic">shelf<span className="text-seal">.</span></span>
+                No journeys <span className="italic">composed yet<span className="text-seal">.</span></span>
               </h3>
               <p className="max-w-md text-sm leading-relaxed text-ink-soft">
-                Begin from a template. Every trip becomes a private, editorial dossier at its own URL — yours to share.
+                Choose a template and begin. Your dossier will map every route, arrange each day,
+                and hold every reservation — all at a private URL you can share.
               </p>
               <button
                 onClick={() => navigate({ to: "/templates" })}
                 className="mt-4 inline-block border-y border-ink/20 py-3 px-6 td-eyebrow text-ink transition-colors hover:border-seal hover:text-seal"
               >
-                Browse the Templates
+                Open a Template
               </button>
             </div>
           )}

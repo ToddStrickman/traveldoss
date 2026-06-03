@@ -55,7 +55,7 @@ function Landing() {
     if (!picked) return;
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) {
-      toast.message("Sign in to mint a dossier", { description: "Free — keeps your trip with you." });
+      toast.message("Sign in to compose your dossier", { description: "Your studio, your journeys — quiet and owned." });
       navigate({ to: "/login" });
       return;
     }

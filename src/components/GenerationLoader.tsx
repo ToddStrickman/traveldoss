@@ -94,7 +94,7 @@ export function GenerationLoader({
 }
 
 export const DEFAULT_GENERATION_STEPS = [
-  "Reading your inbox…",
-  "Researching your destination…",
-  "Designing your doc…",
+  "Gathering your plans…",
+  "Mapping every route…",
+  "Composing your dossier…",
 ];
