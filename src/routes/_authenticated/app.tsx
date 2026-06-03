@@ -93,6 +93,12 @@ function Dashboard() {
             <p className="td-eyebrow text-ink/40">Retrieving your dossiers…</p>
           )}
 
+          {tripsQ.isError && (
+            <p role="alert" className="td-eyebrow text-seal">
+              Couldn't load your dossiers: {tripsQ.error.message}
+            </p>
+          )}
+
           {tripsQ.data && tripsQ.data.trips.length === 0 && (
             <div className="surface-card flex flex-col items-center gap-5 px-10 py-20 text-center">
               <span className="td-eyebrow text-ink/40">The studio is quiet</span>
