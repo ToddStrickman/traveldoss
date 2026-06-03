@@ -8,6 +8,9 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/login")({
+  validateSearch: (search) => ({
+    redirect: typeof search.redirect === "string" ? search.redirect : "/app",
+  }),
   component: LoginPage,
   head: () => ({
     meta: [
@@ -31,6 +34,7 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
   const navigate = useNavigate();
+  const { redirect } = Route.useSearch();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -51,7 +55,7 @@ function LoginPage() {
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        navigate({ to: "/app" });
+        window.location.assign(redirect);
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Authentication failed");
@@ -63,7 +67,7 @@ function LoginPage() {
   const onGoogle = async () => {
     setLoading(true);
     const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin + "/app",
+      redirect_uri: window.location.origin + redirect,
     });
     if (result.error) {
       toast.error(result.error.message ?? "Google sign-in failed");
@@ -71,7 +75,7 @@ function LoginPage() {
       return;
     }
     if (!result.redirected) {
-      navigate({ to: "/app" });
+      window.location.assign(redirect);
     }
   };
 
