@@ -1,4 +1,3 @@
-import type { CSSProperties } from "react";
 import type { Block } from "../../types";
 import { CategoryIcon, AirfareIcon, categoryLabel } from "../CategoryIcon";
 import { EditableText, useEditing } from "../Editable";
@@ -163,15 +162,3 @@ export function PartHeading({ part }: { part: PartOfDay }) {
 }
 
 export const partOrder: PartOfDay[] = ["morning", "afternoon", "evening"];
-
-export type Tokens = { bg: string; ink: string; accent: string; rule: string };
-
-export function tokenVars(tokens: Tokens & { inkSoft?: string }): CSSProperties {
-  return {
-    // re-export so views can scope local pieces without redefining the full set
-    ["--tds-bg" as string]: tokens.bg,
-    ["--tds-ink" as string]: tokens.ink,
-    ["--tds-accent" as string]: tokens.accent,
-    ["--tds-rule" as string]: tokens.rule,
-  } as CSSProperties;
-}
