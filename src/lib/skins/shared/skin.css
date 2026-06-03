@@ -68,6 +68,46 @@
 .tds-flight-warn { color: var(--tds-accent); opacity: .9; }
 
 /* ==========================================================================
+   Mobile refinements — keep dossiers readable and tap-friendly on phones.
+   ========================================================================== */
+@media (max-width: 640px) {
+  .tds { --tds-s3: 18px; --tds-s4: 24px; --tds-s5: 36px; }
+  .tds-canvas { padding: 28px 20px 72px; }
+  .tds-foot { padding: 20px 20px 36px; letter-spacing: .3em; }
+
+  .tds-hero { padding-bottom: 18px; margin-bottom: 22px; }
+  .tds-dek { margin-top: 14px; }
+  .tds-byline { gap: 12px; margin-top: 14px; font-size: 10px; letter-spacing: .14em; }
+
+  .tds-section { margin: 36px 0 18px; }
+  .tds-section h2 { font-size: 24px; }
+  .tds-p { font-size: 16px; line-height: 1.65; }
+
+  .tds-day { margin-bottom: 28px; }
+  .tds-day-label { font-size: 22px; }
+  .tds-day-notes { font-size: 14px; }
+
+  .tds-place { padding-left: 12px; }
+  .tds-place-name { font-size: 18px; }
+  .tds-place-addr { font-size: 12px; }
+  .tds-place-note { font-size: 14px; }
+
+  .tds-quote { padding-left: 14px; margin: 28px 0; }
+  .tds-quote blockquote { font-size: 20px; line-height: 1.4; }
+
+  .tds-flight-card { padding: 16px; border-radius: 8px; }
+  .tds-flight-title { font-size: 18px; }
+  .tds-flight-row { grid-template-columns: 100px 1fr; gap: 8px; font-size: 12px; }
+}
+
+@media (max-width: 420px) {
+  .tds-canvas { padding: 24px 16px 64px; }
+  .tds-foot { padding: 18px 16px 32px; }
+  .tds-flight-row { grid-template-columns: 1fr; gap: 2px; padding: 6px 0; }
+  .tds-flight-k { font-size: 10px; letter-spacing: .25em; text-transform: uppercase; }
+}
+
+/* ==========================================================================
    VIEW: Horizontal Board (≥768px) — days become column cards
    ========================================================================== */
 @media (min-width: 768px) {
