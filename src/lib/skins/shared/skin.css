@@ -54,13 +54,16 @@
 }
 .tds-flightstrip-row {
   display: grid;
-  grid-template-columns: 22px 110px 1fr auto;
+  grid-template-columns: 132px minmax(140px, 1fr) minmax(0, 2.4fr);
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
+  gap: 20px;
+  padding: 16px 20px;
   font-size: 13px;
 }
 .tds-flightstrip-row + .tds-flightstrip-row { border-top: 1px solid var(--tds-rule); }
+.tds-flightstrip-leg {
+  display: inline-flex; align-items: center; gap: 10px;
+}
 .tds-flightstrip-icon { color: var(--tds-accent); display: inline-flex; }
 .tds-flightstrip-icon svg { width: 18px; height: 18px; }
 .tds-flightstrip-label {
@@ -68,14 +71,54 @@
   color: var(--tds-accent); font-weight: 600;
 }
 .tds-flightstrip-route {
-  font-family: var(--tds-fontDisplay); font-size: 18px; letter-spacing: .04em;
+  font-family: var(--tds-fontDisplay);
+  font-size: clamp(20px, 2.2vw, 26px);
+  letter-spacing: .04em;
+  line-height: 1.1;
+  white-space: nowrap;
 }
-.tds-flightstrip-meta { display: flex; flex-wrap: wrap; gap: 12px; color: var(--tds-soft); font-size: 12px; }
-@media (max-width: 640px) {
-  .tds-flightstrip-row { grid-template-columns: 22px 1fr; }
-  .tds-flightstrip-label { grid-column: 2; }
-  .tds-flightstrip-route { grid-column: 1 / -1; }
-  .tds-flightstrip-meta { grid-column: 1 / -1; }
+.tds-flightstrip-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 0;
+  margin: 0;
+}
+.tds-flightstrip-field {
+  padding: 2px 14px;
+  border-left: 1px solid var(--tds-rule);
+  display: flex; flex-direction: column; gap: 3px;
+  min-width: 0;
+}
+.tds-flightstrip-field:first-child { border-left: 0; padding-left: 0; }
+.tds-flightstrip-field dt {
+  font-size: 9px; letter-spacing: .3em; text-transform: uppercase;
+  color: var(--tds-soft); font-weight: 600;
+}
+.tds-flightstrip-field dd {
+  margin: 0;
+  font-size: 13px;
+  color: var(--tds-ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@media (max-width: 860px) {
+  .tds-flightstrip-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 14px 16px;
+  }
+  .tds-flightstrip-route { white-space: normal; }
+  .tds-flightstrip-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border-top: 1px dashed var(--tds-rule);
+    padding-top: 10px;
+  }
+  .tds-flightstrip-field {
+    padding: 4px 0;
+    border-left: 0;
+  }
 }
 
 /* =============================================================
