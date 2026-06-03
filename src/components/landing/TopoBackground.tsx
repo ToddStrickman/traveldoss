@@ -311,9 +311,9 @@ function buildContourPaths(width: number, height: number, margin: number, lat: n
   const paths: string[] = [];
   const fullW = width + margin * 2;
   const fullH = height + margin * 2;
-  const lineCount = Math.max(18, Math.ceil(fullH / 38));
+  const lineCount = Math.max(30, Math.ceil(fullH / 22));
   const step = fullH / (lineCount - 1);
-  const xStep = 34;
+  const xStep = 22;
   const phase = (Math.abs(lat) * 0.37 + Math.abs(lon) * 0.19) % Math.PI;
 
   for (let i = 0; i < lineCount; i += 1) {
@@ -324,18 +324,20 @@ function buildContourPaths(width: number, height: number, margin: number, lat: n
       const nx = (x + margin) / fullW;
       const valley = Math.exp(-Math.pow((x - width * 0.53) / (width * 0.22), 2));
       const ridge = Math.exp(-Math.pow((x - width * 0.18) / (width * 0.18), 2));
+      const shelf = Math.exp(-Math.pow((x - width * 0.78) / (width * 0.16), 2));
       const y =
         baseY +
         Math.sin(nx * Math.PI * 2.1 + i * 0.42 + phase) * amplitude +
         Math.sin(nx * Math.PI * 5.8 + i * 0.18 + lon) * (amplitude * 0.34) +
         valley * Math.sin(i * 0.56 + lat) * 46 -
-        ridge * Math.cos(i * 0.31 + lon) * 22;
+        ridge * Math.cos(i * 0.31 + lon) * 22 +
+        shelf * Math.sin(i * 0.43 - lat) * 18;
       points.push([round(x), round(y)]);
     }
     paths.push(smoothPath(points));
   }
 
-  const peakCount = width > 1200 ? 9 : 6;
+  const peakCount = width > 1200 ? 14 : 10;
   for (let p = 0; p < peakCount; p += 1) {
     const cx = ((p * 0.217 + Math.abs(Math.sin(lat + p)) * 0.37) % 1) * width;
     const cy = ((p * 0.291 + Math.abs(Math.cos(lon - p)) * 0.31) % 1) * height;
