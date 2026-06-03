@@ -84,6 +84,8 @@ export type SkinMeta = {
   codename: string;
   /** One-line personality hook describing the type of person */
   personality: string;
+  /** Searchable style tags for filtering templates */
+  tags: string[];
 };
 
 /** The three interchangeable layouts a skin can render the same content in. */

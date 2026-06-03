@@ -2,7 +2,7 @@ import { makeSkin } from "./shared/makeSkin";
 
 /** Marcello — New York, Art Deco. */
 export const marcello = makeSkin(
-  { id: "marcello", codename: "Marcello", personality: "Eats dinner at 10pm, never before" },
+  { id: "marcello", codename: "Marcello", personality: "Eats dinner at 10pm, never before", tags: ["Dark", "Editorial", "Classic"] },
   {
     bg: "#0F1622",
     ink: "#F4ECD8",

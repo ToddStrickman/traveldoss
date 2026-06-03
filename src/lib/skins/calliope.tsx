@@ -2,7 +2,7 @@ import { makeSkin } from "./shared/makeSkin";
 
 /** Calliope — Marrakech, Jewel. */
 export const calliope = makeSkin(
-  { id: "calliope", codename: "Calliope", personality: "Honeymoon, anniversary, just because" },
+  { id: "calliope", codename: "Calliope", personality: "Honeymoon, anniversary, just because", tags: ["Dark", "Romantic", "Editorial"] },
   {
     bg: "#10302E",
     ink: "#F7ECD6",

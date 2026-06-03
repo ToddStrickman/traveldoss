@@ -2,7 +2,7 @@ import { makeSkin } from "./shared/makeSkin";
 
 /** Halcyon — Amalfi, Mediterranean. */
 export const halcyon = makeSkin(
-  { id: "halcyon", codename: "Halcyon", personality: "Straight chilling on the beach" },
+  { id: "halcyon", codename: "Halcyon", personality: "Straight chilling on the beach", tags: ["Light", "Relaxed", "Minimal"] },
   {
     bg: "#FDF6EC",
     ink: "#293F4A",

@@ -2,7 +2,7 @@ import { makeSkin } from "./shared/makeSkin";
 
 /** Shishu — Kyoto, Japandi Minimal. */
 export const shishu = makeSkin(
-  { id: "shishu", codename: "Shishu", personality: "Plans the trip in a single Notes file" },
+  { id: "shishu", codename: "Shishu", personality: "Plans the trip in a single Notes file", tags: ["Minimal", "Light", "Classic"] },
   {
     bg: "#F3EEE6",
     ink: "#2B2722",

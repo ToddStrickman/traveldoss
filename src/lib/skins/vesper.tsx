@@ -2,7 +2,7 @@ import { makeSkin } from "./shared/makeSkin";
 
 /** Vesper — Tokyo, Dark Noir. */
 export const vesper = makeSkin(
-  { id: "vesper", codename: "Vesper", personality: "Books the red-eye on purpose" },
+  { id: "vesper", codename: "Vesper", personality: "Books the red-eye on purpose", tags: ["Dark", "Minimal", "Modern"] },
   {
     bg: "#0E0F12",
     ink: "#F2F3F5",

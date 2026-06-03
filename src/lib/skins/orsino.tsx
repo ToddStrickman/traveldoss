@@ -265,6 +265,7 @@ export const orsino: SkinModule = {
     id: "orsino",
     codename: "Orsino",
     personality: "Life is close to death adventure",
+    tags: ["Dark", "Bold"],
   },
   tokens,
   Render,

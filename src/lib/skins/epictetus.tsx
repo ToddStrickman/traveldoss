@@ -256,6 +256,7 @@ export const epictetus: SkinModule = {
     id: "epictetus",
     codename: "Epictetus",
     personality: "Reads philosophy on the train",
+    tags: ["Editorial", "Classic", "Light"],
   },
   tokens,
   Render,

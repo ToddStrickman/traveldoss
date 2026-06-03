@@ -2,7 +2,7 @@ import { makeSkin } from "./shared/makeSkin";
 
 /** Solveig — Reykjavik, Aurora Glass. */
 export const solveig = makeSkin(
-  { id: "solveig", codename: "Solveig", personality: "Travels to be unreachable" },
+  { id: "solveig", codename: "Solveig", personality: "Travels to be unreachable", tags: ["Dark", "Minimal", "Modern"] },
   {
     bg: "#0B1020",
     ink: "#EAF0FF",
