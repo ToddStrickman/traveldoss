@@ -207,6 +207,18 @@ export const DEMO_BLOCKS: Block[] = [
     duration: "~2h",
     tourDetails: "Self-guided · Camera Obscura tours on the hour",
   },
+  {
+    kind: "place",
+    name: "Walk · Alfama miradouro loop",
+    category: "walk",
+    time: "18:00",
+    trailhead: "Largo das Portas do Sol",
+    distance: "2.1 km",
+    duration: "~45 min",
+    difficulty: "Moderate",
+    waypoints: "Miradouro de Santa Luzia · Sé de Lisboa · Chafariz d'El Rei",
+    prep: "Steep cobblestones — go before dinner, not after.",
+  },
   { kind: "section", title: "Evening", partOfDay: "evening" },
   {
     kind: "place",
