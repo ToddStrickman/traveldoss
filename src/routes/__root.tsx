@@ -10,6 +10,7 @@ import {
 
 import appCss from "../styles.css?url";
 import { Toaster } from "@/components/ui/sonner";
+import { TopoBackground } from "@/components/landing/TopoBackground";
 
 function NotFoundComponent() {
   return (
@@ -146,6 +147,7 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <TopoBackground />
       <Outlet />
       <Toaster richColors position="top-center" />
     </QueryClientProvider>
