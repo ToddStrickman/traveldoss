@@ -12,6 +12,8 @@ import { ExportMenu } from "@/components/studio/ExportMenu";
 import { CompanionToday } from "@/components/studio/CompanionToday";
 import { getTemporalPhase, phaseCopy } from "@/lib/itinerary/temporal";
 import { EditingProvider, arrayMove } from "@/lib/skins/shared/Editable";
+import { IngestionModal } from "@/components/flow/IngestionModal";
+import { toast } from "sonner";
 
 type DossierContent = {
   blocks?: Block[];
@@ -109,6 +111,7 @@ function DossierPage() {
   const [isOwner, setIsOwner] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [mintOpen, setMintOpen] = useState(false);
   const save = useServerFn(updateDossier);
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -147,6 +150,25 @@ function DossierPage() {
   function onTemplateChange(id: string) {
     setTemplateId(id);
     queueSave({ blocks, templateId: id });
+  }
+
+  function handleMint(
+    nextBlocks: Block[],
+    _sourceLabel: string,
+    nextDestination: string | null,
+  ) {
+    setBlocks(nextBlocks);
+    const patch: Parameters<typeof queueSave>[0] = {
+      blocks: nextBlocks,
+      templateId,
+    };
+    if (nextDestination && nextDestination !== destination) {
+      setDestination(nextDestination);
+      patch.destination = nextDestination;
+    }
+    queueSave(patch);
+    setMintOpen(false);
+    toast.success("Trip minted — your dossier is live.");
   }
 
   const editingCtx = useMemo(
@@ -243,9 +265,16 @@ function DossierPage() {
           saving={saving}
           savedAt={savedAt}
           onTemplateChange={onTemplateChange}
+          onMint={() => setMintOpen(true)}
         />
       )}
       <ExportMenu slug={trip.slug} canPushToDocs={isOwner} />
+      <IngestionModal
+        open={mintOpen}
+        onOpenChange={setMintOpen}
+        template={getSkin(templateId) ?? FALLBACK_SKIN}
+        onGenerate={handleMint}
+      />
     </EditingProvider>
   );
 }
