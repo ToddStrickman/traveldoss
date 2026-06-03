@@ -88,30 +88,37 @@ export function IngestionModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="td-grain max-w-3xl overflow-hidden border-white/10 bg-paper/95 p-0 text-ink shadow-[0_40px_120px_-30px_rgba(0,0,0,0.6)] sm:rounded-xl">
         {/* Letterhead */}
-        <div className="relative border-b border-ink/10 px-10 pb-7 pt-10">
-          <div className="flex items-start justify-between gap-6">
-            <div className="flex flex-col gap-3">
+        <div className="relative border-b border-ink/10 px-10 pb-8 pt-10">
+          <div className="flex items-start justify-between gap-8">
+            <div className="flex flex-col gap-4">
               <div className="td-eyebrow flex items-center gap-3 text-ink/55">
                 <span className="h-px w-8 bg-ink/25" />
                 TravelDoss<span className="text-ink/30">®</span>
                 <span className="text-ink/30">·</span>
                 {template ? template.meta.codename : "Template"}
               </div>
-              <h2 className="td-headline text-[2.6rem] font-normal leading-[1.02] tracking-[-0.02em] text-ink">
+              <h2 className="td-headline text-[2.75rem] font-normal leading-[1.02] tracking-[-0.022em] text-ink">
                 Bring your trip
-                <span className="italic text-ink/80"> in</span>
+                <span className="italic text-ink/75"> in</span>
                 <span className="text-seal">.</span>
               </h2>
-              <p className="max-w-md text-[13px] leading-relaxed text-ink-soft">
-                Three ways in. One result — a quietly composed dossier, set in this template.
+              <p
+                className="max-w-md text-[15px] leading-[1.55] text-ink-soft"
+                style={{ fontFamily: "var(--font-display)" }}
+              >
+                Three ways in. One result —{" "}
+                <span className="italic text-ink/70">a quietly composed dossier,</span> set in this template.
               </p>
             </div>
-            <div className="hidden text-right md:block">
+            <div className="hidden shrink-0 text-right md:block">
               <div className="td-eyebrow text-ink/40">Ref.</div>
-              <div className="mt-1 font-mono text-[11px] tracking-[0.25em] text-ink/70">{ref}</div>
-              <div className="td-rule mx-auto mt-3 w-20" />
-              <div className="td-eyebrow mt-2 text-ink/40">Composed in</div>
-              <div className="mt-1 text-[11px] italic text-ink/70" style={{ fontFamily: "var(--font-display)" }}>
+              <div className="mt-1.5 font-mono text-[11px] tracking-[0.28em] text-ink/70">{ref}</div>
+              <div className="td-rule mx-auto my-3 w-20" />
+              <div className="td-eyebrow text-ink/40">Composed in</div>
+              <div
+                className="mt-1.5 text-[13px] italic leading-snug text-ink/75"
+                style={{ fontFamily: "var(--font-display)" }}
+              >
                 London &amp; New York
               </div>
             </div>
@@ -119,8 +126,8 @@ export function IngestionModal({
         </div>
 
         {/* Serialised steps */}
-        <div className="px-10 pt-7">
-          <div className="td-eyebrow mb-3 flex items-center justify-between text-ink/45">
+        <div className="px-10 pt-8">
+          <div className="td-eyebrow mb-4 flex items-center justify-between text-ink/45">
             <span>Step {tabIndex + 1} of {TABS.length}</span>
             <span>Choose a source</span>
           </div>
@@ -131,7 +138,7 @@ export function IngestionModal({
                 <button
                   key={opt.id}
                   onClick={() => setTab(opt.id)}
-                  className={`group relative flex flex-col items-start gap-2 px-5 py-5 text-left transition-elegant ${
+                  className={`group relative flex flex-col items-start gap-3 px-6 py-6 text-left transition-elegant ${
                     on ? "bg-paper" : "bg-paper/40 hover:bg-paper/70"
                   } ${i > 0 ? "md:border-l md:border-ink/10" : ""}`}
                 >
@@ -139,12 +146,16 @@ export function IngestionModal({
                     <span className="font-mono text-[10px] tracking-[0.35em] text-seal/80">{opt.n}</span>
                     <span className="td-rule w-6 opacity-60" />
                   </span>
-                  <span className="text-[17px] leading-snug text-ink" style={{ fontFamily: "var(--font-display)" }}>
-                    {opt.label}
+                  <span
+                    className="text-[19px] leading-[1.15] tracking-[-0.005em] text-ink"
+                    style={{ fontFamily: "var(--font-display)" }}
+                  >
+                    {opt.label.split(" ")[0]}{" "}
+                    <span className="italic text-ink/75">{opt.label.split(" ").slice(1).join(" ")}</span>
                   </span>
-                  <span className="text-[11px] leading-relaxed text-ink-soft">{opt.sub}</span>
+                  <span className="text-[12px] leading-[1.55] text-ink-soft">{opt.sub}</span>
                   {on && (
-                    <span aria-hidden className="absolute inset-x-5 bottom-0 h-px bg-seal" />
+                    <span aria-hidden className="absolute inset-x-6 bottom-0 h-px bg-seal" />
                   )}
                 </button>
               );
@@ -152,24 +163,37 @@ export function IngestionModal({
           </div>
         </div>
 
-        <div className="px-10 pt-6">
+        <div className="px-10 pt-8">
           {tab === "paste" && (
-            <textarea
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              placeholder="Day 1: arrive, check into hotel, dinner at…"
-              rows={8}
-              className="w-full rounded-md border border-ink/15 bg-paper/60 px-4 py-3 font-mono text-[12.5px] leading-relaxed text-ink outline-none transition-elegant placeholder:text-ink/35 focus:border-seal focus:bg-paper"
-            />
+            <div className="flex flex-col gap-3">
+              <p
+                className="text-[15px] leading-[1.55] text-ink/80"
+                style={{ fontFamily: "var(--font-display)" }}
+              >
+                Paste anything —{" "}
+                <span className="italic text-ink/65">a draft, a list, a stream of consciousness.</span>
+              </p>
+              <textarea
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                placeholder="Day 1: arrive, check into hotel, dinner at…"
+                rows={8}
+                className="w-full rounded-md border border-ink/15 bg-paper/60 px-4 py-3.5 font-mono text-[12.5px] leading-[1.6] text-ink outline-none transition-elegant placeholder:text-ink/35 focus:border-seal focus:bg-paper"
+              />
+            </div>
           )}
           {tab === "transcript" && (
             <div
               onDragOver={(e) => e.preventDefault()}
               onDrop={onDrop}
-              className="flex flex-col items-center justify-center rounded-md border border-dashed border-ink/20 bg-paper/40 px-6 py-12 text-center transition-elegant hover:border-seal/60 hover:bg-paper/60"
+              className="flex flex-col items-center justify-center rounded-md border border-dashed border-ink/20 bg-paper/40 px-6 py-14 text-center transition-elegant hover:border-seal/60 hover:bg-paper/60"
             >
-              <p className="text-[15px] italic text-ink/80" style={{ fontFamily: "var(--font-display)" }}>
-                Drop a transcript file or{" "}
+              <p
+                className="text-[19px] leading-[1.2] text-ink/85"
+                style={{ fontFamily: "var(--font-display)" }}
+              >
+                <span className="italic">Drop a transcript</span>{" "}
+                <span className="text-ink/55">— or</span>{" "}
                 <button
                   onClick={() => fileRef.current?.click()}
                   className="text-seal underline-offset-4 hover:underline"
@@ -177,7 +201,7 @@ export function IngestionModal({
                   browse
                 </button>
               </p>
-              <p className="td-eyebrow mt-3 text-ink/40">
+              <p className="td-eyebrow mt-4 text-ink/40">
                 .txt, .vtt, .srt — audio coming soon
               </p>
               <input
@@ -188,7 +212,7 @@ export function IngestionModal({
                 onChange={onFile}
               />
               {text && (
-                <pre className="mt-5 max-h-32 w-full overflow-y-auto rounded-md border border-ink/10 bg-paper/70 p-3 text-left font-mono text-[11px] leading-relaxed text-ink-soft">
+                <pre className="mt-6 max-h-32 w-full overflow-y-auto rounded-md border border-ink/10 bg-paper/70 p-3 text-left font-mono text-[11px] leading-[1.6] text-ink-soft">
                   {text.slice(0, 600)}
                   {text.length > 600 ? "…" : ""}
                 </pre>
@@ -196,12 +220,15 @@ export function IngestionModal({
             </div>
           )}
           {tab === "inbox" && (
-            <div className="rounded-md border border-ink/15 bg-paper/60 px-6 py-7">
-              <p className="text-[15px] leading-relaxed text-ink/85" style={{ fontFamily: "var(--font-display)" }}>
-                Securely extracts bookings from the last 6 months for this destination.
-                <span className="italic text-ink/65"> Read-only — the messages are never stored.</span>
+            <div className="rounded-md border border-ink/15 bg-paper/60 px-7 py-8">
+              <p
+                className="text-[19px] leading-[1.3] text-ink/85"
+                style={{ fontFamily: "var(--font-display)" }}
+              >
+                Securely extracts bookings from the last six months.{" "}
+                <span className="italic text-ink/60">Read-only — the messages are never stored.</span>
               </p>
-              <p className="td-eyebrow mt-4 text-ink/45">
+              <p className="td-eyebrow mt-5 text-ink/45">
                 Continuing will redirect you to Google to grant access.
               </p>
             </div>
