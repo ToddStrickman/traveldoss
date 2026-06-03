@@ -9,7 +9,10 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/login")({
   validateSearch: (search) => ({
-    redirect: typeof search.redirect === "string" ? search.redirect : "/app",
+    redirect:
+      typeof search.redirect === "string" && search.redirect.startsWith("/") && !search.redirect.startsWith("//")
+        ? search.redirect
+        : "/app",
   }),
   component: LoginPage,
   head: () => ({
