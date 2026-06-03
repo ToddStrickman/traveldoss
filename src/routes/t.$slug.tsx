@@ -251,7 +251,12 @@ function DossierPage() {
       onReorder: (from: number, to: number) => {
         setSnap((s) => ({ ...s, blocks: arrayMove(s.blocks, from, to) }));
       },
-      onMoveActivity: (srcIndex, dayIndex, part, beforeIndex) => {
+      onMoveActivity: (
+        srcIndex: number,
+        dayIndex: number,
+        part: "morning" | "afternoon" | "evening",
+        beforeIndex?: number,
+      ) => {
         setSnap((s) => ({
           ...s,
           blocks: moveActivity(s.blocks, srcIndex, dayIndex, part, beforeIndex),
