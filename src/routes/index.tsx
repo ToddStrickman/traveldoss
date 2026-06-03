@@ -190,8 +190,8 @@ function Landing() {
           transition={{ duration: 0.8, delay: 0.4 }}
           className="relative mt-14"
         >
-          <a
-            href="#flow"
+          <Link
+            to="/templates"
             className="group surface-card relative inline-flex items-center gap-5 rounded-md py-5 pl-5 pr-3 text-[11px] font-medium uppercase tracking-[0.4em] text-ink transition-elegant hover:text-seal"
           >
             <span className="text-seal/70 transition-elegant group-hover:text-seal">01</span>
@@ -201,7 +201,7 @@ function Landing() {
                 <path d="M5 12h14M13 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </span>
-          </a>
+          </Link>
         </motion.div>
 
         <div className="mt-16 flex items-center gap-4 text-[9px] font-medium uppercase tracking-[0.45em] text-ink/35">
