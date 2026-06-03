@@ -1,6 +1,8 @@
 import type { Block, TripView } from "../../types";
 import { buildItinerary } from "../itinerary";
 import { ActivityCell } from "./parts";
+import { ActivityDndContext, DraggableActivity, DroppableBucket } from "./dnd";
+import type { PartOfDay } from "../itinerary";
 
 /** Operational table view. Flights at the very top in a 2-row table.
  *  Each day renders a 3-column table (Morning · Afternoon · Evening) where
@@ -69,6 +71,7 @@ export function GridView({ trip, blocks }: { trip: TripView; blocks: Block[] }) 
         </section>
       ) : null}
 
+      <ActivityDndContext blocks={blocks}>
       {it.days.map((d) => (
         <section key={d.dayIndex} className="tds-grid-section">
           <h2 className="tds-grid-h2">
@@ -85,39 +88,37 @@ export function GridView({ trip, blocks }: { trip: TripView; blocks: Block[] }) 
             </thead>
             <tbody>
               <tr>
-                <td>
-                  {d.morning.length === 0
-                    ? <span className="tds-td-muted">—</span>
-                    : d.morning.map(({ activity, index }) => (
-                        <ActivityCell key={index} activity={activity} />
-                      ))}
-                </td>
-                <td>
-                  {d.afternoon.length === 0
-                    ? <span className="tds-td-muted">—</span>
-                    : d.afternoon.map(({ activity, index }) => (
-                        <ActivityCell key={index} activity={activity} />
-                      ))}
-                </td>
-                <td>
-                  {d.evening.length === 0
-                    ? <span className="tds-td-muted">—</span>
-                    : d.evening.map(({ activity, index }) => (
-                        <ActivityCell key={index} activity={activity} />
-                      ))}
-                </td>
+                {(["morning", "afternoon", "evening"] as PartOfDay[]).map((part) => {
+                  const list = d[part];
+                  return (
+                    <DroppableBucket key={part} as="td" dayIndex={d.dayIndex} part={part}>
+                      {list.length === 0 ? (
+                        <span className="tds-td-muted">—</span>
+                      ) : (
+                        list.map(({ activity, index }) => (
+                          <DraggableActivity key={index} index={index}>
+                            <ActivityCell activity={activity} />
+                          </DraggableActivity>
+                        ))
+                      )}
+                    </DroppableBucket>
+                  );
+                })}
               </tr>
             </tbody>
           </table>
           {d.unassigned.length > 0 ? (
             <div className="tds-grid-essentials">
               {d.unassigned.map(({ activity, index }) => (
-                <ActivityCell key={index} activity={activity} />
+                <DraggableActivity key={index} index={index}>
+                  <ActivityCell activity={activity} />
+                </DraggableActivity>
               ))}
             </div>
           ) : null}
         </section>
       ))}
+      </ActivityDndContext>
     </div>
   );
 }
