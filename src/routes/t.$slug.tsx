@@ -12,6 +12,7 @@ import { ExportMenu } from "@/components/studio/ExportMenu";
 import { CompanionToday } from "@/components/studio/CompanionToday";
 import { getTemporalPhase, phaseCopy } from "@/lib/itinerary/temporal";
 import { EditingProvider, arrayMove } from "@/lib/skins/shared/Editable";
+import { moveActivity } from "@/lib/skins/shared/itinerary";
 import { IngestionModal } from "@/components/flow/IngestionModal";
 import { toast } from "sonner";
 import { useHistory, useUndoRedoShortcuts } from "@/hooks/use-history";
@@ -249,6 +250,12 @@ function DossierPage() {
       },
       onReorder: (from: number, to: number) => {
         setSnap((s) => ({ ...s, blocks: arrayMove(s.blocks, from, to) }));
+      },
+      onMoveActivity: (srcIndex, dayIndex, part, beforeIndex) => {
+        setSnap((s) => ({
+          ...s,
+          blocks: moveActivity(s.blocks, srcIndex, dayIndex, part, beforeIndex),
+        }));
       },
       onTripChange: (field: "destination" | "subtitle", value: string) => {
         setSnap(
