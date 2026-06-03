@@ -241,17 +241,54 @@ function TemplatesPage() {
   useEffect(() => {
     const KEY = "templates:scrollY";
     const raw = sessionStorage.getItem(KEY);
-    if (raw) {
-      const y = parseInt(raw, 10);
-      if (!Number.isNaN(y)) {
-        // Wait for layout to settle before restoring
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => window.scrollTo(0, y));
-        });
+    const target = raw ? parseInt(raw, 10) : NaN;
+    let restoring = !Number.isNaN(target) && target > 0;
+    let cancelled = false;
+
+    if (restoring) {
+      // Prevent browser's own restoration from fighting ours
+      const prevBehavior =
+        "scrollRestoration" in window.history
+          ? window.history.scrollRestoration
+          : "auto";
+      if ("scrollRestoration" in window.history) {
+        window.history.scrollRestoration = "manual";
       }
+
+      // Poll until the document is tall enough to actually land at `target`,
+      // then snap once. This waits out the skeleton→content swap and async
+      // image/font layout without producing a visible scroll animation.
+      const start = performance.now();
+      const MAX_WAIT = 1500;
+      const tryRestore = () => {
+        if (cancelled) return;
+        const maxY =
+          document.documentElement.scrollHeight - window.innerHeight;
+        if (maxY >= target || performance.now() - start > MAX_WAIT) {
+          const y = Math.min(target, Math.max(0, maxY));
+          // Instant jump — no smooth behavior, so the user doesn't see a
+          // post-render scroll animation. The skeleton hid the transition.
+          window.scrollTo({ top: y, left: 0, behavior: "auto" });
+          // One more frame in case a late layout nudged things by a pixel
+          requestAnimationFrame(() => {
+            if (!cancelled) window.scrollTo({ top: y, behavior: "auto" });
+            restoring = false;
+            if ("scrollRestoration" in window.history) {
+              window.history.scrollRestoration = prevBehavior;
+            }
+          });
+        } else {
+          requestAnimationFrame(tryRestore);
+        }
+      };
+      requestAnimationFrame(tryRestore);
     }
+
     let ticking = false;
     const onScroll = () => {
+      // Don't overwrite the saved value with intermediate positions while
+      // we're still snapping back to the user's previous offset.
+      if (restoring) return;
       if (ticking) return;
       ticking = true;
       requestAnimationFrame(() => {
@@ -265,6 +302,7 @@ function TemplatesPage() {
     window.addEventListener("pagehide", persistNow);
     window.addEventListener("beforeunload", persistNow);
     return () => {
+      cancelled = true;
       persistNow();
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("pagehide", persistNow);
