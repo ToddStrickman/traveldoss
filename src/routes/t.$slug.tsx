@@ -70,7 +70,7 @@ export const Route = createFileRoute("/t/$slug")({
   },
   component: DossierPage,
   notFoundComponent: () => (
-    <div className="flex min-h-screen items-center justify-center bg-background px-6 text-center">
+    <div className="flex min-h-dvh items-center justify-center bg-background px-6 text-center">
       <div>
         <p className="text-[10px] uppercase tracking-[0.4em] text-ink/45">404</p>
         <h1
@@ -92,7 +92,7 @@ export const Route = createFileRoute("/t/$slug")({
     </div>
   ),
   errorComponent: () => (
-    <div className="flex min-h-screen items-center justify-center bg-background px-6 text-center">
+    <div className="flex min-h-dvh items-center justify-center bg-background px-6 text-center">
       <div>
         <h1 className="text-2xl text-ink">Couldn't load this dossier</h1>
         <p className="mt-2 text-sm text-ink-soft">Please try again later.</p>
@@ -298,10 +298,11 @@ function DossierPage() {
       <Link
         to="/"
         data-print="hide"
-        className="fixed left-4 top-4 z-50 inline-flex items-center gap-2 rounded-full border border-white/15 bg-paper/85 px-3.5 py-2 text-[10px] font-medium uppercase tracking-[0.35em] text-ink backdrop-blur-md transition-colors hover:border-seal hover:text-seal"
+        className="fixed left-3 top-3 z-50 inline-flex min-h-11 items-center gap-2 rounded-full border border-white/15 bg-paper/85 px-3 py-2 text-[10px] font-medium uppercase tracking-[0.35em] text-ink backdrop-blur-md transition-colors hover:border-seal hover:text-seal sm:left-4 sm:top-4 sm:px-3.5"
         aria-label="Back to TravelDoss"
       >
-        ← TravelDoss
+        <span aria-hidden>←</span>
+        <span className="hidden sm:inline">TravelDoss</span>
       </Link>
       <ViewSwitch
         value={layout}
@@ -363,7 +364,7 @@ function ViewSwitch({
       role="radiogroup"
       aria-label="Layout"
       data-print="hide"
-      className="fixed left-1/2 top-4 z-50 flex -translate-x-1/2 gap-1 rounded-full p-1 backdrop-blur-sm max-sm:top-auto max-sm:bottom-[max(16px,env(safe-area-inset-bottom))]"
+      className="fixed left-1/2 top-3 z-50 flex -translate-x-1/2 gap-1 rounded-full p-1 backdrop-blur-sm sm:top-4"
       style={{ background: `${tokens.bg}d9`, border: `1px solid ${tokens.rule}` }}
     >
       {opts.map((o) => {
@@ -374,7 +375,7 @@ function ViewSwitch({
             role="radio"
             aria-checked={on}
             onClick={() => onChange(o)}
-            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full px-4 py-2.5 text-[10px] font-semibold uppercase tracking-[0.15em] transition-colors"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.15em] transition-colors sm:px-4 sm:py-2.5"
             style={{ color: on ? tokens.bg : tokens.ink, background: on ? tokens.accent : "transparent" }}
           >
             {o}
@@ -387,7 +388,7 @@ function ViewSwitch({
 
 function ExpiredDossier({ slug, destination }: { slug: string; destination: string }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-6 text-center">
+    <div className="flex min-h-dvh items-center justify-center bg-background px-6 text-center">
       <div className="max-w-md">
         <p className="text-[10px] uppercase tracking-[0.4em] text-ink/45">Expired</p>
         <h1
