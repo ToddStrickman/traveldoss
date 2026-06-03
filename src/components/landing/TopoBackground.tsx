@@ -61,30 +61,68 @@ export function TopoBackground() {
     // Radius ~ 8% of the viewport's smaller side, clamped to a plush range.
     // The map itself is regenerated at full viewport scale so there are no
     // repeated-tile seams or clipped contour fragments at any screen size.
+    // Quantize map size to a coarse grid so small resizes (browser chrome
+    // appearing, devtools toggling, mobile URL bar) don't trigger a full
+    // procedural-SVG rebuild. The SVG uses preserveAspectRatio='none' so it
+    // stretches to fill any nearby size without visible distortion.
+    const QUANTUM = 128;
+    const quantize = (n: number) => Math.ceil(n / QUANTUM) * QUANTUM;
+    let resizeFrame = 0;
     const computeRadius = () => {
       const min = Math.min(window.innerWidth, window.innerHeight);
       setRadius(Math.round(Math.max(66, Math.min(156, min * 0.078))));
-      setMapSize({ width: Math.ceil(window.innerWidth), height: Math.ceil(window.innerHeight) });
+      const qw = quantize(window.innerWidth);
+      const qh = quantize(window.innerHeight);
+      setMapSize((prev) => (prev.width === qw && prev.height === qh ? prev : { width: qw, height: qh }));
+    };
+    const onResize = () => {
+      if (resizeFrame) return;
+      resizeFrame = requestAnimationFrame(() => {
+        resizeFrame = 0;
+        computeRadius();
+      });
     };
     computeRadius();
-    window.addEventListener("resize", computeRadius);
+    window.addEventListener("resize", onResize, { passive: true });
 
+    // Coalesce pointer events into one rAF tick. Browsers can fire
+    // pointermove faster than the display refresh; updating motion values
+    // more than once per frame is wasted work and can starve paint.
     let idleTimer: ReturnType<typeof setTimeout> | undefined;
-    const onMove = (e: PointerEvent) => {
-      mx.set(e.clientX);
-      my.set(e.clientY);
-      setMoving(true);
+    let moveFrame = 0;
+    let lastX = 0;
+    let lastY = 0;
+    let wasMoving = false;
+    const flushMove = () => {
+      moveFrame = 0;
+      mx.set(lastX);
+      my.set(lastY);
+      if (!wasMoving) {
+        wasMoving = true;
+        setMoving(true);
+      }
       if (idleTimer) clearTimeout(idleTimer);
-      idleTimer = setTimeout(() => setMoving(false), 140);
+      idleTimer = setTimeout(() => {
+        wasMoving = false;
+        setMoving(false);
+      }, 140);
+    };
+    const onMove = (e: PointerEvent) => {
+      lastX = e.clientX;
+      lastY = e.clientY;
+      if (moveFrame) return;
+      moveFrame = requestAnimationFrame(flushMove);
     };
     if (!reduceMotion) {
       window.addEventListener("pointermove", onMove, { passive: true });
     }
     return () => {
       window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("resize", computeRadius);
+      window.removeEventListener("resize", onResize);
       window.removeEventListener("keydown", onKey);
       if (idleTimer) clearTimeout(idleTimer);
+      if (moveFrame) cancelAnimationFrame(moveFrame);
+      if (resizeFrame) cancelAnimationFrame(resizeFrame);
     };
   }, [mx, my, reduceMotion]);
 
