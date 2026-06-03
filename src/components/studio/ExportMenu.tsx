@@ -44,7 +44,10 @@ export function ExportMenu({ slug, canPushToDocs = true }: { slug: string; canPu
   }
 
   return (
-    <div data-print="hide" className="fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full border border-white/10 bg-paper/85 p-1.5 text-ink backdrop-blur-md">
+    <div
+      data-print="hide"
+      className="fixed right-3 z-40 flex items-center gap-1 rounded-full border border-white/10 bg-paper/85 p-1 text-ink backdrop-blur-md sm:right-5 sm:gap-2 sm:p-1.5 bottom-[max(72px,calc(env(safe-area-inset-bottom)+72px))] sm:bottom-5"
+    >
       <ExportButton onClick={copyLink} icon={<Link2 className="h-3.5 w-3.5" />} label="Live URL" />
       <ExportButton onClick={printPdf} icon={<Printer className="h-3.5 w-3.5" />} label="PDF" />
       <ExportButton
@@ -72,10 +75,12 @@ function ExportButton({
     <button
       onClick={onClick}
       disabled={disabled}
-      className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.3em] text-ink-soft transition-elegant hover:bg-seal/15 hover:text-seal disabled:opacity-40"
+      aria-label={label}
+      title={label}
+      className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-full px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.3em] text-ink-soft transition-elegant hover:bg-seal/15 hover:text-seal disabled:opacity-40 sm:min-h-0 sm:min-w-0"
     >
       {icon}
-      <span>{label}</span>
+      <span className="hidden sm:inline">{label}</span>
     </button>
   );
 }
