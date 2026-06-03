@@ -151,6 +151,61 @@ function BoardView({
   onChange: (block: Block, patch: Partial<Block>) => void;
 }) {
   const items = groupForBoard(body);
+
+  // Horizontal: split full-width prose from the scroll-snap card row so the
+  // two layout idioms don't collide inside one flex line.
+  if (view === "horizontal") {
+    const intro = items.filter(
+      (it) => it.type === "block" && it.block.kind !== "place" && it.block.kind !== "flight",
+    );
+    const cards = items.filter(
+      (it) =>
+        it.type === "day" ||
+        (it.type === "block" && (it.block.kind === "place" || it.block.kind === "flight")),
+    );
+    return (
+      <>
+        <div className="mx-auto space-y-8" style={{ maxWidth: 860, marginBottom: 32 }}>
+          {intro.map((it, i) => {
+            if (it.type !== "block") return null;
+            return (
+              <BlockRender
+                key={`i-${i}`}
+                block={it.block}
+                onChange={(patch) => onChange(it.block, patch)}
+              />
+            );
+          })}
+        </div>
+        <div className="tds-canvas" data-view={view}>
+          {cards.map((item, i) => {
+            if (item.type === "day") {
+              return (
+                <section key={`d-${i}`} className="tds-card tds-daycard" data-block="day">
+                  <DayHeader block={item.day} onChange={(p) => onChange(item.day, p)} />
+                  {item.places.map((p, j) => (
+                    <BlockRender key={`p-${j}`} block={p} onChange={(patch) => onChange(p, patch)} />
+                  ))}
+                </section>
+              );
+            }
+            const b = item.block;
+            return (
+              <section key={`b-${i}`} className="tds-card" data-block={b.kind}>
+                <BlockRender block={b} onChange={(patch) => onChange(b, patch)} />
+              </section>
+            );
+          })}
+        </div>
+        {flights.length > 0 && (
+          <div className="mx-auto" style={{ maxWidth: 1080, marginTop: 32 }}>
+            <FlightsSummary flights={flights} />
+          </div>
+        )}
+      </>
+    );
+  }
+
   return (
     <div className="tds-canvas" data-view={view}>
       {items.map((item, i) => {
