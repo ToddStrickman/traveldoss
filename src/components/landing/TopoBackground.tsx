@@ -110,9 +110,7 @@ export function TopoBackground() {
 function topoUrlDark() {
   const svg = topoSvg
     .replace(/%23F7F3ED/g, "%230B1325")
-    .replace(/stroke-opacity='0\.55'/g, "stroke-opacity='0.45'")
-    .replace(/stroke-opacity='0\.45'/g, "stroke-opacity='0.38'")
-    .replace(/stroke-opacity='0\.4'/g, "stroke-opacity='0.32'");
+    .replace(/stroke-opacity='[0-9.]+'/g, "stroke-opacity='0.4'");
   return `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`;
 }
 
