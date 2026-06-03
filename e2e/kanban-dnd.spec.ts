@@ -63,6 +63,9 @@ async function dragCard(page: Page, fromText: string, toSelector: string) {
 for (const skin of SKINS) {
   test.describe(`kanban DnD · skin=${skin}`, () => {
     test.beforeEach(async ({ page }) => {
+      // Wipe persisted harness state so each test starts from the fixture.
+      await page.goto(`/e2e/kanban?skin=${skin}&fixture=full`);
+      await page.evaluate(() => window.localStorage.clear());
       await page.goto(`/e2e/kanban?skin=${skin}&fixture=full`);
       await expect(page.locator('[data-testid="kanban-harness"]')).toBeVisible();
     });
@@ -208,6 +211,106 @@ for (const skin of SKINS) {
       const after = await readState(page);
       expect(bucketNames(after, 1, "morning")).not.toContain("Hello, Kristof");
       expect(bucketNames(after, finalCol, "evening")).toContain("Hello, Kristof");
+    });
+
+    /* ---------------------------------------------------------------- */
+    /* Persistence: every edge case must survive a full page reload.    */
+    /* ---------------------------------------------------------------- */
+
+    test.describe("persistence across reload", () => {
+      test("empty-bucket drop persists on the sparse fixture", async ({ page }) => {
+        await page.goto(`/e2e/kanban?skin=${skin}&fixture=sparse`);
+        await page.evaluate(() => window.localStorage.clear());
+        await page.goto(`/e2e/kanban?skin=${skin}&fixture=sparse`);
+        await expect(page.locator('[data-testid="kanban-harness"]')).toBeVisible();
+
+        await dragCard(
+          page,
+          "Coffee",
+          '.tds-board-col:nth-of-type(2) .tds-board-bucket[data-part="morning"]',
+        );
+        const before = await readState(page);
+        expect(bucketNames(before, 2, "morning")).toEqual(["Coffee"]);
+
+        await page.reload();
+        await expect(page.locator('[data-testid="kanban-harness"]')).toBeVisible();
+        const after = await readState(page);
+
+        expect(after).toEqual(before);
+        expect(bucketNames(after, 2, "morning")).toEqual(["Coffee"]);
+        expect(bucketNames(after, 1, "morning")).toEqual([]);
+      });
+
+      test("self-drop no-op persists identically", async ({ page }) => {
+        const before = await readState(page);
+        await dragCard(
+          page,
+          "Belcanto",
+          '.tds-board-col:nth-of-type(1) .tds-board-bucket[data-part="evening"] .tds-act-card-title',
+        );
+        const afterDrop = await readState(page);
+
+        await page.reload();
+        await expect(page.locator('[data-testid="kanban-harness"]')).toBeVisible();
+        const afterReload = await readState(page);
+
+        // Drop was a no-op AND reload preserved the no-op.
+        expect(afterDrop).toEqual(before);
+        expect(afterReload).toEqual(before);
+      });
+
+      test("multi-hop final position persists across reload", async ({ page }) => {
+        const name = "Dinner · Belcanto";
+        await dragCard(
+          page,
+          "Belcanto",
+          '.tds-board-col:nth-of-type(3) .tds-board-bucket[data-part="morning"]',
+        );
+        await dragCard(
+          page,
+          "Belcanto",
+          '.tds-board-col:nth-of-type(2) .tds-board-bucket[data-part="afternoon"]',
+        );
+        await dragCard(
+          page,
+          "Belcanto",
+          '.tds-board-col:nth-of-type(1) .tds-board-bucket[data-part="morning"]',
+        );
+        const beforeReload = await readState(page);
+        expect(bucketNames(beforeReload, 1, "morning")).toContain(name);
+
+        await page.reload();
+        await expect(page.locator('[data-testid="kanban-harness"]')).toBeVisible();
+        const afterReload = await readState(page);
+
+        // Full block array (including section markers) must match exactly.
+        expect(afterReload).toEqual(beforeReload);
+        expect(bucketNames(afterReload, 1, "morning")).toContain(name);
+        expect(bucketNames(afterReload, 2, "afternoon")).not.toContain(name);
+        expect(bucketNames(afterReload, 3, "morning")).not.toContain(name);
+
+        // Card count is preserved across the three hops + reload.
+        const places = (bs: Block[]) => bs.filter((b) => b.kind === "place").length;
+        expect(places(afterReload)).toBe(places(beforeReload));
+      });
+
+      test("full-span single drag persists across reload", async ({ page }) => {
+        const finalCol = await page.locator(".tds-board-col").count();
+        await dragCard(
+          page,
+          "Hello, Kristof",
+          `.tds-board-col:nth-of-type(${finalCol}) .tds-board-bucket[data-part="evening"]`,
+        );
+        const before = await readState(page);
+
+        await page.reload();
+        await expect(page.locator('[data-testid="kanban-harness"]')).toBeVisible();
+        const after = await readState(page);
+
+        expect(after).toEqual(before);
+        expect(bucketNames(after, finalCol, "evening")).toContain("Hello, Kristof");
+        expect(bucketNames(after, 1, "morning")).not.toContain("Hello, Kristof");
+      });
     });
   });
 }

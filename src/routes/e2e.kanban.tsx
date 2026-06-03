@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import type { Block, SkinView } from "@/lib/skins/types";
 import { DEMO_BLOCKS, DEMO_TRIP } from "@/lib/skins/demo";
@@ -36,7 +36,29 @@ export const Route = createFileRoute("/e2e/kanban")({
 function KanbanHarness() {
   const { skin: skinId, fixture } = Route.useSearch();
   const skin = getSkin(skinId ?? "") ?? FALLBACK_SKIN;
-  const [blocks, setBlocks] = useState<Block[]>(() => pickFixture(fixture));
+  const storageKey = `tds:e2e:kanban:${skin.meta.id}:${fixture}`;
+  const [blocks, setBlocks] = useState<Block[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const raw = window.localStorage.getItem(storageKey);
+        if (raw) return JSON.parse(raw) as Block[];
+      } catch {
+        /* ignore corrupt storage */
+      }
+    }
+    return pickFixture(fixture);
+  });
+
+  // Persist every change. The harness is dev-only and the key is scoped per
+  // skin+fixture so Playwright can reset by clearing storage.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(storageKey, JSON.stringify(blocks));
+    } catch {
+      /* quota or disabled storage — non-fatal */
+    }
+  }, [blocks, storageKey]);
 
   const ctx: EditingCtx = useMemo(
     () => ({
@@ -69,6 +91,17 @@ function KanbanHarness() {
           data-testid="kanban-state"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(blocks) }}
         />
+        <button
+          type="button"
+          data-testid="kanban-reset"
+          onClick={() => {
+            if (typeof window !== "undefined") window.localStorage.removeItem(storageKey);
+            setBlocks(pickFixture(fixture));
+          }}
+          style={{ position: "fixed", left: -9999, top: -9999 }}
+        >
+          reset
+        </button>
       </div>
     </EditingProvider>
   );
