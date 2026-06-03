@@ -357,6 +357,77 @@
 .tds-act-cell-line a:hover { color: var(--tds-accent); }
 .tds-act-cell-muted { color: var(--tds-soft); }
 .tds-act-cell-note { font-size: 12px; color: var(--tds-ink); opacity: .8; font-style: italic; margin-top: 4px; }
+
+/* ----- Standardized activity chips & details ---------------------
+   Used across vertical row, kanban card, and grid cell so every
+   trip-component category looks identical across templates. */
+.tds-act-chips {
+  list-style: none; padding: 0; margin: 4px 0 0;
+  display: flex; flex-wrap: wrap; gap: 4px 6px;
+}
+.tds-act-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; line-height: 1.2;
+  padding: 3px 8px;
+  border: 1px solid var(--tds-rule);
+  border-radius: 999px;
+  color: var(--tds-ink);
+  background: color-mix(in oklab, var(--tds-card) 92%, var(--tds-accent) 8%);
+  max-width: 100%; min-width: 0;
+}
+.tds-act-chip-glyph {
+  display: inline-flex; width: 12px; height: 12px;
+  color: var(--tds-accent); flex: none;
+}
+.tds-act-chip-glyph svg { width: 100%; height: 100%; }
+.tds-act-chip-value {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  max-width: 22ch;
+}
+
+.tds-act-details {
+  margin: 6px 0 0; padding: 0;
+  display: grid; gap: 4px 14px;
+  grid-template-columns: max-content 1fr;
+}
+.tds-act-detail { display: contents; }
+.tds-act-detail dt {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 9.5px; letter-spacing: .28em; text-transform: uppercase;
+  color: var(--tds-soft);
+  align-self: baseline;
+  padding-top: 1px;
+}
+.tds-act-detail-glyph {
+  display: inline-flex; width: 11px; height: 11px;
+  color: var(--tds-accent); flex: none;
+}
+.tds-act-detail-glyph svg { width: 100%; height: 100%; }
+.tds-act-detail dd {
+  margin: 0;
+  font-size: 12px; line-height: 1.4;
+  color: var(--tds-ink);
+  overflow-wrap: anywhere; word-break: break-word;
+  min-width: 0;
+}
+.tds-act-detail dd a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--tds-rule);
+  text-underline-offset: 2px;
+}
+.tds-act-detail dd a:hover { color: var(--tds-accent); text-decoration-color: var(--tds-accent); }
+
+@media (max-width: 480px) {
+  .tds-act-details {
+    grid-template-columns: 1fr;
+    gap: 2px 0;
+  }
+  .tds-act-detail dt { padding-top: 4px; }
+  .tds-act-chip-value { max-width: 18ch; }
+}
+
 .tds-grid-essentials {
   display: grid; gap: 12px;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));

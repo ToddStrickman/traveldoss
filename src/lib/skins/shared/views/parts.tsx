@@ -1,8 +1,229 @@
+import type { ReactNode } from "react";
 import type { Block } from "../../types";
 import { CategoryIcon, AirfareIcon, categoryLabel } from "../CategoryIcon";
 import { EditableText, useEditing } from "../Editable";
 import type { FlightBlock, ActivityBlock, PartOfDay } from "../itinerary";
 import { PART_LABEL } from "../itinerary";
+
+/* ============================================================
+ * Standardized activity details renderer.
+ *
+ * Renders all available structured fields on a place block as
+ * icon-labeled key/value chips. Used by every layout (vertical
+ * row, horizontal card, grid cell) so a Restaurant looks like
+ * a Restaurant in every template, and an Event always shows its
+ * seat / ticket info the same way.
+ * ============================================================ */
+
+function GlyphPhone() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M5 4h3l2 5-2.5 1.5a11 11 0 0 0 6 6L15 14l5 2v3a2 2 0 0 1-2.2 2A16 16 0 0 1 3 6.2 2 2 0 0 1 5 4z" />
+    </svg>
+  );
+}
+function GlyphPin() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M12 22s7-7.2 7-12a7 7 0 1 0-14 0c0 4.8 7 12 7 12z" />
+      <circle cx="12" cy="10" r="2.5" />
+    </svg>
+  );
+}
+function GlyphGlobe() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3 12h18" />
+      <path d="M12 3c3 3 3 15 0 18-3-3-3-15 0-18z" />
+    </svg>
+  );
+}
+function GlyphClock() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
+    </svg>
+  );
+}
+function GlyphTicket() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4V8z" />
+      <path d="M13 6v12" strokeDasharray="1 2" />
+    </svg>
+  );
+}
+function GlyphHash() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M5 9h14M5 15h14M10 4 8 20M16 4l-2 16" />
+    </svg>
+  );
+}
+function GlyphSeat() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M6 10V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v6" />
+      <path d="M6 12h12a2 2 0 0 1 2 2v3H4v-3a2 2 0 0 1 2-2z" />
+      <path d="M7 17v3M17 17v3" />
+    </svg>
+  );
+}
+function GlyphRoute() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <circle cx="6" cy="6" r="2" />
+      <circle cx="18" cy="18" r="2" />
+      <path d="M8 6h7a3 3 0 0 1 0 6H9a3 3 0 0 0 0 6h7" />
+    </svg>
+  );
+}
+function GlyphRuler() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="m3 17 14-14 4 4L7 21z" />
+      <path d="m7 9 2 2M10 6l2 2M13 12l2 2M16 9l2 2" />
+    </svg>
+  );
+}
+function GlyphBolt() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="m13 2-9 13h7l-1 7 9-13h-7l1-7z" />
+    </svg>
+  );
+}
+function GlyphSparkle() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6" />
+    </svg>
+  );
+}
+function GlyphShield() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6l-8-3z" />
+    </svg>
+  );
+}
+function GlyphTag() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M3 12V4h8l10 10-8 8L3 12z" />
+      <circle cx="7.5" cy="7.5" r="1.25" />
+    </svg>
+  );
+}
+
+type DetailRow = {
+  key: string;
+  label: string;
+  value: string;
+  glyph: ReactNode;
+  href?: string;
+};
+
+function buildDetailRows(a: ActivityBlock): DetailRow[] {
+  const rows: DetailRow[] = [];
+  const push = (k: string, label: string, value: string | undefined, glyph: ReactNode, href?: string) => {
+    if (!value) return;
+    rows.push({ key: k, label, value, glyph, href });
+  };
+
+  // Universal contact / location
+  push("address", "Address", a.address, <GlyphPin />, a.mapsUrl);
+  push("phone", "Phone", a.phone, <GlyphPhone />, a.phone ? `tel:${a.phone.replace(/[^+\d]/g, "")}` : undefined);
+  push("website", "Website", a.website, <GlyphGlobe />, a.website);
+  push("hours", "Hours", a.hours, <GlyphClock />);
+  push("reservation", "Reference", a.reservation, <GlyphHash />);
+
+  // Transit
+  push("vendor", "Vendor", a.vendor, <GlyphTag />);
+  push("pickup", "Pickup", a.pickup, <GlyphPin />);
+  push("dropoff", "Drop-off", a.dropoff, <GlyphPin />);
+
+  // Restaurant
+  push("dressCode", "Dress code", a.dressCode, <GlyphTag />);
+  push("mustOrder", "Must-order", a.mustOrder, <GlyphSparkle />);
+
+  // Walk / hike
+  push("trailhead", "Trailhead", a.trailhead, <GlyphRoute />, a.mapsUrl);
+  push("distance", "Distance", a.distance, <GlyphRuler />);
+  push("duration", "Duration", a.duration, <GlyphClock />);
+  push("difficulty", "Difficulty", a.difficulty, <GlyphBolt />);
+  push("waypoints", "Waypoints", a.waypoints, <GlyphRoute />);
+  push("prep", "Prep", a.prep, <GlyphShield />);
+
+  // Event
+  push("venue", "Venue", a.venue, <GlyphPin />);
+  push("doorOpen", "Doors", a.doorOpen, <GlyphClock />);
+  push("ticketLink", "Ticket", a.ticketLink, <GlyphTicket />, a.ticketLink);
+  push("seat", "Seat", a.seat, <GlyphSeat />);
+  push("venueRules", "Rules", a.venueRules, <GlyphShield />);
+
+  // Accommodation
+  push("checkIn", "Check-in", a.checkIn, <GlyphClock />);
+  push("checkOut", "Check-out", a.checkOut, <GlyphClock />);
+  push("amenities", "Amenities", a.amenities, <GlyphSparkle />);
+
+  // Culture
+  push("ticketRequirement", "Tickets", a.ticketRequirement, <GlyphTicket />);
+  push("tourDetails", "Tour", a.tourDetails, <GlyphRoute />);
+
+  return rows;
+}
+
+/**
+ * Compact chip list — used inside the kanban card + vertical row to surface
+ * the top few standardized fields without dominating the layout.
+ */
+export function ActivityChips({ activity, max = 3 }: { activity: ActivityBlock; max?: number }) {
+  const rows = buildDetailRows(activity).slice(0, max);
+  if (rows.length === 0) return null;
+  return (
+    <ul className="tds-act-chips" aria-label="Details">
+      {rows.map((r) => (
+        <li key={r.key} className="tds-act-chip" title={`${r.label}: ${r.value}`}>
+          <span className="tds-act-chip-glyph" aria-hidden>{r.glyph}</span>
+          <span className="tds-act-chip-value">{r.value}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/**
+ * Full structured details list — used in the grid cell. Shows every available
+ * field as an icon-labeled key/value pair with phone / link / map affordances.
+ */
+export function ActivityDetails({ activity }: { activity: ActivityBlock }) {
+  const rows = buildDetailRows(activity);
+  if (rows.length === 0) return null;
+  return (
+    <dl className="tds-act-details" aria-label="Details">
+      {rows.map((r) => (
+        <div key={r.key} className="tds-act-detail">
+          <dt>
+            <span className="tds-act-detail-glyph" aria-hidden>{r.glyph}</span>
+            <span className="tds-act-detail-label">{r.label}</span>
+          </dt>
+          <dd>
+            {r.href ? (
+              <a href={r.href} target={r.href.startsWith("http") ? "_blank" : undefined} rel="noreferrer">
+                {r.value}
+              </a>
+            ) : (
+              r.value
+            )}
+          </dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
 
 /** Compact flight row used at the top of every view. */
 export function FlightStrip({
@@ -79,27 +300,16 @@ export function ActivityRow({
             onChange={(v) => onBlockChange(index, { name: v } as Partial<Block>)}
           />
         </div>
-        {activity.address || activity.note ? (
-          <div className="tds-act-meta">
-            {activity.address ? (
-              <EditableText
-                as="span"
-                value={activity.address}
-                placeholder="Address"
-                onChange={(v) => onBlockChange(index, { address: v } as Partial<Block>)}
-              />
-            ) : null}
-            {activity.note ? (
-              <span className="tds-act-note">
-                <EditableText
-                  as="span"
-                  multiline
-                  value={activity.note}
-                  placeholder="Note"
-                  onChange={(v) => onBlockChange(index, { note: v } as Partial<Block>)}
-                />
-              </span>
-            ) : null}
+        <ActivityChips activity={activity} max={3} />
+        {activity.note ? (
+          <div className="tds-act-meta tds-act-note">
+            <EditableText
+              as="span"
+              multiline
+              value={activity.note}
+              placeholder="Note"
+              onChange={(v) => onBlockChange(index, { note: v } as Partial<Block>)}
+            />
           </div>
         ) : null}
       </div>
@@ -125,9 +335,7 @@ export function ActivityCard({ activity, index }: { activity: ActivityBlock; ind
           onChange={(v) => onBlockChange(index, { name: v } as Partial<Block>)}
         />
       </div>
-      {activity.address ? (
-        <div className="tds-act-card-meta">{activity.address}</div>
-      ) : null}
+      <ActivityChips activity={activity} max={2} />
       {activity.note ? <div className="tds-act-card-note">{activity.note}</div> : null}
     </div>
   );
@@ -143,23 +351,7 @@ export function ActivityCell({ activity }: { activity: ActivityBlock }) {
         {activity.time ? <span className="tds-act-cell-time">{activity.time}</span> : null}
       </div>
       <div className="tds-act-cell-name">{activity.name}</div>
-      {activity.address ? <div className="tds-act-cell-line">{activity.address}</div> : null}
-      {activity.phone ? (
-        <div className="tds-act-cell-line">
-          <a href={`tel:${activity.phone.replace(/[^+\d]/g, "")}`}>{activity.phone}</a>
-        </div>
-      ) : null}
-      {activity.website ? (
-        <div className="tds-act-cell-line">
-          <a href={activity.website} target="_blank" rel="noreferrer">
-            {activity.website.replace(/^https?:\/\//, "")}
-          </a>
-        </div>
-      ) : null}
-      {activity.hours ? <div className="tds-act-cell-line tds-act-cell-muted">{activity.hours}</div> : null}
-      {activity.reservation ? (
-        <div className="tds-act-cell-line tds-act-cell-muted">{activity.reservation}</div>
-      ) : null}
+      <ActivityDetails activity={activity} />
       {activity.note ? <div className="tds-act-cell-note">{activity.note}</div> : null}
     </div>
   );

@@ -89,28 +89,107 @@ export function SeeIcon(props: IconProps) {
   );
 }
 
+/** Transit — sedan profile for taxi / ferry / transfer / private car. */
+export function TransitIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M3 14h18l-2-5a2 2 0 0 0-1.9-1.4H6.9A2 2 0 0 0 5 9l-2 5z" />
+      <path d="M3 14v3h2v-1" />
+      <path d="M21 14v3h-2v-1" />
+      <circle cx="7.5" cy="14.5" r="1.5" />
+      <circle cx="16.5" cy="14.5" r="1.5" />
+    </svg>
+  );
+}
+
+/** Restaurant — knife + fork, more refined than the generic FoodIcon. */
+export function RestaurantIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M7 3v8" />
+      <path d="M9.5 3v8" />
+      <path d="M5 3v6a2 2 0 0 0 2 2h1.5" />
+      <path d="M8.25 11v10" />
+      <path d="M17 3v18" />
+      <path d="M17 3c-1.8 1.5-3 3.5-3 6 0 1.8 1.3 3 3 3" />
+    </svg>
+  );
+}
+
+/** Walk / hike — mountain peaks (trail) for outdoor activity blocks. */
+export function HikeIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M3 19h18" />
+      <path d="m4 19 5-9 3 5 2-3 6 7" />
+      <circle cx="9" cy="6.5" r="1.5" />
+    </svg>
+  );
+}
+
+/** Event — ticket stub with perforation; reads instantly as "ticketed entry". */
+export function EventIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4V8z" />
+      <path d="M13 6v12" strokeDasharray="1 2" />
+    </svg>
+  );
+}
+
+/** Culture / museum — neoclassical columns + pediment. */
+export function CultureIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M3 9 12 4l9 5" />
+      <path d="M4 9v1h16V9" />
+      <path d="M6 11v7" />
+      <path d="M10 11v7" />
+      <path d="M14 11v7" />
+      <path d="M18 11v7" />
+      <path d="M3.5 19h17" />
+    </svg>
+  );
+}
+
 const ICONS = {
+  // Canonical six
+  transit: TransitIcon,
+  restaurant: RestaurantIcon,
+  walk: HikeIcon,
+  event: EventIcon,
+  accommodation: HotelIcon,
+  culture: CultureIcon,
+  // Legacy aliases
   hotel: HotelIcon,
   stay: HotelIcon,
   airfare: AirfareIcon,
   flight: AirfareIcon,
   currency: CurrencyIcon,
-  walking: WalkingIcon,
-  food: FoodIcon,
-  eat: FoodIcon,
-  see: SeeIcon,
+  walking: HikeIcon,
+  food: RestaurantIcon,
+  eat: RestaurantIcon,
+  see: CultureIcon,
 } as const;
 
 const LABELS: Record<string, string> = {
+  // Canonical six
+  transit: "Transit",
+  restaurant: "Restaurant",
+  walk: "Walk",
+  event: "Event",
+  accommodation: "Stay",
+  culture: "Culture",
+  // Legacy aliases
   hotel: "Hotel",
   stay: "Hotel",
   airfare: "Flight",
   flight: "Flight",
   currency: "Currency",
-  walking: "Walking",
-  food: "Food",
-  eat: "Food",
-  see: "See",
+  walking: "Walk",
+  food: "Restaurant",
+  eat: "Restaurant",
+  see: "Culture",
 };
 
 export function CategoryIcon({ category, ...props }: IconProps & { category?: string }) {
