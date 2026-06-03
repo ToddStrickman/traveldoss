@@ -273,20 +273,7 @@ export function IngestionModal({
               )}
             </div>
           )}
-          {tab === "inbox" && (
-            <div className="rounded-md border border-ink/15 bg-paper/60 px-5 py-6 sm:px-7 sm:py-8">
-              <p
-                className="text-[19px] leading-[1.3] text-ink/85"
-                style={{ fontFamily: "var(--font-display)" }}
-              >
-                Securely extracts bookings from the last six months.{" "}
-                <span className="italic text-ink/60">Read-only — the messages are never stored.</span>
-              </p>
-              <p className="td-eyebrow mt-5 text-ink/45">
-                Continuing will redirect you to Google to grant access.
-              </p>
-            </div>
-          )}
+          {/* inbox/Google tab removed */}
         </div>
 
         {/* Footer */}
