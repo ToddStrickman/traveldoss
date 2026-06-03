@@ -5,6 +5,7 @@ import { motion } from "motion/react";
 import { Ribbon } from "@/components/landing/Ribbon";
 import { InfiniteDocs } from "@/components/landing/InfiniteDocs";
 import { FlowScroller } from "@/components/landing/FlowScroller";
+import { TopoBackground } from "@/components/landing/TopoBackground";
 import { TemplateGallery } from "@/components/flow/TemplateGallery";
 import { IngestionModal } from "@/components/flow/IngestionModal";
 import { GenerationLoader } from "@/components/GenerationLoader";
