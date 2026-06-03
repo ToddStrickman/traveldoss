@@ -59,9 +59,11 @@ function Landing() {
 
     const pendingBlocks = window.sessionStorage.getItem("td_pending_blocks");
     const pendingStep = window.sessionStorage.getItem("td_pending_step") ?? "Reading your itinerary…";
+    const pendingDestination = window.sessionStorage.getItem("td_pending_destination");
     window.sessionStorage.removeItem("td_pending_template");
     window.sessionStorage.removeItem("td_pending_blocks");
     window.sessionStorage.removeItem("td_pending_step");
+    window.sessionStorage.removeItem("td_pending_destination");
 
     if (!pendingBlocks) {
       setPicked(skin);
@@ -78,7 +80,13 @@ function Landing() {
       }
       setGenSteps([pendingStep, "Crafting your dossier…", "Designing the pages…"]);
       try {
-        const r = await create({ data: { templateId: skin.meta.id, blocks: JSON.parse(pendingBlocks) as Block[] } });
+        const r = await create({
+          data: {
+            templateId: skin.meta.id,
+            blocks: JSON.parse(pendingBlocks) as Block[],
+            ...(pendingDestination ? { destination: pendingDestination } : {}),
+          },
+        });
         setPendingSlug(r.slug);
       } catch (e) {
         console.error(e);
@@ -94,13 +102,14 @@ function Landing() {
     setModalOpen(true);
   }
 
-  async function handleGenerate(blocks: Block[], firstStep: string) {
+  async function handleGenerate(blocks: Block[], firstStep: string, destination: string | null) {
     if (!picked) return;
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) {
       window.sessionStorage.setItem("td_pending_template", picked.meta.id);
       window.sessionStorage.setItem("td_pending_blocks", JSON.stringify(blocks));
       window.sessionStorage.setItem("td_pending_step", firstStep);
+      if (destination) window.sessionStorage.setItem("td_pending_destination", destination);
       toast.message("Sign in to compose your dossier", { description: "Your studio, your journeys — quiet and owned." });
       navigate({ to: "/login", search: { redirect: "/" } });
       return;
@@ -108,7 +117,13 @@ function Landing() {
     setModalOpen(false);
     setGenSteps([firstStep, "Crafting your dossier…", "Designing the pages…"]);
     try {
-      const r = await create({ data: { templateId: picked.meta.id, blocks } });
+      const r = await create({
+        data: {
+          templateId: picked.meta.id,
+          blocks,
+          ...(destination ? { destination } : {}),
+        },
+      });
       setPendingSlug(r.slug);
     } catch (e) {
       console.error(e);
