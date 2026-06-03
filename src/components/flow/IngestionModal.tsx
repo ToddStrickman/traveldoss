@@ -528,23 +528,23 @@ function ReviewRow({
       style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.6 : 1 }}
       className="rounded-md border border-ink/10 bg-paper/60 px-3 py-2.5"
     >
-      <div className="mb-2 flex items-center gap-1.5">
+      <div className="mb-2 flex items-center gap-2">
         <button
           {...attributes}
           {...listeners}
-          className="cursor-grab touch-none p-1 text-ink/40 hover:text-seal"
+          className="inline-flex h-11 w-11 cursor-grab touch-none items-center justify-center rounded-md text-ink/50 hover:bg-seal/10 hover:text-seal active:cursor-grabbing sm:h-9 sm:w-9"
           aria-label="Drag to reorder"
         >
-          <GripVertical className="h-3.5 w-3.5" />
+          <GripVertical className="h-5 w-5 sm:h-4 sm:w-4" />
         </button>
         <span className="font-mono text-[9px] uppercase tracking-[0.35em] text-seal/80">{block.kind}</span>
         <span className="ml-auto" />
         <button
           onClick={onRemove}
-          className="p-1 text-ink/40 hover:text-red-500"
+          className="inline-flex h-11 w-11 items-center justify-center rounded-md text-ink/50 hover:bg-red-500/10 hover:text-red-500 sm:h-9 sm:w-9"
           aria-label="Delete block"
         >
-          <Trash2 className="h-3.5 w-3.5" />
+          <Trash2 className="h-5 w-5 sm:h-4 sm:w-4" />
         </button>
       </div>
       <BlockFields block={block} onChange={onChange} />

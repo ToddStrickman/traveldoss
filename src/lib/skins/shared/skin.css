@@ -271,6 +271,39 @@
 .tds-act-card-meta { font-size: 11px; color: var(--tds-soft); }
 .tds-act-card-note { font-size: 12px; color: var(--tds-ink); opacity: .8; font-style: italic; }
 
+/* ----- Touch-friendly DnD: enlarge tap targets when editing ----------
+   In edit mode the entire card is a drag handle. On coarse pointers and
+   narrow viewports we expand padding, spacing, and minimum height so the
+   card is easy to grab without accidentally tapping its neighbour. */
+.tds-act-card[data-editing="true"] {
+  min-height: 56px;
+  padding: 12px 14px;
+  gap: 6px;
+  cursor: grab;
+}
+.tds-act-card[data-editing="true"]:active,
+.tds-act-card[data-dragging="true"] { cursor: grabbing; }
+
+@media (pointer: coarse), (max-width: 640px) {
+  .tds-board-bucket { padding: 14px 12px 20px; }
+  .tds-board-bucket-list { gap: 12px; }
+  .tds-board-empty {
+    padding: 22px 0;
+    min-height: 56px;
+    border: 1px dashed var(--tds-rule);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .tds-act-card[data-editing="true"] {
+    min-height: 64px;
+    padding: 14px 16px;
+    gap: 8px;
+  }
+  .tds-act-card[data-editing="true"] .tds-act-card-title { font-size: 16px; }
+  /* Slightly larger hit area for drop-into-card insert-before. */
+  .tds-act-card[data-editing="true"][data-drop-over="true"] { outline-offset: 2px; }
+}
+
 /* =============================================================
    GRID VIEW — operational tables.
    ============================================================= */

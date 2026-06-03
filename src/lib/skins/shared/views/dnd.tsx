@@ -113,6 +113,8 @@ export function DraggableActivity({
       ref={ref}
       className={className}
       style={style}
+      data-editing={editing ? "true" : undefined}
+      data-dragging={isDragging ? "true" : undefined}
       {...(editing ? listeners : {})}
       {...(editing ? attributes : {})}
     >
