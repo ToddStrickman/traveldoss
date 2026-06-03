@@ -62,6 +62,19 @@ export const DEMO_BLOCKS: Block[] = [
     category: "currency",
     note: "≈ 1 USD = 0.92 EUR. Most tascas are cash only.",
   },
+  {
+    kind: "place",
+    name: "Casa Boma · Lapa Studio",
+    category: "accommodation",
+    address: "R. do Quelhas 6, 1200-781 Lisboa",
+    phone: "+351 21 396 2200",
+    website: "https://casaboma.com",
+    checkIn: "16:00",
+    checkOut: "11:00",
+    amenities: "Self check-in · kitchenette · river view",
+    reservation: "Conf #CB-7741 · 1 night (Day 3)",
+    note: "Final-night studio closer to the airport.",
+  },
 
   // ============================================================
   // DAY 1
