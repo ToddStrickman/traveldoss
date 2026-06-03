@@ -14,6 +14,7 @@ export function TopoBackground() {
   const [coarsePointer, setCoarsePointer] = useState(false);
   const [radius, setRadius] = useState(360);
   const [moving, setMoving] = useState(false);
+  const [debug, setDebug] = useState(false);
 
   // Motion values follow the cursor; spring gives a damped, plush trail.
   const initialX = typeof window !== "undefined" ? window.innerWidth / 2 : 0;
@@ -43,6 +44,14 @@ export function TopoBackground() {
   useEffect(() => {
     setCoarsePointer(window.matchMedia("(pointer: coarse)").matches);
 
+    // Debug toggle: ?debug-topo in URL, or Shift+D anywhere.
+    const params = new URLSearchParams(window.location.search);
+    if (params.has("debug-topo")) setDebug(true);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.shiftKey && (e.key === "D" || e.key === "d")) setDebug((v) => !v);
+    };
+    window.addEventListener("keydown", onKey);
+
     // Radius ~ 26% of the viewport's smaller side, clamped to a plush range.
     const computeRadius = () => {
       const min = Math.min(window.innerWidth, window.innerHeight);
@@ -64,6 +73,7 @@ export function TopoBackground() {
     return () => {
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("resize", computeRadius);
+      window.removeEventListener("keydown", onKey);
       if (idleTimer) clearTimeout(idleTimer);
     };
   }, [mx, my, reduceMotion]);
@@ -92,7 +102,9 @@ export function TopoBackground() {
           <motion.div
             className="absolute inset-0 will-change-[mask-image]"
             style={{
-              backgroundImage: topoMapPattern(),
+              backgroundImage: debug
+                ? "linear-gradient(45deg, #ff00ff 0 8px, #00ffff 8px 16px)"
+                : topoMapPattern(),
               backgroundSize: "360px 360px",
               backgroundRepeat: "repeat",
               WebkitMaskImage: mask,
@@ -101,6 +113,7 @@ export function TopoBackground() {
               contain: "layout paint",
             }}
           />
+          {debug ? <DebugOverlay sx={sx} sy={sy} radius={radius} /> : null}
         </>
       ) : (
         null
@@ -114,7 +127,43 @@ export function TopoBackground() {
             "radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.5) 100%)",
         }}
       />
+      {debug ? (
+        <div className="pointer-events-none absolute left-3 top-3 rounded bg-black/80 px-2 py-1 font-mono text-xs text-lime-300">
+          TOPO DEBUG · radius {radius}px · tracking {String(trackingEnabled)} · Shift+D toggles
+        </div>
+      ) : null}
     </div>
+  );
+}
+
+/**
+ * Debug overlay: bright ring at the mask boundary + crosshair dot at the
+ * spring-tracked center. Lets you verify the spotlight position and that the
+ * topo layer is actually being clipped to it.
+ */
+function DebugOverlay({
+  sx,
+  sy,
+  radius,
+}: {
+  sx: import("motion/react").MotionValue<number>;
+  sy: import("motion/react").MotionValue<number>;
+  radius: number;
+}) {
+  const ring = useMotionTemplate`radial-gradient(circle ${radius}px at ${sx}px ${sy}px,
+    rgba(0,0,0,0) 0%,
+    rgba(0,0,0,0) 97%,
+    rgba(0,255,128,0.95) 98%,
+    rgba(0,255,128,0) 100%)`;
+  const dot = useMotionTemplate`radial-gradient(circle 6px at ${sx}px ${sy}px,
+    rgba(255,0,128,1) 0%,
+    rgba(255,0,128,1) 70%,
+    rgba(255,0,128,0) 100%)`;
+  return (
+    <>
+      <motion.div className="absolute inset-0" style={{ background: ring }} />
+      <motion.div className="absolute inset-0" style={{ background: dot }} />
+    </>
   );
 }
 
