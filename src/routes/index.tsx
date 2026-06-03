@@ -137,7 +137,7 @@ function Landing() {
         >
           <span className="inline-flex items-center gap-3">
             <span className="h-px w-8 bg-ink/30" />
-            TravelDoss<span className="text-ink/30">®</span>
+            Travel Doss<span className="text-ink/30">®</span>
             <span className="h-px w-8 bg-ink/30" />
           </span>
           <span className="border border-ink/10 px-2.5 py-1 text-[9px] tracking-[0.35em] text-ink/35">
@@ -152,9 +152,9 @@ function Landing() {
           className="text-[18vw] font-normal leading-[0.95] tracking-[-0.03em] md:text-[9vw]"
           style={{ fontFamily: "var(--font-display)" }}
         >
-          <span className="text-ink">Itinineriaries</span>
+          <span className="text-ink">Travel</span>
           <br />
-          <span className="italic text-ink/90">Suck<span className="text-seal">.</span></span>
+          <span className="italic text-ink/90">Doss<span className="text-seal">.</span></span>
         </motion.h1>
 
         <motion.p
