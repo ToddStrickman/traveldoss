@@ -25,18 +25,6 @@ export const listTrips = createServerFn({ method: "GET" })
     return { trips: data ?? [] };
   });
 
-export const getDriveConnectionStatus = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const { userId } = context;
-    const { data } = await supabaseAdmin
-      .from("google_tokens")
-      .select("google_email, expires_at, scope")
-      .eq("user_id", userId)
-      .maybeSingle();
-    return { connected: !!data, email: data?.google_email ?? null };
-  });
-
 /** Mint a new trip from parsed ingestion blocks in a chosen template. */
 export const createTripFromIngestion = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

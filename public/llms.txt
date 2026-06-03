@@ -1,14 +1,13 @@
 # TravelDoss
 
-> Plan trips in a Google Doc and see them on a live, day-by-day map. TravelDoss turns your doc into a pinned, categorized, routed itinerary inside an editorial dossier microsite.
+> Plan trips and see them on a live, day-by-day map. TravelDoss turns any pasted itinerary into a pinned, categorized, routed dossier microsite — viewable as a live URL, exportable as a PDF, and usable fully offline.
 
-TravelDoss is a trip-planning tool that pairs Google Docs with Google Maps. You pick a "skin" (an editorial dossier template), write or paste your trip into a Google Doc, and TravelDoss extracts every place — lodging, food, sights, transport — and pins them on a live, routed map organized by day. Each trip lives at its own private URL for a month for $1.
+TravelDoss is a trip-planning tool. You pick a "skin" (an editorial dossier template), paste or write your trip, and TravelDoss extracts every place — lodging, food, sights, transport — and pins them on a live, routed map organized by day. Each trip lives at its own private URL for a month for $1, can be exported to PDF with clickable links, and stays available offline once opened.
 
 ## Pages
 
-- [Home](/): What TravelDoss is and how it turns a Google Doc into a live map.
+- [Home](/): What TravelDoss is and how it turns a pasted itinerary into a live map.
 - [Skins](/templates): The gallery of editorial dossier designs to choose from.
-- [Google Docs travel itinerary template guide](/guide/google-docs-travel-itinerary-template): How to structure a trip itinerary in Google Docs and turn it into a live map.
 
 ## Optional
 

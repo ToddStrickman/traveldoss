@@ -336,7 +336,7 @@ function DossierPage() {
           canRedo={canRedo}
         />
       )}
-      <ExportMenu slug={trip.slug} canPushToDocs={isOwner} />
+      <ExportMenu slug={trip.slug} />
       <IngestionModal
         open={mintOpen}
         onOpenChange={setMintOpen}

@@ -16,12 +16,8 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TSlugRouteImport } from './routes/t.$slug'
-import { Route as GuideGoogleDocsTravelItineraryTemplateRouteImport } from './routes/guide.google-docs-travel-itinerary-template'
 import { Route as E2eKanbanRouteImport } from './routes/e2e.kanban'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
-import { Route as ApiPublicGoogleStartRouteImport } from './routes/api/public/google/start'
-import { Route as ApiPublicGoogleCallbackRouteImport } from './routes/api/public/google/callback'
-import { Route as ApiPublicExportGdocsRouteImport } from './routes/api/public/export/gdocs'
 
 const TemplatesRoute = TemplatesRouteImport.update({
   id: '/templates',
@@ -57,12 +53,6 @@ const TSlugRoute = TSlugRouteImport.update({
   path: '/t/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
-const GuideGoogleDocsTravelItineraryTemplateRoute =
-  GuideGoogleDocsTravelItineraryTemplateRouteImport.update({
-    id: '/guide/google-docs-travel-itinerary-template',
-    path: '/guide/google-docs-travel-itinerary-template',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 const E2eKanbanRoute = E2eKanbanRouteImport.update({
   id: '/e2e/kanban',
   path: '/e2e/kanban',
@@ -73,21 +63,6 @@ const AuthenticatedAppRoute = AuthenticatedAppRouteImport.update({
   path: '/app',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const ApiPublicGoogleStartRoute = ApiPublicGoogleStartRouteImport.update({
-  id: '/api/public/google/start',
-  path: '/api/public/google/start',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiPublicGoogleCallbackRoute = ApiPublicGoogleCallbackRouteImport.update({
-  id: '/api/public/google/callback',
-  path: '/api/public/google/callback',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiPublicExportGdocsRoute = ApiPublicExportGdocsRouteImport.update({
-  id: '/api/public/export/gdocs',
-  path: '/api/public/export/gdocs',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -97,11 +72,7 @@ export interface FileRoutesByFullPath {
   '/templates': typeof TemplatesRoute
   '/app': typeof AuthenticatedAppRoute
   '/e2e/kanban': typeof E2eKanbanRoute
-  '/guide/google-docs-travel-itinerary-template': typeof GuideGoogleDocsTravelItineraryTemplateRoute
   '/t/$slug': typeof TSlugRoute
-  '/api/public/export/gdocs': typeof ApiPublicExportGdocsRoute
-  '/api/public/google/callback': typeof ApiPublicGoogleCallbackRoute
-  '/api/public/google/start': typeof ApiPublicGoogleStartRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -111,11 +82,7 @@ export interface FileRoutesByTo {
   '/templates': typeof TemplatesRoute
   '/app': typeof AuthenticatedAppRoute
   '/e2e/kanban': typeof E2eKanbanRoute
-  '/guide/google-docs-travel-itinerary-template': typeof GuideGoogleDocsTravelItineraryTemplateRoute
   '/t/$slug': typeof TSlugRoute
-  '/api/public/export/gdocs': typeof ApiPublicExportGdocsRoute
-  '/api/public/google/callback': typeof ApiPublicGoogleCallbackRoute
-  '/api/public/google/start': typeof ApiPublicGoogleStartRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -127,11 +94,7 @@ export interface FileRoutesById {
   '/templates': typeof TemplatesRoute
   '/_authenticated/app': typeof AuthenticatedAppRoute
   '/e2e/kanban': typeof E2eKanbanRoute
-  '/guide/google-docs-travel-itinerary-template': typeof GuideGoogleDocsTravelItineraryTemplateRoute
   '/t/$slug': typeof TSlugRoute
-  '/api/public/export/gdocs': typeof ApiPublicExportGdocsRoute
-  '/api/public/google/callback': typeof ApiPublicGoogleCallbackRoute
-  '/api/public/google/start': typeof ApiPublicGoogleStartRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -143,11 +106,7 @@ export interface FileRouteTypes {
     | '/templates'
     | '/app'
     | '/e2e/kanban'
-    | '/guide/google-docs-travel-itinerary-template'
     | '/t/$slug'
-    | '/api/public/export/gdocs'
-    | '/api/public/google/callback'
-    | '/api/public/google/start'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -157,11 +116,7 @@ export interface FileRouteTypes {
     | '/templates'
     | '/app'
     | '/e2e/kanban'
-    | '/guide/google-docs-travel-itinerary-template'
     | '/t/$slug'
-    | '/api/public/export/gdocs'
-    | '/api/public/google/callback'
-    | '/api/public/google/start'
   id:
     | '__root__'
     | '/'
@@ -172,11 +127,7 @@ export interface FileRouteTypes {
     | '/templates'
     | '/_authenticated/app'
     | '/e2e/kanban'
-    | '/guide/google-docs-travel-itinerary-template'
     | '/t/$slug'
-    | '/api/public/export/gdocs'
-    | '/api/public/google/callback'
-    | '/api/public/google/start'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -187,11 +138,7 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TemplatesRoute: typeof TemplatesRoute
   E2eKanbanRoute: typeof E2eKanbanRoute
-  GuideGoogleDocsTravelItineraryTemplateRoute: typeof GuideGoogleDocsTravelItineraryTemplateRoute
   TSlugRoute: typeof TSlugRoute
-  ApiPublicExportGdocsRoute: typeof ApiPublicExportGdocsRoute
-  ApiPublicGoogleCallbackRoute: typeof ApiPublicGoogleCallbackRoute
-  ApiPublicGoogleStartRoute: typeof ApiPublicGoogleStartRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -245,13 +192,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/guide/google-docs-travel-itinerary-template': {
-      id: '/guide/google-docs-travel-itinerary-template'
-      path: '/guide/google-docs-travel-itinerary-template'
-      fullPath: '/guide/google-docs-travel-itinerary-template'
-      preLoaderRoute: typeof GuideGoogleDocsTravelItineraryTemplateRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/e2e/kanban': {
       id: '/e2e/kanban'
       path: '/e2e/kanban'
@@ -265,27 +205,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/app'
       preLoaderRoute: typeof AuthenticatedAppRouteImport
       parentRoute: typeof AuthenticatedRoute
-    }
-    '/api/public/google/start': {
-      id: '/api/public/google/start'
-      path: '/api/public/google/start'
-      fullPath: '/api/public/google/start'
-      preLoaderRoute: typeof ApiPublicGoogleStartRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/google/callback': {
-      id: '/api/public/google/callback'
-      path: '/api/public/google/callback'
-      fullPath: '/api/public/google/callback'
-      preLoaderRoute: typeof ApiPublicGoogleCallbackRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/export/gdocs': {
-      id: '/api/public/export/gdocs'
-      path: '/api/public/export/gdocs'
-      fullPath: '/api/public/export/gdocs'
-      preLoaderRoute: typeof ApiPublicExportGdocsRouteImport
-      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -310,12 +229,7 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   TemplatesRoute: TemplatesRoute,
   E2eKanbanRoute: E2eKanbanRoute,
-  GuideGoogleDocsTravelItineraryTemplateRoute:
-    GuideGoogleDocsTravelItineraryTemplateRoute,
   TSlugRoute: TSlugRoute,
-  ApiPublicExportGdocsRoute: ApiPublicExportGdocsRoute,
-  ApiPublicGoogleCallbackRoute: ApiPublicGoogleCallbackRoute,
-  ApiPublicGoogleStartRoute: ApiPublicGoogleStartRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

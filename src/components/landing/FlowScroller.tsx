@@ -22,7 +22,7 @@ const STEPS: Step[] = [
     n: "02",
     kicker: "Bring the mess",
     title: "Paste anything.",
-    body: "A half-written note. A forwarded confirmation. A Google Doc your friend keeps editing. Drop it in — punctuation optional.",
+    body: "A half-written note. A forwarded confirmation. A shared draft your friend keeps editing. Drop it in — punctuation optional.",
     visual: "paste",
   },
   {

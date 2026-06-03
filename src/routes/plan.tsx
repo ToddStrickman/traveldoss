@@ -20,12 +20,11 @@ export const Route = createFileRoute("/plan")({
   }),
 });
 
-const TABS: { key: IngestSource | "brief" | "email"; label: string }[] = [
+const TABS: { key: IngestSource | "brief"; label: string }[] = [
   { key: "brief", label: "From a brief" },
   { key: "text", label: "Paste text" },
   { key: "ai", label: "AI output" },
   { key: "transcript", label: "Transcript" },
-  { key: "email", label: "Email" },
 ];
 
 function PlanPage() {
@@ -62,7 +61,7 @@ function PlanPage() {
     );
   }
   function ingest() {
-    if (tab === "brief" || tab === "email") return;
+    if (tab === "brief") return;
     const parsed = parseDropIn(text, tab);
     if (!parsed.length) return;
     const sourceLabel =
@@ -129,15 +128,6 @@ function PlanPage() {
             <textarea value={text} onChange={(e) => setText(e.target.value)} rows={10} placeholder={PLACEHOLDER[tab]} className={`${inputCls} font-mono text-[13px]`} />
             <button onClick={ingest} disabled={text.trim().length < 8} className="w-full rounded-full bg-ink py-3 text-sm font-semibold text-background hover:bg-seal disabled:opacity-40">Build it</button>
             <p className="text-[11px] text-ink-soft">Parsed on your device. Connect an AI key later for richer structuring — the button stays the same.</p>
-          </div>
-        )}
-
-        {tab === "email" && (
-          <div className="mt-5 space-y-3 text-sm text-ink-soft">
-            <p>Connect your inbox (read-only) and we’ll find the trip for you:</p>
-            <div className="rounded-xl border border-ink/15 p-3"><b className="text-ink">Last month</b><br />Bookings, reservations, confirmations</div>
-            <div className="rounded-xl border border-ink/15 p-3"><b className="text-ink">Last 6 months</b><br />Anything about your destination</div>
-            <a href="/api/public/google/start" className="block rounded-full bg-ink py-3 text-center text-sm font-semibold text-background hover:bg-seal">Connect email</a>
           </div>
         )}
 

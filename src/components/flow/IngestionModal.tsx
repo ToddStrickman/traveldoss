@@ -21,12 +21,11 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-type Tab = "paste" | "transcript" | "inbox";
+type Tab = "paste" | "transcript";
 
 const TABS: { id: Tab; n: string; label: string; sub: string }[] = [
   { id: "paste", n: "I", label: "Paste Itinerary", sub: "ChatGPT, Claude, notes." },
   { id: "transcript", n: "II", label: "Upload Transcript", sub: "Text or .vtt / .srt files." },
-  { id: "inbox", n: "III", label: "Scan Inbox", sub: "Bookings, last six months." },
 ];
 
 function serial() {
@@ -61,10 +60,6 @@ export function IngestionModal({
 
   function submit() {
     if (!template) return;
-    if (tab === "inbox") {
-      window.location.href = "/api/public/google/start";
-      return;
-    }
     const trimmed = text.trim();
     if (trimmed.length < 8) {
       toast.error("Add a few lines first so we have something to craft.");
@@ -278,20 +273,7 @@ export function IngestionModal({
               )}
             </div>
           )}
-          {tab === "inbox" && (
-            <div className="rounded-md border border-ink/15 bg-paper/60 px-5 py-6 sm:px-7 sm:py-8">
-              <p
-                className="text-[19px] leading-[1.3] text-ink/85"
-                style={{ fontFamily: "var(--font-display)" }}
-              >
-                Securely extracts bookings from the last six months.{" "}
-                <span className="italic text-ink/60">Read-only — the messages are never stored.</span>
-              </p>
-              <p className="td-eyebrow mt-5 text-ink/45">
-                Continuing will redirect you to Google to grant access.
-              </p>
-            </div>
-          )}
+          {/* inbox/Google tab removed */}
         </div>
 
         {/* Footer */}
