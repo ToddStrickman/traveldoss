@@ -12,6 +12,7 @@ import { motion, useMotionValue, useMotionTemplate, useSpring, useReducedMotion 
 export function TopoBackground() {
   const reduceMotion = useReducedMotion();
   const [coarsePointer, setCoarsePointer] = useState(false);
+  const [radius, setRadius] = useState(360);
 
   // Motion values follow the cursor; spring gives a damped, plush trail.
   const initialX = typeof window !== "undefined" ? window.innerWidth / 2 : 0;
@@ -21,18 +22,39 @@ export function TopoBackground() {
   const sx = useSpring(mx, { stiffness: 120, damping: 24, mass: 0.6 });
   const sy = useSpring(my, { stiffness: 120, damping: 24, mass: 0.6 });
 
-  // CSS mask that tracks the cursor — black reveals, transparent hides.
-  const mask = useMotionTemplate`radial-gradient(circle 320px at ${sx}px ${sy}px, black 0%, rgba(0,0,0,0.85) 35%, rgba(0,0,0,0.35) 65%, transparent 100%)`;
+  // Cursor-tracked radial mask. Multi-stop falloff (ease-out cubic-ish) so the
+  // edge dissolves into the navy with no visible ring. Radius scales with the
+  // viewport so the reveal feels proportional on phones, laptops, and 4K.
+  const mask = useMotionTemplate`radial-gradient(circle ${radius}px at ${sx}px ${sy}px,
+    rgba(0,0,0,1) 0%,
+    rgba(0,0,0,0.96) 18%,
+    rgba(0,0,0,0.82) 34%,
+    rgba(0,0,0,0.58) 50%,
+    rgba(0,0,0,0.30) 68%,
+    rgba(0,0,0,0.10) 84%,
+    rgba(0,0,0,0) 100%)`;
 
   useEffect(() => {
     setCoarsePointer(window.matchMedia("(pointer: coarse)").matches);
+
+    // Radius ~ 26% of the viewport's smaller side, clamped to a plush range.
+    const computeRadius = () => {
+      const min = Math.min(window.innerWidth, window.innerHeight);
+      setRadius(Math.round(Math.max(220, Math.min(520, min * 0.26))));
+    };
+    computeRadius();
+    window.addEventListener("resize", computeRadius);
+
     if (reduceMotion) return;
     const onMove = (e: PointerEvent) => {
       mx.set(e.clientX);
       my.set(e.clientY);
     };
     window.addEventListener("pointermove", onMove, { passive: true });
-    return () => window.removeEventListener("pointermove", onMove);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("resize", computeRadius);
+    };
   }, [mx, my, reduceMotion]);
 
   const topoUrl = `url("data:image/svg+xml;utf8,${encodeURIComponent(topoSvg)}")`;
