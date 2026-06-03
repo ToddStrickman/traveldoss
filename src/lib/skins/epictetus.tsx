@@ -217,7 +217,7 @@ function BlockRender({ block, onChange }: { block: Block; onChange: (p: Partial<
         <h2
           style={{
             fontFamily: tokens.fontDisplay,
-            fontSize: 32,
+            fontSize: "var(--tds-fs-h2)",
             letterSpacing: "-0.01em",
             borderBottom: `1px solid ${tokens.rule}`,
             paddingBottom: 8,
@@ -228,7 +228,7 @@ function BlockRender({ block, onChange }: { block: Block; onChange: (p: Partial<
       );
     case "paragraph":
       return (
-        <p style={{ fontSize: 18, lineHeight: 1.7, color: tokens.ink }}>
+        <p style={{ fontSize: "var(--tds-fs-body)", lineHeight: 1.7, color: tokens.ink }}>
           <EditableText as="span" multiline value={block.text} placeholder="Write a paragraph…" onChange={(v) => onChange({ text: v } as Partial<Block>)} />
         </p>
       );
@@ -287,7 +287,7 @@ function BlockRender({ block, onChange }: { block: Block; onChange: (p: Partial<
           style={{
             fontFamily: tokens.fontDisplay,
             fontStyle: "italic",
-            fontSize: 26,
+            fontSize: "var(--tds-fs-h3)",
             lineHeight: 1.4,
             color: tokens.ink,
             borderLeft: `1px solid ${tokens.rule}`,
