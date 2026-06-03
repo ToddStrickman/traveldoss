@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "motion/react";
@@ -46,6 +46,21 @@ function Landing() {
   const create = useServerFn(createTripFromIngestion);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const pendingTemplateId = window.sessionStorage.getItem("td_pending_template");
+    if (!pendingTemplateId) return;
+
+    const skin = SKINS.find((item) => item.meta.id === pendingTemplateId);
+    if (!skin) {
+      window.sessionStorage.removeItem("td_pending_template");
+      return;
+    }
+
+    window.sessionStorage.removeItem("td_pending_template");
+    setPicked(skin);
+    setModalOpen(true);
+  }, []);
+
   function openWithTemplate(skin: SkinModule) {
     setPicked(skin);
     setModalOpen(true);
@@ -55,8 +70,9 @@ function Landing() {
     if (!picked) return;
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) {
+      window.sessionStorage.setItem("td_pending_template", picked.meta.id);
       toast.message("Sign in to compose your dossier", { description: "Your studio, your journeys — quiet and owned." });
-      navigate({ to: "/login" });
+      navigate({ to: "/login", search: { redirect: "/" } });
       return;
     }
     setModalOpen(false);
