@@ -237,6 +237,41 @@ function TemplatesPage() {
     };
   }, []);
 
+  // Restore + persist scroll position across navigations
+  useEffect(() => {
+    const KEY = "templates:scrollY";
+    const raw = sessionStorage.getItem(KEY);
+    if (raw) {
+      const y = parseInt(raw, 10);
+      if (!Number.isNaN(y)) {
+        // Wait for layout to settle before restoring
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => window.scrollTo(0, y));
+        });
+      }
+    }
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        sessionStorage.setItem(KEY, String(window.scrollY));
+        ticking = false;
+      });
+    };
+    const persistNow = () =>
+      sessionStorage.setItem(KEY, String(window.scrollY));
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("pagehide", persistNow);
+    window.addEventListener("beforeunload", persistNow);
+    return () => {
+      persistNow();
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("pagehide", persistNow);
+      window.removeEventListener("beforeunload", persistNow);
+    };
+  }, []);
+
   const handlePick = async (id: string) => {
     if (authed === false) {
       navigate({ to: "/login" });
