@@ -12,6 +12,16 @@
   min-height: 100%;
   --tds-s1: 8px; --tds-s2: 14px; --tds-s3: 22px; --tds-s4: 34px; --tds-s5: 52px;
   --tds-measure: 64ch;
+  /* Minimal Brutalism: one type ramp shared by every skin/view. */
+  --tds-fs-display: clamp(44px, 8vw, 112px);
+  --tds-fs-h2:      clamp(24px, 3.2vw, 34px);
+  --tds-fs-h3:      clamp(20px, 2.4vw, 26px);
+  --tds-fs-body:    clamp(15px, 1.05vw, 18px);
+  --tds-fs-meta:    clamp(10px, 0.8vw, 12px);
+  /* Aspect-ratio reservations for future image slots. */
+  --tds-ar-hero: 16 / 9;
+  --tds-ar-card: 4 / 5;
+  --tds-ar-tile: 1 / 1;
 }
 
 .tds-canvas { max-width: 1080px; margin: 0 auto; padding: var(--tds-s5) var(--tds-s4) 96px; }
@@ -198,12 +208,40 @@
   .tds-block-tools { left: auto; right: 0; top: -22px; flex-direction: row; }
 }
 
+/* Universal Minimal-Brutalism card primitive. Square corners, hairline border,
+   no rounded fluff; views opt-in. */
+.tds-card {
+  position: relative;
+  border: 1px solid var(--tds-rule);
+  background: transparent;
+  padding: clamp(16px, 2vw, 24px);
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--tds-s2);
+}
+.tds[data-view="grid"] .tds-card,
+.tds[data-view="horizontal"] .tds-card {
+  background: color-mix(in srgb, var(--tds-ink) 4%, var(--tds-bg));
+}
+.tds-card .tds-place { margin: 0; }
+
+/* Touch-target helper — apply to any interactive control. */
+.tds-tap {
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .tds-add-block {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   margin-top: var(--tds-s3);
-  padding: 8px 14px;
+  padding: 12px 18px;
+  min-height: 44px;
   font-size: 10px;
   letter-spacing: .35em;
   text-transform: uppercase;
