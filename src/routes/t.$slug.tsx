@@ -14,6 +14,7 @@ import { getTemporalPhase, phaseCopy } from "@/lib/itinerary/temporal";
 import { EditingProvider, arrayMove } from "@/lib/skins/shared/Editable";
 import { IngestionModal } from "@/components/flow/IngestionModal";
 import { toast } from "sonner";
+import { useHistory, useUndoRedoShortcuts } from "@/hooks/use-history";
 
 type DossierContent = {
   blocks?: Block[];
@@ -104,10 +105,20 @@ function DossierPage() {
   useNavigate();
   const [layout, setLayout] = useState<SkinView>("vertical");
   const initial = (trip.content ?? {}) as { blocks?: Block[]; skin?: string };
-  const [blocks, setBlocks] = useState<Block[]>(initial.blocks ?? []);
-  const [templateId, setTemplateId] = useState<string>(trip.template_id ?? FALLBACK_SKIN.meta.id);
-  const [destination, setDestination] = useState<string>(trip.destination);
-  const [subtitle, setSubtitle] = useState<string>(trip.subtitle ?? "");
+  type Snapshot = {
+    blocks: Block[];
+    templateId: string;
+    destination: string;
+    subtitle: string;
+  };
+  const history = useHistory<Snapshot>({
+    blocks: initial.blocks ?? [],
+    templateId: trip.template_id ?? FALLBACK_SKIN.meta.id,
+    destination: trip.destination,
+    subtitle: trip.subtitle ?? "",
+  });
+  const { state: snap, set: setSnap, undo, redo, canUndo, canRedo } = history;
+  const { blocks, templateId, destination, subtitle } = snap;
   const [isOwner, setIsOwner] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -147,47 +158,77 @@ function DossierPage() {
     }, 800);
   }, [canEdit, save, trip.slug]);
 
-  function onTemplateChange(id: string) {
-    setTemplateId(id);
-    queueSave({ blocks, templateId: id });
-  }
+  const onTemplateChange = useCallback(
+    (id: string) => {
+      setSnap((s) => ({ ...s, templateId: id }));
+      queueSave({ blocks, templateId: id });
+    },
+    [setSnap, queueSave, blocks],
+  );
 
-  function handleMint(
-    nextBlocks: Block[],
-    _sourceLabel: string,
-    nextDestination: string | null,
-  ) {
-    setBlocks(nextBlocks);
-    const patch: Parameters<typeof queueSave>[0] = {
-      blocks: nextBlocks,
-      templateId,
-    };
-    if (nextDestination && nextDestination !== destination) {
-      setDestination(nextDestination);
-      patch.destination = nextDestination;
-    }
-    queueSave(patch);
-    setMintOpen(false);
-    toast.success("Trip minted — your dossier is live.");
-  }
+  const handleMint = useCallback(
+    (
+      nextBlocks: Block[],
+      _sourceLabel: string,
+      nextDestination: string | null,
+    ) => {
+      const patch: Parameters<typeof queueSave>[0] = {
+        blocks: nextBlocks,
+        templateId,
+      };
+      setSnap((s) => {
+        const next: Snapshot = { ...s, blocks: nextBlocks };
+        if (nextDestination && nextDestination !== s.destination) {
+          next.destination = nextDestination;
+          patch.destination = nextDestination;
+        }
+        return next;
+      });
+      queueSave(patch);
+      setMintOpen(false);
+      toast.success("Trip minted — your dossier is live.");
+    },
+    [setSnap, queueSave, templateId],
+  );
+
+  // After undo/redo, push the resulting snapshot to the server.
+  const lastSyncedRef = useRef(snap);
+  useEffect(() => {
+    if (lastSyncedRef.current === snap) return;
+    lastSyncedRef.current = snap;
+    if (!canEdit) return;
+    queueSave({
+      blocks: snap.blocks,
+      templateId: snap.templateId,
+      destination: snap.destination,
+      subtitle: snap.subtitle,
+    });
+  }, [snap, canEdit, queueSave]);
+
+  useUndoRedoShortcuts(canEdit, undo, redo);
 
   const editingCtx = useMemo(
     () => ({
       editing: canEdit,
       onBlockChange: (index: number, patch: Partial<Block>) => {
-        setBlocks((curr) => {
-          const next = curr.slice();
-          next[index] = { ...(next[index] as object), ...(patch as object) } as Block;
-          queueSave({ blocks: next, templateId });
-          return next;
-        });
+        const field = Object.keys(patch)[0] ?? "_";
+        setSnap(
+          (s) => {
+            const next = s.blocks.slice();
+            next[index] = {
+              ...(next[index] as object),
+              ...(patch as object),
+            } as Block;
+            return { ...s, blocks: next };
+          },
+          { coalesceKey: `block:${index}:${field}` },
+        );
       },
       onBlockRemove: (index: number) => {
-        setBlocks((curr) => {
-          const next = curr.filter((_, i) => i !== index);
-          queueSave({ blocks: next, templateId });
-          return next;
-        });
+        setSnap((s) => ({
+          ...s,
+          blocks: s.blocks.filter((_, i) => i !== index),
+        }));
       },
       onBlockAdd: (afterIndex: number, kind: Block["kind"]) => {
         const fresh: Block =
@@ -200,31 +241,23 @@ function DossierPage() {
             : kind === "note"
             ? { kind: "note", text: "" }
             : { kind: "paragraph", text: "" };
-        setBlocks((curr) => {
-          const next = curr.slice();
+        setSnap((s) => {
+          const next = s.blocks.slice();
           next.splice(Math.max(0, afterIndex + 1), 0, fresh);
-          queueSave({ blocks: next, templateId });
-          return next;
+          return { ...s, blocks: next };
         });
       },
       onReorder: (from: number, to: number) => {
-        setBlocks((curr) => {
-          const next = arrayMove(curr, from, to);
-          queueSave({ blocks: next, templateId });
-          return next;
-        });
+        setSnap((s) => ({ ...s, blocks: arrayMove(s.blocks, from, to) }));
       },
       onTripChange: (field: "destination" | "subtitle", value: string) => {
-        if (field === "destination") {
-          setDestination(value);
-          queueSave({ destination: value });
-        } else {
-          setSubtitle(value);
-          queueSave({ subtitle: value });
-        }
+        setSnap(
+          (s) => ({ ...s, [field]: value }),
+          { coalesceKey: `trip:${field}` },
+        );
       },
     }),
-    [canEdit, queueSave, templateId],
+    [canEdit, setSnap],
   );
 
   if (expired) return <ExpiredDossier slug={trip.slug} destination={trip.destination} />;
@@ -284,6 +317,10 @@ function DossierPage() {
           savedAt={savedAt}
           onTemplateChange={onTemplateChange}
           onMint={() => setMintOpen(true)}
+          onUndo={undo}
+          onRedo={redo}
+          canUndo={canUndo}
+          canRedo={canRedo}
         />
       )}
       <ExportMenu slug={trip.slug} canPushToDocs={isOwner} />
