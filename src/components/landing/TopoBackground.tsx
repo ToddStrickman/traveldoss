@@ -15,6 +15,9 @@ export function TopoBackground() {
   const [radius, setRadius] = useState(360);
   const [moving, setMoving] = useState(false);
   const [debug, setDebug] = useState(false);
+  const [contrast, setContrast] = useState<{ ratio: number; lo: number; hi: number } | null>(null);
+  // Below ~1.5:1 the topo reads as invisible noise on the navy base.
+  const CONTRAST_MIN = 1.5;
 
   // Motion values follow the cursor; spring gives a damped, plush trail.
   const initialX = typeof window !== "undefined" ? window.innerWidth / 2 : 0;
@@ -80,6 +83,44 @@ export function TopoBackground() {
 
   const trackingEnabled = !reduceMotion && !coarsePointer;
 
+  // When debug mode flips on, rasterize the real topo SVG over the navy base
+  // and measure WCAG contrast between the brightest revealed pixel and the
+  // base. This tells us whether the contour lines are actually visible inside
+  // the glow — not just whether the mask is clipping.
+  useEffect(() => {
+    if (!debug) {
+      setContrast(null);
+      return;
+    }
+    const base = { r: 38, g: 44, b: 70 }; // approx oklch(0.19 0.04 260)
+    const canvas = document.createElement("canvas");
+    canvas.width = 360;
+    canvas.height = 360;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) return;
+    const img = new Image();
+    img.onload = () => {
+      ctx.fillStyle = `rgb(${base.r},${base.g},${base.b})`;
+      ctx.fillRect(0, 0, 360, 360);
+      ctx.drawImage(img, 0, 0, 360, 360);
+      const { data } = ctx.getImageData(0, 0, 360, 360);
+      const baseL = relLuminance(base.r, base.g, base.b);
+      let hi = baseL;
+      let lo = baseL;
+      for (let i = 0; i < data.length; i += 4) {
+        const L = relLuminance(data[i], data[i + 1], data[i + 2]);
+        if (L > hi) hi = L;
+        if (L < lo) lo = L;
+      }
+      const ratio = (Math.max(hi, baseL) + 0.05) / (Math.min(lo, baseL) + 0.05);
+      setContrast({ ratio, lo, hi });
+    };
+    img.onerror = () => setContrast({ ratio: 0, lo: 0, hi: 0 });
+    img.src = `data:image/svg+xml;utf8,${encodeURIComponent(topoSvg)}`;
+  }, [debug]);
+
+  const tooFaint = !!contrast && contrast.ratio < CONTRAST_MIN;
+
   return (
     <div
       aria-hidden
@@ -132,8 +173,31 @@ export function TopoBackground() {
           TOPO DEBUG · radius {radius}px · tracking {String(trackingEnabled)} · Shift+D toggles
         </div>
       ) : null}
+      {debug && contrast ? (
+        <div
+          className={`pointer-events-none absolute left-3 top-12 rounded px-2 py-1 font-mono text-xs ${
+            tooFaint ? "bg-red-600 text-white" : "bg-black/80 text-lime-300"
+          }`}
+        >
+          contrast {contrast.ratio.toFixed(2)}:1 (min {CONTRAST_MIN}:1) {tooFaint ? "⚠ TOO FAINT" : "OK"}
+        </div>
+      ) : null}
+      {tooFaint ? (
+        <div className="pointer-events-none absolute inset-x-0 top-0 border-y-4 border-red-500 bg-red-500/15 px-4 py-3 text-center font-mono text-sm font-bold text-red-100">
+          ⚠ Topo reveal contrast {contrast!.ratio.toFixed(2)}:1 is below {CONTRAST_MIN}:1 — lines will be invisible inside the glow.
+        </div>
+      ) : null}
     </div>
   );
+}
+
+/** sRGB → relative luminance per WCAG 2.x. */
+function relLuminance(r: number, g: number, b: number) {
+  const f = (c: number) => {
+    const s = c / 255;
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
 }
 
 /**
