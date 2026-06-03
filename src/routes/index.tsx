@@ -137,7 +137,7 @@ function Landing() {
         >
           <span className="inline-flex items-center gap-3">
             <span className="h-px w-8 bg-ink/30" />
-            itineraries suck.
+            Travel Doss<span className="text-ink/30">®</span>
             <span className="h-px w-8 bg-ink/30" />
           </span>
           <span className="border border-ink/10 px-2.5 py-1 text-[9px] tracking-[0.35em] text-ink/35">
