@@ -37,7 +37,7 @@ export const Route = createFileRoute(
 
 function GuidePage() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-dvh bg-background text-foreground">
       <header className="mx-auto max-w-3xl px-6 pt-16 md:pt-24">
         <Link
           to="/"

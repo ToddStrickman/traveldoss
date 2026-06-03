@@ -18,7 +18,7 @@ function AuthLayout() {
 
   if (session === undefined) {
     return (
-      <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
+      <div className="flex min-h-dvh items-center justify-center text-sm text-muted-foreground">
         Loading…
       </div>
     );

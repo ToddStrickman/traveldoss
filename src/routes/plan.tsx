@@ -71,7 +71,7 @@ function PlanPage() {
   }
 
   return (
-    <div className="grid min-h-screen grid-cols-1 bg-background text-ink lg:grid-cols-[380px_1fr]">
+    <div className="grid min-h-dvh grid-cols-1 bg-background text-ink lg:grid-cols-[380px_1fr]">
       <GenerationLoader
         open={loadingSteps !== null}
         steps={loadingSteps ?? []}
@@ -82,7 +82,7 @@ function PlanPage() {
         }}
       />
       {/* ---- left: controls ---- */}
-      <aside className="border-b border-ink/10 p-6 lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto lg:border-b-0 lg:border-r">
+      <aside className="border-b border-ink/10 p-6 lg:sticky lg:top-0 lg:h-dvh lg:overflow-y-auto lg:border-b-0 lg:border-r">
         <Link to="/" className="text-[10px] uppercase tracking-[0.4em] text-ink-soft hover:text-seal">← TravelDoss</Link>
         <h1 className="mt-4 text-3xl" style={{ fontFamily: "var(--font-display)" }}>Plan a trip</h1>
         <p className="mt-1 text-sm text-ink-soft">A universal framework that rewrites itself for where you’re going — or drop in what you already have.</p>
@@ -147,7 +147,7 @@ function PlanPage() {
       </aside>
 
       {/* ---- right: live preview ---- */}
-      <section className="relative overflow-y-auto lg:h-screen">
+      <section className="relative overflow-y-auto lg:h-dvh">
         <div className="sticky top-0 z-20 flex items-center justify-center gap-1 border-b border-ink/10 bg-background/85 p-3 backdrop-blur-sm">
           {(["vertical", "horizontal", "grid"] as SkinView[]).map((v) => (
             <button key={v} onClick={() => setView(v)}

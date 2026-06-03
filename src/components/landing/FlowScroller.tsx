@@ -80,7 +80,7 @@ function DesktopFlow() {
       style={{ height: `${STEPS.length * 65}vh` }}
       aria-label="How TravelDoss works"
     >
-      <div className="sticky top-0 h-screen overflow-hidden">
+      <div className="sticky top-0 h-dvh overflow-hidden">
         {/* Section label */}
         <div className="pointer-events-none absolute left-32 right-[340px] top-8 z-20 flex items-center justify-between text-[10px] font-medium uppercase tracking-[0.4em] text-ink/45">
           <span className="inline-flex items-center gap-3">
