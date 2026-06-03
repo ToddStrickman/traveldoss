@@ -84,15 +84,16 @@ export function TopoBackground() {
         }}
       />
 
-      {/* Cursor-reveal: ivory topo paper exposed under the cursor */}
+      {/* Cursor-reveal: light exposes concealed topo lines under the cursor */}
       {trackingEnabled ? (
         <>
+          {/* Flashlight hot-spot — warm glow that makes the dark surface feel illuminated */}
+          <Flashlight sx={sx} sy={sy} radius={radius} mask={mask} />
           <motion.div
             className="absolute inset-0 will-change-[mask-image]"
             style={{
-              backgroundColor: "#FFFFF0",
               backgroundImage: `${topoUrlDark()}`,
-              backgroundSize: "640px 640px",
+              backgroundSize: "520px 520px",
               backgroundRepeat: "repeat",
               WebkitMaskImage: mask,
               maskImage: mask,
@@ -100,8 +101,6 @@ export function TopoBackground() {
               contain: "layout paint",
             }}
           />
-          {/* Flashlight hot-spot — bright warm glow on top of the reveal */}
-          <Flashlight sx={sx} sy={sy} radius={radius} />
         </>
       ) : (
         null
@@ -128,17 +127,19 @@ function Flashlight({
   sx,
   sy,
   radius,
+  mask,
 }: {
   sx: import("motion/react").MotionValue<number>;
   sy: import("motion/react").MotionValue<number>;
   radius: number;
+  mask: import("motion/react").MotionValue<string>;
 }) {
-  const inner = Math.round(radius * 0.55);
+  const inner = Math.round(radius * 0.72);
   const bg = useMotionTemplate`radial-gradient(circle ${inner}px at ${sx}px ${sy}px,
-    rgba(255,250,235,0.55) 0%,
-    rgba(255,245,220,0.32) 22%,
-    rgba(214,194,156,0.18) 48%,
-    rgba(214,194,156,0.06) 72%,
+    rgba(255,250,226,0.46) 0%,
+    rgba(248,234,196,0.26) 26%,
+    rgba(174,139,94,0.13) 54%,
+    rgba(100,72,48,0.05) 78%,
     rgba(0,0,0,0) 100%)`;
   return (
     <motion.div
@@ -146,6 +147,8 @@ function Flashlight({
       style={{
         background: bg,
         mixBlendMode: "screen",
+        WebkitMaskImage: mask,
+        maskImage: mask,
         contain: "layout paint",
       }}
     />
@@ -158,8 +161,8 @@ function Flashlight({
 function topoUrlDark() {
   const svg = topoSvg
     // Ivory strokes → dark rust brown
-    .replace(/%23F7F3ED/g, "%236B3A2A")
-    .replace(/stroke-opacity='[0-9.]+'/g, "stroke-opacity='0.55'");
+    .replace(/#F7F3ED/g, "#7A3F2A")
+    .replace(/stroke-opacity='[0-9.]+'/g, "stroke-opacity='0.72'");
   return `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`;
 }
 
@@ -167,7 +170,7 @@ function topoUrlDark() {
  * Ivory strokes are recolored to rust-brown for the cursor reveal; the river
  * path stays pale blue. */
 const topoSvg = `<svg xmlns='http://www.w3.org/2000/svg' width='900' height='900' viewBox='0 0 900 900'>
-  <g fill='none' stroke='%23F7F3ED' stroke-width='1' stroke-opacity='0.55'>
+  <g fill='none' stroke='#F7F3ED' stroke-width='1.45' stroke-opacity='0.55'>
     <path d='M120,300 C220,180 380,160 500,230 C640,310 720,470 640,600 C560,720 380,740 260,660 C140,580 60,420 120,300 Z'/>
     <path d='M150,320 C240,210 380,195 490,260 C620,335 690,470 620,580 C550,685 390,705 280,635 C170,565 100,425 150,320 Z'/>
     <path d='M180,340 C260,240 380,225 480,285 C600,355 660,465 600,560 C540,655 395,675 295,615 C200,560 130,430 180,340 Z'/>
@@ -186,7 +189,7 @@ const topoSvg = `<svg xmlns='http://www.w3.org/2000/svg' width='900' height='900
     <path d='M120,760 C200,700 320,705 380,755 C435,805 410,860 320,860 C220,860 80,820 120,760 Z' stroke-opacity='0.4'/>
     <path d='M150,775 C220,725 315,725 365,765 C415,810 395,850 320,850 C235,850 100,820 150,775 Z' stroke-opacity='0.4'/>
   </g>
-  <g fill='none' stroke='%237DB7D6' stroke-width='2.25' stroke-opacity='0.75' stroke-linecap='round'>
+  <g fill='none' stroke='#A9D8EA' stroke-width='2.6' stroke-opacity='0.82' stroke-linecap='round'>
     <path d='M520,40 C500,140 540,230 470,330 C400,430 430,540 380,650 C340,750 360,830 320,900'/>
     <path d='M820,420 C760,470 700,520 690,610 C685,690 740,760 720,860'/>
   </g>
