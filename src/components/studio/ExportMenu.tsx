@@ -46,7 +46,7 @@ export function ExportMenu({ slug, canPushToDocs = true }: { slug: string; canPu
   return (
     <div
       data-print="hide"
-      className="fixed right-3 z-40 flex items-center gap-1 rounded-full border border-white/10 bg-paper/85 p-1 text-ink backdrop-blur-md sm:right-5 sm:gap-2 sm:p-1.5 bottom-[max(72px,calc(env(safe-area-inset-bottom)+72px))] sm:bottom-5"
+      className="fixed right-3 z-40 flex items-center gap-1 rounded-full border border-white/10 bg-paper/85 p-1 text-ink backdrop-blur-md sm:right-5 sm:gap-2 sm:p-1.5 bottom-[max(72px,calc(env(safe-area-inset-bottom)+72px))] sm:bottom-5 [@media(max-height:820px)]:bottom-[max(72px,calc(env(safe-area-inset-bottom)+72px))]"
     >
       <ExportButton onClick={copyLink} icon={<Link2 className="h-3.5 w-3.5" />} label="Live URL" />
       <ExportButton onClick={printPdf} icon={<Printer className="h-3.5 w-3.5" />} label="PDF" />
