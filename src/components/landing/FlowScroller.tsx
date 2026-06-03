@@ -77,7 +77,7 @@ function DesktopFlow() {
     <section
       ref={containerRef}
       className="relative z-10 hidden md:block"
-      style={{ height: `${STEPS.length * 100}vh` }}
+      style={{ height: `${STEPS.length * 65}vh` }}
       aria-label="How TravelDoss works"
     >
       <div className="sticky top-0 h-screen overflow-hidden">
