@@ -5,11 +5,13 @@ export function StudioBar({
   saving,
   savedAt,
   onTemplateChange,
+  onMint,
 }: {
   templateId: string;
   saving: boolean;
   savedAt: string | null;
   onTemplateChange: (id: string) => void;
+  onMint?: () => void;
 }) {
   return (
     <div
@@ -31,10 +33,25 @@ export function StudioBar({
         </select>
       </label>
       <span className="h-4 w-px bg-white/10" />
-      <span className="text-[10px] uppercase tracking-[0.3em] text-ink-soft">
-        {saving ? "Saving…" : savedAt ? `Saved · ${new Date(savedAt).toLocaleTimeString()}` : "Live"}
-        <span className="ml-2 inline-block h-1.5 w-1.5 rounded-full bg-seal align-middle" />
-      </span>
+      {onMint ? (
+        <button
+          type="button"
+          onClick={onMint}
+          aria-label="Mint your trip"
+          className="td-mint-button group inline-flex items-center gap-2 rounded-full bg-seal/15 px-3.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.3em] text-seal transition-colors hover:bg-seal hover:text-paper"
+        >
+          <span
+            aria-hidden
+            className="inline-block h-1.5 w-1.5 rounded-full bg-seal shadow-[0_0_8px_currentColor] group-hover:bg-paper"
+          />
+          Mint Your Trip
+        </button>
+      ) : (
+        <span className="text-[10px] uppercase tracking-[0.3em] text-ink-soft">
+          {saving ? "Saving…" : savedAt ? `Saved · ${new Date(savedAt).toLocaleTimeString()}` : "Live"}
+          <span className="ml-2 inline-block h-1.5 w-1.5 rounded-full bg-seal align-middle" />
+        </span>
+      )}
     </div>
   );
 }

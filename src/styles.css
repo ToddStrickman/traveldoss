@@ -262,3 +262,41 @@
   body.td-print-mode .tds { background: #fff !important; color: #111 !important; }
   body.td-print-mode a { color: #1a4fb2 !important; text-decoration: underline; }
 }
+
+/* ---- Mint button shimmer (diamond-edge sweep) ---- */
+@keyframes td-mint-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.td-mint-button {
+  position: relative;
+  isolation: isolate;
+}
+.td-mint-button::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    110deg,
+    transparent 0%,
+    transparent 30%,
+    color-mix(in oklab, var(--seal) 70%, white) 45%,
+    #ffffff 50%,
+    color-mix(in oklab, var(--seal) 70%, white) 55%,
+    transparent 70%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  pointer-events: none;
+  animation: td-mint-shimmer 3.2s linear infinite;
+  opacity: 0.85;
+}
+.td-mint-button:hover::before { opacity: 1; animation-duration: 1.8s; }
