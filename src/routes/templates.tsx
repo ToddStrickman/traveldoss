@@ -7,8 +7,69 @@ import { SKINS, type SkinModule } from "@/lib/skins/registry";
 import { pickTemplate } from "@/lib/templates.functions";
 import { supabase } from "@/integrations/supabase/client";
 
+function TemplatesSkeleton() {
+  return (
+    <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 z-0 opacity-[0.05] mix-blend-overlay"
+        style={{
+          backgroundImage:
+            "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.6'/></svg>\")",
+        }}
+      />
+
+      <header className="relative z-10 mx-auto flex max-w-[1600px] items-center justify-between border-b border-ink/10 px-6 py-6 md:px-12">
+        <div className="h-3 w-32 animate-pulse rounded bg-ink/10" />
+        <div className="h-3 w-24 animate-pulse rounded bg-ink/10" />
+      </header>
+
+      <main className="relative z-10 mx-auto max-w-[1600px] px-6 pb-24 md:px-12">
+        <div className="mt-8 h-3 w-16 animate-pulse rounded bg-ink/10" />
+
+        <div className="mt-16 h-[14vw] w-3/4 animate-pulse rounded bg-ink/10 md:h-[7vw]" />
+        <div className="mt-6 h-4 w-full max-w-xl animate-pulse rounded bg-ink/10" />
+        <div className="mt-2 h-4 w-48 animate-pulse rounded bg-ink/10" />
+        <div className="mt-3 h-3 w-32 animate-pulse rounded bg-ink/10" />
+
+        <div className="mt-10 flex flex-col gap-6">
+          <div className="h-12 w-full max-w-md animate-pulse rounded bg-ink/10" />
+          <div className="flex flex-wrap gap-2">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="h-7 w-20 animate-pulse rounded-full bg-ink/10" />
+            ))}
+          </div>
+          <div className="h-3 w-24 animate-pulse rounded bg-ink/10" />
+        </div>
+
+        <div className="mt-10 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div
+              key={i}
+              className="flex h-full flex-col border border-ink/10 bg-surface"
+            >
+              <div className="h-[420px] w-full animate-pulse bg-ink/5" />
+              <div className="flex flex-1 flex-col p-7 md:p-8">
+                <div className="h-2 w-16 animate-pulse rounded bg-ink/10" />
+                <div className="mt-3 h-10 w-3/4 animate-pulse rounded bg-ink/10" />
+                <div className="mt-3 h-4 w-full animate-pulse rounded bg-ink/10" />
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <div className="h-5 w-14 animate-pulse rounded-full bg-ink/10" />
+                  <div className="h-5 w-16 animate-pulse rounded-full bg-ink/10" />
+                </div>
+                <div className="mt-auto h-10 w-full animate-pulse rounded bg-ink/10" style={{ marginTop: 28 }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </main>
+    </div>
+  );
+}
+
 export const Route = createFileRoute("/templates")({
   component: TemplatesPage,
+  pendingComponent: TemplatesSkeleton,
   head: () => ({
     meta: [
       { title: "Templates — TravelDoss" },
