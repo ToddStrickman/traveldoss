@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, useMotionValue, useMotionTemplate, useSpring, useReducedMotion } from "motion/react";
 
 /**
@@ -16,6 +16,9 @@ export function TopoBackground() {
   const [moving, setMoving] = useState(false);
   const [debug, setDebug] = useState(false);
   const [contrast, setContrast] = useState<{ ratio: number; lo: number; hi: number } | null>(null);
+  const [mapSize, setMapSize] = useState(() => ({ width: 1440, height: 900 }));
+  const topoSvg = useMemo(() => createTopoSvg(mapSize.width, mapSize.height), [mapSize]);
+  const topoPattern = useMemo(() => topoMapPattern(topoSvg), [topoSvg]);
   // Below ~1.5:1 the topo reads as invisible noise on the navy base.
   const CONTRAST_MIN = 1.5;
 
@@ -55,10 +58,13 @@ export function TopoBackground() {
     };
     window.addEventListener("keydown", onKey);
 
-    // Radius ~ 26% of the viewport's smaller side, clamped to a plush range.
+    // Radius ~ 8% of the viewport's smaller side, clamped to a plush range.
+    // The map itself is regenerated at full viewport scale so there are no
+    // repeated-tile seams or clipped contour fragments at any screen size.
     const computeRadius = () => {
       const min = Math.min(window.innerWidth, window.innerHeight);
       setRadius(Math.round(Math.max(66, Math.min(156, min * 0.078))));
+      setMapSize({ width: Math.ceil(window.innerWidth), height: Math.ceil(window.innerHeight) });
     };
     computeRadius();
     window.addEventListener("resize", computeRadius);
@@ -94,16 +100,16 @@ export function TopoBackground() {
     }
     const base = { r: 38, g: 44, b: 70 }; // approx oklch(0.19 0.04 260)
     const canvas = document.createElement("canvas");
-    canvas.width = 360;
-    canvas.height = 360;
+    canvas.width = 720;
+    canvas.height = 480;
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
     if (!ctx) return;
     const img = new Image();
     img.onload = () => {
       ctx.fillStyle = `rgb(${base.r},${base.g},${base.b})`;
-      ctx.fillRect(0, 0, 360, 360);
-      ctx.drawImage(img, 0, 0, 360, 360);
-      const { data } = ctx.getImageData(0, 0, 360, 360);
+      ctx.fillRect(0, 0, 720, 480);
+      ctx.drawImage(img, 0, 0, 720, 480);
+      const { data } = ctx.getImageData(0, 0, 720, 480);
       const baseL = relLuminance(base.r, base.g, base.b);
       let hi = baseL;
       let lo = baseL;
@@ -117,7 +123,7 @@ export function TopoBackground() {
     };
     img.onerror = () => setContrast({ ratio: 0, lo: 0, hi: 0 });
     img.src = `data:image/svg+xml;utf8,${encodeURIComponent(topoSvg)}`;
-  }, [debug]);
+  }, [debug, topoSvg]);
 
   const tooFaint = !!contrast && contrast.ratio < CONTRAST_MIN;
 
@@ -145,9 +151,9 @@ export function TopoBackground() {
             style={{
               backgroundImage: debug
                 ? "linear-gradient(45deg, #ff00ff 0 8px, #00ffff 8px 16px)"
-                : topoMapPattern(),
-              backgroundSize: "360px 360px",
-              backgroundRepeat: "repeat",
+                : topoPattern,
+              backgroundSize: "100% 100%",
+              backgroundRepeat: "no-repeat",
               WebkitMaskImage: mask,
               maskImage: mask,
               opacity: 1,
@@ -268,32 +274,134 @@ function Flashlight({
   );
 }
 
-function topoMapPattern() {
-  return `url("data:image/svg+xml;utf8,${encodeURIComponent(topoSvg)}")`;
+function topoMapPattern(svg: string) {
+  return `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`;
 }
 
-/* Dense repeating contour field. Lines are intentionally close enough that any
- * cursor position reveals map detail, while still feeling subtle and concealed. */
-const topoSvg = `<svg xmlns='http://www.w3.org/2000/svg' width='360' height='360' viewBox='0 0 360 360'>
-  <rect width='360' height='360' fill='none'/>
-  <g fill='none' stroke='#7A3F2A' stroke-width='1.35' stroke-opacity='0.72' stroke-linecap='round' stroke-linejoin='round'>
-    <path d='M-18 38 C38 10 84 20 124 58 C167 100 214 92 267 60 C307 36 346 32 384 54'/>
-    <path d='M-22 74 C32 48 82 52 126 86 C174 124 221 116 274 86 C315 62 350 66 386 92'/>
-    <path d='M-16 112 C40 86 92 92 136 126 C178 158 226 153 279 121 C318 98 350 104 380 130'/>
-    <path d='M-24 151 C32 125 90 130 141 162 C185 189 228 190 282 158 C321 136 352 141 385 168'/>
-    <path d='M-18 190 C39 162 92 169 142 199 C190 227 239 222 292 191 C326 171 354 178 384 204'/>
-    <path d='M-22 229 C33 202 88 208 139 238 C183 264 233 263 287 232 C324 211 356 216 386 244'/>
-    <path d='M-18 268 C36 242 89 246 135 276 C178 304 230 303 282 272 C322 249 353 253 384 282'/>
-    <path d='M-20 309 C37 280 91 287 137 318 C183 349 231 344 284 314 C323 292 354 296 382 323'/>
-    <path d='M58 46 C88 18 138 22 166 55 C196 90 188 135 150 157 C112 179 68 161 51 122 C39 94 36 67 58 46 Z'/>
-    <path d='M78 65 C101 44 135 46 155 70 C178 97 171 124 143 140 C114 157 83 145 70 116 C61 96 61 78 78 65 Z'/>
-    <path d='M235 178 C272 148 321 164 335 209 C349 254 319 293 271 289 C228 286 204 247 218 210 C222 197 226 186 235 178 Z'/>
-    <path d='M254 195 C278 176 309 187 317 216 C325 244 306 269 276 267 C248 265 233 240 242 216 C245 208 248 200 254 195 Z'/>
-    <path d='M-35 16 C12 58 20 109 -5 156 C-29 199 -18 247 28 292 C52 316 62 342 55 382'/>
-    <path d='M318 -24 C279 23 272 80 302 128 C333 178 326 230 288 280 C267 308 259 335 265 382'/>
-  </g>
-  <g fill='none' stroke='#A9D8EA' stroke-width='2.35' stroke-opacity='0.86' stroke-linecap='round' stroke-linejoin='round'>
-    <path d='M186 -18 C172 26 181 62 160 99 C140 136 146 173 125 211 C104 249 114 292 90 378'/>
-    <path d='M382 88 C342 114 320 145 324 184 C329 231 299 255 286 300 C278 329 281 352 272 382'/>
-  </g>
-</svg>`;
+const GEO_ANCHOR = {
+  // Lauterbrunnen Valley, Switzerland — a real steep-sided valley with river
+  // bends and dense contour structure. The coordinates seed the procedural
+  // field so the generated map behaves like one continuous surveyed surface
+  // instead of a repeated decorative tile.
+  name: "Lauterbrunnen Valley",
+  lat: 46.5937,
+  lon: 7.9091,
+};
+
+function createTopoSvg(width: number, height: number) {
+  const w = Math.max(720, Math.ceil(width));
+  const h = Math.max(520, Math.ceil(height));
+  const margin = Math.max(180, Math.round(Math.min(w, h) * 0.22));
+  const contourPaths = buildContourPaths(w, h, margin, GEO_ANCHOR.lat, GEO_ANCHOR.lon);
+  const riverPath = buildRiverPath(w, h, margin, GEO_ANCHOR.lat, GEO_ANCHOR.lon);
+  const tributaryPath = buildTributaryPath(w, h, margin, GEO_ANCHOR.lat, GEO_ANCHOR.lon);
+
+  return `<svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}' viewBox='0 0 ${w} ${h}' preserveAspectRatio='none'>
+    <rect width='${w}' height='${h}' fill='none'/>
+    <g fill='none' stroke='#7A3F2A' stroke-width='1.25' stroke-opacity='0.72' stroke-linecap='round' stroke-linejoin='round'>
+      ${contourPaths.map((d) => `<path d='${d}'/>`).join("\n      ")}
+    </g>
+    <g fill='none' stroke='#A9D8EA' stroke-width='2.25' stroke-opacity='0.9' stroke-linecap='round' stroke-linejoin='round'>
+      <path d='${riverPath}'/>
+      <path d='${tributaryPath}' stroke-width='1.45' stroke-opacity='0.58'/>
+    </g>
+  </svg>`;
+}
+
+function buildContourPaths(width: number, height: number, margin: number, lat: number, lon: number) {
+  const paths: string[] = [];
+  const fullW = width + margin * 2;
+  const fullH = height + margin * 2;
+  const lineCount = Math.max(18, Math.ceil(fullH / 38));
+  const step = fullH / (lineCount - 1);
+  const xStep = 34;
+  const phase = (Math.abs(lat) * 0.37 + Math.abs(lon) * 0.19) % Math.PI;
+
+  for (let i = 0; i < lineCount; i += 1) {
+    const baseY = -margin + i * step;
+    const amplitude = 20 + (i % 5) * 5 + Math.sin(i * 0.63 + phase) * 8;
+    const points: Array<[number, number]> = [];
+    for (let x = -margin; x <= width + margin; x += xStep) {
+      const nx = (x + margin) / fullW;
+      const valley = Math.exp(-Math.pow((x - width * 0.53) / (width * 0.22), 2));
+      const ridge = Math.exp(-Math.pow((x - width * 0.18) / (width * 0.18), 2));
+      const y =
+        baseY +
+        Math.sin(nx * Math.PI * 2.1 + i * 0.42 + phase) * amplitude +
+        Math.sin(nx * Math.PI * 5.8 + i * 0.18 + lon) * (amplitude * 0.34) +
+        valley * Math.sin(i * 0.56 + lat) * 46 -
+        ridge * Math.cos(i * 0.31 + lon) * 22;
+      points.push([round(x), round(y)]);
+    }
+    paths.push(smoothPath(points));
+  }
+
+  const peakCount = width > 1200 ? 9 : 6;
+  for (let p = 0; p < peakCount; p += 1) {
+    const cx = ((p * 0.217 + Math.abs(Math.sin(lat + p)) * 0.37) % 1) * width;
+    const cy = ((p * 0.291 + Math.abs(Math.cos(lon - p)) * 0.31) % 1) * height;
+    const rx = 110 + (p % 3) * 34;
+    const ry = 64 + (p % 4) * 18;
+    for (let ring = 0; ring < 3; ring += 1) {
+      paths.push(closedContour(cx, cy, rx - ring * 24, ry - ring * 15, phase + p * 0.7 + ring));
+    }
+  }
+
+  return paths;
+}
+
+function buildRiverPath(width: number, height: number, margin: number, lat: number, lon: number) {
+  const points: Array<[number, number]> = [];
+  const count = Math.max(18, Math.ceil((height + margin * 2) / 68));
+  for (let i = 0; i < count; i += 1) {
+    const t = i / (count - 1);
+    const y = -margin + t * (height + margin * 2);
+    const x =
+      width * (0.5 + Math.sin(t * Math.PI * 1.45 + lat) * 0.07) +
+      Math.sin(t * Math.PI * 6.3 + lon) * width * 0.035;
+    points.push([round(x), round(y)]);
+  }
+  return smoothPath(points);
+}
+
+function buildTributaryPath(width: number, height: number, margin: number, lat: number, lon: number) {
+  const points: Array<[number, number]> = [];
+  const count = 12;
+  for (let i = 0; i < count; i += 1) {
+    const t = i / (count - 1);
+    const x = -margin + t * (width * 0.75 + margin);
+    const y =
+      height * 0.28 +
+      t * height * 0.22 +
+      Math.sin(t * Math.PI * 2.7 + lat + lon) * height * 0.04;
+    points.push([round(x), round(y)]);
+  }
+  return smoothPath(points);
+}
+
+function smoothPath(points: Array<[number, number]>) {
+  if (points.length < 2) return "";
+  let d = `M${points[0][0]} ${points[0][1]}`;
+  for (let i = 1; i < points.length - 1; i += 1) {
+    const [x, y] = points[i];
+    const [nextX, nextY] = points[i + 1];
+    d += ` Q${x} ${y} ${round((x + nextX) / 2)} ${round((y + nextY) / 2)}`;
+  }
+  const last = points[points.length - 1];
+  return `${d} T${last[0]} ${last[1]}`;
+}
+
+function closedContour(cx: number, cy: number, rx: number, ry: number, phase: number) {
+  const points: Array<[number, number]> = [];
+  const count = 18;
+  for (let i = 0; i <= count; i += 1) {
+    const a = (i / count) * Math.PI * 2;
+    const wobble = 1 + Math.sin(a * 3 + phase) * 0.09 + Math.cos(a * 5 - phase) * 0.05;
+    points.push([round(cx + Math.cos(a) * rx * wobble), round(cy + Math.sin(a) * ry * wobble)]);
+  }
+  return smoothPath(points);
+}
+
+function round(value: number) {
+  return Math.round(value * 10) / 10;
+}
