@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
+import { ArrowLeft } from "lucide-react";
 import { SKINS, type SkinModule } from "@/lib/skins/registry";
 import { pickTemplate } from "@/lib/templates.functions";
 import { supabase } from "@/integrations/supabase/client";
@@ -178,7 +179,7 @@ function TemplatesPage() {
           to="/"
           className="inline-flex items-center gap-3 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/60 transition-colors hover:text-seal"
         >
-          ← TravelDoss<span className="text-ink/30">®</span>
+          TravelDoss<span className="text-ink/30">®</span>
         </Link>
         <span className="inline-flex items-center gap-3 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/60">
           <span className="h-px w-6 bg-ink/30" />
@@ -187,6 +188,14 @@ function TemplatesPage() {
       </header>
 
       <main className="relative z-10 mx-auto max-w-[1600px] px-6 pb-24 md:px-12">
+        <button
+          onClick={() => window.history.back()}
+          className="mt-8 inline-flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/60 transition-colors hover:text-seal"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Back
+        </button>
+
         <motion.h1
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
