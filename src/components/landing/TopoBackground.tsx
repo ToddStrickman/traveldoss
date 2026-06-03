@@ -85,9 +85,9 @@ export function TopoBackground() {
         }}
       />
 
-      {/* Always-on faint contours so the navy never feels flat */}
+      {/* Topographic map — always visible behind everything */}
       <div
-        className="absolute inset-0 opacity-[0.07]"
+        className="absolute inset-0 opacity-[0.18]"
         style={{
           backgroundImage: topoUrl,
           backgroundSize: "900px 900px",
@@ -96,22 +96,26 @@ export function TopoBackground() {
         }}
       />
 
-      {/* Cursor-reveal layer: ivory paper + dark topo contours, masked to a soft disc */}
+      {/* Cursor-reveal: ivory topo paper exposed under the cursor */}
       {trackingEnabled ? (
-        <motion.div
-          className="absolute inset-0 will-change-[mask-image]"
-          style={{
-            backgroundColor: "#FFFFF0",
-            backgroundImage: `${topoUrlDark()}`,
-            backgroundSize: "640px 640px",
-            backgroundRepeat: "repeat",
-            WebkitMaskImage: mask,
-            maskImage: mask,
-            mixBlendMode: "screen",
-            opacity: 0.55,
-            contain: "layout paint",
-          }}
-        />
+        <>
+          <motion.div
+            className="absolute inset-0 will-change-[mask-image]"
+            style={{
+              backgroundColor: "#FFFFF0",
+              backgroundImage: `${topoUrlDark()}`,
+              backgroundSize: "640px 640px",
+              backgroundRepeat: "repeat",
+              WebkitMaskImage: mask,
+              maskImage: mask,
+              mixBlendMode: "screen",
+              opacity: 0.9,
+              contain: "layout paint",
+            }}
+          />
+          {/* Flashlight hot-spot — bright warm glow on top of the reveal */}
+          <Flashlight sx={sx} sy={sy} radius={radius} />
+        </>
       ) : (
         <div
           className="absolute inset-0"
@@ -121,7 +125,7 @@ export function TopoBackground() {
             backgroundSize: "640px 640px",
             backgroundRepeat: "repeat",
             mixBlendMode: "screen",
-            opacity: 0.06,
+            opacity: 0.12,
           }}
         />
       )}
@@ -135,6 +139,39 @@ export function TopoBackground() {
         }}
       />
     </div>
+  );
+}
+
+/**
+ * Bright flashlight hot-spot. Sits above the reveal layer and adds the
+ * "very bright wherever the mouse is" lift — warm ivory core fading out
+ * gracefully so it never reads as a hard disc.
+ */
+function Flashlight({
+  sx,
+  sy,
+  radius,
+}: {
+  sx: import("motion/react").MotionValue<number>;
+  sy: import("motion/react").MotionValue<number>;
+  radius: number;
+}) {
+  const inner = Math.round(radius * 0.55);
+  const bg = useMotionTemplate`radial-gradient(circle ${inner}px at ${sx}px ${sy}px,
+    rgba(255,250,235,0.55) 0%,
+    rgba(255,245,220,0.32) 22%,
+    rgba(214,194,156,0.18) 48%,
+    rgba(214,194,156,0.06) 72%,
+    rgba(0,0,0,0) 100%)`;
+  return (
+    <motion.div
+      className="absolute inset-0"
+      style={{
+        background: bg,
+        mixBlendMode: "screen",
+        contain: "layout paint",
+      }}
+    />
   );
 }
 
