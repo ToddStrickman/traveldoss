@@ -383,10 +383,12 @@ function buildTributaryPath(width: number, height: number, margin: number, lat: 
 function smoothPath(points: Array<[number, number]>) {
   if (points.length < 2) return "";
   let d = `M${points[0][0]} ${points[0][1]}`;
-  for (let i = 1; i < points.length - 1; i += 1) {
-    const [x, y] = points[i];
-    const [nextX, nextY] = points[i + 1];
-    d += ` Q${x} ${y} ${round((x + nextX) / 2)} ${round((y + nextY) / 2)}`;
+  for (let i = 0; i < points.length - 1; i += 1) {
+    const [x0, y0] = points[i];
+    const [x1, y1] = points[i + 1];
+    const midX = round((x0 + x1) / 2);
+    const midY = round((y0 + y1) / 2);
+    d += ` Q${x0} ${y0} ${midX} ${midY}`;
   }
   const last = points[points.length - 1];
   return `${d} T${last[0]} ${last[1]}`;
