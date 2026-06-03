@@ -2,7 +2,7 @@ import { makeSkin } from "./shared/makeSkin";
 
 /** Marguerite — Paris, Editorial Magazine. */
 export const marguerite = makeSkin(
-  { id: "marguerite", codename: "Marguerite", personality: "Brings a journal and a film camera" },
+  { id: "marguerite", codename: "Marguerite", personality: "Brings a journal and a film camera", tags: ["Editorial", "Romantic", "Light"] },
   {
     bg: "#FBFAF7",
     ink: "#16140F",
