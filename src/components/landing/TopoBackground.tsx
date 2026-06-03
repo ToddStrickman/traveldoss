@@ -46,7 +46,7 @@ export function TopoBackground() {
     // Radius ~ 26% of the viewport's smaller side, clamped to a plush range.
     const computeRadius = () => {
       const min = Math.min(window.innerWidth, window.innerHeight);
-      setRadius(Math.round(Math.max(220, Math.min(520, min * 0.26))));
+      setRadius(Math.round(Math.max(66, Math.min(156, min * 0.078))));
     };
     computeRadius();
     window.addEventListener("resize", computeRadius);
