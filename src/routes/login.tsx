@@ -82,7 +82,7 @@ function LoginPage() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background text-foreground selection:bg-seal/40">
+    <div className="relative min-h-dvh overflow-hidden bg-background text-foreground selection:bg-seal/40">
       <div aria-hidden className="td-grain fixed inset-0 z-0" />
       <div aria-hidden className="td-vignette fixed inset-0 z-0" />
 

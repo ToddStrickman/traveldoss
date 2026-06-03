@@ -134,7 +134,7 @@ function Landing() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-x-clip text-foreground selection:bg-seal/40">
+    <div className="relative min-h-dvh overflow-x-clip text-foreground selection:bg-seal/40">
       <TopoBackground />
       {/* Film grain + vignette */}
       <div aria-hidden className="pointer-events-none fixed inset-0 z-0 opacity-[0.05] mix-blend-overlay"
@@ -145,7 +145,7 @@ function Landing() {
       <Ribbon />
 
       {/* Center stage */}
-      <main className="relative z-10 mx-auto flex min-h-screen max-w-[1400px] flex-col items-center justify-center px-6 py-16 text-center md:pl-32 md:pr-[340px]">
+      <main className="relative z-10 mx-auto flex min-h-dvh max-w-[1400px] flex-col items-center justify-center px-6 py-16 text-center md:pl-32 md:pr-[340px]">
         <motion.span
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}

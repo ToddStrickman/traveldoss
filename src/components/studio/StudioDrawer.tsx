@@ -93,7 +93,7 @@ export function StudioDrawer({
   }
 
   return (
-    <aside data-print="hide" className="fixed left-0 top-0 z-40 flex h-screen w-[380px] flex-col border-r border-white/10 bg-paper/95 text-ink backdrop-blur-md">
+    <aside data-print="hide" className="fixed left-0 top-0 z-40 flex h-dvh w-[380px] flex-col border-r border-white/10 bg-paper/95 text-ink backdrop-blur-md">
       <header className="flex items-center justify-between border-b border-white/10 px-5 py-4">
         <div>
           <p className="text-[9px] uppercase tracking-[0.4em] text-ink/45">Live Studio</p>

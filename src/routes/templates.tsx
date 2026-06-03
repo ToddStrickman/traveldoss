@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 function TemplatesSkeleton() {
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
+    <div className="relative min-h-dvh overflow-hidden bg-background text-foreground">
       <div
         aria-hidden
         className="pointer-events-none fixed inset-0 z-0 opacity-[0.05] mix-blend-overlay"
@@ -328,7 +328,7 @@ function TemplatesPage() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background text-foreground selection:bg-seal/40">
+    <div className="relative min-h-dvh overflow-hidden bg-background text-foreground selection:bg-seal/40">
       <div
         aria-hidden
         className="pointer-events-none fixed inset-0 z-0 opacity-[0.05] mix-blend-overlay"
