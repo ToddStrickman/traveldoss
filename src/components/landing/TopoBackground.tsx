@@ -31,8 +31,8 @@ export function TopoBackground() {
     };
 
     const tick = () => {
-      cx += (tx - cx) * 0.12;
-      cy += (ty - cy) * 0.12;
+      cx += (tx - cx) * 0.04;
+      cy += (ty - cy) * 0.04;
       const opacity = dimRef.current ? 0.35 : 1;
       el.style.transform = `translate3d(${cx - 360}px, ${cy - 360}px, 0)`;
       el.style.opacity = String(opacity);
