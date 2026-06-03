@@ -20,12 +20,11 @@ export const Route = createFileRoute("/plan")({
   }),
 });
 
-const TABS: { key: IngestSource | "brief" | "email"; label: string }[] = [
+const TABS: { key: IngestSource | "brief"; label: string }[] = [
   { key: "brief", label: "From a brief" },
   { key: "text", label: "Paste text" },
   { key: "ai", label: "AI output" },
   { key: "transcript", label: "Transcript" },
-  { key: "email", label: "Email" },
 ];
 
 function PlanPage() {
