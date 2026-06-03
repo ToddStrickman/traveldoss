@@ -18,7 +18,7 @@ const tokens: SkinTokens = {
     "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Inter:wght@300;400;500&display=swap",
 };
 
-function Render({ trip, blocks }: SkinRenderProps) {
+function Render({ trip, blocks, view = "vertical" }: SkinRenderProps) {
   const { editing, onBlockChange, onBlockAdd, onTripChange } = useEditing();
   const heroIndex = blocks.findIndex((b) => b.kind === "hero");
   const body: Block[] = heroIndex >= 0 ? blocks.filter((_, i) => i !== heroIndex) : blocks;
@@ -92,16 +92,62 @@ function Render({ trip, blocks }: SkinRenderProps) {
         </p>
       </section>
 
-      <main className="mx-auto max-w-[760px] px-6 py-24 md:px-10">
-        <div className="space-y-10">
+      <main
+        className={
+          view === "grid" || view === "horizontal"
+            ? "mx-auto max-w-[1200px] px-6 py-24 md:px-10"
+            : "mx-auto max-w-[760px] px-6 py-24 md:px-10"
+        }
+      >
+        <div
+          className={
+            view === "grid"
+              ? "grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
+              : view === "horizontal"
+              ? "flex snap-x snap-mandatory gap-6 overflow-x-auto pb-6"
+              : "space-y-10"
+          }
+          style={
+            view === "horizontal"
+              ? { scrollPaddingInline: 24 }
+              : undefined
+          }
+        >
           <SortableBlocks
             blocks={body}
-            renderBlock={(b) => (
-              <BlockRender
-                block={b}
-                onChange={(patch) => onBlockChange(realIndex(b), patch)}
-              />
-            )}
+            renderBlock={(b) => {
+              const card = (
+                <BlockRender
+                  block={b}
+                  onChange={(patch) => onBlockChange(realIndex(b), patch)}
+                />
+              );
+              if (view === "grid") {
+                return (
+                  <div
+                    className="rounded-lg p-5"
+                    style={{ background: "rgba(0,0,0,0.025)", border: `1px solid ${tokens.rule}` }}
+                  >
+                    {card}
+                  </div>
+                );
+              }
+              if (view === "horizontal") {
+                return (
+                  <div
+                    className="shrink-0 snap-start rounded-lg p-5"
+                    style={{
+                      width: "min(360px, 80vw)",
+                      background: "rgba(0,0,0,0.025)",
+                      border: `1px solid ${tokens.rule}`,
+                    }}
+                  >
+                    {card}
+                  </div>
+                );
+              }
+              return card;
+            }}
           />
           {editing ? (
             <button
