@@ -17,7 +17,7 @@ export function TopoBackground() {
   const [debug, setDebug] = useState(false);
   const [contrast, setContrast] = useState<{ ratio: number; lo: number; hi: number } | null>(null);
   const [mapSize, setMapSize] = useState(() => ({ width: 1440, height: 900 }));
-  const topoSvg = useMemo(() => createTopoSvg(mapSize.width, mapSize.height), [mapSize]);
+  const topoSvg = useMemo(() => createTopoSvg(mapSize.width, mapSize.height), [mapSize.width, mapSize.height]);
   const topoPattern = useMemo(() => topoMapPattern(topoSvg), [topoSvg]);
   // Below ~1.5:1 the topo reads as invisible noise on the navy base.
   const CONTRAST_MIN = 1.5;
@@ -69,7 +69,6 @@ export function TopoBackground() {
     computeRadius();
     window.addEventListener("resize", computeRadius);
 
-    if (reduceMotion) return;
     let idleTimer: ReturnType<typeof setTimeout> | undefined;
     const onMove = (e: PointerEvent) => {
       mx.set(e.clientX);
@@ -78,7 +77,9 @@ export function TopoBackground() {
       if (idleTimer) clearTimeout(idleTimer);
       idleTimer = setTimeout(() => setMoving(false), 140);
     };
-    window.addEventListener("pointermove", onMove, { passive: true });
+    if (!reduceMotion) {
+      window.addEventListener("pointermove", onMove, { passive: true });
+    }
     return () => {
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("resize", computeRadius);
