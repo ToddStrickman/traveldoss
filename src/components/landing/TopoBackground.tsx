@@ -149,9 +149,7 @@ export function TopoBackground() {
           <motion.div
             className="absolute inset-0 will-change-[mask-image]"
             style={{
-              backgroundImage: debug
-                ? "linear-gradient(45deg, #ff00ff 0 8px, #00ffff 8px 16px)"
-                : topoPattern,
+              backgroundImage: topoPattern,
               backgroundSize: "100% 100%",
               backgroundRepeat: "no-repeat",
               WebkitMaskImage: mask,
