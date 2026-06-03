@@ -17,6 +17,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TSlugRouteImport } from './routes/t.$slug'
 import { Route as GuideGoogleDocsTravelItineraryTemplateRouteImport } from './routes/guide.google-docs-travel-itinerary-template'
+import { Route as E2eKanbanRouteImport } from './routes/e2e.kanban'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
 import { Route as ApiPublicGoogleStartRouteImport } from './routes/api/public/google/start'
 import { Route as ApiPublicGoogleCallbackRouteImport } from './routes/api/public/google/callback'
@@ -62,6 +63,11 @@ const GuideGoogleDocsTravelItineraryTemplateRoute =
     path: '/guide/google-docs-travel-itinerary-template',
     getParentRoute: () => rootRouteImport,
   } as any)
+const E2eKanbanRoute = E2eKanbanRouteImport.update({
+  id: '/e2e/kanban',
+  path: '/e2e/kanban',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedAppRoute = AuthenticatedAppRouteImport.update({
   id: '/app',
   path: '/app',
@@ -90,6 +96,7 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/templates': typeof TemplatesRoute
   '/app': typeof AuthenticatedAppRoute
+  '/e2e/kanban': typeof E2eKanbanRoute
   '/guide/google-docs-travel-itinerary-template': typeof GuideGoogleDocsTravelItineraryTemplateRoute
   '/t/$slug': typeof TSlugRoute
   '/api/public/export/gdocs': typeof ApiPublicExportGdocsRoute
@@ -103,6 +110,7 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/templates': typeof TemplatesRoute
   '/app': typeof AuthenticatedAppRoute
+  '/e2e/kanban': typeof E2eKanbanRoute
   '/guide/google-docs-travel-itinerary-template': typeof GuideGoogleDocsTravelItineraryTemplateRoute
   '/t/$slug': typeof TSlugRoute
   '/api/public/export/gdocs': typeof ApiPublicExportGdocsRoute
@@ -118,6 +126,7 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/templates': typeof TemplatesRoute
   '/_authenticated/app': typeof AuthenticatedAppRoute
+  '/e2e/kanban': typeof E2eKanbanRoute
   '/guide/google-docs-travel-itinerary-template': typeof GuideGoogleDocsTravelItineraryTemplateRoute
   '/t/$slug': typeof TSlugRoute
   '/api/public/export/gdocs': typeof ApiPublicExportGdocsRoute
@@ -133,6 +142,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/templates'
     | '/app'
+    | '/e2e/kanban'
     | '/guide/google-docs-travel-itinerary-template'
     | '/t/$slug'
     | '/api/public/export/gdocs'
@@ -146,6 +156,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/templates'
     | '/app'
+    | '/e2e/kanban'
     | '/guide/google-docs-travel-itinerary-template'
     | '/t/$slug'
     | '/api/public/export/gdocs'
@@ -160,6 +171,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/templates'
     | '/_authenticated/app'
+    | '/e2e/kanban'
     | '/guide/google-docs-travel-itinerary-template'
     | '/t/$slug'
     | '/api/public/export/gdocs'
@@ -174,6 +186,7 @@ export interface RootRouteChildren {
   PlanRoute: typeof PlanRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TemplatesRoute: typeof TemplatesRoute
+  E2eKanbanRoute: typeof E2eKanbanRoute
   GuideGoogleDocsTravelItineraryTemplateRoute: typeof GuideGoogleDocsTravelItineraryTemplateRoute
   TSlugRoute: typeof TSlugRoute
   ApiPublicExportGdocsRoute: typeof ApiPublicExportGdocsRoute
@@ -239,6 +252,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GuideGoogleDocsTravelItineraryTemplateRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/e2e/kanban': {
+      id: '/e2e/kanban'
+      path: '/e2e/kanban'
+      fullPath: '/e2e/kanban'
+      preLoaderRoute: typeof E2eKanbanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/app': {
       id: '/_authenticated/app'
       path: '/app'
@@ -289,6 +309,7 @@ const rootRouteChildren: RootRouteChildren = {
   PlanRoute: PlanRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   TemplatesRoute: TemplatesRoute,
+  E2eKanbanRoute: E2eKanbanRoute,
   GuideGoogleDocsTravelItineraryTemplateRoute:
     GuideGoogleDocsTravelItineraryTemplateRoute,
   TSlugRoute: TSlugRoute,
