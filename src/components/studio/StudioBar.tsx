@@ -1,4 +1,5 @@
 import { SKINS } from "@/lib/skins/registry";
+import { Undo2, Redo2 } from "lucide-react";
 
 export function StudioBar({
   templateId,
@@ -6,18 +7,53 @@ export function StudioBar({
   savedAt,
   onTemplateChange,
   onMint,
+  onUndo,
+  onRedo,
+  canUndo,
+  canRedo,
 }: {
   templateId: string;
   saving: boolean;
   savedAt: string | null;
   onTemplateChange: (id: string) => void;
   onMint?: () => void;
+  onUndo?: () => void;
+  onRedo?: () => void;
+  canUndo?: boolean;
+  canRedo?: boolean;
 }) {
   return (
     <div
       data-print="hide"
       className="fixed bottom-5 left-1/2 z-40 flex -translate-x-1/2 items-center gap-3 rounded-full border border-white/10 bg-paper/90 px-3 py-1.5 text-ink backdrop-blur-md"
     >
+      {(onUndo || onRedo) && (
+        <>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={onUndo}
+              disabled={!canUndo}
+              aria-label="Undo"
+              title="Undo (⌘Z)"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-ink/5 hover:text-seal disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-ink-soft"
+            >
+              <Undo2 className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={onRedo}
+              disabled={!canRedo}
+              aria-label="Redo"
+              title="Redo (⇧⌘Z)"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-ink/5 hover:text-seal disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-ink-soft"
+            >
+              <Redo2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+          <span className="h-4 w-px bg-white/10" />
+        </>
+      )}
       <label className="flex items-center gap-2 text-[10px] uppercase tracking-[0.3em] text-ink-soft">
         Template
         <select
