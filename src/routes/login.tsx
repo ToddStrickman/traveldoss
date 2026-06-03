@@ -108,8 +108,8 @@ function LoginPage() {
           </h1>
           <p className="mt-8 max-w-sm text-sm leading-relaxed text-ink-soft">
             {mode === "signin"
-              ? "Sign in to your studio. Every dossier holds mapped routes, day-by-day plans, and reservations — quiet, owned, and yours."
-              : "Open your studio. Each trip becomes a quietly composed dossier — mapped routes, day-by-day plans, and a private URL to share."}
+              ? "Every dossier holds mapped routes, day-by-day plans, and reservations — quiet, owned, and yours."
+              : "Each trip becomes a quietly composed dossier with mapped routes, day-by-day plans, and a private URL to share."}
           </p>
           <div className="mt-12 flex items-center gap-3 td-eyebrow text-ink/35">
             <span className="h-px w-10 bg-ink/15" />
