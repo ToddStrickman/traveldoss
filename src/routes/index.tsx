@@ -19,20 +19,20 @@ export const Route = createFileRoute("/")({
   component: Landing,
   head: () => ({
     meta: [
-      { title: "TravelDoss — Plan trips in a Google Doc, see them on a map" },
+      { title: "TravelDoss — Plan trips, see them on a live map" },
       {
         name: "description",
         content:
-          "Write your trip in a Google Doc. TravelDoss pins, categorizes, and routes every place by day on a live Google Map.",
+          "Paste or write your trip in TravelDoss. Every place is pinned, categorized, and routed by day on a live map — and your dossier works offline.",
       },
       {
         property: "og:title",
-        content: "TravelDoss — Plan trips in a Google Doc, see them on a map",
+        content: "TravelDoss — Plan trips, see them on a live map",
       },
       {
         property: "og:description",
         content:
-          "Write your trip in a Google Doc. TravelDoss pins, categorizes, and routes every place by day on a live Google Map.",
+          "Paste or write your trip in TravelDoss. Every place is pinned, categorized, and routed by day on a live map — and your dossier works offline.",
       },
       { property: "og:url", content: "https://traveldoss.lovable.app/" },
     ],
