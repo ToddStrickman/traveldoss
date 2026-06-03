@@ -19,7 +19,7 @@
 /* ---- hero ---- */
 .tds-hero { padding-bottom: var(--tds-s3); border-bottom: 2px double var(--tds-ink); margin-bottom: var(--tds-s3); }
 .tds-eyebrow { font-size: 10px; letter-spacing: .42em; text-transform: uppercase; color: var(--tds-accent); font-weight: 600; }
-.tds-title { font-family: var(--tds-fontDisplay); font-weight: 700; font-size: clamp(44px, 8vw, 104px); line-height: .95; letter-spacing: -.02em; margin: 12px 0 0; }
+.tds-title { font-family: var(--tds-fontDisplay); font-weight: 700; font-size: clamp(40px, 7.4vw, 96px); line-height: .95; letter-spacing: -.02em; margin: 12px 0 0; max-width: 100%; overflow-wrap: anywhere; word-break: break-word; hyphens: auto; }
 .tds-title .tds-dot { color: var(--tds-accent); }
 .tds-dek { font-family: var(--tds-fontDisplay); font-style: italic; font-size: clamp(18px, 2.4vw, 24px); color: var(--tds-soft); margin-top: 18px; max-width: 560px; }
 .tds-byline { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 18px; font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--tds-soft); }
