@@ -152,9 +152,9 @@ function Landing() {
           className="text-[18vw] font-normal leading-[0.95] tracking-[-0.03em] md:text-[9vw]"
           style={{ fontFamily: "var(--font-display)" }}
         >
-          <span className="text-ink">itineraries</span>
+          <span className="text-ink">Travel</span>
           <br />
-          <span className="italic text-ink/90">suck<span className="text-seal">.</span></span>
+          <span className="italic text-ink/90">Doss<span className="text-seal">.</span></span>
         </motion.h1>
 
         <motion.p
