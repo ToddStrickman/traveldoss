@@ -1,97 +1,113 @@
-## Goal
 
-Kill the left-rail block editor. Make the dossier itself the editor. Give every new trip a real AI-generated title + one-sentence ethos. Let owners freeze a trip as an offline snapshot. All of this must work in all three views (vertical / horizontal / grid).
+# Remediation Plan — Minimal Brutalism for Vertical / Horizontal / Grid
 
-## 1. Inline editing primitive
+## 1. Audit findings (Epictetus, as built today)
 
-Add `src/lib/skins/shared/Editable.tsx`:
+Reading `src/lib/skins/epictetus.tsx`, `src/lib/skins/shared/SkinFrame.tsx`, `src/lib/skins/shared/skin.css`, and `src/routes/t.$slug.tsx`:
 
-- `EditingProvider` (React context) carries `{ editing, onTextChange(path, value), onBlockChange(i, patch), onBlockRemove(i), onBlockAdd(after, kind), onReorder(from, to) }`.
-- `<EditableText path="…" value={…} as="span|h1|p" multiline?>` — when `editing` is false, renders the value as plain text. When true, renders a `contentEditable` element with `suppressContentEditableWarning`, calls `onTextChange` on blur (debounced via the existing autosave). Styling stays identical to the original element so the document does not visually change between modes.
-- `<EditableBlock index={i} block={b}>` — wraps a block with a hover toolbar (drag handle, delete, "+ add below"). Only visible when `editing` and on hover. Uses `dnd-kit` `useSortable`.
-- Small `useStableIds(blocks)` (same `WeakMap` pattern already in StudioDrawer) so dnd ids survive edits.
+**Inconsistencies between views**
+- Epictetus is hand-rolled and bypasses `SkinFrame` — its three views are ad-hoc (`grid-cols-1 sm:grid-cols-2 lg:grid-cols-3`, `flex snap-x` row, `space-y-10`). Other skins go through `SkinFrame` and use a different system (`data-view="grid|horizontal"`, `grid-template-columns: repeat(auto-fill, minmax(300px,1fr))`, day-grouped cards). Same template id, two different layout engines → cards look inconsistent depending on skin.
+- Wrapper width jumps: Vertical = 760px, Grid/Horizontal = 1200px, while `SkinFrame` uses 1080/1320. Switching views causes a visible reflow, not a transition.
+- In Grid view, every block gets a generic card with `rgba(0,0,0,0.025)` background — sections, paragraphs, quotes, and notes become awkward boxes that fight their own internal styling (e.g. quote already has its own left rule; note already has its own panel).
+- Horizontal view is a flat row of identical 360px cards — Day + its Places are split across cards, breaking grouping. `SkinFrame`'s `groupForBoard()` already solves this; Epictetus doesn't use it.
+- No image / aspect-ratio treatment exists anywhere; `trip.hero_image_url` and `place` blocks have no image slot. Card heights vary wildly because content height drives them.
+- Typography: heading uses inline `clamp(56px, 9vw, 132px)`, body sizes are hard-coded `18/16/13` px. Other skins use a `--tds-s*` step scale. No single type ramp.
+- Tap targets: `ViewSwitch` buttons are ~24px tall (`py-1.5 text-[10px]`), well under 44px. Block tool icons are 22×22. Add-block button is small dashed.
+- Motion: only `tds-enter` fade-in exists; switching views is an instant swap.
 
-`Editable.tsx` is the single source of truth: skins import these primitives.
+**Cross-reference with traveldoss.com / landing**
+Landing system (per `styles.css`, `Ribbon`, `InfiniteDocs`) leans on: paper background, seal accent, uppercase 0.35–0.4em tracking eyebrows, double-rule dividers, generous gutters. Dossier views should inherit the same eyebrow / rule / spacing primitives instead of inventing per-skin rounded cards.
 
-## 2. Skin updates
+## 2. Minimal Brutalism system (token layer)
 
-For every text node currently rendered as plain JSX (`{hero.title}`, `{block.text}` etc.), swap to `<EditableText>` and wrap each block in `<EditableBlock>`. Touch:
+Add a single source of truth in `src/lib/skins/shared/skin.css` (and mirror into Epictetus by routing it through `SkinFrame`):
 
-- `src/lib/skins/shared/SkinFrame.tsx` — covers the 8 token-driven skins. Add a `<SortableContext>` around the body. Treat the hero as the trip's `destination` + `subtitle` (see §3), not a separate "hero block". Append a "+ Add block" affordance at the end when editing, in all three views.
-- `src/lib/skins/epictetus.tsx` — same treatment for hand-built layout.
-- `src/lib/skins/orsino.tsx` — same.
-
-CSS additions in `src/lib/skins/shared/skin.css`:
-
-- `.tds [contenteditable]:focus { outline: 2px solid var(--tds-accent); outline-offset: 4px; border-radius: 2px; }`
-- `.tds-block { position: relative; }` plus a small `.tds-block-toolbar` that fades in on hover when an ancestor has `data-editing="true"`.
-- Horizontal/grid views already place day cards as flex/grid items — the toolbar lives inside each card so editing works identically.
-
-## 3. AI-generated title + ethos
-
-New server function `generateTripIdentity` in `src/lib/trips.functions.ts`:
-
-- Input: `{ blocks: Block[] }`.
-- Calls Lovable AI (`google/gemini-2.5-flash`) with the parsed itinerary text and asks for strict JSON:  
-  `{ destination: string (≤60), subtitle: string (one sentence, ≤140, no period) }`.
-- Returns `{ destination, subtitle }`. Falls back to `{ destination: "Untitled Trip", subtitle: skin.personality }` on parse failure.
-
-Wire-in:
-
-- `createTripFromIngestion` now calls `generateTripIdentity` itself before insert, so the row lands with a real `destination` + `subtitle`.
-- Expose a "Regenerate title" button in the studio control bar that calls a thin server fn and updates `destination` + `subtitle` via `updateDossier`.
-- `IngestionModal` only needs to add a step label "Naming your trip…" to the generation loader; no schema change.
-
-## 4. Title + ethos render in the document
-
-Stop relying on a `hero` block for the title. The render tree becomes:
-
-```text
-H1 = EditableText(trip.destination) + accent dot
-subtitle = EditableText(trip.subtitle)  ← italic, one line
-[body blocks…]
+**Type scale** (one ramp, all skins):
+```
+--tds-fs-display: clamp(44px, 8vw, 112px);
+--tds-fs-h2:      clamp(24px, 3.2vw, 34px);
+--tds-fs-h3:      clamp(20px, 2.4vw, 26px);
+--tds-fs-body:    clamp(15px, 1.05vw, 18px);
+--tds-fs-meta:    clamp(10px, 0.8vw, 12px);   /* eyebrows, tracking 0.35em */
 ```
 
-Any legacy `hero` block from older trips is migrated on read: if `trip.destination === "Untitled Trip"` and a hero block exists, lift its title/subtitle into the trip fields once on first edit. (Pure client-side; no migration.)
+**Spacing** keep the existing `--tds-s1..s5` step but redefine via `clamp()` so views share one rhythm.
 
-## 5. Studio drawer → slim control bar
+**Card primitive** (`.tds-card`): no rounded corner, 1px hairline `var(--tds-rule)`, no fill in vertical, 4% ink fill in grid/horizontal, padding `clamp(16px, 2vw, 24px)`. Brutalist: square corners, hairlines, one accent rule per card max.
 
-Replace `StudioDrawer` block list with a compact **control bar** anchored bottom-center (next to existing ExportMenu, mirrors the top ViewSwitch). Contents:
+**Image aspect ratios** (single set):
+```
+--tds-ar-hero:   16 / 9;
+--tds-ar-card:    4 / 5;   /* place card */
+--tds-ar-tile:    1 / 1;   /* grid tile */
+```
+Use `<AspectRatio>` (already in `components/ui/aspect-ratio.tsx`) so card heights stop drifting.
 
-- Template selector (existing `<select>` of SKINS, but inline pill)
-- "Regenerate title" button
-- Save status dot ("Saving…" / "Saved · 10:42:11")
-- Lock toggle (see §6)
-- Existing ExportMenu folds into the same bar
+**Touch targets**: `min-height: 44px; min-width: 44px;` on `.tds-tap` applied to ViewSwitch buttons, block tools, add-block, ExportMenu trigger.
 
-Remove the entire fixed left drawer. The `?mode=edit` URL param is gone; editing is always on when `canEdit`. (View-only visitors still see the read-only document.)
+## 3. Layout engine (one renderer, three views)
 
-`StudioDrawer.tsx` is deleted. `t.$slug.tsx` mounts the new `StudioBar.tsx` instead and provides the `EditingProvider` to the skin tree.
+Refactor `epictetus.tsx` to delegate body rendering to `SkinFrame` (it already supports `view`, `groupForBoard`, editing). Epictetus keeps its own hero/header chrome, but the body becomes `<SkinFrame view={view} blocks={body} trip={trip} tokens={tokens} />`. This removes the second layout engine.
 
-## 6. Offline lock mode
+Then in `skin.css`, redefine the three views using CSS Grid + Flexbox with shared rules:
 
-Migration: add `locked_at timestamptz` and `locked_snapshot jsonb` columns to `public.trips`. RLS unchanged.
+```text
+data-view="vertical"
+  .tds-canvas { display: grid; grid-template-columns: minmax(0, 68ch); justify-content: center; gap: var(--tds-s3); }
 
-Behavior:
+data-view="grid"
+  .tds-canvas { display: grid; grid-template-columns: repeat(auto-fill, minmax(clamp(260px, 28vw, 320px), 1fr)); gap: var(--tds-s2); }
+  .tds-hero, .tds-section, .tds-quote, .tds-flights { grid-column: 1 / -1; }
+  /* days become .tds-card with stacked places inside */
 
-- "Lock for offline" button writes `{ locked_at: now, locked_snapshot: { blocks, destination, subtitle, template_id } }`.
-- When `locked_at` is set, the document renders from `locked_snapshot` (frozen), edit primitives become read-only, and a small "Locked snapshot · {date}" badge appears next to the title. "Unlock to edit" reverses it.
-- PDF + Google Docs export already work against the rendered DOM / current blocks, so locking + exporting produces the same artifact the user sees. No export changes needed beyond hiding the toolbar (already handled by `data-print="hide"`).
+data-view="horizontal"
+  .tds-canvas { display: flex; flex-wrap: nowrap; overflow-x: auto; scroll-snap-type: x mandatory; gap: var(--tds-s2); padding-inline: clamp(16px, 4vw, 40px); }
+  .tds-hero, .tds-section, .tds-quote { flex: 0 0 100%; }
+  .tds-card { flex: 0 0 clamp(260px, 70vw, 340px); scroll-snap-align: start; }
+```
 
-## 7. Cleanup
+Behavior locked: `section`/`quote`/`paragraph` always span full width; only `day+places` become cards in grid/horizontal. In horizontal, day cards have a sticky day-label header so scrolling reveals context.
 
-- Drop unused `tagBlocks`/per-block sortable editor code.
-- `CompanionToday` keeps working — it just reads `blocks` (locked or live, whichever is active).
-- `archive` phase already forces read-only; lock layers cleanly on top.
+## 4. Kinetic Minimalism (smooth view transitions)
 
-## Files touched
+- Add a `data-transitioning` flag on `.tds` set for 220ms when `view` changes.
+- Use the View Transitions API where supported: `if (document.startViewTransition) document.startViewTransition(() => setLayout(next));` in `t.$slug.tsx`'s `ViewSwitch`. Fallback: existing `tds-enter` fade scoped to `.tds-canvas > *` on `data-view` change.
+- Block-level FLIP isn't worth the cost; the canvas-level transition reads as the "kinetic" beat without jank.
+- Respect `prefers-reduced-motion` (already gated in CSS) — skip the view-transition wrapper too.
 
-- New: `src/lib/skins/shared/Editable.tsx`, `src/components/studio/StudioBar.tsx`, migration `add_trip_lock_columns`.
-- Edit: `src/lib/skins/shared/SkinFrame.tsx`, `src/lib/skins/shared/skin.css`, `src/lib/skins/epictetus.tsx`, `src/lib/skins/orsino.tsx`, `src/lib/trips.functions.ts`, `src/lib/templates.functions.ts` (return locked fields), `src/routes/t.$slug.tsx`, `src/routes/index.tsx` (loader step label), `src/components/flow/IngestionModal.tsx` (loader step label).
-- Delete: `src/components/studio/StudioDrawer.tsx`.
+## 5. Mobile responsiveness
 
-## Out of scope (pushing to a follow-up)
+- All sizes go through `clamp()` — no hard breakpoints for type.
+- Horizontal view becomes the default on `≤640px` for `grid` selection too? No — keep user choice, but on `≤480px` grid collapses to a single column (`grid-template-columns: 1fr`). Horizontal cards become `flex: 0 0 84vw`.
+- `ViewSwitch` moves to `bottom: max(16px, env(safe-area-inset-bottom))` on `≤640px` to stay reachable; buttons grow to 44px tall.
+- Add `scroll-padding-inline` and momentum scroll on the horizontal canvas.
 
-- Real-time collaboration / multi-cursor.
-- Audio transcript upload (currently shows "coming soon").
-- Editing flight-card fields in horizontal/grid views — flights stay in the summary card and are editable in vertical view first; we keep the existing inline form, just wired through `EditableText`.
+## 6. Component refactor steps (in order)
+
+1. **`skin.css`** — add `--tds-fs-*` ramp, `.tds-card`, `.tds-tap`, rewrite `data-view` rules to use grid/flex as above; collapse 768px breakpoints into `clamp()` where possible; add reduced-motion guards.
+2. **`SkinFrame.tsx`** — replace ad-hoc class strings with `.tds-card`; ensure `data-view` is the only switch; add `<AspectRatio ratio>` slots when a future `place.image` exists (leave behind a stable selector now).
+3. **`epictetus.tsx`** — keep header/title/footer, delegate body to `SkinFrame` so it inherits all three views. Remove the inline `view === "grid" | "horizontal"` branches and the duplicate flight wrapper.
+4. **`t.$slug.tsx`** — wrap `setLayout` in `document.startViewTransition` when available; add `.tds-tap` to `ViewSwitch` buttons; move switch to bottom on mobile via Tailwind responsive utils.
+5. **`StudioBar`, `ExportMenu`, block tools** — apply `.tds-tap` (44×44 min) without changing visuals.
+6. **Cross-skin sanity check** — open Orsino, Calliope, Halcyon, Marcello, Marguerite, Cassian, Shishu, Solveig, Vesper in all three views; visually confirm parity.
+7. **Tests** — extend `tests/block-tools-hover.test.ts` with a smoke test that asserts `.tds[data-view="grid"] .tds-card` exists after switching.
+
+## 7. Security
+
+No API keys, secrets, or service-role usage touched. All work is presentational CSS + component refactor. Nothing read from `process.env` in client code.
+
+## 8. Out of scope (call out, don't do)
+
+- New image upload UX for places / hero (system leaves slots ready).
+- New skins.
+- Editing model changes (Editable / DnD untouched).
+- Persisted per-user "default view" preference.
+
+## 9. Acceptance criteria
+
+- Switching Vertical ↔ Horizontal ↔ Grid on `/t/epictetus-3nkgng` reflows via a single 220ms transition, no layout jumps in header/footer.
+- All three views share the same type ramp, hairlines, and spacing rhythm; cards are square-cornered with one hairline.
+- Days+places stay grouped in grid and horizontal; sections/quotes/paragraphs span full width.
+- All interactive controls (view switch, block tools, add-block, export, mint button) measure ≥44×44 CSS px in DevTools.
+- Mobile (375px): horizontal scrolls at 84vw per card; grid collapses to one column; type scales without overflow; view switch reachable above safe-area.
+- Lighthouse a11y for the dossier route unchanged or higher.

@@ -12,6 +12,16 @@
   min-height: 100%;
   --tds-s1: 8px; --tds-s2: 14px; --tds-s3: 22px; --tds-s4: 34px; --tds-s5: 52px;
   --tds-measure: 64ch;
+  /* Minimal Brutalism: one type ramp shared by every skin/view. */
+  --tds-fs-display: clamp(44px, 8vw, 112px);
+  --tds-fs-h2:      clamp(24px, 3.2vw, 34px);
+  --tds-fs-h3:      clamp(20px, 2.4vw, 26px);
+  --tds-fs-body:    clamp(15px, 1.05vw, 18px);
+  --tds-fs-meta:    clamp(10px, 0.8vw, 12px);
+  /* Aspect-ratio reservations for future image slots. */
+  --tds-ar-hero: 16 / 9;
+  --tds-ar-card: 4 / 5;
+  --tds-ar-tile: 1 / 1;
 }
 
 .tds-canvas { max-width: 1080px; margin: 0 auto; padding: var(--tds-s5) var(--tds-s4) 96px; }
@@ -108,28 +118,87 @@
 }
 
 /* ==========================================================================
-   VIEW: Horizontal Board (≥768px) — days become column cards
+   VIEW: Horizontal — single scroll row, days become snap cards
    ========================================================================== */
-@media (min-width: 768px) {
-  .tds[data-view="horizontal"] .tds-canvas { max-width: 1320px; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 20px; }
-  .tds[data-view="horizontal"] .tds-hero,
-  .tds[data-view="horizontal"] .tds-section,
-  .tds[data-view="horizontal"] .tds-quote,
-  .tds[data-view="horizontal"] .tds-p { flex: 0 0 100%; }
-  .tds[data-view="horizontal"] .tds-daycard { flex: 0 0 300px; background: color-mix(in srgb, var(--tds-ink) 4%, var(--tds-bg)); border: 1px solid var(--tds-rule); border-radius: 14px; padding: 18px; }
-  .tds[data-view="horizontal"] .tds-daycard .tds-place { margin: 10px 0 0; }
+.tds[data-view="horizontal"] .tds-canvas {
+  max-width: 1320px;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: var(--tds-s2);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: clamp(16px, 4vw, 40px);
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: var(--tds-s3);
+}
+.tds[data-view="horizontal"] .tds-hero,
+.tds[data-view="horizontal"] .tds-section,
+.tds[data-view="horizontal"] .tds-quote,
+.tds[data-view="horizontal"] .tds-p,
+.tds[data-view="horizontal"] .tds-note,
+.tds[data-view="horizontal"] .tds-flights {
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+}
+.tds[data-view="horizontal"] .tds-daycard,
+.tds[data-view="horizontal"] .tds-card {
+  flex: 0 0 clamp(260px, 32vw, 340px);
+  scroll-snap-align: start;
+  background: var(--tds-bg);
+  box-shadow: inset 0 0 0 9999px color-mix(in srgb, var(--tds-ink) 4%, transparent);
+  position: relative;
+  z-index: 1;
+  border: 1px solid var(--tds-rule);
+  border-radius: 0;
+  padding: clamp(16px, 2vw, 22px);
+}
+.tds[data-view="horizontal"] .tds-daycard .tds-place { margin: 10px 0 0; }
+@media (max-width: 640px) {
+  .tds[data-view="horizontal"] .tds-daycard,
+  .tds[data-view="horizontal"] .tds-card { flex-basis: 84vw; }
 }
 
 /* ==========================================================================
-   VIEW: Grid (≥768px) — day cards in a responsive matrix
+   VIEW: Grid — day cards in a responsive matrix at every viewport
    ========================================================================== */
-@media (min-width: 768px) {
-  .tds[data-view="grid"] .tds-canvas { max-width: 1320px; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; align-items: start; }
-  .tds[data-view="grid"] .tds-hero,
-  .tds[data-view="grid"] .tds-section,
-  .tds[data-view="grid"] .tds-quote { grid-column: 1 / -1; }
-  .tds[data-view="grid"] .tds-daycard { background: color-mix(in srgb, var(--tds-ink) 4%, var(--tds-bg)); border: 1px solid var(--tds-rule); border-radius: 14px; padding: 18px; }
-  .tds[data-view="grid"] .tds-daycard .tds-place { margin: 10px 0 0; }
+.tds[data-view="grid"] .tds-canvas {
+  max-width: 1320px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(clamp(260px, 28vw, 320px), 1fr));
+  gap: var(--tds-s2);
+  align-items: start;
+}
+.tds[data-view="grid"] .tds-hero,
+.tds[data-view="grid"] .tds-section,
+.tds[data-view="grid"] .tds-quote,
+.tds[data-view="grid"] .tds-p,
+.tds[data-view="grid"] .tds-flights { grid-column: 1 / -1; }
+.tds[data-view="grid"] .tds-daycard,
+.tds[data-view="grid"] .tds-card {
+  background: var(--tds-bg);
+  box-shadow: inset 0 0 0 9999px color-mix(in srgb, var(--tds-ink) 4%, transparent);
+  position: relative;
+  z-index: 1;
+  border: 1px solid var(--tds-rule);
+  border-radius: 0;
+  padding: clamp(16px, 2vw, 22px);
+}
+.tds[data-view="grid"] .tds-daycard .tds-place { margin: 10px 0 0; }
+@media (max-width: 480px) {
+  .tds[data-view="grid"] .tds-canvas { grid-template-columns: 1fr; }
+}
+
+/* Kinetic Minimalism: smooth canvas-level transition between view modes
+   (paired with the View Transitions API in t.$slug.tsx where supported). */
+::view-transition-old(tds-canvas),
+::view-transition-new(tds-canvas) {
+  animation-duration: 220ms;
+  animation-timing-function: cubic-bezier(.2,.7,.2,1);
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(tds-canvas),
+  ::view-transition-new(tds-canvas) { animation-duration: 0s; }
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -198,12 +267,40 @@
   .tds-block-tools { left: auto; right: 0; top: -22px; flex-direction: row; }
 }
 
+/* Universal Minimal-Brutalism card primitive. Square corners, hairline border,
+   no rounded fluff; views opt-in. */
+.tds-card {
+  position: relative;
+  border: 1px solid var(--tds-rule);
+  background: transparent;
+  padding: clamp(16px, 2vw, 24px);
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--tds-s2);
+}
+.tds[data-view="grid"] .tds-card,
+.tds[data-view="horizontal"] .tds-card {
+  background: var(--tds-bg);
+}
+.tds-card .tds-place { margin: 0; }
+
+/* Touch-target helper — apply to any interactive control. */
+.tds-tap {
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .tds-add-block {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   margin-top: var(--tds-s3);
-  padding: 8px 14px;
+  padding: 12px 18px;
+  min-height: 44px;
   font-size: 10px;
   letter-spacing: .35em;
   text-transform: uppercase;

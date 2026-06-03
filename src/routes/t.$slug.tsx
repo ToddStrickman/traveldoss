@@ -258,7 +258,25 @@ function DossierPage() {
       >
         ← TravelDoss
       </Link>
-      <ViewSwitch value={layout} onChange={setLayout} tokens={skin.tokens} />
+      <ViewSwitch
+        value={layout}
+        onChange={(next) => {
+          const apply = () => setLayout(next);
+          // Kinetic Minimalism: smooth canvas-level transition where supported.
+          const doc = document as Document & {
+            startViewTransition?: (cb: () => void) => unknown;
+          };
+          const reduce =
+            typeof window !== "undefined" &&
+            window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+          if (doc.startViewTransition && !reduce) {
+            doc.startViewTransition(apply);
+          } else {
+            apply();
+          }
+        }}
+        tokens={skin.tokens}
+      />
       {canEdit && (
         <StudioBar
           templateId={templateId}
@@ -296,7 +314,7 @@ function ViewSwitch({
       role="radiogroup"
       aria-label="Layout"
       data-print="hide"
-      className="fixed left-1/2 top-4 z-50 flex -translate-x-1/2 gap-1 rounded-full p-1 backdrop-blur-sm"
+      className="fixed left-1/2 top-4 z-50 flex -translate-x-1/2 gap-1 rounded-full p-1 backdrop-blur-sm max-sm:top-auto max-sm:bottom-[max(16px,env(safe-area-inset-bottom))]"
       style={{ background: `${tokens.bg}d9`, border: `1px solid ${tokens.rule}` }}
     >
       {opts.map((o) => {
@@ -307,7 +325,7 @@ function ViewSwitch({
             role="radio"
             aria-checked={on}
             onClick={() => onChange(o)}
-            className="rounded-full px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.15em] transition-colors"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full px-4 py-2.5 text-[10px] font-semibold uppercase tracking-[0.15em] transition-colors"
             style={{ color: on ? tokens.bg : tokens.ink, background: on ? tokens.accent : "transparent" }}
           >
             {o}
