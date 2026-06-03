@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { parseDropIn } from "@/lib/itinerary/parse";
 import type { Block } from "@/lib/skins/types";
 import type { SkinModule } from "@/lib/skins/registry";
@@ -86,7 +86,8 @@ export function IngestionModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="td-grain max-w-3xl overflow-hidden border-white/10 bg-paper/95 p-0 text-ink shadow-[0_40px_120px_-30px_rgba(0,0,0,0.6)] sm:rounded-xl">
+      <DialogContent className="max-h-[92vh] max-w-3xl overflow-y-auto border-white/10 bg-paper/95 p-0 text-ink shadow-[0_40px_120px_-30px_rgba(0,0,0,0.6)] sm:rounded-xl">
+        <DialogTitle className="sr-only">Bring your trip in</DialogTitle>
         {/* Letterhead */}
         <div className="relative border-b border-ink/10 px-10 pb-8 pt-10">
           <div className="flex items-start justify-between gap-8">
