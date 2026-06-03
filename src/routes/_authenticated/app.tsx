@@ -37,7 +37,7 @@ function Dashboard() {
       <div aria-hidden className="td-vignette fixed inset-0 z-0" />
 
       <header className="relative z-10 mx-auto flex max-w-[1500px] items-center justify-between border-b border-ink/10 px-8 py-6">
-        <Link to="/app" className="inline-flex items-center gap-3 td-eyebrow text-ink/70 transition-colors hover:text-seal">
+        <Link to="/" className="inline-flex items-center gap-3 td-eyebrow text-ink/70 transition-colors hover:text-seal">
           <span className="h-px w-6 bg-ink/30" />
           TravelDoss<span className="text-ink/30">®</span>
         </Link>
