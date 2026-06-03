@@ -1,4 +1,5 @@
 import { SKINS, type SkinModule } from "@/lib/skins/registry";
+import { Link } from "@tanstack/react-router";
 
 function SkinMiniPreview({ skin }: { skin: SkinModule }) {
   const { Render, previewFixture, tokens } = skin;
@@ -70,7 +71,7 @@ function DocThumb({ skin }: { skin: SkinModule }) {
   );
 }
 
-export function InfiniteDocs({ onPickTemplate }: { onPickTemplate?: (s: SkinModule) => void }) {
+export function InfiniteDocs({ onPickTemplate: _onPickTemplate }: { onPickTemplate?: (s: SkinModule) => void } = {}) {
   const loop = [...SKINS, ...SKINS, ...SKINS, ...SKINS];
   return (
     <aside
@@ -88,13 +89,13 @@ export function InfiniteDocs({ onPickTemplate }: { onPickTemplate?: (s: SkinModu
         style={{ animation: "td-scroll-up 50s linear infinite" }}
       >
         {loop.map((s, i) => (
-          <button
+          <Link
             key={`${s.meta.id}-${i}`}
-            onClick={() => onPickTemplate?.(s)}
+            to="/templates"
             className="td-marquee-item block text-left"
           >
             <DocThumb skin={s} />
-          </button>
+          </Link>
         ))}
       </div>
       <style>{`
