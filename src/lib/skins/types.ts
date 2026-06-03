@@ -2,7 +2,12 @@ import type { ComponentType } from "react";
 
 export type Block =
   | { kind: "hero"; title: string; subtitle?: string; eyebrow?: string }
-  | { kind: "section"; title: string }
+  | {
+      kind: "section";
+      title: string;
+      /** When set, this section is a part-of-day rail inside the current day. */
+      partOfDay?: "morning" | "afternoon" | "evening";
+    }
   | { kind: "paragraph"; text: string }
   | { kind: "day"; n: number; label: string; notes?: string }
   | {
@@ -10,6 +15,15 @@ export type Block =
       name: string;
       address?: string;
       note?: string;
+      /** Optional clock time, e.g. "08:30" — used by all three views. */
+      time?: string;
+      /** Operational metadata for the grid/table view. */
+      phone?: string;
+      website?: string;
+      hours?: string;
+      mapsUrl?: string;
+      /** Optional reservation hint (e.g. "Confirmation #L-882, party of 2"). */
+      reservation?: string;
       category?:
         | "stay"
         | "eat"
