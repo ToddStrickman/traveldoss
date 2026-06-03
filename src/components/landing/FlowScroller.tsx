@@ -79,7 +79,7 @@ function DesktopFlow() {
       style={{ height: `${STEPS.length * 100}vh` }}
       aria-label="How TravelDoss works"
     >
-      <div className="sticky top-0 flex h-screen flex-col overflow-hidden md:pl-32 md:pr-[340px]">
+      <div className="sticky top-0 h-screen overflow-hidden">
         {/* Section label */}
         <div className="pointer-events-none absolute left-32 right-[340px] top-8 z-20 flex items-center justify-between text-[10px] font-medium uppercase tracking-[0.4em] text-ink/45">
           <span className="inline-flex items-center gap-3">
@@ -92,15 +92,17 @@ function DesktopFlow() {
           </span>
         </div>
 
-        {/* Horizontal track */}
-        <motion.div
-          style={{ x, width: `${STEPS.length * 100}%` }}
-          className="flex h-full"
-        >
-          {STEPS.map((step, i) => (
-            <Panel key={step.n} step={step} index={i} total={STEPS.length} />
-          ))}
-        </motion.div>
+        {/* Horizontal track clipped strictly to the rail-safe area */}
+        <div className="absolute inset-y-0 left-32 right-[340px] overflow-hidden">
+          <motion.div
+            style={{ x, width: `${STEPS.length * 100}%` }}
+            className="flex h-full"
+          >
+            {STEPS.map((step, i) => (
+              <Panel key={step.n} step={step} index={i} total={STEPS.length} />
+            ))}
+          </motion.div>
+        </div>
 
         {/* Bottom progress + counter */}
         <div className="pointer-events-none absolute bottom-8 left-32 right-[340px] z-20">
