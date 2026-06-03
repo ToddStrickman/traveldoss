@@ -298,10 +298,11 @@ function DossierPage() {
       <Link
         to="/"
         data-print="hide"
-        className="fixed left-4 top-4 z-50 inline-flex items-center gap-2 rounded-full border border-white/15 bg-paper/85 px-3.5 py-2 text-[10px] font-medium uppercase tracking-[0.35em] text-ink backdrop-blur-md transition-colors hover:border-seal hover:text-seal"
+        className="fixed left-3 top-3 z-50 inline-flex min-h-11 items-center gap-2 rounded-full border border-white/15 bg-paper/85 px-3 py-2 text-[10px] font-medium uppercase tracking-[0.35em] text-ink backdrop-blur-md transition-colors hover:border-seal hover:text-seal sm:left-4 sm:top-4 sm:px-3.5"
         aria-label="Back to TravelDoss"
       >
-        ← TravelDoss
+        <span aria-hidden>←</span>
+        <span className="hidden sm:inline">TravelDoss</span>
       </Link>
       <ViewSwitch
         value={layout}
