@@ -152,6 +152,17 @@
 }
 
 .tds-block-shell { padding: 4px 0; }
+/* Extend the hover hit-area into the left gutter so moving the cursor
+   toward the floating tool column doesn't break the hover state. */
+.tds[data-editing="true"] .tds-block-shell::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -52px;
+  width: 52px;
+  pointer-events: auto;
+}
 .tds-block-tools {
   position: absolute;
   left: -44px;
