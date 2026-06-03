@@ -363,7 +363,7 @@ function ViewSwitch({
       role="radiogroup"
       aria-label="Layout"
       data-print="hide"
-      className="fixed left-1/2 top-4 z-50 flex -translate-x-1/2 gap-1 rounded-full p-1 backdrop-blur-sm max-sm:top-auto max-sm:bottom-[max(16px,env(safe-area-inset-bottom))]"
+      className="fixed left-1/2 top-3 z-50 flex -translate-x-1/2 gap-1 rounded-full p-1 backdrop-blur-sm sm:top-4"
       style={{ background: `${tokens.bg}d9`, border: `1px solid ${tokens.rule}` }}
     >
       {opts.map((o) => {
@@ -374,7 +374,7 @@ function ViewSwitch({
             role="radio"
             aria-checked={on}
             onClick={() => onChange(o)}
-            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full px-4 py-2.5 text-[10px] font-semibold uppercase tracking-[0.15em] transition-colors"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.15em] transition-colors sm:px-4 sm:py-2.5"
             style={{ color: on ? tokens.bg : tokens.ink, background: on ? tokens.accent : "transparent" }}
           >
             {o}
