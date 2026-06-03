@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { parseDropIn } from "@/lib/itinerary/parse";
+import { parseDropInWithMeta } from "@/lib/itinerary/parse";
 import type { Block } from "@/lib/skins/types";
 import type { SkinModule } from "@/lib/skins/registry";
 import { toast } from "sonner";
@@ -31,7 +31,7 @@ export function IngestionModal({
   open: boolean;
   onOpenChange: (v: boolean) => void;
   template: SkinModule | null;
-  onGenerate: (blocks: Block[], sourceLabel: string) => void;
+  onGenerate: (blocks: Block[], sourceLabel: string, destination: string | null) => void;
 }) {
   const [tab, setTab] = useState<Tab>("paste");
   const [text, setText] = useState("");
@@ -50,12 +50,19 @@ export function IngestionModal({
       toast.error("Add a few lines first so we have something to craft.");
       return;
     }
-    const blocks = parseDropIn(trimmed, tab === "transcript" ? "transcript" : "text");
+    const { blocks, destination } = parseDropInWithMeta(
+      trimmed,
+      tab === "transcript" ? "transcript" : "text",
+    );
     if (!blocks.length) {
       toast.error("We couldn't read structure out of that. Try Day 1, Day 2…");
       return;
     }
-    onGenerate(blocks, tab === "transcript" ? "Reading your transcript…" : "Reading your itinerary…");
+    onGenerate(
+      blocks,
+      tab === "transcript" ? "Reading your transcript…" : "Reading your itinerary…",
+      destination,
+    );
   }
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
