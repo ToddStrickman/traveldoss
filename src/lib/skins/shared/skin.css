@@ -22,9 +22,255 @@
   --tds-ar-hero: 16 / 9;
   --tds-ar-card: 4 / 5;
   --tds-ar-tile: 1 / 1;
+  /* Surface tints derived from skin tokens — used by cards and table cells. */
+  --tds-card: color-mix(in oklab, var(--tds-ink) 4%, var(--tds-bg));
+  --tds-pop:  color-mix(in oklab, var(--tds-accent) 8%, var(--tds-bg));
 }
 
 .tds-canvas { max-width: 1080px; margin: 0 auto; padding: var(--tds-s5) var(--tds-s4) 96px; }
+
+/* Reset the horizontal/grid-view container hacks so the new view components
+   can lay themselves out fully. They scope their own internal layout. */
+.tds[data-view="horizontal"] .tds-canvas,
+.tds[data-view="grid"] .tds-canvas {
+  display: block;
+  max-width: 1400px;
+  overflow: visible;
+  scroll-snap-type: none;
+  flex-wrap: initial;
+  gap: 0;
+  grid-template-columns: none;
+}
+
+/* =============================================================
+   FLIGHT STRIP — appears at the top of all three views.
+   ============================================================= */
+.tds-flightstrip {
+  margin: var(--tds-s2) 0;
+  border: 1px solid var(--tds-rule);
+  background: var(--tds-card);
+  display: flex;
+  flex-direction: column;
+}
+.tds-flightstrip-row {
+  display: grid;
+  grid-template-columns: 22px 110px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  font-size: 13px;
+}
+.tds-flightstrip-row + .tds-flightstrip-row { border-top: 1px solid var(--tds-rule); }
+.tds-flightstrip-icon { color: var(--tds-accent); display: inline-flex; }
+.tds-flightstrip-icon svg { width: 18px; height: 18px; }
+.tds-flightstrip-label {
+  font-size: 10px; letter-spacing: .35em; text-transform: uppercase;
+  color: var(--tds-accent); font-weight: 600;
+}
+.tds-flightstrip-route {
+  font-family: var(--tds-fontDisplay); font-size: 18px; letter-spacing: .04em;
+}
+.tds-flightstrip-meta { display: flex; flex-wrap: wrap; gap: 12px; color: var(--tds-soft); font-size: 12px; }
+@media (max-width: 640px) {
+  .tds-flightstrip-row { grid-template-columns: 22px 1fr; }
+  .tds-flightstrip-label { grid-column: 2; }
+  .tds-flightstrip-route { grid-column: 1 / -1; }
+  .tds-flightstrip-meta { grid-column: 1 / -1; }
+}
+
+/* =============================================================
+   VERTICAL VIEW — chronological reading layout.
+   ============================================================= */
+.tds-vertical .tds-preface {
+  margin-top: var(--tds-s3);
+  padding-top: var(--tds-s2);
+  border-top: 1px solid var(--tds-rule);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.tds-day-section { margin-top: var(--tds-s5); }
+.tds-day-section .tds-day-head {
+  display: flex; flex-direction: column; gap: 4px;
+  padding-bottom: var(--tds-s2);
+  border-bottom: 2px double var(--tds-ink);
+  margin-bottom: var(--tds-s2);
+}
+.tds-part { margin-top: var(--tds-s3); }
+.tds-part-head {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: var(--tds-s1);
+}
+.tds-part-rule {
+  display: inline-block; width: 28px; height: 1px; background: var(--tds-accent);
+}
+.tds-part-label {
+  font-size: 10px; letter-spacing: .42em; text-transform: uppercase;
+  color: var(--tds-accent); font-weight: 600;
+}
+.tds-part-rows { display: flex; flex-direction: column; gap: 2px; }
+
+.tds-act-row {
+  display: grid;
+  grid-template-columns: 60px 22px 1fr;
+  align-items: baseline;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px dashed var(--tds-rule);
+}
+.tds-act-row:last-child { border-bottom: 0; }
+.tds-act-time {
+  font-family: var(--tds-fontBody); font-variant-numeric: tabular-nums;
+  font-size: 12px; color: var(--tds-soft); letter-spacing: .05em;
+}
+.tds-act-icon { color: var(--tds-accent); display: inline-flex; align-items: center; }
+.tds-act-title { font-family: var(--tds-fontDisplay); font-size: 20px; line-height: 1.25; }
+.tds-act-meta {
+  margin-top: 4px; font-size: 13px; color: var(--tds-soft);
+  display: flex; flex-wrap: wrap; gap: 10px;
+}
+.tds-act-note { font-style: italic; color: var(--tds-ink); opacity: .85; }
+@media (max-width: 640px) {
+  .tds-act-row { grid-template-columns: 48px 18px 1fr; gap: 8px; }
+  .tds-act-title { font-size: 17px; }
+}
+
+/* =============================================================
+   HORIZONTAL VIEW — kanban board.
+   ============================================================= */
+.tds-horizontal .tds-board-head { margin-bottom: var(--tds-s3); }
+.tds-board {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(260px, 320px);
+  gap: var(--tds-s2);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-bottom: var(--tds-s3);
+  -webkit-overflow-scrolling: touch;
+}
+.tds-board-col {
+  scroll-snap-align: start;
+  border: 1px solid var(--tds-rule);
+  background: var(--tds-card);
+  display: flex; flex-direction: column;
+  min-height: 60vh;
+}
+.tds-board-col-head {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--tds-rule);
+  background: var(--tds-bg);
+}
+.tds-board-col-head .tds-day-no { font-size: 9px; letter-spacing: .42em; }
+.tds-board-col-head .tds-day-label { font-size: 18px; margin-top: 4px; }
+.tds-board-bucket { padding: 12px 12px 16px; border-top: 1px dashed var(--tds-rule); }
+.tds-board-bucket:first-of-type { border-top: 0; }
+.tds-board-bucket .tds-part-head { margin-bottom: 8px; }
+.tds-board-bucket-list { display: flex; flex-direction: column; gap: 8px; }
+.tds-board-empty {
+  text-align: center; color: var(--tds-soft); opacity: .5;
+  font-size: 11px; letter-spacing: .3em; padding: 8px 0;
+}
+.tds-act-card {
+  background: var(--tds-bg);
+  border: 1px solid var(--tds-rule);
+  padding: 10px 12px;
+  display: flex; flex-direction: column; gap: 4px;
+  cursor: grab;
+}
+.tds-act-card:hover { background: var(--tds-pop); border-color: var(--tds-accent); }
+.tds-act-card-head {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 10px; letter-spacing: .25em; text-transform: uppercase;
+  color: var(--tds-soft);
+}
+.tds-act-card-time {
+  font-variant-numeric: tabular-nums; color: var(--tds-accent);
+  font-weight: 600;
+}
+.tds-act-card-cat { margin-left: auto; }
+.tds-act-card-title { font-family: var(--tds-fontDisplay); font-size: 15px; line-height: 1.3; }
+.tds-act-card-meta { font-size: 11px; color: var(--tds-soft); }
+.tds-act-card-note { font-size: 12px; color: var(--tds-ink); opacity: .8; font-style: italic; }
+
+/* =============================================================
+   GRID VIEW — operational tables.
+   ============================================================= */
+.tds-grid-view .tds-grid-head { margin-bottom: var(--tds-s3); }
+.tds-grid-section { margin-top: var(--tds-s4); }
+.tds-grid-h2 {
+  font-family: var(--tds-fontDisplay);
+  font-size: 22px; letter-spacing: -.01em;
+  margin-bottom: var(--tds-s1);
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--tds-rule);
+}
+.tds-grid-day-notes { font-size: 13px; color: var(--tds-soft); margin: 4px 0 var(--tds-s2); font-style: italic; }
+.tds-table {
+  width: 100%; border-collapse: collapse;
+  border: 1px solid var(--tds-rule);
+  font-size: 13px;
+  background: var(--tds-card);
+}
+.tds-table th, .tds-table td {
+  border: 1px solid var(--tds-rule);
+  padding: 10px 12px;
+  text-align: left;
+  vertical-align: top;
+}
+.tds-table th {
+  font-size: 10px; letter-spacing: .35em; text-transform: uppercase;
+  color: var(--tds-accent); font-weight: 600;
+  background: var(--tds-bg);
+}
+.tds-table-flights td { font-variant-numeric: tabular-nums; }
+.tds-td-strong { font-weight: 600; }
+.tds-td-muted { color: var(--tds-soft); opacity: .6; }
+.tds-table-day td { width: 33.333%; }
+
+.tds-act-cell + .tds-act-cell {
+  margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--tds-rule);
+}
+.tds-act-cell-head {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 10px; letter-spacing: .25em; text-transform: uppercase;
+  color: var(--tds-soft); margin-bottom: 4px;
+}
+.tds-act-cell-time {
+  margin-left: auto; color: var(--tds-accent); font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.tds-act-cell-name { font-family: var(--tds-fontDisplay); font-size: 15px; line-height: 1.3; }
+.tds-act-cell-line { font-size: 12px; color: var(--tds-ink); margin-top: 2px; }
+.tds-act-cell-line a { color: inherit; text-decoration: underline; text-decoration-color: var(--tds-rule); }
+.tds-act-cell-line a:hover { color: var(--tds-accent); }
+.tds-act-cell-muted { color: var(--tds-soft); }
+.tds-act-cell-note { font-size: 12px; color: var(--tds-ink); opacity: .8; font-style: italic; margin-top: 4px; }
+.tds-grid-essentials {
+  display: grid; gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  padding: 12px;
+  border: 1px solid var(--tds-rule);
+  background: var(--tds-card);
+}
+
+@media print {
+  .tds-grid-section { page-break-inside: avoid; }
+  .tds-grid-section + .tds-grid-section { page-break-before: always; }
+}
+@media (max-width: 640px) {
+  .tds-table-day { display: block; border: 0; }
+  .tds-table-day thead { display: none; }
+  .tds-table-day tbody, .tds-table-day tr { display: block; }
+  .tds-table-day td {
+    display: block; width: 100%; border: 1px solid var(--tds-rule); margin-bottom: 8px;
+  }
+  .tds-table-day td::before {
+    content: attr(data-part);
+    display: block; font-size: 10px; letter-spacing: .35em; text-transform: uppercase;
+    color: var(--tds-accent); margin-bottom: 6px;
+  }
+}
 
 /* ---- hero ---- */
 .tds-hero { padding-bottom: var(--tds-s3); border-bottom: 2px double var(--tds-ink); margin-bottom: var(--tds-s3); }
