@@ -300,27 +300,16 @@ export function ActivityRow({
             onChange={(v) => onBlockChange(index, { name: v } as Partial<Block>)}
           />
         </div>
-        {activity.address || activity.note ? (
-          <div className="tds-act-meta">
-            {activity.address ? (
-              <EditableText
-                as="span"
-                value={activity.address}
-                placeholder="Address"
-                onChange={(v) => onBlockChange(index, { address: v } as Partial<Block>)}
-              />
-            ) : null}
-            {activity.note ? (
-              <span className="tds-act-note">
-                <EditableText
-                  as="span"
-                  multiline
-                  value={activity.note}
-                  placeholder="Note"
-                  onChange={(v) => onBlockChange(index, { note: v } as Partial<Block>)}
-                />
-              </span>
-            ) : null}
+        <ActivityChips activity={activity} max={3} />
+        {activity.note ? (
+          <div className="tds-act-meta tds-act-note">
+            <EditableText
+              as="span"
+              multiline
+              value={activity.note}
+              placeholder="Note"
+              onChange={(v) => onBlockChange(index, { note: v } as Partial<Block>)}
+            />
           </div>
         ) : null}
       </div>
@@ -346,9 +335,7 @@ export function ActivityCard({ activity, index }: { activity: ActivityBlock; ind
           onChange={(v) => onBlockChange(index, { name: v } as Partial<Block>)}
         />
       </div>
-      {activity.address ? (
-        <div className="tds-act-card-meta">{activity.address}</div>
-      ) : null}
+      <ActivityChips activity={activity} max={2} />
       {activity.note ? <div className="tds-act-card-note">{activity.note}</div> : null}
     </div>
   );
@@ -364,23 +351,7 @@ export function ActivityCell({ activity }: { activity: ActivityBlock }) {
         {activity.time ? <span className="tds-act-cell-time">{activity.time}</span> : null}
       </div>
       <div className="tds-act-cell-name">{activity.name}</div>
-      {activity.address ? <div className="tds-act-cell-line">{activity.address}</div> : null}
-      {activity.phone ? (
-        <div className="tds-act-cell-line">
-          <a href={`tel:${activity.phone.replace(/[^+\d]/g, "")}`}>{activity.phone}</a>
-        </div>
-      ) : null}
-      {activity.website ? (
-        <div className="tds-act-cell-line">
-          <a href={activity.website} target="_blank" rel="noreferrer">
-            {activity.website.replace(/^https?:\/\//, "")}
-          </a>
-        </div>
-      ) : null}
-      {activity.hours ? <div className="tds-act-cell-line tds-act-cell-muted">{activity.hours}</div> : null}
-      {activity.reservation ? (
-        <div className="tds-act-cell-line tds-act-cell-muted">{activity.reservation}</div>
-      ) : null}
+      <ActivityDetails activity={activity} />
       {activity.note ? <div className="tds-act-cell-note">{activity.note}</div> : null}
     </div>
   );
