@@ -92,8 +92,8 @@ export function TopoBackground() {
           <motion.div
             className="absolute inset-0 will-change-[mask-image]"
             style={{
-              backgroundImage: `${topoUrlDark()}`,
-              backgroundSize: "520px 520px",
+              backgroundImage: topoMapPattern(),
+              backgroundSize: "360px 360px",
               backgroundRepeat: "repeat",
               WebkitMaskImage: mask,
               maskImage: mask,
@@ -155,42 +155,32 @@ function Flashlight({
   );
 }
 
-/* Dark-stroke variant for the reveal layer (over ivory).
- * Rust-brown contours over ivory paper, with a pale blue river overlay —
- * matches the cartographic reference. */
-function topoUrlDark() {
-  const svg = topoSvg
-    // Ivory strokes → dark rust brown
-    .replace(/#F7F3ED/g, "#7A3F2A")
-    .replace(/stroke-opacity='[0-9.]+'/g, "stroke-opacity='0.72'");
-  return `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`;
+function topoMapPattern() {
+  return `url("data:image/svg+xml;utf8,${encodeURIComponent(topoSvg)}")`;
 }
 
-/* Hand-drawn-feeling concentric topographic loops with a meandering river.
- * Ivory strokes are recolored to rust-brown for the cursor reveal; the river
- * path stays pale blue. */
-const topoSvg = `<svg xmlns='http://www.w3.org/2000/svg' width='900' height='900' viewBox='0 0 900 900'>
-  <g fill='none' stroke='#F7F3ED' stroke-width='1.45' stroke-opacity='0.55'>
-    <path d='M120,300 C220,180 380,160 500,230 C640,310 720,470 640,600 C560,720 380,740 260,660 C140,580 60,420 120,300 Z'/>
-    <path d='M150,320 C240,210 380,195 490,260 C620,335 690,470 620,580 C550,685 390,705 280,635 C170,565 100,425 150,320 Z'/>
-    <path d='M180,340 C260,240 380,225 480,285 C600,355 660,465 600,560 C540,655 395,675 295,615 C200,560 130,430 180,340 Z'/>
-    <path d='M210,360 C285,270 380,260 470,310 C580,375 630,460 580,540 C530,625 395,645 305,595 C220,545 160,440 210,360 Z'/>
-    <path d='M240,380 C310,300 380,290 460,335 C560,395 600,455 560,525 C520,595 395,615 320,575 C245,535 195,450 240,380 Z'/>
-    <path d='M270,400 C330,330 385,320 450,360 C540,415 575,455 540,510 C505,565 395,585 330,555 C270,525 230,460 270,400 Z'/>
-    <path d='M300,420 C355,365 385,355 440,385 C520,430 545,455 515,495 C485,540 395,555 345,535 C295,515 270,470 300,420 Z'/>
-    <path d='M330,445 C375,400 390,395 430,415 C490,445 510,460 490,490 C465,525 395,535 360,520 C325,505 305,480 330,445 Z'/>
-    <path d='M360,470 C390,440 395,435 420,450 C460,470 475,480 465,500 C450,520 395,525 375,515 C355,505 345,490 360,470 Z'/>
-    <path d='M385,490 C400,475 405,475 415,485 C435,500 445,505 440,515 C430,525 400,530 390,520 C380,510 380,500 385,490 Z'/>
-
-    <path d='M730,90 C800,140 840,220 810,300 C780,375 690,400 620,355 C555,310 540,210 595,140 C645,75 690,60 730,90 Z' stroke-opacity='0.45'/>
-    <path d='M750,110 C810,155 840,225 815,290 C790,355 695,380 635,340 C575,300 565,215 615,155 C655,100 710,80 750,110 Z' stroke-opacity='0.45'/>
-    <path d='M770,130 C820,170 835,225 815,280 C795,335 700,360 655,325 C605,290 590,220 630,170 C670,120 730,105 770,130 Z' stroke-opacity='0.4'/>
-
-    <path d='M120,760 C200,700 320,705 380,755 C435,805 410,860 320,860 C220,860 80,820 120,760 Z' stroke-opacity='0.4'/>
-    <path d='M150,775 C220,725 315,725 365,765 C415,810 395,850 320,850 C235,850 100,820 150,775 Z' stroke-opacity='0.4'/>
+/* Dense repeating contour field. Lines are intentionally close enough that any
+ * cursor position reveals map detail, while still feeling subtle and concealed. */
+const topoSvg = `<svg xmlns='http://www.w3.org/2000/svg' width='360' height='360' viewBox='0 0 360 360'>
+  <rect width='360' height='360' fill='none'/>
+  <g fill='none' stroke='#7A3F2A' stroke-width='1.35' stroke-opacity='0.72' stroke-linecap='round' stroke-linejoin='round'>
+    <path d='M-18 38 C38 10 84 20 124 58 C167 100 214 92 267 60 C307 36 346 32 384 54'/>
+    <path d='M-22 74 C32 48 82 52 126 86 C174 124 221 116 274 86 C315 62 350 66 386 92'/>
+    <path d='M-16 112 C40 86 92 92 136 126 C178 158 226 153 279 121 C318 98 350 104 380 130'/>
+    <path d='M-24 151 C32 125 90 130 141 162 C185 189 228 190 282 158 C321 136 352 141 385 168'/>
+    <path d='M-18 190 C39 162 92 169 142 199 C190 227 239 222 292 191 C326 171 354 178 384 204'/>
+    <path d='M-22 229 C33 202 88 208 139 238 C183 264 233 263 287 232 C324 211 356 216 386 244'/>
+    <path d='M-18 268 C36 242 89 246 135 276 C178 304 230 303 282 272 C322 249 353 253 384 282'/>
+    <path d='M-20 309 C37 280 91 287 137 318 C183 349 231 344 284 314 C323 292 354 296 382 323'/>
+    <path d='M58 46 C88 18 138 22 166 55 C196 90 188 135 150 157 C112 179 68 161 51 122 C39 94 36 67 58 46 Z'/>
+    <path d='M78 65 C101 44 135 46 155 70 C178 97 171 124 143 140 C114 157 83 145 70 116 C61 96 61 78 78 65 Z'/>
+    <path d='M235 178 C272 148 321 164 335 209 C349 254 319 293 271 289 C228 286 204 247 218 210 C222 197 226 186 235 178 Z'/>
+    <path d='M254 195 C278 176 309 187 317 216 C325 244 306 269 276 267 C248 265 233 240 242 216 C245 208 248 200 254 195 Z'/>
+    <path d='M-35 16 C12 58 20 109 -5 156 C-29 199 -18 247 28 292 C52 316 62 342 55 382'/>
+    <path d='M318 -24 C279 23 272 80 302 128 C333 178 326 230 288 280 C267 308 259 335 265 382'/>
   </g>
-  <g fill='none' stroke='#A9D8EA' stroke-width='2.6' stroke-opacity='0.82' stroke-linecap='round'>
-    <path d='M520,40 C500,140 540,230 470,330 C400,430 430,540 380,650 C340,750 360,830 320,900'/>
-    <path d='M820,420 C760,470 700,520 690,610 C685,690 740,760 720,860'/>
+  <g fill='none' stroke='#A9D8EA' stroke-width='2.35' stroke-opacity='0.86' stroke-linecap='round' stroke-linejoin='round'>
+    <path d='M186 -18 C172 26 181 62 160 99 C140 136 146 173 125 211 C104 249 114 292 90 378'/>
+    <path d='M382 88 C342 114 320 145 324 184 C329 231 299 255 286 300 C278 329 281 352 272 382'/>
   </g>
 </svg>`;
