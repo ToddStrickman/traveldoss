@@ -50,3 +50,171 @@ function guessCategory(s: string): "stay" | "eat" | "see" | "do" | "drink" | "ot
   if (/(museum|gallery|see|view|temple|church|park|beach|tour|visit)/.test(t)) return "see";
   return "other";
 }
+
+/* ------------------------------------------------------------------ */
+/* Destination & fun-title extraction                                  */
+/* ------------------------------------------------------------------ */
+
+/** Lower-cased place → country/region label. Lightweight, hand-curated. */
+const PLACE_TO_COUNTRY: Record<string, string> = {
+  // Italy
+  "italy": "Italy", "italia": "Italy",
+  "emilia-romagna": "Italy", "emilia romagna": "Italy", "tuscany": "Italy",
+  "piedmont": "Italy", "piemonte": "Italy", "sicily": "Italy", "sardinia": "Italy",
+  "amalfi": "Italy", "amalfi coast": "Italy", "puglia": "Italy", "umbria": "Italy",
+  "veneto": "Italy", "lombardy": "Italy", "liguria": "Italy",
+  "rome": "Italy", "roma": "Italy", "milan": "Italy", "milano": "Italy",
+  "florence": "Italy", "firenze": "Italy", "venice": "Italy", "venezia": "Italy",
+  "naples": "Italy", "napoli": "Italy", "bologna": "Italy", "modena": "Italy",
+  "parma": "Italy", "turin": "Italy", "torino": "Italy", "verona": "Italy",
+  "siena": "Italy", "palermo": "Italy", "cinque terre": "Italy",
+  // France
+  "france": "France", "paris": "France", "provence": "France", "côte d'azur": "France",
+  "cote d'azur": "France", "nice": "France", "lyon": "France", "marseille": "France",
+  "bordeaux": "France", "normandy": "France", "brittany": "France", "alsace": "France",
+  // Spain
+  "spain": "Spain", "españa": "Spain", "espana": "Spain",
+  "barcelona": "Spain", "madrid": "Spain", "andalusia": "Spain", "andalucia": "Spain",
+  "seville": "Spain", "sevilla": "Spain", "granada": "Spain", "valencia": "Spain",
+  "bilbao": "Spain", "mallorca": "Spain", "ibiza": "Spain", "san sebastian": "Spain",
+  "san sebastián": "Spain",
+  // Portugal
+  "portugal": "Portugal", "lisbon": "Portugal", "lisboa": "Portugal",
+  "porto": "Portugal", "algarve": "Portugal", "madeira": "Portugal", "azores": "Portugal",
+  // UK & Ireland
+  "uk": "UK", "united kingdom": "UK", "england": "UK", "scotland": "Scotland",
+  "wales": "Wales", "london": "UK", "edinburgh": "Scotland", "glasgow": "Scotland",
+  "manchester": "UK", "cotswolds": "UK", "lake district": "UK",
+  "ireland": "Ireland", "dublin": "Ireland", "galway": "Ireland",
+  // Greece
+  "greece": "Greece", "athens": "Greece", "santorini": "Greece", "mykonos": "Greece",
+  "crete": "Greece", "rhodes": "Greece", "corfu": "Greece",
+  // Germany / Austria / Switzerland
+  "germany": "Germany", "berlin": "Germany", "munich": "Germany", "bavaria": "Germany",
+  "hamburg": "Germany", "cologne": "Germany", "black forest": "Germany",
+  "austria": "Austria", "vienna": "Austria", "salzburg": "Austria",
+  "switzerland": "Switzerland", "zurich": "Switzerland", "geneva": "Switzerland",
+  "lucerne": "Switzerland", "interlaken": "Switzerland", "zermatt": "Switzerland",
+  // Nordics
+  "iceland": "Iceland", "reykjavik": "Iceland", "reykjavík": "Iceland",
+  "norway": "Norway", "oslo": "Norway", "bergen": "Norway", "lofoten": "Norway",
+  "sweden": "Sweden", "stockholm": "Sweden",
+  "denmark": "Denmark", "copenhagen": "Denmark",
+  "finland": "Finland", "helsinki": "Finland", "lapland": "Finland",
+  // Benelux & Central
+  "netherlands": "Netherlands", "holland": "Netherlands", "amsterdam": "Netherlands",
+  "belgium": "Belgium", "brussels": "Belgium", "bruges": "Belgium",
+  "czech republic": "Czechia", "czechia": "Czechia", "prague": "Czechia",
+  "hungary": "Hungary", "budapest": "Hungary",
+  "poland": "Poland", "krakow": "Poland", "kraków": "Poland", "warsaw": "Poland",
+  // Balkans / East
+  "croatia": "Croatia", "split": "Croatia", "dubrovnik": "Croatia", "zagreb": "Croatia",
+  "slovenia": "Slovenia", "ljubljana": "Slovenia",
+  "turkey": "Turkey", "türkiye": "Turkey", "istanbul": "Turkey", "cappadocia": "Turkey",
+  // Asia
+  "japan": "Japan", "tokyo": "Japan", "kyoto": "Japan", "osaka": "Japan",
+  "hokkaido": "Japan", "okinawa": "Japan", "hiroshima": "Japan", "nara": "Japan",
+  "china": "China", "beijing": "China", "shanghai": "China",
+  "south korea": "Korea", "korea": "Korea", "seoul": "Korea", "busan": "Korea",
+  "thailand": "Thailand", "bangkok": "Thailand", "chiang mai": "Thailand",
+  "phuket": "Thailand", "krabi": "Thailand", "koh samui": "Thailand",
+  "vietnam": "Vietnam", "hanoi": "Vietnam", "ho chi minh": "Vietnam", "saigon": "Vietnam",
+  "hoi an": "Vietnam", "halong": "Vietnam", "ha long": "Vietnam",
+  "indonesia": "Indonesia", "bali": "Indonesia", "jakarta": "Indonesia",
+  "philippines": "Philippines", "manila": "Philippines", "palawan": "Philippines",
+  "malaysia": "Malaysia", "kuala lumpur": "Malaysia",
+  "singapore": "Singapore",
+  "india": "India", "delhi": "India", "mumbai": "India", "goa": "India",
+  "rajasthan": "India", "jaipur": "India", "kerala": "India",
+  "nepal": "Nepal", "kathmandu": "Nepal",
+  "sri lanka": "Sri Lanka", "colombo": "Sri Lanka",
+  // Middle East & Africa
+  "uae": "UAE", "dubai": "UAE", "abu dhabi": "UAE",
+  "jordan": "Jordan", "petra": "Jordan", "amman": "Jordan",
+  "israel": "Israel", "tel aviv": "Israel", "jerusalem": "Israel",
+  "morocco": "Morocco", "marrakech": "Morocco", "fez": "Morocco", "casablanca": "Morocco",
+  "egypt": "Egypt", "cairo": "Egypt",
+  "south africa": "South Africa", "cape town": "South Africa", "johannesburg": "South Africa",
+  "kenya": "Kenya", "nairobi": "Kenya",
+  "tanzania": "Tanzania", "zanzibar": "Tanzania",
+  // Americas
+  "usa": "USA", "us": "USA", "united states": "USA", "america": "USA",
+  "new york": "NYC", "nyc": "NYC", "manhattan": "NYC", "brooklyn": "NYC",
+  "los angeles": "LA", "la": "LA", "san francisco": "SF", "chicago": "Chicago",
+  "miami": "Miami", "new orleans": "NOLA", "nola": "NOLA",
+  "hawaii": "Hawaii", "maui": "Hawaii", "oahu": "Hawaii", "kauai": "Hawaii",
+  "alaska": "Alaska",
+  "canada": "Canada", "toronto": "Canada", "vancouver": "Canada", "montreal": "Canada",
+  "banff": "Canada", "whistler": "Canada",
+  "mexico": "Mexico", "mexico city": "Mexico", "cdmx": "Mexico",
+  "oaxaca": "Mexico", "tulum": "Mexico", "cancun": "Mexico", "cancún": "Mexico",
+  "baja": "Mexico",
+  "argentina": "Argentina", "buenos aires": "Argentina", "patagonia": "Patagonia",
+  "chile": "Chile", "santiago": "Chile", "atacama": "Chile",
+  "peru": "Peru", "lima": "Peru", "cusco": "Peru", "machu picchu": "Peru",
+  "brazil": "Brazil", "rio": "Brazil", "rio de janeiro": "Brazil", "são paulo": "Brazil",
+  "sao paulo": "Brazil",
+  "colombia": "Colombia", "bogota": "Colombia", "medellin": "Colombia",
+  "costa rica": "Costa Rica",
+  // Oceania
+  "australia": "Australia", "sydney": "Australia", "melbourne": "Australia",
+  "great barrier reef": "Australia", "tasmania": "Australia",
+  "new zealand": "New Zealand", "auckland": "New Zealand", "queenstown": "New Zealand",
+};
+
+/** Pick a fun suffix based on what's in the text. Keeps titles short. */
+function pickVibe(text: string): string {
+  const t = text.toLowerCase();
+  if (/(truffle|wine|tasting|olive oil|charcuterie|food|culinary|michelin|pasta|sushi|barbecue|bbq)/.test(t)) return "Tasting Tour";
+  if (/(hike|trek|trekking|hiking|mountain|summit|climb|patagonia|alps|himalaya)/.test(t)) return "Adventure";
+  if (/(beach|island|surf|snorkel|dive|reef|coast|sail|yacht|cruise)/.test(t)) return "Escape";
+  if (/(museum|gallery|opera|theatre|theater|cathedral|temple|heritage|history|architecture)/.test(t)) return "Culture Trip";
+  if (/(safari|wildlife|jungle|national park|reserve)/.test(t)) return "Safari";
+  if (/(ski|snowboard|snow|alpine|powder)/.test(t)) return "Ski Trip";
+  if (/(honeymoon|anniversary|romantic|getaway)/.test(t)) return "Escape";
+  if (/(road trip|drive|roadtrip|van life)/.test(t)) return "Road Trip";
+  if (/(spa|wellness|retreat|yoga|hot spring|onsen)/.test(t)) return "Retreat";
+  if (/(city break|long weekend|weekend)/.test(t)) return "City Break";
+  return "Getaway";
+}
+
+/** Match a known place name from the lookup, scanning longest-first. */
+function findKnownPlace(text: string): string | null {
+  const lower = text.toLowerCase();
+  const keys = Object.keys(PLACE_TO_COUNTRY).sort((a, b) => b.length - a.length);
+  for (const k of keys) {
+    const re = new RegExp(`\\b${k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i");
+    if (re.test(lower)) return PLACE_TO_COUNTRY[k];
+  }
+  return null;
+}
+
+/**
+ * Compose a fun, short trip title (≤ ~22 chars) from arbitrary pasted text.
+ * Returns null when we can't find a confident destination — caller decides
+ * whether to fall back to "Untitled Trip".
+ */
+export function suggestTripTitle(text: string): string | null {
+  if (!text || text.trim().length < 4) return null;
+  // Strip "Day N…" sections so the destination heuristic isn't biased by them.
+  const head = text.split(/\bday\s*\d+\b/i)[0] || text;
+  const place = findKnownPlace(head) || findKnownPlace(text);
+  const vibe = pickVibe(text);
+  if (!place) return null;
+  const title = `${place} ${vibe}`;
+  // Hard cap so it never overflows the hero on mobile.
+  return title.length > 24 ? `${place} Trip` : title;
+}
+
+export type ParsedIngestion = {
+  blocks: Block[];
+  destination: string | null;
+};
+
+/** Parse + propose a title in one pass. Title is null when undecidable. */
+export function parseDropInWithMeta(
+  text: string,
+  source: IngestSource = "text",
+): ParsedIngestion {
+  return { blocks: parseDropIn(text, source), destination: suggestTripTitle(text) };
+}
