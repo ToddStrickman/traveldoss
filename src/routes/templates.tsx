@@ -115,6 +115,16 @@ function SkinCard({
         >
           "{skin.meta.personality}"
         </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {skin.meta.tags.map((tag) => (
+            <span
+              key={tag}
+              className="inline-block rounded-full border border-ink/10 px-2.5 py-1 text-[9px] font-medium uppercase tracking-[0.2em] text-ink/50"
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
 
         <button
           onClick={() => onPick(skin.meta.id)}
