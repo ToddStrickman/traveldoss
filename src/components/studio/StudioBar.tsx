@@ -38,13 +38,19 @@ export function StudioBar({
           type="button"
           onClick={onMint}
           aria-label="Mint your trip"
-          className="td-mint-button group inline-flex items-center gap-2 rounded-full bg-seal/15 px-3.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.3em] text-seal transition-colors hover:bg-seal hover:text-paper"
+          className="td-mint-button td-mint-cta group relative inline-flex items-center gap-2.5 rounded-full bg-seal px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.32em] text-paper transition-all duration-300 hover:-translate-y-0.5 hover:scale-[1.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal/60 focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
         >
           <span
             aria-hidden
-            className="inline-block h-1.5 w-1.5 rounded-full bg-seal shadow-[0_0_8px_currentColor] group-hover:bg-paper"
+            className="td-mint-pulse inline-block h-2 w-2 rounded-full bg-paper shadow-[0_0_10px_rgba(255,255,255,0.9)]"
           />
-          Mint Your Trip
+          <span className="relative">Mint Your Trip</span>
+          <span
+            aria-hidden
+            className="ml-1 inline-flex h-5 w-5 items-center justify-center rounded-full border border-paper/40 text-[11px] leading-none transition-transform duration-300 group-hover:translate-x-0.5"
+          >
+            →
+          </span>
         </button>
       ) : (
         <span className="text-[10px] uppercase tracking-[0.3em] text-ink-soft">
