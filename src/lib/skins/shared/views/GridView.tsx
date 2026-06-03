@@ -1,0 +1,123 @@
+import type { Block, TripView } from "../../types";
+import { buildItinerary } from "../itinerary";
+import { ActivityCell } from "./parts";
+
+/** Operational table view. Flights at the very top in a 2-row table.
+ *  Each day renders a 3-column table (Morning · Afternoon · Evening) where
+ *  every cell exposes the full activity metadata. */
+export function GridView({ trip, blocks }: { trip: TripView; blocks: Block[] }) {
+  const it = buildItinerary(blocks);
+  const dates = [trip.start_date, trip.end_date].filter(Boolean).join(" – ");
+  const flights: Array<{ leg: string; f: NonNullable<typeof it.flights.outbound> }> = [];
+  if (it.flights.outbound) flights.push({ leg: "Outbound", f: it.flights.outbound });
+  if (it.flights.inbound) flights.push({ leg: "Inbound", f: it.flights.inbound });
+
+  return (
+    <div className="tds-grid-view">
+      <header className="tds-grid-head">
+        <h1 className="tds-title tds-trip-title">
+          {trip.destination}
+          <span className="tds-dot">.</span>
+        </h1>
+        {trip.subtitle ? <p className="tds-dek">{trip.subtitle}</p> : null}
+        <div className="tds-byline">
+          <span>{trip.destination}</span>
+          {dates ? <span>{dates}</span> : null}
+        </div>
+      </header>
+
+      {flights.length > 0 ? (
+        <section className="tds-grid-section">
+          <h2 className="tds-grid-h2">Flights</h2>
+          <table className="tds-table tds-table-flights">
+            <thead>
+              <tr>
+                <th>Leg</th>
+                <th>Airline</th>
+                <th>From → To</th>
+                <th>Date</th>
+                <th>Depart</th>
+                <th>Arrive</th>
+                <th>Conf.</th>
+              </tr>
+            </thead>
+            <tbody>
+              {flights.map(({ leg, f }) => (
+                <tr key={leg}>
+                  <td className="tds-td-strong">{leg}</td>
+                  <td>{[f.airline, f.flightNumber].filter(Boolean).join(" ") || "—"}</td>
+                  <td>{[f.from, f.to].filter(Boolean).join(" → ") || "—"}</td>
+                  <td>{f.date ?? "—"}</td>
+                  <td>{f.departTime ?? "—"}</td>
+                  <td>{f.arriveTime ?? "—"}</td>
+                  <td>{f.confirmation ?? "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      ) : null}
+
+      {it.preface.length > 0 ? (
+        <section className="tds-grid-section">
+          <h2 className="tds-grid-h2">Essentials</h2>
+          <div className="tds-grid-essentials">
+            {it.preface.map(({ activity, index }) => (
+              <ActivityCell key={index} activity={activity} />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {it.days.map((d) => (
+        <section key={d.dayIndex} className="tds-grid-section">
+          <h2 className="tds-grid-h2">
+            Day {String(d.day.n).padStart(2, "0")} · {d.day.label}
+          </h2>
+          {d.day.notes ? <p className="tds-grid-day-notes">{d.day.notes}</p> : null}
+          <table className="tds-table tds-table-day">
+            <thead>
+              <tr>
+                <th>Morning</th>
+                <th>Afternoon</th>
+                <th>Evening</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  {d.morning.length === 0
+                    ? <span className="tds-td-muted">—</span>
+                    : d.morning.map(({ activity, index }) => (
+                        <ActivityCell key={index} activity={activity} />
+                      ))}
+                </td>
+                <td>
+                  {d.afternoon.length === 0
+                    ? <span className="tds-td-muted">—</span>
+                    : d.afternoon.map(({ activity, index }) => (
+                        <ActivityCell key={index} activity={activity} />
+                      ))}
+                </td>
+                <td>
+                  {d.evening.length === 0
+                    ? <span className="tds-td-muted">—</span>
+                    : d.evening.map(({ activity, index }) => (
+                        <ActivityCell key={index} activity={activity} />
+                      ))}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          {d.unassigned.length > 0 ? (
+            <div className="tds-grid-essentials">
+              {d.unassigned.map(({ activity, index }) => (
+                <ActivityCell key={index} activity={activity} />
+              ))}
+            </div>
+          ) : null}
+        </section>
+      ))}
+    </div>
+  );
+}
