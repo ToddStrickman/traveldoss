@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, useScroll, useTransform, useSpring } from "motion/react";
 
 type Step = {
@@ -48,6 +48,15 @@ const STEPS: Step[] = [
 ];
 
 export function FlowScroller() {
+  return (
+    <>
+      <DesktopFlow />
+      <MobileFlow />
+    </>
+  );
+}
+
+function DesktopFlow() {
   const containerRef = useRef<HTMLElement>(null);
 
   const { scrollYProgress } = useScroll({
@@ -66,18 +75,18 @@ export function FlowScroller() {
   return (
     <section
       ref={containerRef}
-      className="relative z-10"
+      className="relative z-10 hidden md:block"
       style={{ height: `${STEPS.length * 100}vh` }}
       aria-label="How TravelDoss works"
     >
       <div className="sticky top-0 flex h-screen flex-col overflow-hidden md:pl-32 md:pr-[340px]">
         {/* Section label */}
-        <div className="pointer-events-none absolute left-6 right-6 top-8 z-20 flex items-center justify-between text-[10px] font-medium uppercase tracking-[0.4em] text-ink/45 md:left-32 md:right-[340px]">
+        <div className="pointer-events-none absolute left-32 right-[340px] top-8 z-20 flex items-center justify-between text-[10px] font-medium uppercase tracking-[0.4em] text-ink/45">
           <span className="inline-flex items-center gap-3">
             <span className="h-px w-8 bg-ink/25" />
             The Flow
           </span>
-          <span className="hidden md:inline-flex items-center gap-3">
+          <span className="inline-flex items-center gap-3">
             Scroll to follow along
             <span className="h-px w-8 bg-ink/25" />
           </span>
@@ -94,7 +103,7 @@ export function FlowScroller() {
         </motion.div>
 
         {/* Bottom progress + counter */}
-        <div className="pointer-events-none absolute bottom-8 left-6 right-6 z-20 md:left-32 md:right-[340px]">
+        <div className="pointer-events-none absolute bottom-8 left-32 right-[340px] z-20">
           <div className="mb-3 flex items-center justify-between text-[10px] font-medium uppercase tracking-[0.4em] text-ink/45">
             <Counter scrollYProgress={scrollYProgress} total={STEPS.length} />
             <span>Your itinerary, unfolding.</span>
@@ -106,6 +115,103 @@ export function FlowScroller() {
             />
           </div>
         </div>
+      </div>
+    </section>
+  );
+}
+
+function MobileFlow() {
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const [active, setActive] = useState(0);
+
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    let raf = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const i = Math.round(el.scrollLeft / el.clientWidth);
+        setActive(Math.min(STEPS.length - 1, Math.max(0, i)));
+      });
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+      cancelAnimationFrame(raf);
+    };
+  }, []);
+
+  const goTo = (i: number) => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" });
+  };
+
+  return (
+    <section
+      className="relative z-10 block md:hidden"
+      aria-label="How TravelDoss works"
+    >
+      <div className="flex items-center justify-between px-6 pb-5 pt-12 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/45">
+        <span className="inline-flex items-center gap-3">
+          <span className="h-px w-6 bg-ink/25" />
+          The Flow
+        </span>
+        <span>Swipe →</span>
+      </div>
+
+      <div
+        ref={scrollerRef}
+        className="flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain scroll-smooth pb-6 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {STEPS.map((step, i) => (
+          <div
+            key={step.n}
+            className="flex w-screen shrink-0 snap-center snap-always flex-col gap-6 px-6"
+          >
+            <div className="flex items-center gap-3 text-[10px] font-medium uppercase tracking-[0.45em] text-ink/45">
+              <span className="text-seal">{step.n}</span>
+              <span className="h-px w-8 bg-ink/20" />
+              <span>{step.kicker}</span>
+            </div>
+            <h2
+              className="text-[12vw] font-normal leading-[0.95] tracking-[-0.02em] text-ink"
+              style={{ fontFamily: "var(--font-display)" }}
+            >
+              {step.title}
+            </h2>
+            <p className="max-w-md text-[13px] leading-relaxed text-ink-soft">
+              {step.body}
+            </p>
+            <div className="relative mt-2 h-[44vh] w-full">
+              <Visual variant={step.visual} index={i} />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Dots */}
+      <div className="flex items-center justify-center gap-2 pb-4">
+        {STEPS.map((s, i) => (
+          <button
+            key={s.n}
+            type="button"
+            onClick={() => goTo(i)}
+            aria-label={`Go to step ${i + 1}`}
+            className={`h-1.5 rounded-full transition-all ${
+              i === active ? "w-8 bg-seal" : "w-1.5 bg-ink/20"
+            }`}
+          />
+        ))}
+      </div>
+
+      <div className="flex items-center justify-between px-6 pb-10 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/45">
+        <span className="inline-flex items-center gap-2">
+          <span className="text-seal">{String(active + 1).padStart(2, "0")}</span>
+          <span className="text-ink/30">/ {String(STEPS.length).padStart(2, "0")}</span>
+        </span>
+        <span>Your itinerary, unfolding.</span>
       </div>
     </section>
   );
