@@ -85,17 +85,6 @@ export function TopoBackground() {
         }}
       />
 
-      {/* Topographic map — always visible behind everything */}
-      <div
-        className="absolute inset-0 opacity-[0.18]"
-        style={{
-          backgroundImage: topoUrl,
-          backgroundSize: "900px 900px",
-          backgroundRepeat: "repeat",
-          mixBlendMode: "screen",
-        }}
-      />
-
       {/* Cursor-reveal: ivory topo paper exposed under the cursor */}
       {trackingEnabled ? (
         <>
@@ -108,8 +97,7 @@ export function TopoBackground() {
               backgroundRepeat: "repeat",
               WebkitMaskImage: mask,
               maskImage: mask,
-              mixBlendMode: "screen",
-              opacity: 0.9,
+              opacity: 1,
               contain: "layout paint",
             }}
           />
@@ -117,17 +105,7 @@ export function TopoBackground() {
           <Flashlight sx={sx} sy={sy} radius={radius} />
         </>
       ) : (
-        <div
-          className="absolute inset-0"
-          style={{
-            backgroundColor: "#FFFFF0",
-            backgroundImage: topoUrlDark(),
-            backgroundSize: "640px 640px",
-            backgroundRepeat: "repeat",
-            mixBlendMode: "screen",
-            opacity: 0.12,
-          }}
-        />
+        null
       )}
 
       {/* Subtle vignette to keep edges plush */}
