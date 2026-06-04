@@ -138,7 +138,7 @@ RULES — these are non-negotiable:
 
 6. DESTINATION. Identify the primary city/region for the trip overall (not per-day). Null if undecidable.
 
-7. CONFIDENCE. For every `place` block, set `confidence` on a 0–1 scale reflecting how sure you are about the vendor identification AND the enriched address/phone/website/hours. Be honest: use <0.85 whenever there is meaningful ambiguity (common name, missing locale, partial match, guessed details). Use 0.95+ only for unambiguous, widely-known venues. Null for non-place blocks.
+7. CONFIDENCE. For every place block, set confidence on a 0–1 scale reflecting how sure you are about the vendor identification AND the enriched address/phone/website/hours. Be honest: use <0.85 whenever there is meaningful ambiguity (common name, missing locale, partial match, guessed details). Use 0.95+ only for unambiguous, widely-known venues. Null for non-place blocks.
 
 Return ONLY the structured object. No prose around it.`;
 
