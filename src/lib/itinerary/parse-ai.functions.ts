@@ -188,25 +188,42 @@ export const parseItineraryAi = createServerFn({ method: "POST" })
     const gateway = createLovableAiGatewayProvider(key);
 
     let parsed: z.infer<typeof BlockSchema>;
-    try {
-      const result = await generateText({
-        model: gateway("google/gemini-2.5-flash"),
-        system: SYSTEM_PROMPT,
-        prompt: `Source type: ${data.source}\n\n---\n${data.text}\n---\n\nReturn the structured itinerary now.`,
-        experimental_output: Output.object({ schema: BlockSchema }),
-      });
-      parsed = result.experimental_output;
-    } catch (err) {
-      // Surface gateway/credit errors with a usable message.
-      const msg = err instanceof Error ? err.message : String(err);
-      if (/402|credit/i.test(msg)) {
-        throw new Error("AI credits exhausted. Add credits in Workspace → Usage.");
+    // Retry with exponential backoff on transient 429s before giving up.
+    const MAX_ATTEMPTS = 4;
+    let lastErr: unknown = null;
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      try {
+        const result = await generateText({
+          model: gateway("google/gemini-2.5-flash"),
+          system: SYSTEM_PROMPT,
+          prompt: `Source type: ${data.source}\n\n---\n${data.text}\n---\n\nReturn the structured itinerary now.`,
+          experimental_output: Output.object({ schema: BlockSchema }),
+        });
+        parsed = result.experimental_output;
+        lastErr = null;
+        break;
+      } catch (err) {
+        lastErr = err;
+        const msg = err instanceof Error ? err.message : String(err);
+        if (/402|credit/i.test(msg)) {
+          throw new Error("AI credits exhausted. Add credits in Workspace → Usage.");
+        }
+        if (/429|rate/i.test(msg) && attempt < MAX_ATTEMPTS) {
+          // 0.75s, 1.5s, 3s — total ~5.25s of backoff before failing.
+          const delay = 750 * 2 ** (attempt - 1);
+          await new Promise((r) => setTimeout(r, delay));
+          continue;
+        }
+        if (/429|rate/i.test(msg)) {
+          throw new Error("AI is busy. Wait a few seconds and retry.");
+        }
+        throw new Error(`AI parser failed: ${msg}`);
       }
-      if (/429|rate/i.test(msg)) {
-        throw new Error("AI is busy. Wait a few seconds and retry.");
-      }
-      throw new Error(`AI parser failed: ${msg}`);
     }
+    if (lastErr) {
+      throw new Error("AI is busy. Wait a few seconds and retry.");
+    }
+    parsed = parsed!;
 
     // Translate the model's nullable schema into the app's Block[] (omit
     // null/empty fields so the UI doesn't render stray "—" placeholders).
