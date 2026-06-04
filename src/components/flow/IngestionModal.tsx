@@ -197,7 +197,7 @@ export function IngestionModal({
                 <span className="h-px w-8 bg-ink/25" />
                 TravelDoss<span className="text-ink/30">®</span>
                 <span className="text-ink/30">·</span>
-                {template ? template.meta.codename : "Template"}
+                {template ? template.meta.codename : "Dossier Template"}
               </div>
               <h2 className="td-headline text-[2.75rem] font-normal leading-[1.02] tracking-[-0.022em] text-ink">
                 Bring your trip
@@ -209,7 +209,7 @@ export function IngestionModal({
                 style={{ fontFamily: "var(--font-display)" }}
               >
                 Three ways in. One result —{" "}
-                <span className="italic text-ink/70">a quietly composed dossier,</span> set in this template.
+                <span className="italic text-ink/70">a quietly composed dossier,</span> set in this dossier template.
               </p>
             </div>
             <div className="hidden shrink-0 text-right md:block">
