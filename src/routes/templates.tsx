@@ -211,6 +211,7 @@ function TemplatesPage() {
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const pickFn = useServerFn(pickTemplate);
   const navigate = useNavigate();
+  const { pick: pickParam } = Route.useSearch();
 
   const allTags = useMemo(
     () => Array.from(new Set(SKINS.flatMap((s) => s.meta.tags))).sort(),
@@ -239,6 +240,17 @@ function TemplatesPage() {
       mounted = false;
     };
   }, []);
+
+  // Auto-trigger pick when arriving with ?pick=<id> (e.g. from the homepage rail).
+  const autoPickedRef = useRef(false);
+  useEffect(() => {
+    if (autoPickedRef.current) return;
+    if (!pickParam || authed === null) return;
+    if (!SKINS.some((s) => s.meta.id === pickParam)) return;
+    autoPickedRef.current = true;
+    handlePick(pickParam);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pickParam, authed]);
 
   // Restore + persist scroll position across navigations
   useEffect(() => {
