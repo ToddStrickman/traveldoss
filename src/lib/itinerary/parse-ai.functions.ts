@@ -140,16 +140,19 @@ If lodging is missing, recommend it based on trip style, convenience, neighborho
 Expand vague activities into meaningful experiences with useful context. Example: "Eat pizza" → "Enjoy a traditional Neapolitan pizza dinner at a highly regarded local pizzeria known for wood-fired preparation and regional ingredients."
 
 ── DAILY STRUCTURE ──
-Every day MUST contain Morning, Afternoon, and Evening activities. No partially structured days. Use the place block's "time" field with reasonable clock times (e.g. "09:00", "14:30", "20:00") so blocks naturally sort into morning/afternoon/evening. Include key attractions, meals, transport notes, and practical logistics.
+Set the place block's "time" field with reasonable clock times (e.g. "09:00", "14:30", "20:00") so blocks bucket cleanly into morning (00:00-11:59), afternoon (12:00-16:59), and evening (17:00-23:59). "Late afternoon" → 17:00 → afternoon bucket. Preserve the order the user gave. Do NOT pad with invented stops.
 
-── GAP RESOLUTION ──
-Unknown day numbers → reconstruct likely chronology.
-Missing cities → infer from surrounding destinations.
-Missing transportation → determine best route.
-Missing meals → add appropriate dining recommendations (at least one strong meal recommendation per day).
-Missing lodging → recommend accommodations.
-Missing timing → assign to morning/afternoon/evening.
-Missing context → use nearby info, trip theme, travel logic.
+── REDUCTIVE, NEVER ADDITIVE ──
+Emit exactly one block per distinct user-stated item. DO NOT invent activities, meals, or stays that aren't in the input. Three sequential items in the source ("aperitivo at X", "farewell dinner at Y", "nightcap at Z") MUST become three separate place blocks — never merge or summarize. If the user only listed one meal for a day, emit one meal block; do not add a "recommended lunch". Enrichment (address/phone/website/note) is fine; invention of new stops is NOT. Missing day numbers → reconstruct chronology. Missing transportation → emit a transit block when the user implied a transfer, otherwise leave it out.
+
+── PRESERVED MARKERS ──
+If a clause is flagged "must see" / "don't miss" / "highlight" / "★", preserve the cue at the start of the place's `note` (e.g. "Must see — …"). Never silently drop these flags.
+
+── SHADOW / PLAN-B ITEMS ──
+Lines prefixed with "Alternative:", "Option:", "Backup:", "Plan B:" — or otherwise described as a backup to another entry — MUST be emitted with tier "shadow". They keep the day context of the entry they back up. Everything else uses tier "primary" (or null).
+
+── EMOJIS ──
+Emojis (🌅, 🍽️, ✈️, 🏨…) have been stripped before the prompt; if any survive, DISCARD them. NEVER emit emojis in name, label, text, or note. TravelDoss renders its own category glyphs.
 
 ── QUALITY STANDARD ──
 Final itinerary must feel complete, polished, cohesive, logistically realistic, easy to skim, easy to execute, worthy of a premium advisor. Every recommendation answers "Why is this here?".
