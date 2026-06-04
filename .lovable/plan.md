@@ -1,105 +1,78 @@
 ## Goal
 
-Two deliverables:
+Make the parser emoji-safe and time-bucket-aware, keep it reductive (no invented blocks), and give every template a shared day-slot UI with a horizontal carousel of alternatives plus a "Shadow itinerary" rail at the bottom.
 
-1. **Parser regression fixtures** — extend the existing suite with messier inputs that stress reconstruction and day ordering.
-2. **Gmail booking → trip Doc preview** — new end-to-end feature: pull booking confirmations from Gmail, parse them through the existing AI itinerary parser, attach a generated Google Doc preview to the matching trip, with Playwright E2E coverage.
+## 1. Emoji & input hygiene (parser)
 
----
+In `src/lib/itinerary/parse.ts`:
 
-## Part 1 — Parser fixtures
+- Add `stripEmoji(text)`: removes Unicode `Extended_Pictographic` runs, ZWJ joiners, regional indicators, variation selectors. Trim leftover punctuation.
+- Run it inside `preprocessMarkdownTables` AND at the top of `parseDropIn` so emojis never survive into block names.
+- Also strip emojis from row cells before period/time detection so `"🌅 Morning"` still maps to `09:00`.
 
-### 1A. Local fallback fixtures (`tests/itinerary-parser.test.ts`)
+In `src/lib/itinerary/parse-ai.functions.ts`:
 
-Add four new `describe` blocks against `parseDropInWithMeta`:
+- Strip emojis from the user-supplied `text` before sending to the model.
+- Add to system prompt: "Discard emojis entirely. Never emit them in `name`, `label`, `text`, or `note`."
 
-- **Missing dates** — paste with only "Day", "next day", "then" tokens. Assert sequential `day.n` numbering and that no `place` block is mis-promoted to a day label.
-- **Missing destination** — paste of pure activities ("ramen at Ichiran… train to Kyoto… ryokan check-in"). Assert `destination` is inferred from the first geographic anchor (Kyoto) or returns `null` if nothing matches — pin current behaviour.
-- **Conflicting day order** — input lists Day 3, Day 1, Day 2 out of order. Assert local parser preserves input order (it is line-based) and that day numbers round-trip; document this as the expected fallback behaviour (reordering is the AI parser's job).
-- **Run-on transcript, no day markers** — single paragraph with semicolons and "after that". Assert it falls back to a single `paragraph` block plus any extracted place names; no spurious `day` blocks.
+Tests added to `tests/itinerary-parser.test.ts`: pasted text with emoji bullets parses to clean names; `🌅 Morning | Walk` becomes a 09:00 block named "Walk".
 
-### 1B. AI parser fixtures (`tests/itinerary-parser-ai.test.ts`, new)
+## 2. Time → slot bucket (shared helper)
 
-Gated suite — `describe.skipIf(!process.env.LOVABLE_API_KEY)`. Calls `parseItineraryAi.handler` directly (bypassing the RPC layer) with the same four fixtures and asserts:
+New `src/lib/itinerary/slots.ts`:
 
-- Days renumbered 1..N in chronological order even when input is shuffled.
-- `destination` non-null for the missing-destination fixture.
-- At least one `place` block per day; every place has a `category`.
-- Every recommended (not user-named) place has `confidence < 0.85`.
+- `type DaySlot = "morning" | "afternoon" | "evening" | string` (string allows custom user slot labels like "late afternoon", "midnight").
+- `DEFAULT_SLOTS = ["morning","afternoon","evening"]`.
+- `bucketFor(time?: string, hintWord?: string): DaySlot` — uses clock time first, falls back to keyword map. **"late afternoon" → "afternoon"** (per the request: it should fall *into* the afternoon bucket by default; users can opt into a separate "late afternoon" slot via custom slots).
+- `groupDayBlocks(blocks, day): Record<slot, PlaceBlock[]>` — returns ordered groups per day, preserving source order.
 
-Add `bun run test:ai-parser` script and document it in README.
+Extend `PERIOD_TIMES` in `parse.ts` so "late afternoon" still gets a clock time (17:00) — slot bucketer maps 17:00 → afternoon.
 
----
+## 3. Reductive parsing (no invented stops)
 
-## Part 2 — Gmail booking → Doc preview
+- In the AI prompt, replace the "expand/recommend missing meals/lodging" sections with: **"Be reductive. Emit exactly one block per distinct user-stated item. Do NOT invent activities, meals, or stays that aren't in the input. Preserve 'must see' / 'highlight' / 'don't miss' markers verbatim in `note`."**
+- Add rule: "An item like `Aperitivo at X` followed by `Farewell dinner at Y` is two separate place blocks — never merged."
+- In `parse.ts`, when a clause contains markers like `must see|must-see|don't miss|highlight`, set a `note: "Must see"` on the emitted place block (new optional behavior; no schema change needed — `note` already exists).
 
-### 2A. Connector + secrets
+## 4. Day header date placeholder
 
-- Link the **Gmail** and **Google Docs** app connectors via `standard_connectors--connect`. (Google Drive is already linked.)
-- Use the existing `google_tokens` table for per-user OAuth; Gmail uses connector creds for the workspace inbox initially — confirm scope during build (`gmail.readonly`).
+- Extend `Block` `day` variant with optional `date?: string` (already partially supported via flight `date`; add it cleanly to `day`).
+- Parser: if a date follows "Day N" (`Day 1 – Mon Oct 14` or `Day 1 (10/14/25)`), capture it into `day.date`.
+- Skin shared header renders `Day {n} — {label} · {date ?? "TBD (MM/DD/YY)"}`.
+- Update `src/lib/skins/shared/views/parts.tsx` (the shared Day header) to render the placeholder.
 
-### 2B. Schema
+## 5. Slot rail + alternatives carousel (shared UI)
 
-New migration:
+New `src/lib/skins/shared/DaySlotRail.tsx` consumed by all three shared views (`VerticalView`, `HorizontalView`, `GridView`):
 
-```sql
-create table public.trip_doc_previews (
-  id uuid primary key default gen_random_uuid(),
-  trip_id uuid not null,
-  user_id uuid not null,
-  source text not null check (source in ('gmail','manual')),
-  source_message_id text,         -- Gmail message id, unique per user
-  google_doc_id text not null,
-  google_doc_url text not null,
-  preview_html text,              -- cached first-page HTML for embed
-  status text not null default 'ready',
-  created_at timestamptz not null default now(),
-  unique (user_id, source_message_id)
-);
--- grants + RLS: owner-only CRUD, service_role full
-```
+- For each slot in `DEFAULT_SLOTS` (plus any custom slot present that day), render: slot label, the chosen card, and — if more than one block falls into the slot — a horizontal-scroll carousel of "Alternatives" the user can pick from. Selection updates which block is treated as primary for that slot.
+- Selection state is per-day-per-slot, stored in `localStorage` keyed by trip slug so it survives reloads without a schema change.
+- Carousel: CSS scroll-snap, swipe on mobile, arrow buttons on desktop, accessible via keyboard.
+- Add "+ slot" affordance letting the user add a custom slot (e.g. "late afternoon", "midnight"). Stored alongside selections in localStorage.
 
-### 2C. Server functions (`src/lib/gmail-import.functions.ts`)
+Wire `DaySlotRail` into the three shared views; hand-built skins (`epictetus`, `orsino`) get a minimal version so behavior is consistent.
 
-- `listBookingEmails()` — Gmail Text Search `category:travel OR subject:(confirmation OR itinerary OR booking) newer_than:90d`, returns `{id, snippet, from, subject, date}[]`.
-- `importBookingEmail({ messageId, tripId })`:
-  1. Fetch full Gmail message via connector gateway.
-  2. Extract plain text body (decode base64url, strip HTML).
-  3. Call existing `parseItineraryAi` to get `{destination, blocks}`.
-  4. Build a Google Doc through the Docs API (TipTap-style batchUpdate using the doc skill mapping): title = `${trip.destination} — Booking ${date}`, body = rendered blocks.
-  5. Insert `trip_doc_previews` row, update `trips.doc_id` / `trips.doc_url` if missing.
-  6. Return `{ docPreviewId, googleDocUrl }`.
-- `listTripDocPreviews({ tripId })` for the UI.
+## 6. Shadow itinerary rail
 
-All three use `requireSupabaseAuth`; admin client only inside `.handler()` via `await import("@/integrations/supabase/client.server")` (transitive-import rule).
+- Parser convention: any block whose source line starts with `Alternative:` / `Option:` / `Backup:` / `Plan B:` (case-insensitive) gets tagged `note: "shadow"` (or a new `tier?: "primary" | "shadow"` on the place block — cleaner; add to `Block.place`).
+- AI prompt: emit shadow alternatives with `tier: "shadow"`; primary itinerary stays `tier: "primary"` (or unset).
+- New `src/lib/skins/shared/ShadowItinerary.tsx`: collapsible section pinned at the bottom of every skin. Lists shadow blocks grouped by their associated day. Includes a small inline cue in each primary day header ("Plan B available ↓") that anchors to the shadow section.
+- Render in all shared views + the two hand-built skins.
 
-### 2D. UI
+## 7. Tests
 
-- New `GmailImportPanel` in `src/components/flow/` — list candidate emails, "Import to trip" button per row, shows toast + opens Doc preview.
-- Trip dossier (`src/routes/t.$slug.tsx`): if `trip_doc_previews` exist, render a `<iframe src={googleDocUrl + "/preview"}>` card.
-
-### 2E. E2E tests (`e2e/gmail-import.spec.ts`)
-
-- Mock the Gmail + Docs connector gateway by intercepting `https://connector-gateway.lovable.dev/**` via `page.route(...)`. Two fixtures: a flight confirmation and a hotel confirmation.
-- Seed a trip via existing test seeding hook (extend the `/e2e/...` route used by kanban tests).
-- Flow:
-  1. Sign in as the seeded test user.
-  2. Open Gmail import panel → expect both mocked emails listed.
-  3. Click "Import to trip" on the flight email.
-  4. Assert: success toast, `trip_doc_previews` row created (read via test helper server fn), iframe with `googleDocUrl` rendered on dossier page.
-  5. Negative: importing the same `messageId` twice surfaces "already imported", no duplicate row.
-
-Extend `playwright.config.ts` with a `gmail-import` project? No — single chromium project, just new spec.
-
----
+- `tests/itinerary-parser.test.ts`: emoji strip, late-afternoon bucketing, three-item aperitivo/dinner sequence stays as 3 blocks, alternative line gets `tier: "shadow"`, date capture from `Day 1 (10/14/25)`.
+- `tests/slots.test.ts` (new): `bucketFor` mapping table.
+- `e2e/` not touched in this pass.
 
 ## Technical notes
 
-- Worker runtime safe: only `fetch` + `crypto`, no Node-only deps.
-- Google Docs JSON ↔ block mapping follows the `google_docs` knowledge file (no HTML intermediary).
-- Reuse `parseItineraryAi`; do not duplicate its system prompt.
-- Tests for AI parser must respect cost — gated behind env var, opt-in script.
-- All new tables follow the public-schema-grants rule (GRANT then RLS then policies).
+- `Block` schema change is additive: `day.date?: string`, `place.tier?: "primary" | "shadow"`. No migration required (it's view-state).
+- Slot selection + custom slots are client-side only (localStorage). If the user later wants this persisted server-side, that's a follow-up.
+- "Reductive" prompt change is the riskiest behavior shift — I'll keep the existing enrichment (address/phone/website/note) but remove the "fill missing meals/lodging" instructions.
 
----
+## Out of scope
 
+- Persisting slot selections 
+- Drag-to-reorder between slots (current scope is pick-from-alternatives only).
+- Changing the published skins' visual identity beyond adding the slot rail + shadow rail.
