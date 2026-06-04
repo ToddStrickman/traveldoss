@@ -463,3 +463,135 @@ describe("parser: run-on transcript with no day markers", () => {
     expect(parsed.destination).toMatch(/france|paris/i);
   });
 });
+
+/* ------------------------------------------------------------------ */
+/* Fixture 10 — Emoji-laced AI paste (ChatGPT/Claude style)            */
+/* ------------------------------------------------------------------ */
+
+describe("parser: emoji-laced paste is sanitized", () => {
+  test("stripEmoji removes pictographs, flags, joiners", () => {
+    expect(stripEmoji("🌅 Morning walk")).toBe("Morning walk");
+    expect(stripEmoji("🇮🇹 Italy 🍝 trip")).toBe("Italy  trip");
+    expect(stripEmoji("👨‍👩‍👧 family")).toBe("family");
+  });
+
+  const raw = [
+    "🇮🇹 Bologna weekend",
+    "Day 1: 🌅 walk Piazza Maggiore, 🍝 lunch at Trattoria Anna",
+    "Day 2: 🏨 check into Art Hotel Commercianti, 🍷 wine tasting in Chianti",
+  ].join("\n");
+  const parsed = parseDropInWithMeta(raw);
+
+  test("no place name retains an emoji", () => {
+    for (const b of parsed.blocks) {
+      if (b.kind === "place") {
+        expect(b.name).not.toMatch(/\p{Extended_Pictographic}/u);
+      }
+    }
+  });
+
+  test("hotel still resolves to the stay category despite emoji", () => {
+    const hotel = parsed.blocks.find(
+      (b): b is Extract<Block, { kind: "place" }> =>
+        b.kind === "place" && /art hotel commercianti/i.test(b.name),
+    );
+    expect(hotel).toBeDefined();
+    expect(hotel!.category).toBe("stay");
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* Fixture 11 — Day date capture                                       */
+/* ------------------------------------------------------------------ */
+
+describe("parser: captures inline day dates", () => {
+  test("parenthesised mm/dd/yy date is captured and stripped from clauses", () => {
+    const parsed = parseDropInWithMeta(
+      "Day 1 (10/14/25): arrive Rome, gelato at Giolitti.\nDay 2 (10/15/25): Colosseum tour.",
+    );
+    const day1 = parsed.blocks.find(
+      (b): b is Extract<Block, { kind: "day" }> => b.kind === "day" && b.n === 1,
+    );
+    expect(day1?.date).toBe("10/14/25");
+    // The clauses after the date should still parse.
+    expect(parsed.blocks.some((b) => b.kind === "place" && /giolitti/i.test(b.name))).toBe(true);
+  });
+
+  test("no date present → day.date is undefined (placeholder rendered by the view)", () => {
+    const parsed = parseDropInWithMeta("Day 1: arrive, hotel.");
+    const day1 = parsed.blocks.find(
+      (b): b is Extract<Block, { kind: "day" }> => b.kind === "day" && b.n === 1,
+    );
+    expect(day1?.date).toBeUndefined();
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* Fixture 12 — Shadow / Plan B tagging                                */
+/* ------------------------------------------------------------------ */
+
+describe("parser: tags shadow / Plan B items", () => {
+  const raw = [
+    "Bologna day.",
+    "Day 1: walk Piazza Maggiore, dinner at Trattoria Anna",
+    "Alternative: Osteria dell'Orsa",
+    "Backup: Ristorante Diana",
+  ].join("\n");
+  const parsed = parseDropInWithMeta(raw);
+  const places = parsed.blocks.filter(
+    (b): b is Extract<Block, { kind: "place" }> => b.kind === "place",
+  );
+
+  test("Alternative: line is tier 'shadow'", () => {
+    const alt = places.find((p) => /osteria dell'orsa/i.test(p.name));
+    expect(alt?.tier).toBe("shadow");
+  });
+
+  test("Backup: line is tier 'shadow' with the prefix stripped from the name", () => {
+    const backup = places.find((p) => /diana/i.test(p.name));
+    expect(backup?.tier).toBe("shadow");
+    expect(backup?.name.toLowerCase()).not.toMatch(/^backup/);
+  });
+
+  test("primary items have no tier set", () => {
+    const primary = places.find((p) => /trattoria anna/i.test(p.name));
+    expect(primary?.tier).toBeUndefined();
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* Fixture 13 — Reductive: three sequential items stay as three blocks */
+/* ------------------------------------------------------------------ */
+
+describe("parser: three sequential evening items stay separate", () => {
+  const raw =
+    "Florence farewell.\nDay 1: Uffizi visit, aperitivo at Locale, farewell dinner at Cibreo, nightcap at Caffè Gilli.";
+  const parsed = parseDropInWithMeta(raw);
+  const names = parsed.blocks
+    .filter((b): b is Extract<Block, { kind: "place" }> => b.kind === "place")
+    .map((p) => p.name.toLowerCase());
+
+  test("aperitivo, farewell dinner, nightcap each emit their own block", () => {
+    expect(names.some((n) => n.includes("locale"))).toBe(true);
+    expect(names.some((n) => n.includes("cibreo"))).toBe(true);
+    expect(names.some((n) => n.includes("gilli"))).toBe(true);
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* Fixture 14 — Must-see marker is preserved as a note                 */
+/* ------------------------------------------------------------------ */
+
+describe("parser: must-see marker → note", () => {
+  test("'must see' clause emits a note and strips the marker from the name", () => {
+    const parsed = parseDropInWithMeta(
+      "Day 1: must see — Duomo climb, gelato at Vivoli.",
+    );
+    const duomo = parsed.blocks.find(
+      (b): b is Extract<Block, { kind: "place" }> =>
+        b.kind === "place" && /duomo/i.test(b.name),
+    );
+    expect(duomo?.note).toBe("Must see");
+    expect(duomo?.name.toLowerCase()).not.toMatch(/must see/);
+  });
+});
