@@ -302,3 +302,163 @@ describe("suggestTripTitle", () => {
     expect(title).toMatch(/japan/i);
   });
 });
+
+/* ------------------------------------------------------------------ */
+/* Fixture 6 — Missing calendar dates (only "Day N" tokens)            */
+/* ------------------------------------------------------------------ */
+
+describe("parser: missing calendar dates", () => {
+  const raw = `
+    Quick Rome trip, no fixed dates yet.
+    Day 1: arrive, drop bags at Hotel Eden, gelato at Giolitti.
+    Day 2: Colosseum tour, lunch at Roscioli, espresso at Sant'Eustachio.
+    Day 3: Vatican Museums, dinner at Armando al Pantheon.
+  `;
+
+  const parsed = parseDropInWithMeta(raw);
+
+  test("emits days 1..3 in order even with no calendar context", () => {
+    expect(days(parsed.blocks).map((d) => d.n)).toEqual([1, 2, 3]);
+  });
+
+  test("preamble is preserved as a paragraph block", () => {
+    const first = parsed.blocks[0];
+    expect(first.kind).toBe("paragraph");
+  });
+
+  test("destination resolves from a known city name", () => {
+    expect(parsed.destination).toMatch(/italy|rome/i);
+  });
+
+  test("hotel is captured even without an explicit date", () => {
+    expect(hasPlaceMatching(parsed.blocks, /hotel eden/i)).toBe(true);
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* Fixture 7 — Missing destination (no city in preamble)               */
+/* ------------------------------------------------------------------ */
+
+describe("parser: missing destination, inferred from body", () => {
+  const raw = `
+    Day 1: ramen at Ichiran, walk Shibuya, drinks in Golden Gai.
+    Day 2: train to Kyoto, ryokan check-in, walk Pontocho.
+    Day 3: temple visit, kaiseki, fly home.
+  `;
+
+  const parsed = parseDropInWithMeta(raw);
+
+  test("destination is inferred from a body-mentioned city", () => {
+    // No country/city named in the preamble; first known place is Shibuya
+    // (Tokyo) or Kyoto in the body. Either resolves to Japan.
+    expect(parsed.destination).not.toBeNull();
+    expect(parsed.destination!).toMatch(/japan/i);
+  });
+
+  test("all three days are emitted", () => {
+    expect(days(parsed.blocks).map((d) => d.n)).toEqual([1, 2, 3]);
+  });
+
+  test("ryokan stop routes to stay (accommodation keyword)", () => {
+    const ryokan = places(parsed.blocks).find((p) =>
+      /ryokan/i.test(p.name),
+    );
+    expect(ryokan?.category).toBe("stay");
+  });
+});
+
+describe("parser: missing destination, no recognisable city", () => {
+  const raw = `
+    Day 1: arrive, hotel check-in, dinner at the place down the street.
+    Day 2: market in the morning, museum, sunset drinks.
+    Day 3: head home.
+  `;
+
+  const parsed = parseDropInWithMeta(raw);
+
+  test("destination is null when nothing is geographically anchored", () => {
+    // suggestTripTitle returns null when no entry in the place lookup
+    // matches — the caller is expected to fall back to "Untitled Trip".
+    expect(parsed.destination).toBeNull();
+  });
+
+  test("days are still emitted in order", () => {
+    expect(days(parsed.blocks).map((d) => d.n)).toEqual([1, 2, 3]);
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* Fixture 8 — Conflicting / shuffled day order                        */
+/* ------------------------------------------------------------------ */
+
+describe("parser: shuffled day order", () => {
+  // Local fallback parser is line-based: it preserves input order and
+  // does NOT reorder days. Reordering is the AI parser's responsibility.
+  // This fixture pins that contract so a future refactor is intentional.
+  const raw = `
+    Day 3: Vatican Museums, dinner at Armando.
+    Day 1: arrive Rome, Hotel Eden, gelato at Giolitti.
+    Day 2: Colosseum, lunch at Roscioli.
+  `;
+
+  const parsed = parseDropInWithMeta(raw);
+
+  test("day numbers round-trip exactly as pasted (no reordering)", () => {
+    expect(days(parsed.blocks).map((d) => d.n)).toEqual([3, 1, 2]);
+  });
+
+  test("every Day N still appears exactly once", () => {
+    const ns = days(parsed.blocks).map((d) => d.n).sort();
+    expect(ns).toEqual([1, 2, 3]);
+  });
+
+  test("places stay attached to their declared day in input order", () => {
+    // Walk the block list and group places under the preceding day.
+    const groups: Record<number, string[]> = {};
+    let current: number | null = null;
+    for (const b of parsed.blocks) {
+      if (b.kind === "day") {
+        current = b.n;
+        groups[current] ??= [];
+      } else if (b.kind === "place" && current !== null) {
+        groups[current].push(b.name);
+      }
+    }
+    expect(groups[1]?.join(" | ")).toMatch(/hotel eden/i);
+    expect(groups[2]?.join(" | ")).toMatch(/roscioli/i);
+    expect(groups[3]?.join(" | ")).toMatch(/armando/i);
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* Fixture 9 — Run-on transcript with no Day N markers                 */
+/* ------------------------------------------------------------------ */
+
+describe("parser: run-on transcript with no day markers", () => {
+  // No "Day N" tokens at all. The parser should NOT invent day blocks;
+  // it falls back to a single paragraph (the AI parser is the one that
+  // reconstructs days from prose).
+  const raw =
+    "Quick weekend in Paris — Eiffel Tower then a long walk along the Seine, " +
+    "after that drinks at Harry's Bar; eventually dinner at Septime and we'll " +
+    "figure out the rest tomorrow.";
+
+  const parsed = parseDropInWithMeta(raw);
+
+  test("no spurious day blocks are emitted", () => {
+    expect(days(parsed.blocks).length).toBe(0);
+  });
+
+  test("the whole transcript is preserved as a single paragraph", () => {
+    const paragraphs = parsed.blocks.filter((b) => b.kind === "paragraph");
+    expect(paragraphs.length).toBe(1);
+    if (paragraphs[0].kind === "paragraph") {
+      expect(paragraphs[0].text).toContain("Eiffel Tower");
+      expect(paragraphs[0].text).toContain("Septime");
+    }
+  });
+
+  test("destination still resolves via the city lookup", () => {
+    expect(parsed.destination).toMatch(/france|paris/i);
+  });
+});
