@@ -58,6 +58,14 @@ const BlockSchema = z.object({
           .describe(
             "ONE concise editorial sentence (<15 words) combining the source context with a factual insight about the vendor. Empty if the model has no insight.",
           ),
+        confidence: z
+          .number()
+          .min(0)
+          .max(1)
+          .nullable()
+          .describe(
+            "Self-rated confidence in the enriched fields (address/phone/website/hours/note) for this place, on a 0–1 scale. Use <0.85 whenever you are not certain the vendor identification or enrichment is correct. Null for non-place blocks.",
+          ),
         // accommodation
         checkIn: z.string().nullable(),
         checkOut: z.string().nullable(),
@@ -129,6 +137,8 @@ RULES — these are non-negotiable:
    • Standalone advice/reminders become {kind:"note", text}.
 
 6. DESTINATION. Identify the primary city/region for the trip overall (not per-day). Null if undecidable.
+
+7. CONFIDENCE. For every `place` block, set `confidence` on a 0–1 scale reflecting how sure you are about the vendor identification AND the enriched address/phone/website/hours. Be honest: use <0.85 whenever there is meaningful ambiguity (common name, missing locale, partial match, guessed details). Use 0.95+ only for unambiguous, widely-known venues. Null for non-place blocks.
 
 Return ONLY the structured object. No prose around it.`;
 
@@ -224,6 +234,12 @@ function toBlock(raw: RawBlock): Block | null {
       if (!raw.name) return null;
       const category =
         raw.category && (raw.category as string) !== "" ? raw.category : undefined;
+      const enrichedFields: string[] = [];
+      if (raw.address) enrichedFields.push("address");
+      if (raw.phone) enrichedFields.push("phone");
+      if (raw.website) enrichedFields.push("website");
+      if (raw.hours) enrichedFields.push("hours");
+      if (raw.note) enrichedFields.push("note");
       return clean({
         kind: "place" as const,
         name: raw.name,
@@ -250,6 +266,9 @@ function toBlock(raw: RawBlock): Block | null {
         distance: raw.distance ?? undefined,
         duration: raw.duration ?? undefined,
         difficulty: raw.difficulty ?? undefined,
+        confidence: raw.confidence ?? undefined,
+        enrichmentSource: enrichedFields.length ? ("model" as const) : undefined,
+        enrichedFields: enrichedFields.length ? enrichedFields : undefined,
       }) as Block;
     case "flight":
       return clean({
