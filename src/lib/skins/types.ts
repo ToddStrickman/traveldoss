@@ -9,7 +9,14 @@ export type Block =
       partOfDay?: "morning" | "afternoon" | "evening";
     }
   | { kind: "paragraph"; text: string }
-  | { kind: "day"; n: number; label: string; notes?: string }
+  | {
+      kind: "day";
+      n: number;
+      label: string;
+      notes?: string;
+      /** Calendar date for this day if known (free-form: "Oct 14", "10/14/25", ISO). */
+      date?: string;
+    }
   | {
       kind: "place";
       name: string;
@@ -78,6 +85,11 @@ export type Block =
       enrichmentSource?: "model" | "google-places" | "manual";
       /** Fields that were auto-filled by an enricher (not the user). */
       enrichedFields?: string[];
+      /**
+       * Itinerary tier. "shadow" = a backup / Plan-B alternative rendered in
+       * the bottom Shadow Itinerary section. Unset / "primary" = main plan.
+       */
+      tier?: "primary" | "shadow";
     }
   | {
       kind: "flight";
