@@ -55,11 +55,11 @@ export function StudioBar({
         </>
       )}
       <label className="flex items-center gap-2 text-[10px] uppercase tracking-[0.3em] text-ink-soft">
-        <span className="hidden sm:inline">Template</span>
+        <span className="hidden sm:inline">Dossier Template</span>
         <select
           value={templateId}
           onChange={(e) => onTemplateChange(e.target.value)}
-          aria-label="Template"
+          aria-label="Dossier Template"
           className="max-w-[120px] rounded-md border border-white/10 bg-paper/40 px-2 py-2 text-[11px] text-ink outline-none focus:border-seal sm:max-w-none sm:py-1"
         >
           {SKINS.map((s) => (

@@ -43,7 +43,7 @@ function Dashboard() {
         </Link>
         <div className="flex items-center gap-6">
           <Link to="/templates" className="td-eyebrow text-ink/55 transition-colors hover:text-seal">
-            Templates
+            Dossier Templates
           </Link>
           <button
             type="button"
@@ -106,14 +106,14 @@ function Dashboard() {
                 No journeys <span className="italic">composed yet<span className="text-seal">.</span></span>
               </h3>
               <p className="max-w-md text-sm leading-relaxed text-ink-soft">
-                Choose a template and begin. Your dossier will map every route, arrange each day,
+                Choose a dossier template and begin. Your dossier will map every route, arrange each day,
                 and hold every reservation — all at a private URL you can share.
               </p>
               <button
                 onClick={() => navigate({ to: "/templates" })}
                 className="mt-4 inline-block border-y border-ink/20 py-3 px-6 td-eyebrow text-ink transition-colors hover:border-seal hover:text-seal"
               >
-                Open a Template
+                Open a Dossier Template
               </button>
             </div>
           )}

@@ -112,7 +112,7 @@ export function StudioDrawer({
 
       <div className="border-b border-white/10 px-5 py-3 text-[11px] text-ink-soft">
         <label className="mb-1 block text-[9px] uppercase tracking-[0.35em] text-ink/40">
-          Template
+          Dossier Template
         </label>
         <select
           value={templateId}
