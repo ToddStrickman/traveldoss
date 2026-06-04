@@ -68,6 +68,16 @@ export type Block =
       // ── Culture / museum ─────────────────────────────────────────
       ticketRequirement?: string;  // "Pre-booked entry" / "Walk-in"
       tourDetails?: string;        // guided tour info
+      /**
+       * Parser/enricher confidence in the standardized fields for this
+       * place, on a 0–1 scale. Used by the review UI to surface a
+       * hoverable inspect prompt when below 0.85.
+       */
+      confidence?: number;
+      /** Source of enrichment for transparency in the inspect popover. */
+      enrichmentSource?: "model" | "google-places" | "manual";
+      /** Fields that were auto-filled by an enricher (not the user). */
+      enrichedFields?: string[];
     }
   | {
       kind: "flight";
