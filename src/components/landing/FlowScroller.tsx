@@ -14,7 +14,7 @@ const STEPS: Step[] = [
   {
     n: "01",
     kicker: "Pick a vessel",
-    title: "Choose a template.",
+    title: "Choose a dossier template.",
     body: "The cards on the right are your covers. Each one is a typographic mood — same engine inside, very different feeling on the page.",
     visual: "template",
   },
@@ -285,7 +285,7 @@ function Visual({ variant, index }: { variant: Step["visual"]; index: number }) 
       <motion.div {...base} className="relative h-full w-full">
         <Link
           to="/templates"
-          aria-label="Browse templates"
+          aria-label="Browse dossier templates"
           className="absolute inset-0 z-20 cursor-pointer rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-seal/60"
         />
         {[0, 1, 2].map((i) => (
@@ -302,7 +302,7 @@ function Visual({ variant, index }: { variant: Step["visual"]; index: number }) 
             className="surface-card absolute left-1/2 top-1/2 h-[70%] w-[60%] -translate-x-1/2 -translate-y-1/2 rounded-md border border-white/10 bg-paper/95 p-6 shadow-2xl"
             style={{ zIndex: 10 - i }}
           >
-            <div className="text-[9px] uppercase tracking-[0.4em] text-ink/40">Template</div>
+            <div className="text-[9px] uppercase tracking-[0.4em] text-ink/40">Dossier Template</div>
             <div
               className="mt-3 text-3xl text-ink"
               style={{ fontFamily: "var(--font-display)" }}

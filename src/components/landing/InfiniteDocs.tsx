@@ -45,7 +45,7 @@ function DocThumb({ skin }: { skin: SkinModule }) {
       <SkinMiniPreview skin={skin} />
       <div className="flex items-center justify-between px-5 pt-4">
         <span className="text-[8px] font-medium uppercase tracking-[0.4em] text-ink/35">
-          Template
+          Dossier Template
         </span>
         <span className="text-[8px] font-medium uppercase tracking-[0.4em] text-ink/35">
           $1 · 30d
@@ -76,13 +76,13 @@ export function InfiniteDocs({ onPickTemplate: _onPickTemplate }: { onPickTempla
   return (
     <aside
       className="fixed right-0 top-0 z-10 hidden h-dvh w-[320px] overflow-hidden border-l border-ink/10 md:block"
-      aria-label="Template previews"
+      aria-label="Dossier template previews"
     >
       <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-40 bg-gradient-to-b from-background via-background to-transparent" />
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-40 bg-gradient-to-t from-background via-background to-transparent" />
       <div className="absolute right-5 top-6 z-30 inline-flex items-center gap-3 text-[9px] font-medium uppercase tracking-[0.45em] text-ink/55">
         <span className="h-px w-6 bg-ink/30" />
-        The Templates
+        The Dossier Templates
       </div>
       <div
         className="td-marquee-track flex flex-col gap-4 px-5 py-24"
