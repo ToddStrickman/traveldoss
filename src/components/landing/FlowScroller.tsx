@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, useScroll, useTransform, useSpring } from "motion/react";
 import { Link } from "@tanstack/react-router";
+import { Parallax } from "@/components/motion/Tilt";
 
 type Step = {
   n: string;
@@ -187,9 +188,9 @@ function MobileFlow() {
             <p className="max-w-md text-[13px] leading-relaxed text-ink-soft">
               {step.body}
             </p>
-            <div className="relative mt-2 h-[42vh] w-full">
+            <Parallax depth={14} className="relative mt-2 h-[42vh] w-full">
               <Visual variant={step.visual} index={i} />
-            </div>
+            </Parallax>
           </div>
         ))}
       </div>

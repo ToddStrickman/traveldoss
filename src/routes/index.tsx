@@ -9,6 +9,7 @@ import { TopoBackground } from "@/components/landing/TopoBackground";
 import { TemplateGallery } from "@/components/flow/TemplateGallery";
 import { IngestionModal } from "@/components/flow/IngestionModal";
 import { GenerationLoader } from "@/components/GenerationLoader";
+import { Parallax } from "@/components/motion/Tilt";
 import { SKINS, type SkinModule } from "@/lib/skins/registry";
 import type { Block } from "@/lib/skins/types";
 import { createTripFromIngestion } from "@/lib/trips.functions";
@@ -137,8 +138,10 @@ function Landing() {
     <div className="relative min-h-dvh overflow-x-clip text-foreground selection:bg-seal/40">
       <TopoBackground />
       {/* Film grain + vignette */}
-      <div aria-hidden className="pointer-events-none fixed inset-0 z-0 opacity-[0.05] mix-blend-overlay"
-           style={{ backgroundImage: "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.6'/></svg>\")" }} />
+      <Parallax depth={28} className="pointer-events-none fixed inset-0 z-0">
+        <div aria-hidden className="absolute inset-0 opacity-[0.05] mix-blend-overlay"
+             style={{ backgroundImage: "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.6'/></svg>\")" }} />
+      </Parallax>
       <div aria-hidden className="pointer-events-none fixed inset-0 z-0"
            style={{ background: "radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.55) 100%)" }} />
 
@@ -146,6 +149,7 @@ function Landing() {
 
       {/* Center stage */}
       <main className="relative z-10 mx-auto flex min-h-[82dvh] max-w-[1400px] flex-col items-center justify-center px-6 py-10 text-center md:min-h-[76dvh] md:py-8 md:pl-32 md:pr-[340px]">
+        <Parallax depth={-6}>
         <motion.span
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -161,7 +165,9 @@ function Landing() {
             Itineraries suck.
           </span>
         </motion.span>
+        </Parallax>
 
+        <Parallax depth={-14}>
         <motion.h1
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -173,6 +179,7 @@ function Landing() {
           <br />
           <span className="italic text-ink/90">Doss<span className="text-seal">.</span></span>
         </motion.h1>
+        </Parallax>
 
         <motion.p
           initial={{ opacity: 0 }}
