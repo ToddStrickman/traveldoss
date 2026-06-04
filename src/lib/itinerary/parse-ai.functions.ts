@@ -387,6 +387,18 @@ async function fillFromGooglePlaces(
       place.hours = hit.regularOpeningHours.weekdayDescriptions.join("; ");
       changed = true;
     }
+    if (changed) {
+      // Hard facts from Google Places — treat as high-confidence and
+      // record provenance so the review UI can show what was enriched.
+      place.enrichmentSource = "google-places";
+      const fields = new Set(place.enrichedFields ?? []);
+      if (hit.formattedAddress) fields.add("address");
+      if (hit.internationalPhoneNumber) fields.add("phone");
+      if (hit.websiteUri) fields.add("website");
+      if (hit.regularOpeningHours?.weekdayDescriptions?.length) fields.add("hours");
+      place.enrichedFields = Array.from(fields);
+      place.confidence = Math.max(place.confidence ?? 0, 0.95);
+    }
     return changed;
   } catch {
     return false;
