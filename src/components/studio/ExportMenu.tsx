@@ -32,18 +32,54 @@ export function ExportMenu({
   }
   async function addToCalendar() {
     if (!trip || !blocks) {
-      toast.error("Nothing to export yet");
+      toast.error("Nothing to export yet", {
+        description: "Open a trip with at least one flight or hotel block first.",
+      });
       return;
     }
-    const { data } = await supabase.auth.getUser();
-    if (!data.user) {
+
+    // 1. Verify the viewer is signed in. getUser() re-validates with the auth server,
+    //    so a stale or revoked session surfaces here instead of silently failing later.
+    let user;
+    try {
+      const { data, error } = await supabase.auth.getUser();
+      if (error) throw error;
+      user = data.user;
+    } catch (err) {
+      console.error("[calendar-export] auth check failed", err);
+      toast.error("Couldn't verify your sign-in", {
+        description:
+          err instanceof Error
+            ? `${err.message}. Try signing in again.`
+            : "Please sign in again and retry.",
+      });
+      navigate({ to: "/login", search: { redirect: location.pathname } });
+      return;
+    }
+    if (!user) {
       toast.message("Sign in to add to your calendar", {
         description: "We'll bring you right back here.",
       });
       navigate({ to: "/login", search: { redirect: location.pathname } });
       return;
     }
-    const result = buildItineraryIcs(trip, blocks);
+
+    // 2. Build the .ics. Any parsing/serialization failure should land as a
+    //    readable message — not a console-only crash.
+    let result;
+    try {
+      result = buildItineraryIcs(trip, blocks);
+    } catch (err) {
+      console.error("[calendar-export] build failed", err);
+      toast.error("Couldn't generate the calendar file", {
+        description:
+          err instanceof Error
+            ? err.message
+            : "Something went wrong while reading your itinerary. Try again, or check that flight times and stay dates are filled in.",
+      });
+      return;
+    }
+
     if (result.count === 0) {
       toast.message("No flights or hotel stays to export", {
         description:
@@ -51,7 +87,20 @@ export function ExportMenu({
       });
       return;
     }
-    downloadIcs(result);
+
+    // 3. Trigger the download. Blob creation or the synthetic click can fail
+    //    in locked-down browsers / private modes — catch and surface that too.
+    try {
+      downloadIcs(result);
+    } catch (err) {
+      console.error("[calendar-export] download failed", err);
+      toast.error("Couldn't download the calendar file", {
+        description:
+          "Your browser blocked the download. Check pop-up / download permissions for this site and try again.",
+      });
+      return;
+    }
+
     const parts: string[] = [];
     if (result.breakdown.flights)
       parts.push(`${result.breakdown.flights} flight${result.breakdown.flights === 1 ? "" : "s"}`);
