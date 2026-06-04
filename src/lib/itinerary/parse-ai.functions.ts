@@ -211,6 +211,9 @@ export const parseItineraryAi = createServerFn({ method: "POST" })
       );
     }
 
+    // Strip emojis BEFORE the model sees them. Cheaper tokens; no echo risk.
+    const cleanText = stripEmoji(data.text);
+
     const { createLovableAiGatewayProvider } = await import("@/lib/ai-gateway.server");
     const gateway = createLovableAiGatewayProvider(key);
 
@@ -223,7 +226,7 @@ export const parseItineraryAi = createServerFn({ method: "POST" })
         const result = await generateText({
           model: gateway("google/gemini-2.5-flash"),
           system: SYSTEM_PROMPT,
-          prompt: `Source type: ${data.source}\n\n---\n${data.text}\n---\n\nReturn the structured itinerary now.`,
+          prompt: `Source type: ${data.source}\n\n---\n${cleanText}\n---\n\nReturn the structured itinerary now.`,
           experimental_output: Output.object({ schema: BlockSchema }),
         });
         parsed = result.experimental_output;
