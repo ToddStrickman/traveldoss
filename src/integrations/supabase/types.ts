@@ -198,6 +198,48 @@ export type Database = {
         }
         Relationships: []
       }
+      trip_doc_previews: {
+        Row: {
+          created_at: string
+          google_doc_id: string
+          google_doc_url: string
+          id: string
+          preview_html: string | null
+          source: string
+          source_message_id: string | null
+          status: string
+          trip_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          google_doc_id: string
+          google_doc_url: string
+          id?: string
+          preview_html?: string | null
+          source: string
+          source_message_id?: string | null
+          status?: string
+          trip_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          google_doc_id?: string
+          google_doc_url?: string
+          id?: string
+          preview_html?: string | null
+          source?: string
+          source_message_id?: string | null
+          status?: string
+          trip_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       trip_entitlements: {
         Row: {
           amount_cents: number
