@@ -179,6 +179,18 @@ export const parseItineraryAi = createServerFn({ method: "POST" })
       .map((b) => toBlock(b))
       .filter((b): b is Block => b !== null);
 
+    // ── Web-search enrichment fallback ────────────────────────────────
+    // For any place the model returned without address/phone/website,
+    // hit Google Places (Text Search v1) to fill them in. Then run a
+    // single batched Gemini call to write a <15-word editorial note
+    // for every freshly enriched place that still lacks one.
+    await enrichPlacesViaWebSearch(blocks, parsed.destination ?? null, gateway).catch(
+      (err) => {
+        // Enrichment must never break parsing — log and move on.
+        console.error("[parse-ai] enrichment fallback failed:", err);
+      },
+    );
+
     return {
       destination: parsed.destination ?? null,
       blocks,
