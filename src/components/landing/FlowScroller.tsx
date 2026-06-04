@@ -82,7 +82,7 @@ function DesktopFlow() {
     >
       <div className="sticky top-0 h-dvh overflow-hidden">
         {/* Section label */}
-        <div className="pointer-events-none absolute left-32 right-[340px] top-8 z-20 flex items-center justify-between text-[10px] font-medium uppercase tracking-[0.4em] text-ink/45">
+        <div className="pointer-events-none absolute left-8 right-8 top-6 z-20 flex items-center justify-between text-[10px] font-medium uppercase tracking-[0.4em] text-ink/45 md:left-12 md:right-12 lg:left-20 lg:right-[280px] xl:left-32 xl:right-[340px] xl:top-8">
           <span className="inline-flex items-center gap-3">
             <span className="h-px w-8 bg-ink/25" />
             The Flow
@@ -94,7 +94,7 @@ function DesktopFlow() {
         </div>
 
         {/* Horizontal track clipped strictly to the rail-safe area */}
-        <div className="absolute inset-y-0 left-32 right-[340px] overflow-hidden pt-16 pb-16">
+        <div className="absolute inset-y-0 left-8 right-8 overflow-hidden pt-14 pb-16 md:left-12 md:right-12 md:pt-14 md:pb-16 lg:left-20 lg:right-[280px] lg:pt-16 xl:left-32 xl:right-[340px]">
           <motion.div
             style={{ x, width: `${STEPS.length * 100}%` }}
             className="flex h-full"
@@ -106,7 +106,7 @@ function DesktopFlow() {
         </div>
 
         {/* Bottom progress + counter */}
-        <div className="pointer-events-none absolute bottom-8 left-32 right-[340px] z-20">
+        <div className="pointer-events-none absolute bottom-6 left-8 right-8 z-20 md:left-12 md:right-12 lg:left-20 lg:right-[280px] xl:bottom-8 xl:left-32 xl:right-[340px]">
           <div className="mb-3 flex items-center justify-between text-[10px] font-medium uppercase tracking-[0.4em] text-ink/45">
             <Counter scrollYProgress={scrollYProgress} total={STEPS.length} />
             <span>Your itinerary, unfolding.</span>
@@ -156,7 +156,7 @@ function MobileFlow() {
       className="relative z-10 block md:hidden"
       aria-label="How TravelDoss works"
     >
-      <div className="flex items-center justify-between px-6 pb-5 pt-12 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/45">
+      <div className="flex items-center justify-between px-6 pb-6 pt-10 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/45">
         <span className="inline-flex items-center gap-3">
           <span className="h-px w-6 bg-ink/25" />
           The Flow
@@ -166,12 +166,12 @@ function MobileFlow() {
 
       <div
         ref={scrollerRef}
-        className="flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain scroll-smooth pb-6 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain scroll-smooth pb-8 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {STEPS.map((step, i) => (
           <div
             key={step.n}
-            className="flex w-screen shrink-0 snap-center snap-always flex-col gap-6 px-6"
+            className="flex w-screen shrink-0 snap-center snap-always flex-col gap-5 px-6"
           >
             <div className="flex items-center gap-3 text-[10px] font-medium uppercase tracking-[0.45em] text-ink/45">
               <span className="text-seal">{step.n}</span>
@@ -187,7 +187,7 @@ function MobileFlow() {
             <p className="max-w-md text-[13px] leading-relaxed text-ink-soft">
               {step.body}
             </p>
-            <div className="relative mt-2 h-[44vh] w-full">
+            <div className="relative mt-2 h-[42vh] w-full">
               <Visual variant={step.visual} index={i} />
             </div>
           </div>
@@ -195,7 +195,7 @@ function MobileFlow() {
       </div>
 
       {/* Dots */}
-      <div className="flex items-center justify-center gap-2 pb-4">
+      <div className="flex items-center justify-center gap-2 pb-6">
         {STEPS.map((s, i) => (
           <button
             key={s.n}
@@ -209,7 +209,7 @@ function MobileFlow() {
         ))}
       </div>
 
-      <div className="flex items-center justify-between px-6 pb-10 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/45">
+      <div className="flex items-center justify-between px-6 pb-12 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/45">
         <span className="inline-flex items-center gap-2">
           <span className="text-seal">{String(active + 1).padStart(2, "0")}</span>
           <span className="text-ink/30">/ {String(STEPS.length).padStart(2, "0")}</span>
@@ -241,19 +241,19 @@ function Counter({
 function Panel({ step, index, total }: { step: Step; index: number; total: number }) {
   return (
     <div
-      className="flex h-full shrink-0 items-center justify-center px-6 md:px-8"
+      className="flex h-full shrink-0 items-center justify-center px-6 md:px-6 lg:px-8"
       style={{ width: `${100 / total}%` }}
     >
-      <div className="grid h-full w-full max-w-6xl grid-cols-1 items-center gap-10 md:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] md:gap-12">
+      <div className="grid h-full w-full max-w-6xl grid-cols-1 items-center gap-8 md:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] md:gap-10 lg:gap-12">
         {/* Copy */}
-        <div className="space-y-6">
+        <div className="space-y-5 md:space-y-6">
           <div className="flex items-center gap-4 text-[10px] font-medium uppercase tracking-[0.45em] text-ink/45">
             <span className="text-seal">{step.n}</span>
             <span className="h-px w-10 bg-ink/20" />
             <span>{step.kicker}</span>
           </div>
           <h2
-            className="text-[10vw] font-normal leading-[0.95] tracking-[-0.02em] text-ink md:text-[4.5vw]"
+            className="text-[10vw] font-normal leading-[0.95] tracking-[-0.02em] text-ink md:text-[5vw] lg:text-[4.5vw]"
             style={{ fontFamily: "var(--font-display)" }}
           >
             {step.title}
@@ -264,7 +264,7 @@ function Panel({ step, index, total }: { step: Step; index: number; total: numbe
         </div>
 
         {/* Visual */}
-        <div className="relative flex h-full min-h-[440px] items-center justify-center">
+        <div className="relative flex h-full min-h-[360px] items-center justify-center md:min-h-[400px] lg:min-h-[440px]">
           <Visual variant={step.visual} index={index} />
         </div>
       </div>
