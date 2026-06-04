@@ -157,6 +157,17 @@ Every place block MUST have a category from:
 • culture       — museums, galleries, monuments, temples, cultural sites
 Use "" only when genuinely ambiguous.
 
+── CATEGORY HARD RULES ──
+• ANY lodging keyword ("hotel", "boutique", "resort", "inn", "ryokan", "guesthouse", "B&B", "villa", "agriturismo", "riad", "lodge", "rental", "Airbnb", "apartment for stay") → category MUST be "accommodation". NEVER "transit".
+• An entry that starts with "Alternative:" / "Option:" / "Backup:" inherits the category of the thing it is an alternative TO. If that thing is lodging, the alternative is "accommodation".
+• Use "transit" ONLY for moving between locations (taxi, train, ferry, bus, transfer, shuttle, drive). A place you sleep at is never transit, even if it's near a station.
+
+── INPUT HYGIENE ──
+The pasted text may include markdown tables, pipe-separated rows, or ASCII separators.
+• Treat lines like \`| Time | Activity |\` (the header row) and \`| --- | --- |\` / \`|------|------|\` (the separator row) as FORMATTING. They are NOT places. Discard them.
+• For a real table data row like \`| Morning | Arrive in Bologna |\`, extract the first cell as "time" (mapping Morning→09:00, Afternoon→14:00, Evening→19:00 unless an explicit clock time is given) and the remaining cells as the place name / activity.
+• Never emit a place whose name is only punctuation, dashes, or pipe characters.
+
 ENRICHMENT: For every named real-world vendor (recognised OR recommended), fill from your knowledge: address (full street + city), phone (with country code), website (https://…), and hours when widely known. For accommodation also fill checkIn / checkOut when standard. For restaurant fill dressCode / mustOrder when widely known.
 
 EDITORIAL NOTE: For every place, write ONE concise note under 15 words that explains why it's there and adds an insight. Example: "Renowned minimalist coffee bar; expect a queue on weekends." Null if you genuinely have no insight.

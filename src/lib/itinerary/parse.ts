@@ -15,8 +15,101 @@ function titleCase(s: string): string {
   return s.length ? s[0].toUpperCase() + s.slice(1) : s;
 }
 
+/**
+ * Detect markdown / pipe-table separator rows like `|----|----|`,
+ * `| :--- | ---: |`, or pure dash dividers. These are pure formatting
+ * and must never become "place" blocks.
+ */
+function isTableSeparatorRow(s: string): boolean {
+  const t = s.trim();
+  if (!t) return true;
+  // Strip pipes and whitespace; if what remains is only dashes/colons, it's a separator.
+  const stripped = t.replace(/[|\s]/g, "");
+  if (!stripped) return true;
+  return /^[-:]+$/.test(stripped);
+}
+
+/**
+ * Map common day-period words to a representative clock time. Used when a
+ * pasted table row carries a vague time-like first column (Morning, Evening…).
+ */
+const PERIOD_TIMES: Record<string, string> = {
+  morning: "09:00",
+  midmorning: "10:30",
+  "mid morning": "10:30",
+  noon: "12:00",
+  midday: "12:00",
+  afternoon: "14:00",
+  "late afternoon": "17:00",
+  evening: "19:00",
+  night: "21:00",
+  "late night": "22:30",
+  "early morning": "07:30",
+};
+
+function looksLikeTime(s: string): boolean {
+  const t = s.trim().toLowerCase();
+  if (!t) return false;
+  if (/^\d{1,2}[:.]\d{2}(\s*(am|pm))?$/i.test(t)) return true;
+  if (/^\d{1,2}\s*(am|pm)$/i.test(t)) return true;
+  return Object.prototype.hasOwnProperty.call(PERIOD_TIMES, t);
+}
+
+function normalizeTime(s: string): string {
+  const t = s.trim().toLowerCase();
+  if (PERIOD_TIMES[t]) return PERIOD_TIMES[t];
+  return s.trim();
+}
+
+type TableRow = { time?: string; activity: string };
+
+/** Parse one `| a | b | c |` row into cells, dropping empty edges. */
+function splitPipeRow(line: string): string[] {
+  const trimmed = line.trim().replace(/^\||\|$/g, "");
+  return trimmed.split("|").map((c) => c.trim());
+}
+
+/**
+ * Walk the raw text once. Drop separator rows, flatten markdown-table rows
+ * into "<time> — <activity>" lines, and pass everything else through. This
+ * runs BEFORE the Day-N splitter so downstream logic stays simple.
+ */
+function preprocessMarkdownTables(text: string): string {
+  const lines = text.split(/\r?\n/);
+  const out: string[] = [];
+  for (const line of lines) {
+    const isPipeRow = /^\s*\|.*\|\s*$/.test(line) || /^\s*\|/.test(line);
+    if (!isPipeRow) {
+      out.push(line);
+      continue;
+    }
+    if (isTableSeparatorRow(line)) continue; // drop |---|---|
+    const cells = splitPipeRow(line).filter(Boolean);
+    if (cells.length === 0) continue;
+    // Skip header rows like "Time | Activity" / "Day | Plan".
+    const isHeader =
+      cells.length >= 2 &&
+      cells.every((c) => /^[A-Za-z][A-Za-z\s/&-]{0,24}$/.test(c)) &&
+      /^(time|when|day|hour|slot|period|schedule|activity|plan|where|location|notes?|details?)$/i.test(
+        cells[0],
+      );
+    if (isHeader) continue;
+    let time: string | undefined;
+    let rest = cells;
+    if (cells.length >= 2 && looksLikeTime(cells[0])) {
+      time = normalizeTime(cells[0]);
+      rest = cells.slice(1);
+    }
+    const activity = rest.join(" — ").replace(/\s+—\s+$/g, "").trim();
+    if (!activity) continue;
+    out.push(time ? `${time} — ${activity}` : activity);
+  }
+  return out.join("\n");
+}
+
 export function parseDropIn(text: string, _source: IngestSource = "text"): Block[] {
-  const segments = text.split(/(?=\bday\s*\d+\b)/i).map((s) => s.trim()).filter(Boolean);
+  const cleaned = preprocessMarkdownTables(text);
+  const segments = cleaned.split(/(?=\bday\s*\d+\b)/i).map((s) => s.trim()).filter(Boolean);
   const blocks: Block[] = [];
   for (const seg of segments) {
     const m = seg.match(/^day\s*(\d+)\s*[:.\-—]?\s*([\s\S]*)$/i);
@@ -30,7 +123,7 @@ export function parseDropIn(text: string, _source: IngestSource = "text"): Block
     const clauses = rest
       .split(/[.;\n]+|,(?=\s)/)
       .map((c) => c.replace(/^[-*•]\s*/, "").trim())
-      .filter((c) => c.length > 1);
+      .filter((c) => c.length > 1 && !isTableSeparatorRow(c));
     // First clause becomes the day label if it reads like a title; otherwise generic.
     const label = clauses.length && clauses[0].length <= 48 ? titleCase(clauses[0]) : `Day ${n}`;
     const stops = label === `Day ${n}` ? clauses : clauses.slice(1);
@@ -44,7 +137,8 @@ export function parseDropIn(text: string, _source: IngestSource = "text"): Block
 
 function guessCategory(s: string): "stay" | "eat" | "see" | "do" | "drink" | "other" {
   const t = s.toLowerCase();
-  if (/(hotel|hostel|airbnb|check.?in|stay|inn|resort)/.test(t)) return "stay";
+  if (/(hotel|hostel|airbnb|check.?in|inn|resort|boutique|ryokan|guesthouse|guest house|b&b|bnb|villa|agriturismo|lodge|riad)/.test(t)) return "stay";
+  if (/\bstay\b/.test(t)) return "stay";
   if (/(breakfast|lunch|dinner|eat|restaurant|cafe|café|food|tasting)/.test(t)) return "eat";
   if (/(drink|bar|wine|cocktail|aperiti|coffee)/.test(t)) return "drink";
   if (/(museum|gallery|see|view|temple|church|park|beach|tour|visit)/.test(t)) return "see";
