@@ -146,7 +146,7 @@ Set the place block's "time" field with reasonable clock times (e.g. "09:00", "1
 Emit exactly one block per distinct user-stated item. DO NOT invent activities, meals, or stays that aren't in the input. Three sequential items in the source ("aperitivo at X", "farewell dinner at Y", "nightcap at Z") MUST become three separate place blocks — never merge or summarize. If the user only listed one meal for a day, emit one meal block; do not add a "recommended lunch". Enrichment (address/phone/website/note) is fine; invention of new stops is NOT. Missing day numbers → reconstruct chronology. Missing transportation → emit a transit block when the user implied a transfer, otherwise leave it out.
 
 ── PRESERVED MARKERS ──
-If a clause is flagged "must see" / "don't miss" / "highlight" / "★", preserve the cue at the start of the place's `note` (e.g. "Must see — …"). Never silently drop these flags.
+If a clause is flagged "must see" / "don't miss" / "highlight" / "star", preserve the cue at the start of the place's note (e.g. "Must see — …"). Never silently drop these flags.
 
 ── SHADOW / PLAN-B ITEMS ──
 Lines prefixed with "Alternative:", "Option:", "Backup:", "Plan B:" — or otherwise described as a backup to another entry — MUST be emitted with tier "shadow". They keep the day context of the entry they back up. Everything else uses tier "primary" (or null).
