@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { ArrowLeft, Search, X } from "lucide-react";
 import { SKINS, type SkinModule } from "@/lib/skins/registry";
@@ -70,6 +70,9 @@ function TemplatesSkeleton() {
 export const Route = createFileRoute("/templates")({
   component: TemplatesPage,
   pendingComponent: TemplatesSkeleton,
+  validateSearch: (search: Record<string, unknown>) => ({
+    pick: typeof search.pick === "string" ? (search.pick as string) : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Dossier Templates — TravelDoss" },
@@ -208,6 +211,7 @@ function TemplatesPage() {
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const pickFn = useServerFn(pickTemplate);
   const navigate = useNavigate();
+  const { pick: pickParam } = Route.useSearch();
 
   const allTags = useMemo(
     () => Array.from(new Set(SKINS.flatMap((s) => s.meta.tags))).sort(),
@@ -236,6 +240,17 @@ function TemplatesPage() {
       mounted = false;
     };
   }, []);
+
+  // Auto-trigger pick when arriving with ?pick=<id> (e.g. from the homepage rail).
+  const autoPickedRef = useRef(false);
+  useEffect(() => {
+    if (autoPickedRef.current) return;
+    if (!pickParam || authed === null) return;
+    if (!SKINS.some((s) => s.meta.id === pickParam)) return;
+    autoPickedRef.current = true;
+    handlePick(pickParam);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pickParam, authed]);
 
   // Restore + persist scroll position across navigations
   useEffect(() => {
