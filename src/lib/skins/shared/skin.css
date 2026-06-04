@@ -750,3 +750,136 @@
   .tds-edit { background: transparent !important; box-shadow: none !important; }
   .tds-edit-empty::before { content: ""; }
 }
+
+/* =============================================================
+   DAY DATE — placeholder shown when no calendar date is set.
+   ============================================================= */
+.tds-day-date {
+  font-size: var(--tds-fs-meta);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--tds-inkSoft);
+  margin-top: 4px;
+}
+.tds-day-date[data-placeholder="true"] {
+  color: color-mix(in oklab, var(--tds-inkSoft) 60%, transparent);
+  font-style: italic;
+}
+
+/* =============================================================
+   SLOT CAROUSEL — horizontal alternatives within one part-of-day.
+   Lives inside .tds-part on the vertical view. Cards snap-scroll
+   on touch + desktop; arrow keys / scrollbar both work.
+   ============================================================= */
+.tds-slot-carousel { margin-top: 6px; }
+.tds-slot-carousel-meta {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 6px; padding: 0 2px;
+  font-size: var(--tds-fs-meta);
+  color: var(--tds-inkSoft);
+}
+.tds-slot-carousel-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border: 1px solid var(--tds-rule);
+  border-radius: 999px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--tds-accent);
+  background: var(--tds-pop);
+}
+.tds-slot-carousel-hint { letter-spacing: .08em; text-transform: uppercase; }
+.tds-slot-carousel-track {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(min(420px, 90%), 1fr);
+  gap: 14px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  padding: 4px 2px 14px;
+  scrollbar-width: thin;
+}
+.tds-slot-carousel-track > * {
+  scroll-snap-align: start;
+  min-width: 0;
+}
+
+/* =============================================================
+   PLAN-B CUE — small anchor link in the day header.
+   ============================================================= */
+.tds-planb-cue {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: var(--tds-fs-meta);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--tds-accent);
+  text-decoration: none;
+  border-bottom: 1px dashed currentColor;
+  padding-bottom: 1px;
+}
+.tds-planb-cue:hover { opacity: .8; }
+
+/* =============================================================
+   SHADOW ITINERARY — bottom rail of backups in every skin.
+   ============================================================= */
+.tds-shadow {
+  margin-top: var(--tds-s5);
+  padding: var(--tds-s4) 0 var(--tds-s3);
+  border-top: 1px solid var(--tds-rule);
+}
+.tds-shadow-head { margin-bottom: var(--tds-s3); }
+.tds-shadow-eyebrow {
+  display: inline-block;
+  font-size: var(--tds-fs-meta);
+  letter-spacing: .35em;
+  text-transform: uppercase;
+  color: var(--tds-accent);
+  margin-bottom: 6px;
+}
+.tds-shadow-title {
+  font-family: var(--tds-fontDisplay);
+  font-size: var(--tds-fs-h2);
+  line-height: 1.05;
+  margin: 0;
+  color: var(--tds-ink);
+}
+.tds-shadow-dek {
+  margin: 6px 0 0;
+  color: var(--tds-inkSoft);
+  font-size: var(--tds-fs-body);
+  max-width: var(--tds-measure);
+}
+.tds-shadow-grid {
+  display: grid;
+  gap: var(--tds-s3);
+}
+.tds-shadow-day {
+  border: 1px dashed var(--tds-rule);
+  padding: var(--tds-s2) var(--tds-s3);
+  background: color-mix(in oklab, var(--tds-card) 70%, transparent);
+}
+.tds-shadow-day-head {
+  display: flex; align-items: baseline; gap: 10px;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--tds-rule);
+}
+.tds-shadow-day-no {
+  font-family: var(--tds-fontDisplay);
+  font-size: var(--tds-fs-h3);
+  color: var(--tds-accent);
+  letter-spacing: .04em;
+}
+.tds-shadow-day-label {
+  font-size: var(--tds-fs-meta);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--tds-inkSoft);
+}
+.tds-shadow-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
