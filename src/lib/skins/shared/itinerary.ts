@@ -1,4 +1,5 @@
 import type { Block } from "../types";
+import { bucketFor } from "@/lib/itinerary/slots";
 
 /** A grouped, structured view over the flat Block[] used by all three views.
  *  - Flights are pulled out of the stream into outbound/inbound.
@@ -19,6 +20,8 @@ export type ItineraryDay = {
   evening: { activity: ActivityBlock; index: number }[];
   /** Activities not assigned to a part-of-day section. */
   unassigned: { activity: ActivityBlock; index: number }[];
+  /** Plan-B / Alternative blocks for this day, rendered in the Shadow rail. */
+  shadows: { activity: ActivityBlock; index: number }[];
 };
 
 export type Itinerary = {
@@ -28,6 +31,8 @@ export type Itinerary = {
   days: ItineraryDay[];
   /** Non-place/day blocks (paragraph, quote, note, plain section) in order. */
   extras: { block: Block; index: number }[];
+  /** True when any day has at least one shadow block. Used by views to render the bottom rail. */
+  hasShadows: boolean;
 };
 
 export function buildItinerary(blocks: Block[]): Itinerary {
@@ -53,6 +58,7 @@ export function buildItinerary(blocks: Block[]): Itinerary {
         afternoon: [],
         evening: [],
         unassigned: [],
+        shadows: [],
       };
       currentPart = null;
       days.push(currentDay);
@@ -74,17 +80,28 @@ export function buildItinerary(blocks: Block[]): Itinerary {
         return;
       }
       const entry = { activity: block, index };
+      // Shadow items go to a dedicated rail; never count toward the day's
+      // primary buckets so the morning/afternoon/evening rails stay clean.
+      if (block.tier === "shadow") {
+        currentDay.shadows.push(entry);
+        return;
+      }
       if (currentPart === "morning") currentDay.morning.push(entry);
       else if (currentPart === "afternoon") currentDay.afternoon.push(entry);
       else if (currentPart === "evening") currentDay.evening.push(entry);
-      else currentDay.unassigned.push(entry);
+      else {
+        // No explicit section header — bucket by the block's own time/hint.
+        const slot = bucketFor(block.time, block.name);
+        currentDay[slot].push(entry);
+      }
       return;
     }
     // paragraph, quote, note, hero
     if (block.kind !== "hero") extras.push({ block, index });
   });
 
-  return { flights, preface, days, extras };
+  const hasShadows = days.some((d) => d.shadows.length > 0);
+  return { flights, preface, days, extras, hasShadows };
 }
 
 export const PART_LABEL: Record<PartOfDay, string> = {
