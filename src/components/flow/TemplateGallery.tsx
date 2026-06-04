@@ -1,5 +1,6 @@
 import { motion } from "motion/react";
 import { SKINS, type SkinModule } from "@/lib/skins/registry";
+import { TiltCard } from "@/components/motion/Tilt";
 
 export function TemplateGallery({ onPick }: { onPick: (skin: SkinModule) => void }) {
   return (
@@ -15,14 +16,18 @@ export function TemplateGallery({ onPick }: { onPick: (skin: SkinModule) => void
       </div>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         {SKINS.map((skin, i) => (
-          <motion.button
+          <motion.div
             key={skin.meta.id}
-            onClick={() => onPick(skin)}
             initial={{ opacity: 0, y: 12 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-80px" }}
             transition={{ duration: 0.6, delay: i * 0.05, ease: [0.22, 1, 0.36, 1] }}
-            className="surface-card group relative flex flex-col overflow-hidden rounded-lg text-left transition-elegant hover:-translate-y-1 hover:ring-1 hover:ring-seal/60"
+          >
+          <TiltCard intensity={6} className="block">
+          <button
+            type="button"
+            onClick={() => onPick(skin)}
+            className="surface-card group relative flex w-full flex-col overflow-hidden rounded-lg text-left transition-elegant hover:-translate-y-1 hover:ring-1 hover:ring-seal/60"
           >
             <div
               className="absolute left-0 top-0 h-full w-px"
@@ -67,7 +72,9 @@ export function TemplateGallery({ onPick }: { onPick: (skin: SkinModule) => void
                 <span className="text-seal/70 transition-elegant group-hover:text-seal">→</span>
               </div>
             </div>
-          </motion.button>
+          </button>
+          </TiltCard>
+          </motion.div>
         ))}
       </div>
     </section>
