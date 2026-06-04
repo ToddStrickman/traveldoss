@@ -435,7 +435,7 @@ function TemplatesPage() {
 
           {/* Result count */}
           <p className="text-[10px] uppercase tracking-[0.4em] text-ink/40">
-            {filteredSkins.length} template{filteredSkins.length !== 1 ? "s" : ""}
+            {filteredSkins.length} dossier template{filteredSkins.length !== 1 ? "s" : ""}
             {activeTag ? ` · ${activeTag}` : ""}
             {query ? ` · “${query.trim()}”` : ""}
           </p>
@@ -453,7 +453,7 @@ function TemplatesPage() {
           {filteredSkins.length === 0 && (
             <div className="col-span-full py-20 text-center">
               <p className="text-sm text-ink-soft">
-                No templates match your search.
+                No dossier templates match your search.
               </p>
               <button
                 onClick={() => {

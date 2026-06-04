@@ -7,7 +7,7 @@ export function TemplateGallery({ onPick }: { onPick: (skin: SkinModule) => void
       <div className="mb-10 flex items-baseline justify-between">
         <div className="flex items-center gap-3 text-[10px] font-medium uppercase tracking-[0.45em] text-ink/55">
           <span className="h-px w-8 bg-ink/30" />
-          The Templates
+          The Dossier Templates
         </div>
         <p className="hidden text-[11px] uppercase tracking-[0.3em] text-ink/40 md:block">
           Begin your journey
@@ -48,7 +48,7 @@ export function TemplateGallery({ onPick }: { onPick: (skin: SkinModule) => void
             </div>
             <div className="flex flex-1 flex-col gap-2 p-5">
               <span className="text-[9px] font-medium uppercase tracking-[0.4em] text-ink/35">
-                Template
+                Dossier Template
               </span>
               <h3
                 className="text-2xl font-normal tracking-tight text-ink"
@@ -63,7 +63,7 @@ export function TemplateGallery({ onPick }: { onPick: (skin: SkinModule) => void
                 "{skin.meta.personality}"
               </p>
               <div className="mt-3 flex items-center justify-between border-t border-white/10 pt-3 text-[10px] uppercase tracking-[0.35em] text-ink/40">
-                <span>Use this template</span>
+                <span>Use this dossier template</span>
                 <span className="text-seal/70 transition-elegant group-hover:text-seal">→</span>
               </div>
             </div>
