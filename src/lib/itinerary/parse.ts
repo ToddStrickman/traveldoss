@@ -16,6 +16,31 @@ function titleCase(s: string): string {
 }
 
 /**
+ * Strip emoji + pictograph runs from pasted text. ChatGPT / Claude love
+ * to sprinkle 🌅 / 🍽️ / ✈️ into itineraries; those characters confuse
+ * downstream rendering, day-pickers and category guessing, and never
+ * survive into a TravelDoss template. We drop them entirely (the
+ * template's icon system replaces the intent with a category glyph).
+ *
+ * Removes: Extended_Pictographic runs, regional-indicator pairs (flags),
+ * variation selectors (FE0E/FE0F), zero-width joiners. Then trims any
+ * orphan punctuation that the emoji was leaning on.
+ */
+export function stripEmoji(s: string): string {
+  if (!s) return s;
+  let out = s
+    // Emoji + pictographs (covers Misc Symbols, Dingbats, Symbols & Pictographs, etc.)
+    .replace(/\p{Extended_Pictographic}/gu, "")
+    // Regional indicators (flag halves)
+    .replace(/[\u{1F1E6}-\u{1F1FF}]/gu, "")
+    // Variation selectors + zero-width joiner
+    .replace(/[\uFE0E\uFE0F\u200D]/g, "");
+  // Collapse whitespace and trim leading punctuation/dashes left behind.
+  out = out.replace(/[ \t]{2,}/g, " ").replace(/^[\s\-–—•:|]+/gm, "");
+  return out;
+}
+
+/**
  * Detect markdown / pipe-table separator rows like `|----|----|`,
  * `| :--- | ---: |`, or pure dash dividers. These are pure formatting
  * and must never become "place" blocks.
@@ -41,10 +66,12 @@ const PERIOD_TIMES: Record<string, string> = {
   midday: "12:00",
   afternoon: "14:00",
   "late afternoon": "17:00",
+  "late-afternoon": "17:00",
   evening: "19:00",
   night: "21:00",
   "late night": "22:30",
   "early morning": "07:30",
+  "early evening": "18:00",
 };
 
 function looksLikeTime(s: string): boolean {
@@ -75,7 +102,8 @@ function splitPipeRow(line: string): string[] {
  * runs BEFORE the Day-N splitter so downstream logic stays simple.
  */
 function preprocessMarkdownTables(text: string): string {
-  const lines = text.split(/\r?\n/);
+  // Strip emojis up front so they can't leak into row cells or names.
+  const lines = stripEmoji(text).split(/\r?\n/);
   const out: string[] = [];
   for (const line of lines) {
     const isPipeRow = /^\s*\|.*\|\s*$/.test(line) || /^\s*\|/.test(line);
