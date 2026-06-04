@@ -14,6 +14,8 @@ import { getTemporalPhase, phaseCopy } from "@/lib/itinerary/temporal";
 import { EditingProvider, arrayMove } from "@/lib/skins/shared/Editable";
 import { moveActivity } from "@/lib/skins/shared/itinerary";
 import { IngestionModal } from "@/components/flow/IngestionModal";
+import { GmailImportPanel } from "@/components/flow/GmailImportPanel";
+import { TripDocPreviews } from "@/components/flow/TripDocPreviews";
 import { toast } from "sonner";
 import { useHistory, useUndoRedoShortcuts } from "@/hooks/use-history";
 
@@ -295,6 +297,10 @@ function DossierPage() {
         </div>
       )}
       <skin.Render trip={view} blocks={blocks} view={layout} />
+      <div className="mx-auto max-w-3xl px-6 pb-24" data-print="hide">
+        <TripDocPreviews tripId={trip.id} />
+        {canEdit && <GmailImportPanel tripId={trip.id} />}
+      </div>
       <Link
         to="/"
         data-print="hide"
