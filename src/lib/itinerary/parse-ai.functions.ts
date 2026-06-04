@@ -210,10 +210,12 @@ function toBlock(raw: RawBlock): Block | null {
       });
     case "place":
       if (!raw.name) return null;
+      const category =
+        raw.category && (raw.category as string) !== "" ? raw.category : undefined;
       return clean({
         kind: "place" as const,
         name: raw.name,
-        category: raw.category && raw.category !== "" ? raw.category : undefined,
+        category,
         address: raw.address ?? undefined,
         phone: raw.phone ?? undefined,
         website: raw.website ?? undefined,
