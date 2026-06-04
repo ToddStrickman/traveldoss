@@ -51,7 +51,18 @@ const MOCK_EMAILS = [
 const MOCK_DOC_ID = "doc_e2e_abc123";
 const MOCK_DOC_URL = `https://docs.google.com/document/d/${MOCK_DOC_ID}/edit`;
 
-async function installConnectorMocks(page: Page) {
+type GatewayCounters = {
+  docsCreate: number;
+  docsBatchUpdate: number;
+  gmailGetByMessageId: Record<string, number>;
+};
+
+async function installConnectorMocks(page: Page): Promise<GatewayCounters> {
+  const counters: GatewayCounters = {
+    docsCreate: 0,
+    docsBatchUpdate: 0,
+    gmailGetByMessageId: {},
+  };
   // Intercept every connector-gateway call and serve canned responses.
   await page.route(
     "https://connector-gateway.lovable.dev/**",
@@ -75,6 +86,13 @@ async function installConnectorMocks(page: Page) {
         const fixture = MOCK_EMAILS.find((e) => e.id === msgMatch[1]);
         if (!fixture) {
           return route.fulfill({ status: 404, body: "not found" });
+        }
+        // Only count the full-format fetches (those are the ones that
+        // would precede a Docs create). Metadata fetches happen during
+        // the list step.
+        if (/format=full/.test(url)) {
+          counters.gmailGetByMessageId[fixture.id] =
+            (counters.gmailGetByMessageId[fixture.id] ?? 0) + 1;
         }
         const body = `Booking confirmation for ${fixture.subject}.\n\nDay 1: arrive, check into Hotel Eden, dinner in Trastevere.\nDay 2: Colosseum, lunch at Roscioli.`;
         const b64 = Buffer.from(body, "utf-8")
@@ -103,6 +121,7 @@ async function installConnectorMocks(page: Page) {
 
       // Google Docs: create document
       if (/google_docs\/v1\/documents$/.test(url) && route.request().method() === "POST") {
+        counters.docsCreate += 1;
         return route.fulfill({
           status: 200,
           contentType: "application/json",
@@ -112,6 +131,7 @@ async function installConnectorMocks(page: Page) {
 
       // Google Docs: batchUpdate
       if (/:batchUpdate$/.test(url)) {
+        counters.docsBatchUpdate += 1;
         return route.fulfill({
           status: 200,
           contentType: "application/json",
@@ -124,6 +144,7 @@ async function installConnectorMocks(page: Page) {
       return route.continue();
     },
   );
+  return counters;
 }
 
 async function signIn(page: Page) {
@@ -137,7 +158,7 @@ async function signIn(page: Page) {
 test("imports a Gmail booking and embeds the Doc preview on the trip", async ({
   page,
 }) => {
-  await installConnectorMocks(page);
+  const counters = await installConnectorMocks(page);
   await signIn(page);
 
   await page.goto(`/t/${TRIP_SLUG}?mode=edit`);
@@ -161,12 +182,54 @@ test("imports a Gmail booking and embeds the Doc preview on the trip", async ({
     "src",
     new RegExp(`/document/d/${MOCK_DOC_ID}/preview`),
   );
+  const initialSrc = await iframe.getAttribute("src");
+  expect(initialSrc).toContain(`/document/d/${MOCK_DOC_ID}/preview`);
 
-  // 4. Re-importing the same message should surface "already imported"
-  //    and NOT create a second iframe.
+  // Snapshot counters after the first successful import. These are the
+  // baseline we'll compare against after the re-import attempt.
+  expect(counters.docsCreate).toBe(1);
+  const baselineBatchUpdate = counters.docsBatchUpdate;
+  const baselineGmailFullFetch =
+    counters.gmailGetByMessageId[MOCK_EMAILS[0].id] ?? 0;
+  expect(baselineGmailFullFetch).toBe(1);
+
+  // 4. Re-import the SAME message. The server fn must short-circuit on
+  //    `source_message_id` and return alreadyImported=true:
+  //      - no new Google Doc is created (Docs:create count unchanged)
+  //      - no new batchUpdate is issued
+  //      - the Gmail full-message fetch is skipped entirely
+  //      - the dossier keeps exactly one iframe pointing at the SAME
+  //        documentId, with the same src attribute
   await page
     .getByTestId(`gmail-import-button-${MOCK_EMAILS[0].id}`)
     .click();
-  const iframes = page.locator(`[data-testid="doc-preview-iframe-${MOCK_DOC_ID}"]`);
+
+  // Give any in-flight request a chance to land before asserting.
+  await page.waitForTimeout(1500);
+
+  const iframes = page.locator(
+    `[data-testid="doc-preview-iframe-${MOCK_DOC_ID}"]`,
+  );
   await expect(iframes).toHaveCount(1);
+
+  // The src (and therefore the embedded doc ID) must be byte-identical.
+  const reimportSrc = await iframes.first().getAttribute("src");
+  expect(reimportSrc).toBe(initialSrc);
+
+  // No additional Docs API traffic should have occurred.
+  expect(counters.docsCreate).toBe(1);
+  expect(counters.docsBatchUpdate).toBe(baselineBatchUpdate);
+
+  // And the server must not have re-fetched the Gmail message body.
+  expect(counters.gmailGetByMessageId[MOCK_EMAILS[0].id] ?? 0).toBe(
+    baselineGmailFullFetch,
+  );
+
+  // Belt-and-suspenders: only one trip_doc_previews row should be
+  // surfaced for this doc id even after a full page reload.
+  await page.reload();
+  await expect(
+    page.locator(`[data-testid="doc-preview-iframe-${MOCK_DOC_ID}"]`),
+  ).toHaveCount(1);
+  expect(counters.docsCreate).toBe(1);
 });
