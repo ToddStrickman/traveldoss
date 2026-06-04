@@ -6,6 +6,7 @@ import { ArrowLeft, Search, X } from "lucide-react";
 import { SKINS, type SkinModule } from "@/lib/skins/registry";
 import { pickTemplate } from "@/lib/templates.functions";
 import { supabase } from "@/integrations/supabase/client";
+import { TiltCard } from "@/components/motion/Tilt";
 
 function TemplatesSkeleton() {
   return (
@@ -153,6 +154,7 @@ function SkinCard({
   picking: boolean;
 }) {
   return (
+    <TiltCard intensity={5} className="h-full">
     <article
       id={skin.meta.id}
       className="group flex h-full flex-col border border-ink/10 bg-paper transition-colors duration-500 hover:border-seal/50"
@@ -201,6 +203,7 @@ function SkinCard({
         </button>
       </div>
     </article>
+    </TiltCard>
   );
 }
 
