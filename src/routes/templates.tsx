@@ -72,20 +72,20 @@ export const Route = createFileRoute("/templates")({
   pendingComponent: TemplatesSkeleton,
   head: () => ({
     meta: [
-      { title: "Templates — TravelDoss" },
+      { title: "Dossier Templates — TravelDoss" },
       {
         name: "description",
         content:
-          "Pick a TravelDoss template. Each is a distinct editorial design for your trip's dossier — one URL, one dollar, one month.",
+          "Pick a TravelDoss dossier template. Each is a distinct editorial design for your trip's dossier — one URL, one dollar, one month.",
       },
       {
         property: "og:title",
-        content: "TravelDoss Templates — Editorial Designs for Your Trip",
+        content: "TravelDoss Dossier Templates — Editorial Designs for Your Trip",
       },
       {
         property: "og:description",
         content:
-          "Eight editorial templates for your trip dossier. One dollar, one URL, one month — composed like a magazine.",
+          "Eight editorial dossier templates for your trip. One dollar, one URL, one month — composed like a magazine.",
       },
       { property: "og:url", content: "https://traveldoss.lovable.app/templates" },
     ],
@@ -96,7 +96,7 @@ export const Route = createFileRoute("/templates")({
         children: JSON.stringify({
           "@context": "https://schema.org",
           "@type": "CollectionPage",
-          name: "TravelDoss Templates",
+          name: "TravelDoss Dossier Templates",
           description:
             "Gallery of editorial dossier templates for TravelDoss trips.",
           url: "https://traveldoss.lovable.app/templates",
@@ -162,7 +162,7 @@ function SkinCard({
             className="h-1 w-1 rounded-full"
             style={{ background: skin.tokens.accent }}
           />
-          Template
+          Dossier Template
         </div>
         <h2
           className="mt-3 text-4xl font-normal leading-[1.05] tracking-tight text-ink md:text-5xl"
@@ -193,7 +193,7 @@ function SkinCard({
           className="mt-auto inline-flex items-center justify-between gap-4 border-y border-ink/20 pt-7 pb-7 text-[10px] font-medium uppercase tracking-[0.4em] text-ink transition-colors duration-500 hover:border-seal hover:text-seal disabled:cursor-wait disabled:opacity-50"
           style={{ marginTop: 28 }}
         >
-          <span>{picking ? "Minting your dossier…" : "Use this template · $1"}</span>
+          <span>{picking ? "Minting your dossier…" : "Use this dossier template · $1"}</span>
           <span className="text-ink/40 group-hover:text-seal">→</span>
         </button>
       </div>
@@ -347,7 +347,7 @@ function TemplatesPage() {
         </Link>
         <span className="inline-flex items-center gap-3 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/60">
           <span className="h-px w-6 bg-ink/30" />
-          The Templates
+          The Dossier Templates
         </span>
       </header>
 
@@ -368,7 +368,7 @@ function TemplatesPage() {
           style={{ fontFamily: "var(--font-display)" }}
         >
           <span className="text-ink">Pick your </span>
-          <span className="italic text-ink/85">template<span className="text-seal">.</span></span>
+          <span className="italic text-ink/85">dossier template<span className="text-seal">.</span></span>
         </motion.h1>
         <p className="mt-6 max-w-xl text-sm leading-relaxed text-ink-soft md:text-base">
           Eight named designs for your trip's quiet studio. One dollar mints a
