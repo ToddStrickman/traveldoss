@@ -147,7 +147,21 @@ export function parseDropIn(text: string, _source: IngestSource = "text"): Block
       continue;
     }
     const n = Number(m[1]);
-    const rest = m[2].trim();
+    let rest = m[2].trim();
+    // Capture an inline date right after "Day N":
+    //   Day 1 (10/14/25): …    Day 2 — Mon Oct 14: …
+    let dayDate: string | undefined;
+    const parenDate = rest.match(/^\(([^)]+)\)\s*[:.\-—]?\s*/);
+    if (parenDate && looksLikeDate(parenDate[1])) {
+      dayDate = parenDate[1].trim();
+      rest = rest.slice(parenDate[0].length).trim();
+    } else {
+      const leadDate = rest.match(/^([A-Za-z]{3,9}\.?\s+\d{1,2}(?:,\s*\d{2,4})?|\d{1,2}[\/\-]\d{1,2}(?:[\/\-]\d{2,4})?|(?:mon|tue|wed|thu|fri|sat|sun)[a-z]*\s+[A-Za-z]{3,9}\.?\s+\d{1,2})\s*[:.\-—]\s*/i);
+      if (leadDate && looksLikeDate(leadDate[1])) {
+        dayDate = leadDate[1].trim();
+        rest = rest.slice(leadDate[0].length).trim();
+      }
+    }
     const clauses = rest
       .split(/[.;\n]+|,(?=\s)/)
       .map((c) => c.replace(/^[-*•]\s*/, "").trim())
@@ -155,12 +169,55 @@ export function parseDropIn(text: string, _source: IngestSource = "text"): Block
     // First clause becomes the day label if it reads like a title; otherwise generic.
     const label = clauses.length && clauses[0].length <= 48 ? titleCase(clauses[0]) : `Day ${n}`;
     const stops = label === `Day ${n}` ? clauses : clauses.slice(1);
-    blocks.push({ kind: "day", n, label });
+    blocks.push(dayDate ? { kind: "day", n, label, date: dayDate } : { kind: "day", n, label });
     for (const c of stops) {
-      blocks.push({ kind: "place", name: titleCase(c), category: guessCategory(c) });
+      blocks.push(makePlaceBlock(c));
     }
   }
   return blocks;
+}
+
+/** Loose date sniff — catches "10/14/25", "Oct 14", "Mon Oct 14, 2025". */
+function looksLikeDate(s: string): boolean {
+  const t = s.trim();
+  if (!t) return false;
+  if (/^\d{1,2}[\/\-]\d{1,2}([\/\-]\d{2,4})?$/.test(t)) return true;
+  return /(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i.test(t) && /\d/.test(t);
+}
+
+/**
+ * Build a place block from a single clause, detecting shadow-itinerary
+ * markers ("Alternative:", "Option:", "Backup:", "Plan B:") and must-see
+ * flags. Shadow blocks render in the bottom Shadow Itinerary section;
+ * must-see flags surface as a short note when none exists.
+ */
+function makePlaceBlock(clauseRaw: string): Extract<Block, { kind: "place" }> {
+  let clause = clauseRaw;
+  let tier: "primary" | "shadow" | undefined;
+  let mustSee = false;
+
+  const shadowPrefix = clause.match(/^(alternative|option|backup|plan\s*b)\s*[:\-—]\s*/i);
+  if (shadowPrefix) {
+    tier = "shadow";
+    clause = clause.slice(shadowPrefix[0].length).trim();
+  }
+
+  // "Must see", "must-see", "don't miss", "highlight" → soft note, stripped from name.
+  const mustSeeRe = /\b(must[\s-]?see|don'?t\s+miss|do\s+not\s+miss|highlight(?:ed)?)\b\s*[:\-—]?\s*/i;
+  if (mustSeeRe.test(clause)) {
+    mustSee = true;
+    clause = clause.replace(mustSeeRe, "").trim();
+  }
+
+  const name = titleCase(clause);
+  const block: Extract<Block, { kind: "place" }> = {
+    kind: "place",
+    name,
+    category: guessCategory(clause),
+  };
+  if (tier) block.tier = tier;
+  if (mustSee) block.note = "Must see";
+  return block;
 }
 
 function guessCategory(s: string): "stay" | "eat" | "see" | "do" | "drink" | "other" {
