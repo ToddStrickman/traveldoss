@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
   parseDropInWithMeta,
   suggestTripTitle,
+  stripEmoji,
 } from "../src/lib/itinerary/parse";
 import type { Block } from "../src/lib/skins/types";
 
