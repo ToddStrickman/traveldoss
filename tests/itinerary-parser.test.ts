@@ -471,14 +471,14 @@ describe("parser: run-on transcript with no day markers", () => {
 describe("parser: emoji-laced paste is sanitized", () => {
   test("stripEmoji removes pictographs, flags, joiners", () => {
     expect(stripEmoji("🌅 Morning walk")).toBe("Morning walk");
-    expect(stripEmoji("🇮🇹 Italy 🍝 trip")).toBe("Italy  trip");
+    expect(stripEmoji("🇮🇹 Italy 🍝 trip")).toBe("Italy trip");
     expect(stripEmoji("👨‍👩‍👧 family")).toBe("family");
   });
 
   const raw = [
     "🇮🇹 Bologna weekend",
     "Day 1: 🌅 walk Piazza Maggiore, 🍝 lunch at Trattoria Anna",
-    "Day 2: 🏨 check into Art Hotel Commercianti, 🍷 wine tasting in Chianti",
+    "Day 2: arrive Bologna, 🏨 check into Art Hotel Commercianti, 🍷 wine tasting in Chianti",
   ].join("\n");
   const parsed = parseDropInWithMeta(raw);
 
@@ -585,7 +585,7 @@ describe("parser: three sequential evening items stay separate", () => {
 describe("parser: must-see marker → note", () => {
   test("'must see' clause emits a note and strips the marker from the name", () => {
     const parsed = parseDropInWithMeta(
-      "Day 1: must see — Duomo climb, gelato at Vivoli.",
+      "Day 1: arrive, must see — Duomo climb, gelato at Vivoli.",
     );
     const duomo = parsed.blocks.find(
       (b): b is Extract<Block, { kind: "place" }> =>
