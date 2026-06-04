@@ -1,8 +1,9 @@
 import type { Block, TripView } from "../../types";
 import { buildItinerary } from "../itinerary";
-import { ActivityCell } from "./parts";
+import { ActivityCell, dayDateLabel } from "./parts";
 import { ActivityDndContext, DraggableActivity, DroppableBucket } from "./dnd";
 import type { PartOfDay } from "../itinerary";
+import { ShadowItinerary, PlanBCue } from "../ShadowItinerary";
 
 /** Operational table view. Flights at the very top in a 2-row table.
  *  Each day renders a 3-column table (Morning · Afternoon · Evening) where
@@ -76,6 +77,11 @@ export function GridView({ trip, blocks }: { trip: TripView; blocks: Block[] }) 
         <section key={d.dayIndex} className="tds-grid-section">
           <h2 className="tds-grid-h2">
             Day {String(d.day.n).padStart(2, "0")} · {d.day.label}
+            <span className="tds-day-date" data-placeholder={!d.day.date}>
+              {" · "}
+              {dayDateLabel(d.day.date)}
+            </span>
+            <PlanBCue count={d.shadows.length} />
           </h2>
           {d.day.notes ? <p className="tds-grid-day-notes">{d.day.notes}</p> : null}
           <table className="tds-table tds-table-day">
@@ -119,6 +125,7 @@ export function GridView({ trip, blocks }: { trip: TripView; blocks: Block[] }) 
         </section>
       ))}
       </ActivityDndContext>
+      <ShadowItinerary itinerary={it} />
     </div>
   );
 }
