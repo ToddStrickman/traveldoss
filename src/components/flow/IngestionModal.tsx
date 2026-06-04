@@ -4,7 +4,19 @@ import { parseDropInWithMeta } from "@/lib/itinerary/parse";
 import type { Block } from "@/lib/skins/types";
 import type { SkinModule } from "@/lib/skins/registry";
 import { toast } from "sonner";
-import { GripVertical, Trash2, Plus, ArrowLeft } from "lucide-react";
+import {
+  GripVertical,
+  Trash2,
+  Plus,
+  ArrowLeft,
+  MapPin,
+  Phone,
+  Globe,
+  Ticket,
+  StickyNote,
+  AlertTriangle,
+} from "lucide-react";
+import { motion } from "motion/react";
 import {
   DndContext,
   PointerSensor,
@@ -373,6 +385,61 @@ function ReviewStage({
     return acc;
   }, {});
 
+  // Per-block heuristics: which standardized fields are missing, and whether
+  // the block as a whole needs human review. A real confidence score from
+  // the parser would replace this — the UI contract is identical.
+  function missingFields(b: Block): Set<string> {
+    const m = new Set<string>();
+    if (b.kind === "place") {
+      if (!b.address?.trim()) m.add("address");
+      if (!b.phone?.trim()) m.add("phone");
+      if (!b.website?.trim()) m.add("website");
+      if (!b.reservation?.trim()) m.add("reservation");
+      if (!b.note?.trim()) m.add("note");
+    } else if (b.kind === "day") {
+      if (!b.label?.trim()) m.add("label");
+    } else if (b.kind === "flight") {
+      if (!b.flightNumber?.trim()) m.add("flightNumber");
+      if (!b.departTime?.trim()) m.add("departTime");
+      if (!b.date?.trim()) m.add("date");
+    }
+    return m;
+  }
+  function needsReview(b: Block): boolean {
+    if (b.kind === "place") {
+      const noContact = !b.address?.trim() && !b.phone?.trim() && !b.website?.trim();
+      const noCategory = !b.category || b.category === "other";
+      return noContact || noCategory;
+    }
+    if (b.kind === "day") return !b.label?.trim();
+    if (b.kind === "flight") return !b.flightNumber?.trim() || !b.departTime?.trim();
+    if (b.kind === "paragraph") return (b.text?.trim().length ?? 0) < 12;
+    return false;
+  }
+
+  // Compute nesting depth: place/note/paragraph/section that fall under a
+  // preceding day are visually indented under a timeline rail.
+  const nesting: boolean[] = [];
+  {
+    let inDay = false;
+    for (const b of blocks) {
+      if (b.kind === "day") {
+        inDay = true;
+        nesting.push(false);
+        continue;
+      }
+      if (b.kind === "hero" || b.kind === "flight" || b.kind === "quote") {
+        inDay = false;
+        nesting.push(false);
+        continue;
+      }
+      nesting.push(inDay);
+    }
+  }
+
+  const reviewCount = blocks.filter(needsReview).length;
+  const [filter, setFilter] = useState<"all" | "review">("all");
+
   return (
     <>
       <div className="relative border-b border-ink/10 px-5 sm:px-8 md:px-10 pb-7 pt-9">
@@ -417,6 +484,31 @@ function ReviewStage({
           ))}
         </div>
 
+        {/* Confidence filter */}
+        <div className="mb-4 flex items-center gap-1.5">
+          <button
+            onClick={() => setFilter("all")}
+            className={`td-eyebrow rounded-md border px-2.5 py-1.5 transition-elegant ${
+              filter === "all"
+                ? "border-seal/60 bg-seal/15 text-seal"
+                : "border-ink/15 bg-paper/40 text-ink/55 hover:text-ink"
+            }`}
+          >
+            Show all ({blocks.length})
+          </button>
+          <button
+            onClick={() => setFilter("review")}
+            disabled={reviewCount === 0}
+            className={`td-eyebrow inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 transition-elegant disabled:opacity-40 ${
+              filter === "review"
+                ? "border-amber-400/60 bg-amber-400/15 text-amber-300"
+                : "border-ink/15 bg-paper/40 text-ink/55 hover:text-ink"
+            }`}
+          >
+            <AlertTriangle className="h-3 w-3" /> Needs review ({reviewCount})
+          </button>
+        </div>
+
         <label className="td-eyebrow mb-1.5 block text-ink/45">Destination</label>
         <input
           value={destination ?? ""}
@@ -428,15 +520,22 @@ function ReviewStage({
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
           <SortableContext items={items} strategy={verticalListSortingStrategy}>
             <ul className="space-y-2">
-              {blocks.map((b, i) => (
-                <ReviewRow
-                  key={`b-${i}`}
-                  id={`b-${i}`}
-                  block={b}
-                  onChange={(patch) => update(i, patch)}
-                  onRemove={() => remove(i)}
-                />
-              ))}
+              {blocks.map((b, i) => {
+                const flagged = needsReview(b);
+                if (filter === "review" && !flagged) return null;
+                return (
+                  <ReviewRow
+                    key={`b-${i}`}
+                    id={`b-${i}`}
+                    block={b}
+                    nested={nesting[i]}
+                    flagged={flagged}
+                    missing={missingFields(b)}
+                    onChange={(patch) => update(i, patch)}
+                    onRemove={() => remove(i)}
+                  />
+                );
+              })}
               {!blocks.length && (
                 <li className="rounded-md border border-dashed border-ink/15 px-4 py-8 text-center text-[12px] text-ink/50">
                   Nothing parsed. Go back and try a different source.
@@ -490,16 +589,60 @@ function ReviewStage({
 }
 
 const fld =
-  "w-full rounded border border-ink/15 bg-paper/70 px-2.5 py-1.5 text-[12.5px] text-ink outline-none focus:border-seal";
+  "w-full rounded border border-ink/15 bg-paper/70 px-2.5 py-1.5 text-[12.5px] text-ink outline-none focus:border-seal placeholder:text-ink/30 transition-elegant";
+
+// Field wrapper that paints a subtle amber warning tint when the value is
+// missing/low-confidence. The actual <input> stays plain so screen readers
+// still see normal field semantics.
+function Field({
+  icon,
+  warn,
+  children,
+}: {
+  icon?: React.ReactNode;
+  warn?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className={`relative flex items-center rounded border ${
+        warn
+          ? "border-amber-400/40 bg-amber-400/10"
+          : "border-transparent"
+      }`}
+    >
+      {icon && (
+        <span className="pointer-events-none absolute left-2 flex h-full items-center text-ink/40">
+          {icon}
+        </span>
+      )}
+      <div className={`flex-1 ${icon ? "[&_input]:pl-7 [&_textarea]:pl-7" : ""}`}>
+        {children}
+      </div>
+      {warn && (
+        <AlertTriangle
+          aria-hidden
+          className="pointer-events-none absolute right-2 h-3 w-3 text-amber-400/80"
+        />
+      )}
+    </div>
+  );
+}
 
 function ReviewRow({
   id,
   block,
+  nested,
+  flagged,
+  missing,
   onChange,
   onRemove,
 }: {
   id: string;
   block: Block;
+  nested?: boolean;
+  flagged?: boolean;
+  missing?: Set<string>;
   onChange: (patch: Partial<Block>) => void;
   onRemove: () => void;
 }) {
@@ -508,8 +651,19 @@ function ReviewRow({
     <li
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.6 : 1 }}
-      className="rounded-md border border-ink/10 bg-paper/60 px-3 py-2.5"
+      className={
+        nested
+          ? "relative ml-6 before:pointer-events-none before:absolute before:-left-3 before:top-0 before:h-[calc(100%+0.5rem)] before:w-px before:bg-ink/15"
+          : undefined
+      }
     >
+      <motion.div
+        whileHover={{ y: -1 }}
+        transition={{ type: "spring", stiffness: 320, damping: 28 }}
+        className={`group/card rounded-md bg-paper/70 px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.35),0_10px_24px_-18px_rgba(0,0,0,0.6)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_2px_4px_rgba(0,0,0,0.4),0_14px_30px_-16px_rgba(0,0,0,0.7)] ${
+          flagged ? "ring-1 ring-amber-400/30" : ""
+        }`}
+      >
       <div className="mb-2 flex items-center gap-2">
         <button
           {...attributes}
@@ -520,6 +674,11 @@ function ReviewRow({
           <GripVertical className="h-5 w-5 sm:h-4 sm:w-4" />
         </button>
         <span className="font-mono text-[9px] uppercase tracking-[0.35em] text-seal/80">{block.kind}</span>
+        {flagged && (
+          <span className="inline-flex items-center gap-1 rounded-sm border border-amber-400/40 bg-amber-400/10 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.25em] text-amber-300">
+            <AlertTriangle className="h-2.5 w-2.5" /> Review
+          </span>
+        )}
         <span className="ml-auto" />
         <button
           onClick={onRemove}
@@ -529,12 +688,21 @@ function ReviewRow({
           <Trash2 className="h-5 w-5 sm:h-4 sm:w-4" />
         </button>
       </div>
-      <BlockFields block={block} onChange={onChange} />
+      <BlockFields block={block} onChange={onChange} missing={missing ?? new Set()} />
+      </motion.div>
     </li>
   );
 }
 
-function BlockFields({ block, onChange }: { block: Block; onChange: (patch: Partial<Block>) => void }) {
+function BlockFields({
+  block,
+  onChange,
+  missing,
+}: {
+  block: Block;
+  onChange: (patch: Partial<Block>) => void;
+  missing: Set<string>;
+}) {
   switch (block.kind) {
     case "paragraph":
       return (
@@ -580,12 +748,14 @@ function BlockFields({ block, onChange }: { block: Block; onChange: (patch: Part
               value={block.n}
               onChange={(e) => onChange({ n: Number(e.target.value) } as Partial<Block>)}
             />
-            <input
-              className={fld}
-              placeholder="Label"
-              value={block.label}
-              onChange={(e) => onChange({ label: e.target.value } as Partial<Block>)}
-            />
+            <Field warn={missing.has("label")}>
+              <input
+                className={fld}
+                placeholder="Label (e.g. Bologna)"
+                value={block.label}
+                onChange={(e) => onChange({ label: e.target.value } as Partial<Block>)}
+              />
+            </Field>
           </div>
           <textarea
             className={fld}
@@ -607,17 +777,61 @@ function BlockFields({ block, onChange }: { block: Block; onChange: (patch: Part
               onChange={(e) => onChange({ name: e.target.value } as Partial<Block>)}
             />
             <select
-              className={`${fld} w-36`}
+              className={`${fld} w-40`}
               value={block.category ?? "other"}
               onChange={(e) => onChange({ category: e.target.value as never } as Partial<Block>)}
             >
-              {["stay", "hotel", "eat", "food", "see", "do", "drink", "walking", "currency", "airfare", "other"].map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
+              <option value="transit">Transit</option>
+              <option value="restaurant">Restaurant</option>
+              <option value="walk">Walk / Hike</option>
+              <option value="event">Event</option>
+              <option value="accommodation">Accommodation</option>
+              <option value="culture">Culture / Museum</option>
+              <option value="other">Other</option>
             </select>
           </div>
-          <input className={fld} placeholder="Address" value={block.address ?? ""} onChange={(e) => onChange({ address: e.target.value } as Partial<Block>)} />
-          <input className={fld} placeholder="Note" value={block.note ?? ""} onChange={(e) => onChange({ note: e.target.value } as Partial<Block>)} />
+          <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+            <Field icon={<MapPin className="h-3 w-3" />} warn={missing.has("address")}>
+              <input
+                className={fld}
+                placeholder="Address"
+                value={block.address ?? ""}
+                onChange={(e) => onChange({ address: e.target.value } as Partial<Block>)}
+              />
+            </Field>
+            <Field icon={<Phone className="h-3 w-3" />} warn={missing.has("phone")}>
+              <input
+                className={fld}
+                placeholder="Phone"
+                value={block.phone ?? ""}
+                onChange={(e) => onChange({ phone: e.target.value } as Partial<Block>)}
+              />
+            </Field>
+            <Field icon={<Globe className="h-3 w-3" />} warn={missing.has("website")}>
+              <input
+                className={fld}
+                placeholder="Website"
+                value={block.website ?? ""}
+                onChange={(e) => onChange({ website: e.target.value } as Partial<Block>)}
+              />
+            </Field>
+            <Field icon={<Ticket className="h-3 w-3" />} warn={missing.has("reservation")}>
+              <input
+                className={fld}
+                placeholder="Reservation / confirmation"
+                value={block.reservation ?? ""}
+                onChange={(e) => onChange({ reservation: e.target.value } as Partial<Block>)}
+              />
+            </Field>
+          </div>
+          <Field icon={<StickyNote className="h-3 w-3" />} warn={missing.has("note")}>
+            <input
+              className={fld}
+              placeholder="Note"
+              value={block.note ?? ""}
+              onChange={(e) => onChange({ note: e.target.value } as Partial<Block>)}
+            />
+          </Field>
         </div>
       );
     case "flight":
