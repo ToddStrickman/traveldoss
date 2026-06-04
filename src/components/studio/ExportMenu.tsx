@@ -2,6 +2,8 @@ import { CalendarPlus, Link2, Printer } from "lucide-react";
 import { toast } from "sonner";
 import type { Block, TripView } from "@/lib/skins/types";
 import { buildItineraryIcs, downloadIcs } from "@/lib/ics";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate, useLocation } from "@tanstack/react-router";
 
 export function ExportMenu({
   slug,
@@ -12,6 +14,8 @@ export function ExportMenu({
   trip?: TripView;
   blocks?: Block[];
 }) {
+  const navigate = useNavigate();
+  const location = useLocation();
   function copyLink() {
     const url = `${window.location.origin}/t/${slug}`;
     navigator.clipboard.writeText(url).then(
@@ -26,9 +30,17 @@ export function ExportMenu({
       document.body.classList.remove("td-print-mode");
     }, 50);
   }
-  function addToCalendar() {
+  async function addToCalendar() {
     if (!trip || !blocks) {
       toast.error("Nothing to export yet");
+      return;
+    }
+    const { data } = await supabase.auth.getUser();
+    if (!data.user) {
+      toast.message("Sign in to add to your calendar", {
+        description: "We'll bring you right back here.",
+      });
+      navigate({ to: "/login", search: { redirect: location.pathname } });
       return;
     }
     const result = buildItineraryIcs(trip, blocks);
