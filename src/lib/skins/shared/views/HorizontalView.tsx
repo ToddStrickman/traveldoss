@@ -1,7 +1,8 @@
 import type { Block, TripView } from "../../types";
 import { buildItinerary, type PartOfDay } from "../itinerary";
-import { ActivityCard, FlightStrip, PartHeading, partOrder } from "./parts";
+import { ActivityCard, FlightStrip, PartHeading, partOrder, dayDateLabel } from "./parts";
 import { ActivityDndContext, DraggableActivity, DroppableBucket } from "./dnd";
+import { ShadowItinerary, PlanBCue } from "../ShadowItinerary";
 
 type ActivityEntry = { activity: Extract<Block, { kind: "place" }>; index: number };
 
@@ -34,6 +35,10 @@ export function HorizontalView({ trip, blocks }: { trip: TripView; blocks: Block
               <header className="tds-board-col-head">
                 <div className="tds-day-no">Day {String(d.day.n).padStart(2, "0")}</div>
                 <div className="tds-day-label">{d.day.label}</div>
+                <div className="tds-day-date" data-placeholder={!d.day.date}>
+                  {dayDateLabel(d.day.date)}
+                </div>
+                <PlanBCue count={d.shadows.length} />
               </header>
               {partOrder.map((part) => (
                 <Bucket
@@ -58,6 +63,7 @@ export function HorizontalView({ trip, blocks }: { trip: TripView; blocks: Block
           ))}
         </div>
       </ActivityDndContext>
+      <ShadowItinerary itinerary={it} />
     </div>
   );
 }
