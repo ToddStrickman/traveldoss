@@ -333,10 +333,10 @@ export function IngestionModal({
           </div>
           <button
             onClick={submit}
-            disabled={!template}
+            disabled={!template || parsing}
             className="group inline-flex items-center gap-4 rounded-md border border-seal/40 bg-seal/15 py-3 pl-5 pr-3 text-[11px] font-medium uppercase tracking-[0.4em] text-seal transition-elegant hover:border-seal hover:bg-seal hover:text-paper disabled:opacity-40"
           >
-            <span>Review &amp; Mint</span>
+            <span>{parsing ? "Reading & enriching…" : "Review & Mint"}</span>
             <span aria-hidden className="inline-flex h-7 w-7 items-center justify-center rounded-sm border border-seal/40 transition-elegant group-hover:border-paper/40">
               →
             </span>
