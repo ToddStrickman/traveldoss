@@ -627,6 +627,54 @@ function ReviewStage({
 const fld =
   "w-full rounded border border-ink/15 bg-paper/70 px-2.5 py-1.5 text-[12.5px] text-ink outline-none focus:border-seal placeholder:text-ink/30 transition-elegant";
 
+// Hoverable badge surfaced on `place` blocks whose parser/enricher
+// confidence is below 0.85. On hover/focus it explains what was
+// auto-filled and prompts the user to inspect the fields below.
+function LowConfidenceBadge({
+  confidence,
+  source,
+  fields,
+}: {
+  confidence: number;
+  source?: "model" | "google-places" | "manual";
+  fields?: string[];
+}) {
+  const pct = Math.round(confidence * 100);
+  const sourceLabel =
+    source === "google-places"
+      ? "Google Places"
+      : source === "manual"
+      ? "Manual entry"
+      : "AI model";
+  const fieldList = fields && fields.length ? fields.join(", ") : "none";
+  return (
+    <TooltipProvider delayDuration={120}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            aria-label={`Low confidence enrichment, ${pct} percent. Inspect the enriched fields below.`}
+            className="inline-flex items-center gap-1 rounded-sm border border-amber-400/40 bg-amber-400/10 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.25em] text-amber-300 transition-elegant hover:bg-amber-400/20 focus:outline-none focus-visible:ring-1 focus-visible:ring-amber-400/60"
+          >
+            <Info className="h-2.5 w-2.5" /> {pct}%
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-xs text-left">
+          <div className="space-y-1 text-[11px] leading-snug">
+            <p className="font-medium">Low confidence ({pct}%)</p>
+            <p className="opacity-80">
+              Enriched by {sourceLabel}. Inspect the highlighted fields below and edit anything that looks wrong.
+            </p>
+            <p className="opacity-70">
+              <span className="td-eyebrow opacity-70">Auto-filled:</span> {fieldList}
+            </p>
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
 // Field wrapper that paints a subtle amber warning tint when the value is
 // missing/low-confidence. The actual <input> stays plain so screen readers
 // still see normal field semantics.
