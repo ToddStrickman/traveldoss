@@ -367,3 +367,41 @@ export function PartHeading({ part }: { part: PartOfDay }) {
 }
 
 export const partOrder: PartOfDay[] = ["morning", "afternoon", "evening"];
+
+/**
+ * Format the date shown next to a day header. Returns the user-supplied
+ * value when set, otherwise a stable placeholder so missing dates aren't
+ * invisible — users need to know to fill them in.
+ */
+export function dayDateLabel(date?: string): string {
+  return date && date.trim() ? date.trim() : "TBD (MM/DD/YY)";
+}
+
+/**
+ * Horizontal scroll-snap carousel of activity options inside a single
+ * part-of-day slot. When a slot has more than one block (e.g. an
+ * experience + a planned aperitivo + a farewell dinner the user might
+ * pick between), the cards live in a swipeable row instead of stacked.
+ * The first child is treated as the primary suggestion visually; users
+ * can scroll/swipe to compare alternatives. Drag-and-drop on each child
+ * still works (the items are still positioned in document order).
+ */
+export function SlotAlternativesCarousel({
+  count,
+  children,
+}: {
+  count: number;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="tds-slot-carousel" data-count={count} role="group" aria-label={`${count} option${count === 1 ? "" : "s"}`}>
+      {count > 1 ? (
+        <div className="tds-slot-carousel-meta" aria-hidden>
+          <span className="tds-slot-carousel-pill">{count} options</span>
+          <span className="tds-slot-carousel-hint">Swipe to compare →</span>
+        </div>
+      ) : null}
+      <div className="tds-slot-carousel-track">{children}</div>
+    </div>
+  );
+}
