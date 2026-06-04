@@ -75,7 +75,7 @@ export function InfiniteDocs({ onPickTemplate: _onPickTemplate }: { onPickTempla
   const loop = [...SKINS, ...SKINS, ...SKINS, ...SKINS];
   return (
     <aside
-      className="fixed right-0 top-0 z-10 hidden h-dvh w-[320px] overflow-hidden border-l border-ink/10 md:block"
+      className="fixed right-0 top-0 z-40 hidden h-dvh w-[320px] overflow-hidden border-l border-ink/10 md:block"
       aria-label="Dossier template previews"
     >
       <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-40 bg-gradient-to-b from-background via-background to-transparent" />
@@ -92,7 +92,9 @@ export function InfiniteDocs({ onPickTemplate: _onPickTemplate }: { onPickTempla
           <Link
             key={`${s.meta.id}-${i}`}
             to="/templates"
+            search={{ pick: s.meta.id }}
             className="td-marquee-item block text-left"
+            aria-label={`Use the ${s.meta.codename} dossier template`}
           >
             <DocThumb skin={s} />
           </Link>
