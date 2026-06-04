@@ -1,7 +1,17 @@
-import { Link2, Printer } from "lucide-react";
+import { CalendarPlus, Link2, Printer } from "lucide-react";
 import { toast } from "sonner";
+import type { Block, TripView } from "@/lib/skins/types";
+import { buildItineraryIcs, downloadIcs } from "@/lib/ics";
 
-export function ExportMenu({ slug }: { slug: string }) {
+export function ExportMenu({
+  slug,
+  trip,
+  blocks,
+}: {
+  slug: string;
+  trip?: TripView;
+  blocks?: Block[];
+}) {
   function copyLink() {
     const url = `${window.location.origin}/t/${slug}`;
     navigator.clipboard.writeText(url).then(
@@ -16,6 +26,29 @@ export function ExportMenu({ slug }: { slug: string }) {
       document.body.classList.remove("td-print-mode");
     }, 50);
   }
+  function addToCalendar() {
+    if (!trip || !blocks) {
+      toast.error("Nothing to export yet");
+      return;
+    }
+    const result = buildItineraryIcs(trip, blocks);
+    if (result.count === 0) {
+      toast.message("No flights or hotel stays to export", {
+        description:
+          "Add flight dates/times or accommodation check-in/check-out and try again.",
+      });
+      return;
+    }
+    downloadIcs(result);
+    const parts: string[] = [];
+    if (result.breakdown.flights)
+      parts.push(`${result.breakdown.flights} flight${result.breakdown.flights === 1 ? "" : "s"}`);
+    if (result.breakdown.stays)
+      parts.push(`${result.breakdown.stays} stay${result.breakdown.stays === 1 ? "" : "s"}`);
+    toast.success("Calendar file ready", {
+      description: `${parts.join(" · ")} — open the .ics to add to Apple, Google, or Outlook.`,
+    });
+  }
 
   return (
     <div
@@ -23,6 +56,12 @@ export function ExportMenu({ slug }: { slug: string }) {
       className="fixed right-3 z-40 flex items-center gap-1 rounded-full border border-white/10 bg-paper/85 p-1 text-ink backdrop-blur-md sm:right-5 sm:gap-2 sm:p-1.5 bottom-[max(72px,calc(env(safe-area-inset-bottom)+72px))]"
     >
       <ExportButton onClick={copyLink} icon={<Link2 className="h-3.5 w-3.5" />} label="Live URL" />
+      <ExportButton
+        onClick={addToCalendar}
+        icon={<CalendarPlus className="h-3.5 w-3.5" />}
+        label="Calendar"
+        disabled={!trip || !blocks}
+      />
       <ExportButton onClick={printPdf} icon={<Printer className="h-3.5 w-3.5" />} label="PDF" />
     </div>
   );

@@ -336,7 +336,7 @@ function DossierPage() {
           canRedo={canRedo}
         />
       )}
-      <ExportMenu slug={trip.slug} />
+      <ExportMenu slug={trip.slug} trip={view} blocks={blocks} />
       <IngestionModal
         open={mintOpen}
         onOpenChange={setMintOpen}
