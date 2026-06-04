@@ -17,7 +17,14 @@ import {
   Ticket,
   StickyNote,
   AlertTriangle,
+  Info,
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { motion } from "motion/react";
 import {
   DndContext,
@@ -703,6 +710,15 @@ function ReviewRow({
           <GripVertical className="h-5 w-5 sm:h-4 sm:w-4" />
         </button>
         <span className="font-mono text-[9px] uppercase tracking-[0.35em] text-seal/80">{block.kind}</span>
+        {block.kind === "place" &&
+          typeof block.confidence === "number" &&
+          block.confidence < 0.85 && (
+            <LowConfidenceBadge
+              confidence={block.confidence}
+              source={block.enrichmentSource}
+              fields={block.enrichedFields}
+            />
+          )}
         {flagged && (
           <span className="inline-flex items-center gap-1 rounded-sm border border-amber-400/40 bg-amber-400/10 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.25em] text-amber-300">
             <AlertTriangle className="h-2.5 w-2.5" /> Review
