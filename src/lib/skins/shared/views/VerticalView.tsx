@@ -1,8 +1,16 @@
 import type { Block, TripView } from "../../types";
 import { buildItinerary } from "../itinerary";
 import { EditableText, useEditing } from "../Editable";
-import { ActivityRow, FlightStrip, PartHeading, partOrder } from "./parts";
+import {
+  ActivityRow,
+  FlightStrip,
+  PartHeading,
+  partOrder,
+  dayDateLabel,
+  SlotAlternativesCarousel,
+} from "./parts";
 import { ActivityDndContext, DraggableActivity, DroppableBucket } from "./dnd";
+import { ShadowItinerary, PlanBCue } from "../ShadowItinerary";
 
 /** Chronological vertical reading view.
  *  Outbound flight → Day 01 (morning/afternoon/evening) → … → Inbound flight. */
@@ -52,6 +60,15 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
                 onChange={(v) => onBlockChange(d.dayIndex, { label: v } as Partial<Block>)}
               />
             </div>
+            <div className="tds-day-date" data-placeholder={!d.day.date}>
+              <EditableText
+                as="span"
+                value={d.day.date ?? ""}
+                placeholder={dayDateLabel(undefined)}
+                onChange={(v) => onBlockChange(d.dayIndex, { date: v } as Partial<Block>)}
+              />
+            </div>
+            <PlanBCue count={d.shadows.length} />
             {d.day.notes ? (
               <div className="tds-day-notes">
                 <EditableText
@@ -76,16 +93,26 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
                 className="tds-part"
               >
                 <PartHeading part={part} />
-                <div className="tds-part-rows">
-                  {list.map(({ activity, index }) => (
-                    <DraggableActivity key={index} index={index}>
-                      <ActivityRow activity={activity} index={index} />
-                    </DraggableActivity>
-                  ))}
-                  {list.length === 0 ? (
-                    <div className="tds-board-empty">Drop activity here</div>
-                  ) : null}
-                </div>
+                {list.length > 1 ? (
+                  <SlotAlternativesCarousel count={list.length}>
+                    {list.map(({ activity, index }) => (
+                      <DraggableActivity key={index} index={index}>
+                        <ActivityRow activity={activity} index={index} />
+                      </DraggableActivity>
+                    ))}
+                  </SlotAlternativesCarousel>
+                ) : (
+                  <div className="tds-part-rows">
+                    {list.map(({ activity, index }) => (
+                      <DraggableActivity key={index} index={index}>
+                        <ActivityRow activity={activity} index={index} />
+                      </DraggableActivity>
+                    ))}
+                    {list.length === 0 ? (
+                      <div className="tds-board-empty">Drop activity here</div>
+                    ) : null}
+                  </div>
+                )}
               </DroppableBucket>
             );
           })}
@@ -104,6 +131,8 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
       </ActivityDndContext>
 
       <FlightStrip inbound={it.flights.inbound} />
+
+      <ShadowItinerary itinerary={it} />
     </div>
   );
 }
