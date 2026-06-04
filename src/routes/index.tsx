@@ -145,12 +145,12 @@ function Landing() {
       <Ribbon />
 
       {/* Center stage */}
-      <main className="relative z-10 mx-auto flex min-h-dvh max-w-[1400px] flex-col items-center justify-center px-6 py-16 text-center md:pl-32 md:pr-[340px]">
+      <main className="relative z-10 mx-auto flex min-h-[82dvh] max-w-[1400px] flex-col items-center justify-center px-6 py-10 text-center md:min-h-[76dvh] md:py-8 md:pl-32 md:pr-[340px]">
         <motion.span
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="mb-10 inline-flex flex-col items-center gap-3 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/55"
+          className="mb-6 inline-flex flex-col items-center gap-3 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/55"
         >
           <span className="inline-flex items-center gap-3">
             <span className="h-px w-8 bg-ink/30" />
@@ -178,7 +178,7 @@ function Landing() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1, delay: 0.3 }}
-          className="mt-10 max-w-md text-[13px] leading-relaxed text-ink-soft md:text-sm"
+          className="mt-6 max-w-md text-[13px] leading-relaxed text-ink-soft md:text-sm"
         >
           A quiet studio for travel. Transform scattered plans into a beautifully
           organized dossier, complete with mapped routes, reservations, and a
@@ -190,7 +190,7 @@ function Landing() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4 }}
-          className="relative mt-14"
+          className="relative mt-8"
         >
           <Link
             to="/templates"
@@ -206,7 +206,7 @@ function Landing() {
           </Link>
         </motion.div>
 
-        <div className="mt-16 flex items-center gap-4 text-[9px] font-medium uppercase tracking-[0.45em] text-ink/35">
+        <div className="mt-8 flex items-center gap-4 text-[9px] font-medium uppercase tracking-[0.45em] text-ink/35">
           <div className="h-px w-10 bg-ink/15" />
           Do your itinerary justice.
           <div className="h-px w-10 bg-ink/15" />

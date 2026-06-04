@@ -77,7 +77,7 @@ function DesktopFlow() {
     <section
       ref={containerRef}
       className="relative z-10 hidden md:block"
-      style={{ height: `${STEPS.length * 65}vh` }}
+      style={{ height: `${STEPS.length * 58}vh` }}
       aria-label="How TravelDoss works"
     >
       <div className="sticky top-0 h-dvh overflow-hidden">
@@ -94,7 +94,7 @@ function DesktopFlow() {
         </div>
 
         {/* Horizontal track clipped strictly to the rail-safe area */}
-        <div className="absolute inset-y-0 left-32 right-[340px] overflow-hidden">
+        <div className="absolute inset-y-0 left-32 right-[340px] overflow-hidden pt-16 pb-16">
           <motion.div
             style={{ x, width: `${STEPS.length * 100}%` }}
             className="flex h-full"
@@ -241,10 +241,10 @@ function Counter({
 function Panel({ step, index, total }: { step: Step; index: number; total: number }) {
   return (
     <div
-      className="flex h-full shrink-0 items-center justify-center px-6 md:px-12"
+      className="flex h-full shrink-0 items-center justify-center px-6 md:px-8"
       style={{ width: `${100 / total}%` }}
     >
-      <div className="grid w-full max-w-5xl grid-cols-1 items-center gap-10 md:grid-cols-2 md:gap-16">
+      <div className="grid h-full w-full max-w-6xl grid-cols-1 items-center gap-10 md:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] md:gap-12">
         {/* Copy */}
         <div className="space-y-6">
           <div className="flex items-center gap-4 text-[10px] font-medium uppercase tracking-[0.45em] text-ink/45">
@@ -264,7 +264,7 @@ function Panel({ step, index, total }: { step: Step; index: number; total: numbe
         </div>
 
         {/* Visual */}
-        <div className="relative flex h-[58vh] items-center justify-center">
+        <div className="relative flex h-full min-h-[440px] items-center justify-center">
           <Visual variant={step.visual} index={index} />
         </div>
       </div>
