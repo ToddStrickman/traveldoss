@@ -301,11 +301,15 @@ function toBlock(raw: RawBlock): Block | null {
         kind: "day" as const,
         n: raw.n,
         label: raw.label || `Day ${raw.n}`,
+        date: raw.dayDate ?? undefined,
       });
     case "place":
       if (!raw.name) return null;
       const category =
         raw.category && (raw.category as string) !== "" ? raw.category : undefined;
+      // Strip any emojis the model might have echoed despite the prompt.
+      const cleanName = stripEmoji(raw.name).trim();
+      if (!cleanName) return null;
       const enrichedFields: string[] = [];
       if (raw.address) enrichedFields.push("address");
       if (raw.phone) enrichedFields.push("phone");
@@ -314,8 +318,9 @@ function toBlock(raw: RawBlock): Block | null {
       if (raw.note) enrichedFields.push("note");
       return clean({
         kind: "place" as const,
-        name: raw.name,
+        name: cleanName,
         category,
+        tier: raw.tier ?? undefined,
         address: raw.address ?? undefined,
         phone: raw.phone ?? undefined,
         website: raw.website ?? undefined,
