@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, useScroll, useTransform, useSpring } from "motion/react";
 import { Link } from "@tanstack/react-router";
+import { Parallax } from "@/components/motion/Tilt";
 
 type Step = {
   n: string;
