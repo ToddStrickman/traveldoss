@@ -145,7 +145,7 @@ function Landing() {
       <Ribbon />
 
       {/* Center stage */}
-      <main className="relative z-10 mx-auto flex min-h-[92dvh] max-w-[1400px] flex-col items-center justify-center px-6 py-10 text-center md:min-h-[88dvh] md:py-12 md:pl-32 md:pr-[340px]">
+      <main className="relative z-10 mx-auto flex min-h-[82dvh] max-w-[1400px] flex-col items-center justify-center px-6 py-10 text-center md:min-h-[76dvh] md:py-8 md:pl-32 md:pr-[340px]">
         <motion.span
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
