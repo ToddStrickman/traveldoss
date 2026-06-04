@@ -68,16 +68,36 @@ function LoginPage() {
 
   const onGoogle = async () => {
     setLoading(true);
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin + redirect,
-    });
-    if (result.error) {
-      toast.error(result.error.message ?? "Google sign-in failed");
+    try {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin + redirect,
+      });
+      if (result.error) {
+        const raw = result.error.message ?? "";
+        const friendly = /denied|cancel|consent|access_denied/i.test(raw)
+          ? "Google sign-in was cancelled before consent finished. Try again and approve access to continue."
+          : /popup|blocked/i.test(raw)
+            ? "Your browser blocked the Google sign-in window. Allow pop-ups for this site and try again."
+            : /network|fetch|timeout/i.test(raw)
+              ? "We couldn't reach Google. Check your connection and try again."
+              : raw || "Google sign-in failed. Please try again, or use email below.";
+        console.error("[google-signin] consent failed", result.error);
+        toast.error("Google sign-in failed", { description: friendly });
+        setLoading(false);
+        return;
+      }
+      if (!result.redirected) {
+        window.location.assign(redirect);
+      }
+    } catch (err) {
+      console.error("[google-signin] threw", err);
+      toast.error("Google sign-in failed", {
+        description:
+          err instanceof Error
+            ? `${err.message}. You can also sign in with email below.`
+            : "Something went wrong launching Google sign-in. You can also sign in with email below.",
+      });
       setLoading(false);
-      return;
-    }
-    if (!result.redirected) {
-      window.location.assign(redirect);
     }
   };
 
