@@ -1,6 +1,8 @@
 import { useRef, useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { parseDropInWithMeta } from "@/lib/itinerary/parse";
+import { parseItineraryAi } from "@/lib/itinerary/parse-ai.functions";
+import { useServerFn } from "@tanstack/react-start";
 import type { Block } from "@/lib/skins/types";
 import type { SkinModule } from "@/lib/skins/registry";
 import { toast } from "sonner";
@@ -69,18 +71,45 @@ export function IngestionModal({
   const [reviewBlocks, setReviewBlocks] = useState<Block[]>([]);
   const [reviewLabel, setReviewLabel] = useState("Reading your itinerary…");
   const [reviewDestination, setReviewDestination] = useState<string | null>(null);
+  const [parsing, setParsing] = useState(false);
+  const parseAi = useServerFn(parseItineraryAi);
 
-  function submit() {
+  async function submit() {
     if (!template) return;
     const trimmed = text.trim();
     if (trimmed.length < 8) {
       toast.error("Add a few lines first so we have something to craft.");
       return;
     }
-    const { blocks, destination } = parseDropInWithMeta(
-      trimmed,
-      tab === "transcript" ? "transcript" : "text",
-    );
+    setParsing(true);
+    let blocks: Block[] = [];
+    let destination: string | null = null;
+    try {
+      const r = await parseAi({
+        data: {
+          text: trimmed,
+          source: tab === "transcript" ? "transcript" : "text",
+        },
+      });
+      blocks = r.blocks;
+      destination = r.destination;
+    } catch (err) {
+      console.error("[ai-parse] failed, falling back to local parser", err);
+      toast.message("Using offline parser", {
+        description:
+          err instanceof Error
+            ? err.message
+            : "AI enrichment unavailable — we'll still structure your text.",
+      });
+      const r = parseDropInWithMeta(
+        trimmed,
+        tab === "transcript" ? "transcript" : "text",
+      );
+      blocks = r.blocks;
+      destination = r.destination;
+    } finally {
+      setParsing(false);
+    }
     if (!blocks.length) {
       toast.error("We couldn't read structure out of that. Try Day 1, Day 2…");
       return;
@@ -304,10 +333,10 @@ export function IngestionModal({
           </div>
           <button
             onClick={submit}
-            disabled={!template}
+            disabled={!template || parsing}
             className="group inline-flex items-center gap-4 rounded-md border border-seal/40 bg-seal/15 py-3 pl-5 pr-3 text-[11px] font-medium uppercase tracking-[0.4em] text-seal transition-elegant hover:border-seal hover:bg-seal hover:text-paper disabled:opacity-40"
           >
-            <span>Review &amp; Mint</span>
+            <span>{parsing ? "Reading & enriching…" : "Review & Mint"}</span>
             <span aria-hidden className="inline-flex h-7 w-7 items-center justify-center rounded-sm border border-seal/40 transition-elegant group-hover:border-paper/40">
               →
             </span>
