@@ -70,6 +70,9 @@ function TemplatesSkeleton() {
 export const Route = createFileRoute("/templates")({
   component: TemplatesPage,
   pendingComponent: TemplatesSkeleton,
+  validateSearch: (search: Record<string, unknown>) => ({
+    pick: typeof search.pick === "string" ? (search.pick as string) : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Dossier Templates — TravelDoss" },
