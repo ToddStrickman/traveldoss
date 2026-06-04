@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { generateText, Output } from "ai";
 import { z } from "zod";
 import type { Block } from "@/lib/skins/types";
+import { stripEmoji } from "@/lib/itinerary/parse";
 
 /**
  * AI-powered itinerary parser. Takes raw pasted text (from ChatGPT,
@@ -30,8 +31,20 @@ const BlockSchema = z.object({
           .string()
           .nullable()
           .describe("Short title for a day, e.g. 'Arrival in Rome'"),
+        dayDate: z
+          .string()
+          .nullable()
+          .describe(
+            "Calendar date for the day if the input mentions one ('Oct 14', '10/14/25', '2025-10-14'). Null if not stated — DO NOT invent a date.",
+          ),
         // place fields
         name: z.string().nullable().describe("Name of the place/vendor"),
+        tier: z
+          .enum(["primary", "shadow"])
+          .nullable()
+          .describe(
+            "'shadow' for any entry the user marked as Alternative / Option / Backup / Plan B — those render in the Shadow Itinerary section. Otherwise 'primary' or null.",
+          ),
         category: z
           .enum([
             "transit",
