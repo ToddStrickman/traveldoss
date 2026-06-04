@@ -82,7 +82,7 @@ function DesktopFlow() {
     >
       <div className="sticky top-0 h-dvh overflow-hidden">
         {/* Section label */}
-        <div className="pointer-events-none absolute left-32 right-[340px] top-10 z-20 flex items-center justify-between text-[10px] font-medium uppercase tracking-[0.4em] text-ink/45">
+        <div className="pointer-events-none absolute left-32 right-[340px] top-8 z-20 flex items-center justify-between text-[10px] font-medium uppercase tracking-[0.4em] text-ink/45">
           <span className="inline-flex items-center gap-3">
             <span className="h-px w-8 bg-ink/25" />
             The Flow
@@ -94,7 +94,7 @@ function DesktopFlow() {
         </div>
 
         {/* Horizontal track clipped strictly to the rail-safe area */}
-        <div className="absolute inset-y-0 left-32 right-[340px] overflow-hidden pt-14 pb-16">
+        <div className="absolute inset-y-0 left-32 right-[340px] overflow-hidden pt-16 pb-16">
           <motion.div
             style={{ x, width: `${STEPS.length * 100}%` }}
             className="flex h-full"
@@ -106,7 +106,7 @@ function DesktopFlow() {
         </div>
 
         {/* Bottom progress + counter */}
-        <div className="pointer-events-none absolute bottom-10 left-32 right-[340px] z-20">
+        <div className="pointer-events-none absolute bottom-8 left-32 right-[340px] z-20">
           <div className="mb-3 flex items-center justify-between text-[10px] font-medium uppercase tracking-[0.4em] text-ink/45">
             <Counter scrollYProgress={scrollYProgress} total={STEPS.length} />
             <span>Your itinerary, unfolding.</span>
