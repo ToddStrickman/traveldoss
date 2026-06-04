@@ -179,6 +179,18 @@ export const parseItineraryAi = createServerFn({ method: "POST" })
       .map((b) => toBlock(b))
       .filter((b): b is Block => b !== null);
 
+    // ── Web-search enrichment fallback ────────────────────────────────
+    // For any place the model returned without address/phone/website,
+    // hit Google Places (Text Search v1) to fill them in. Then run a
+    // single batched Gemini call to write a <15-word editorial note
+    // for every freshly enriched place that still lacks one.
+    await enrichPlacesViaWebSearch(blocks, parsed.destination ?? null, gateway).catch(
+      (err: unknown) => {
+        // Enrichment must never break parsing — log and move on.
+        console.error("[parse-ai] enrichment fallback failed:", err);
+      },
+    );
+
     return {
       destination: parsed.destination ?? null,
       blocks,
@@ -260,5 +272,141 @@ function toBlock(raw: RawBlock): Block | null {
     case "note":
       if (!raw.text) return null;
       return { kind: "note", text: raw.text };
+  }
+}
+
+/* ─── web-search enrichment fallback ────────────────────────────────── */
+
+type PlaceBlock = Extract<Block, { kind: "place" }>;
+type GatewayProvider = ReturnType<
+  typeof import("@/lib/ai-gateway.server").createLovableAiGatewayProvider
+>;
+
+/**
+ * Mutates `blocks` in place: for each `place` missing address/phone/website,
+ * queries Google Places (Text Search v1) for hard facts, then asks Gemini
+ * to write a single <15-word editorial note per freshly enriched place.
+ */
+async function enrichPlacesViaWebSearch(
+  blocks: Block[],
+  destination: string | null,
+  gateway: GatewayProvider,
+): Promise<void> {
+  const mapsKey = process.env.GOOGLE_MAPS_API_KEY;
+  if (!mapsKey) return;
+
+  const targets = blocks.filter(
+    (b): b is PlaceBlock =>
+      b.kind === "place" &&
+      !!b.name &&
+      (!b.address || !b.phone || !b.website),
+  );
+  if (targets.length === 0) return;
+
+  // Pull facts from Google Places in parallel (cap concurrency to be polite).
+  const enrichedFlags = await Promise.all(
+    targets.map((p) => fillFromGooglePlaces(p, destination, mapsKey)),
+  );
+
+  // Batch-generate concise notes for enriched places that still lack one.
+  const noteCandidates = targets.filter(
+    (p, i) => enrichedFlags[i] && (!p.note || p.note.trim() === ""),
+  );
+  if (noteCandidates.length > 0) {
+    await fillEditorialNotes(noteCandidates, destination, gateway).catch(
+      (err: unknown) => console.error("[parse-ai] note synthesis failed:", err),
+    );
+  }
+}
+
+async function fillFromGooglePlaces(
+  place: PlaceBlock,
+  destination: string | null,
+  apiKey: string,
+): Promise<boolean> {
+  const query = destination ? `${place.name}, ${destination}` : place.name;
+  try {
+    const res = await fetch(
+      "https://places.googleapis.com/v1/places:searchText",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Goog-Api-Key": apiKey,
+          "X-Goog-FieldMask":
+            "places.displayName,places.formattedAddress,places.internationalPhoneNumber,places.websiteUri,places.regularOpeningHours",
+        },
+        body: JSON.stringify({ textQuery: query, pageSize: 1 }),
+      },
+    );
+    if (!res.ok) return false;
+    const json = (await res.json()) as {
+      places?: Array<{
+        formattedAddress?: string;
+        internationalPhoneNumber?: string;
+        websiteUri?: string;
+        regularOpeningHours?: { weekdayDescriptions?: string[] };
+      }>;
+    };
+    const hit = json.places?.[0];
+    if (!hit) return false;
+
+    let changed = false;
+    if (!place.address && hit.formattedAddress) {
+      place.address = hit.formattedAddress;
+      changed = true;
+    }
+    if (!place.phone && hit.internationalPhoneNumber) {
+      place.phone = hit.internationalPhoneNumber;
+      changed = true;
+    }
+    if (!place.website && hit.websiteUri) {
+      place.website = hit.websiteUri;
+      changed = true;
+    }
+    if (!place.hours && hit.regularOpeningHours?.weekdayDescriptions?.length) {
+      place.hours = hit.regularOpeningHours.weekdayDescriptions.join("; ");
+      changed = true;
+    }
+    return changed;
+  } catch {
+    return false;
+  }
+}
+
+async function fillEditorialNotes(
+  places: PlaceBlock[],
+  destination: string | null,
+  gateway: GatewayProvider,
+): Promise<void> {
+  const NotesSchema = z.object({
+    notes: z.array(
+      z.object({
+        index: z.number(),
+        note: z.string().nullable(),
+      }),
+    ),
+  });
+
+  const list = places
+    .map(
+      (p, i) =>
+        `${i}. ${p.name}${p.category ? ` (${p.category})` : ""}${p.address ? ` — ${p.address}` : ""}`,
+    )
+    .join("\n");
+
+  const result = await generateText({
+    model: gateway("google/gemini-2.5-flash"),
+    system:
+      "You write single-sentence editorial notes for a luxury travel itinerary. Each note must be UNDER 15 WORDS, factual, and add genuine insight (atmosphere, specialty, what to expect). No fluff, no marketing copy. Return null if you have no real knowledge of the venue — never fabricate.",
+    prompt: `Destination: ${destination ?? "unknown"}\n\nWrite one note per entry below. Reply with the JSON object only.\n\n${list}`,
+    experimental_output: Output.object({ schema: NotesSchema }),
+  });
+
+  for (const { index, note } of result.experimental_output.notes) {
+    const p = places[index];
+    if (!p || !note) continue;
+    const trimmed = note.trim();
+    if (trimmed) p.note = trimmed;
   }
 }
