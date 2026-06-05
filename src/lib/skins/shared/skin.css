@@ -829,6 +829,65 @@
   display: block;
   padding: 4px 0 6px;
 }
+.tds-slot-carousel:focus { outline: none; }
+.tds-slot-carousel:focus-visible {
+  outline: 2px solid var(--tds-accent);
+  outline-offset: 4px;
+  border-radius: 6px;
+}
+.tds-slot-carousel-diff {
+  margin-left: 4px;
+  opacity: .75;
+  text-transform: none;
+  letter-spacing: .04em;
+}
+.tds-slot-carousel-compare {
+  display: inline-flex; align-items: center;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--tds-rule);
+  background: var(--tds-pop);
+  color: var(--tds-accent);
+  font-size: var(--tds-fs-meta);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+.tds-slot-carousel-compare:hover { background: var(--tds-rule); }
+.tds-slot-carousel-compare.is-active {
+  background: var(--tds-accent);
+  color: var(--tds-pop);
+  border-color: var(--tds-accent);
+}
+.tds-slot-carousel-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 4px 0 6px;
+}
+.tds-slot-carousel-pane {
+  position: relative;
+  border: 1px dashed var(--tds-rule);
+  border-radius: 8px;
+  padding: 22px 10px 10px;
+  background: color-mix(in oklab, var(--tds-accent) 3%, transparent);
+}
+.tds-slot-carousel-pane[data-pane="b"] {
+  background: color-mix(in oklab, var(--tds-accent) 6%, transparent);
+}
+.tds-slot-carousel-pane-tag {
+  position: absolute;
+  top: 6px; left: 10px;
+  font-size: var(--tds-fs-meta);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--tds-accent);
+  opacity: .85;
+}
+@media (max-width: 700px) {
+  .tds-slot-carousel-split { grid-template-columns: 1fr; }
+}
 
 /* =============================================================
    PLAN-B CUE — small anchor link in the day header.

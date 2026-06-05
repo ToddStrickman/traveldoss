@@ -1,4 +1,14 @@
-import { Children, useState, type ReactNode } from "react";
+import {
+  Children,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import type { Block } from "../../types";
 import { CategoryIcon, AirfareIcon, categoryLabel } from "../CategoryIcon";
 import { EditableText, useEditing } from "../Editable";
@@ -386,30 +396,166 @@ export function dayDateLabel(date?: string): string {
  * can scroll/swipe to compare alternatives. Drag-and-drop on each child
  * still works (the items are still positioned in document order).
  */
+/* ------------------------------------------------------------------
+ * Slot selection context — remembers the chosen alternative for every
+ * slot (e.g. "2:morning") so the user can flip through other days and
+ * come back to the same picks. Also stores a per-slot side-by-side
+ * compare toggle. Backed by sessionStorage so the picks survive
+ * navigation within the tab. Mounted by <SkinFrame>.
+ * ------------------------------------------------------------------ */
+
+type SlotSelectionState = {
+  picks: Record<string, number>;
+  compare: Record<string, boolean>;
+};
+type SlotSelectionApi = SlotSelectionState & {
+  setPick: (slotKey: string, index: number) => void;
+  toggleCompare: (slotKey: string) => void;
+};
+
+const STORAGE_KEY = "tds:slot-selection:v1";
+
+const SlotSelectionContext = createContext<SlotSelectionApi | null>(null);
+
+export function SlotSelectionProvider({ children }: { children: ReactNode }) {
+  const [state, setState] = useState<SlotSelectionState>(() => {
+    if (typeof window === "undefined") return { picks: {}, compare: {} };
+    try {
+      const raw = window.sessionStorage.getItem(STORAGE_KEY);
+      if (!raw) return { picks: {}, compare: {} };
+      const parsed = JSON.parse(raw) as Partial<SlotSelectionState>;
+      return {
+        picks: parsed.picks ?? {},
+        compare: parsed.compare ?? {},
+      };
+    } catch {
+      return { picks: {}, compare: {} };
+    }
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch {
+      /* ignore quota errors */
+    }
+  }, [state]);
+
+  const api = useMemo<SlotSelectionApi>(
+    () => ({
+      ...state,
+      setPick: (slotKey, index) =>
+        setState((prev) => ({ ...prev, picks: { ...prev.picks, [slotKey]: index } })),
+      toggleCompare: (slotKey) =>
+        setState((prev) => ({
+          ...prev,
+          compare: { ...prev.compare, [slotKey]: !prev.compare[slotKey] },
+        })),
+    }),
+    [state],
+  );
+
+  return <SlotSelectionContext.Provider value={api}>{children}</SlotSelectionContext.Provider>;
+}
+
+function useSlotSelection(slotKey: string | undefined, total: number) {
+  const ctx = useContext(SlotSelectionContext);
+  const [fallback, setFallback] = useState(0);
+  const [fallbackCompare, setFallbackCompare] = useState(false);
+  if (!ctx || !slotKey) {
+    return {
+      index: Math.min(fallback, Math.max(0, total - 1)),
+      compare: fallbackCompare,
+      setIndex: setFallback,
+      toggleCompare: () => setFallbackCompare((v) => !v),
+    };
+  }
+  const raw = ctx.picks[slotKey] ?? 0;
+  const index = total > 0 ? ((raw % total) + total) % total : 0;
+  return {
+    index,
+    compare: !!ctx.compare[slotKey],
+    setIndex: (i: number) => ctx.setPick(slotKey, i),
+    toggleCompare: () => ctx.toggleCompare(slotKey),
+  };
+}
+
+/**
+ * Click-to-compare carousel of alternative options for a single slot.
+ *
+ * - Keyboard: ← / → cycle, Home / End jump to ends, Enter / Space confirm
+ *   the currently focused dot.
+ * - Persistence: selection is stored by `slotKey` so picks survive while
+ *   the user reviews other days.
+ * - Side-by-side: a small toggle renders the active option next to the
+ *   following one so two alternatives can be compared at once.
+ * - Diff cue: any non-primary option is tagged "Alt of Option 1" to make
+ *   optionality obvious at a glance.
+ */
 export function SlotAlternativesCarousel({
   count,
   children,
+  slotKey,
 }: {
   count: number;
   children: React.ReactNode;
+  slotKey?: string;
 }) {
   const items = Children.toArray(children);
   const total = items.length || count;
-  const [index, setIndex] = useState(0);
+  const { index, compare, setIndex, toggleCompare } = useSlotSelection(slotKey, total);
   const safeIndex = total > 0 ? ((index % total) + total) % total : 0;
-  const go = (delta: number) => setIndex((i) => i + delta);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+
+  const go = useCallback(
+    (delta: number) => setIndex(((safeIndex + delta) % total + total) % total),
+    [setIndex, safeIndex, total],
+  );
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (total <= 1) return;
+    switch (e.key) {
+      case "ArrowLeft":
+        e.preventDefault();
+        go(-1);
+        break;
+      case "ArrowRight":
+      case "Enter":
+        e.preventDefault();
+        go(1);
+        break;
+      case "Home":
+        e.preventDefault();
+        setIndex(0);
+        break;
+      case "End":
+        e.preventDefault();
+        setIndex(total - 1);
+        break;
+      default:
+        break;
+    }
+  };
+
+  const compareIndex = total > 1 ? (safeIndex + 1) % total : safeIndex;
 
   return (
     <div
+      ref={rootRef}
       className="tds-slot-carousel"
       data-count={total}
+      data-compare={compare && total > 1 ? "true" : undefined}
       role="group"
       aria-label={`${total} alternative${total === 1 ? "" : "s"}`}
+      tabIndex={total > 1 ? 0 : -1}
+      onKeyDown={onKeyDown}
     >
       {total > 1 ? (
         <div className="tds-slot-carousel-meta">
           <span className="tds-slot-carousel-pill">
             Option {safeIndex + 1} of {total}
+            {safeIndex > 0 ? <span className="tds-slot-carousel-diff"> · alt of Option 1</span> : null}
           </span>
           <div className="tds-slot-carousel-nav" aria-hidden={false}>
             <button
@@ -441,13 +587,35 @@ export function SlotAlternativesCarousel({
             >
               ›
             </button>
-            <span className="tds-slot-carousel-hint">Click to compare</span>
+            <button
+              type="button"
+              className={`tds-slot-carousel-compare${compare ? " is-active" : ""}`}
+              onClick={toggleCompare}
+              aria-pressed={compare}
+              title="Show two alternatives side-by-side"
+            >
+              {compare ? "Exit compare" : "Compare side-by-side"}
+            </button>
+            <span className="tds-slot-carousel-hint">← → keys · Enter to cycle</span>
           </div>
         </div>
       ) : null}
-      <div className="tds-slot-carousel-stage">
-        {total > 0 ? items[safeIndex] : children}
-      </div>
+      {compare && total > 1 ? (
+        <div className="tds-slot-carousel-split" role="presentation">
+          <div className="tds-slot-carousel-pane" data-pane="a" aria-label={`Option ${safeIndex + 1}`}>
+            <div className="tds-slot-carousel-pane-tag">Option {safeIndex + 1}</div>
+            {items[safeIndex]}
+          </div>
+          <div className="tds-slot-carousel-pane" data-pane="b" aria-label={`Option ${compareIndex + 1}`}>
+            <div className="tds-slot-carousel-pane-tag">Option {compareIndex + 1}</div>
+            {items[compareIndex]}
+          </div>
+        </div>
+      ) : (
+        <div className="tds-slot-carousel-stage">
+          {total > 0 ? items[safeIndex] : children}
+        </div>
+      )}
     </div>
   );
 }
