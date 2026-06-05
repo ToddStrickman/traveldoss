@@ -104,6 +104,11 @@ export function IngestionModal({
   const [clarifyQs, setClarifyQs] = useState<string[]>([]);
   const [clarifyAs, setClarifyAs] = useState<string[]>([]);
 
+  // Saved drafts (local-first, syncs when signed in) + a11y toggle.
+  const saved = useSavedTripRequests();
+  const { reducedMotion, setReducedMotion } = useGeneratorA11y();
+  const [activeSavedId, setActiveSavedId] = useState<string | null>(null);
+
   const INTEREST_OPTIONS = [
     "food", "wine", "design", "architecture", "art",
     "history", "nature", "hiking", "beaches", "nightlife",
@@ -114,6 +119,50 @@ export function IngestionModal({
     setGenInterests((prev) =>
       prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
     );
+  }
+
+  function currentPayload() {
+    return {
+      prompt: genPrompt,
+      destination: genDestination,
+      duration: genDuration,
+      startDate: genStartDate,
+      travelers: genTravelers,
+      pace: genPace,
+      budget: genBudget,
+      interests: genInterests,
+      useLiveResearch: true,
+    };
+  }
+
+  async function saveCurrentDraft() {
+    const labelGuess =
+      genDestination.trim() ||
+      genPrompt.trim().slice(0, 60) ||
+      "Untitled brief";
+    if (!labelGuess.trim()) {
+      toast.error("Add a destination or short prompt before saving.");
+      return;
+    }
+    const id = await saved.save(labelGuess, currentPayload(), activeSavedId ?? undefined);
+    setActiveSavedId(id);
+    toast.success(
+      saved.signedIn ? "Saved — synced to your account." : "Saved on this device.",
+    );
+  }
+
+  function loadSavedDraft(r: SavedTripRequest) {
+    const p = r.payload;
+    setGenPrompt(p.prompt ?? "");
+    setGenDestination(p.destination ?? "");
+    setGenDuration(p.duration ?? "");
+    setGenStartDate(p.startDate ?? "");
+    setGenTravelers(p.travelers ?? "");
+    setGenPace((p.pace ?? "") as typeof genPace);
+    setGenBudget((p.budget ?? "") as typeof genBudget);
+    setGenInterests(Array.isArray(p.interests) ? p.interests : []);
+    setActiveSavedId(r.id);
+    toast.message(`Loaded "${r.label}"`, { description: "Tweak pace or budget and regenerate." });
   }
 
   async function submit() {
