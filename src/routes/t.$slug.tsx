@@ -17,6 +17,7 @@ import { moveActivity } from "@/lib/skins/shared/itinerary";
 import { IngestionModal } from "@/components/flow/IngestionModal";
 import { GmailImportPanel } from "@/components/flow/GmailImportPanel";
 import { TripDocPreviews } from "@/components/flow/TripDocPreviews";
+import { DebugReportsPanel } from "@/components/studio/DebugReportsPanel";
 import { toast } from "sonner";
 import { useHistory, useUndoRedoShortcuts } from "@/hooks/use-history";
 
@@ -301,6 +302,7 @@ function DossierPage() {
       <div className="mx-auto max-w-3xl px-6 pb-24" data-print="hide">
         <TripDocPreviews tripId={trip.id} />
         {canEdit && <GmailImportPanel tripId={trip.id} />}
+        {canEdit && <DebugReportsPanel tripId={trip.id} />}
       </div>
       <Link
         to="/"
