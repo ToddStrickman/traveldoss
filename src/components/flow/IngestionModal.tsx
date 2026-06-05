@@ -415,8 +415,9 @@ export function IngestionModal({
                 className="max-w-md text-[15px] leading-[1.55] text-ink-soft"
                 style={{ fontFamily: "var(--font-display)" }}
               >
-                Three ways in. One result —{" "}
-                <span className="italic text-ink/70">a quietly composed dossier,</span> set in this dossier template.
+                One entry —{" "}
+                <span className="italic text-ink/70">paste, upload, or describe.</span>{" "}
+                We'll only ask for what we can't infer.
               </p>
             </div>
             <div className="hidden shrink-0 text-right md:block">
@@ -582,13 +583,11 @@ export function IngestionModal({
             <span>
               {parsing
                 ? tab === "generate"
-                  ? "Generating live…"
+                  ? "Composing live…"
                   : "Reading & enriching…"
-                : tab === "generate"
-                ? clarifyQs.length
-                  ? "Continue"
-                  : "Generate Itinerary"
-                : "Review & Mint"}
+                : clarifyQs.length
+                ? "Continue"
+                : "Compose Dossier"}
             </span>
             <span aria-hidden className="inline-flex h-7 w-7 items-center justify-center rounded-sm border border-seal/40 transition-elegant group-hover:border-paper/40">
               →
