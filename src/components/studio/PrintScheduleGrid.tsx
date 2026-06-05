@@ -89,30 +89,7 @@ export function PrintScheduleGrid({ trip, blocks }: { trip: TripView; blocks: Bl
                   <div style={{ fontSize: 11, color: "#bbb", fontStyle: "italic" }}>—</div>
                 ) : (
                   d.slots[slot].map((b, j) => (
-                    <div key={j} style={{ marginBottom: 8, fontSize: 11, lineHeight: 1.4 }}>
-                      {b.kind === "place" ? (
-                        <>
-                          <div style={{ fontWeight: 600 }}>
-                            {b.time ? <span style={{ color: "#666", marginRight: 6 }}>{b.time}</span> : null}
-                            {b.name}
-                          </div>
-                          {b.address ? <div style={{ color: "#444" }}>{b.address}</div> : null}
-                          {b.website ? (
-                            <div>
-                              <a href={b.website} style={{ color: "#0a4", textDecoration: "underline" }}>
-                                {b.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}
-                              </a>
-                            </div>
-                          ) : null}
-                        </>
-                      ) : (
-                        <div style={{ fontWeight: 600 }}>
-                          {[b.airline, b.flightNumber].filter(Boolean).join(" ")} —{" "}
-                          {[b.fromCity ?? b.from, b.toCity ?? b.to].filter(Boolean).join(" → ")}
-                          {b.departTime ? <span style={{ color: "#666" }}> · {b.departTime}</span> : null}
-                        </div>
-                      )}
-                    </div>
+                    <PrintRow key={j} b={b} />
                   ))
                 )}
               </div>
