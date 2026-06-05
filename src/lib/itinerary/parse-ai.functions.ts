@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { generateText, Output } from "ai";
 import { z } from "zod";
 import type { Block } from "@/lib/skins/types";
-import { stripEmoji } from "@/lib/itinerary/parse";
+import { parseDropInWithMeta, stripEmoji } from "@/lib/itinerary/parse";
 
 /**
  * AI-powered itinerary parser. Takes raw pasted text (from ChatGPT,
@@ -14,10 +14,14 @@ import { stripEmoji } from "@/lib/itinerary/parse";
  * LOVABLE_API_KEY never leaks into the client bundle.
  */
 
+const nullableString = () => z.string().nullable().optional();
+const nullableNumber = () => z.number().nullable().optional();
+
 const BlockSchema = z.object({
   destination: z
     .string()
     .nullable()
+    .optional()
     .describe("The primary destination of the trip, e.g. 'Tokyo' or 'Amalfi Coast'. Null if undecidable."),
   blocks: z
     .array(
@@ -26,22 +30,19 @@ const BlockSchema = z.object({
           .enum(["day", "place", "flight", "paragraph", "note"])
           .describe("The block type."),
         // day fields
-        n: z.number().nullable().describe("Day number (only for kind=day)"),
-        label: z
-          .string()
-          .nullable()
+        n: nullableNumber().describe("Day number (only for kind=day)"),
+        label: nullableString()
           .describe("Short title for a day, e.g. 'Arrival in Rome'"),
-        dayDate: z
-          .string()
-          .nullable()
+        dayDate: nullableString()
           .describe(
             "Calendar date for the day if the input mentions one ('Oct 14', '10/14/25', '2025-10-14'). Null if not stated — DO NOT invent a date.",
           ),
         // place fields
-        name: z.string().nullable().describe("Name of the place/vendor"),
+        name: nullableString().describe("Name of the place/vendor"),
         tier: z
           .enum(["primary", "shadow"])
           .nullable()
+          .optional()
           .describe(
             "'shadow' for any entry the user marked as Alternative / Option / Backup / Plan B — those render in the Shadow Itinerary section. Otherwise 'primary' or null.",
           ),
@@ -56,62 +57,57 @@ const BlockSchema = z.object({
             "",
           ])
           .nullable()
+          .optional()
           .describe(
             "One of the six canonical categories. Empty string '' if genuinely ambiguous — DO NOT GUESS.",
           ),
-        address: z.string().nullable().describe("Full street address if known"),
-        phone: z.string().nullable().describe("Localized phone number if known"),
-        website: z.string().nullable().describe("Official website URL if known"),
-        hours: z.string().nullable(),
-        time: z.string().nullable().describe("Clock time like '14:30' if mentioned"),
-        reservation: z.string().nullable(),
-        note: z
-          .string()
-          .nullable()
+        address: nullableString().describe("Full street address if known"),
+        phone: nullableString().describe("Localized phone number if known"),
+        website: nullableString().describe("Official website URL if known"),
+        hours: nullableString(),
+        time: nullableString().describe("Clock time like '14:30' if mentioned"),
+        reservation: nullableString(),
+        note: nullableString()
           .describe(
             "ONE concise editorial sentence (<15 words) combining the source context with a factual insight about the vendor. Empty if the model has no insight.",
           ),
-        confidence: z
-          .number()
-          .min(0)
-          .max(1)
-          .nullable()
+        confidence: nullableNumber()
           .describe(
             "Self-rated confidence in the enriched fields (address/phone/website/hours/note) for this place, on a 0–1 scale. Use <0.85 whenever you are not certain the vendor identification or enrichment is correct. Null for non-place blocks.",
           ),
         // accommodation
-        checkIn: z.string().nullable(),
-        checkOut: z.string().nullable(),
-        amenities: z.string().nullable(),
+        checkIn: nullableString(),
+        checkOut: nullableString(),
+        amenities: nullableString(),
         // restaurant
-        dressCode: z.string().nullable(),
-        mustOrder: z.string().nullable(),
+        dressCode: nullableString(),
+        mustOrder: nullableString(),
         // transit
-        vendor: z.string().nullable(),
-        pickup: z.string().nullable(),
-        dropoff: z.string().nullable(),
+        vendor: nullableString(),
+        pickup: nullableString(),
+        dropoff: nullableString(),
         // event / culture
-        venue: z.string().nullable(),
-        ticketRequirement: z.string().nullable(),
-        tourDetails: z.string().nullable(),
+        venue: nullableString(),
+        ticketRequirement: nullableString(),
+        tourDetails: nullableString(),
         // walk
-        trailhead: z.string().nullable(),
-        distance: z.string().nullable(),
-        duration: z.string().nullable(),
-        difficulty: z.string().nullable(),
+        trailhead: nullableString(),
+        distance: nullableString(),
+        duration: nullableString(),
+        difficulty: nullableString(),
         // flight
-        airline: z.string().nullable(),
-        flightNumber: z.string().nullable(),
-        from: z.string().nullable().describe("Departure airport IATA code"),
-        to: z.string().nullable().describe("Arrival airport IATA code"),
-        fromCity: z.string().nullable(),
-        toCity: z.string().nullable(),
-        departTime: z.string().nullable(),
-        arriveTime: z.string().nullable(),
-        date: z.string().nullable(),
-        arriveDate: z.string().nullable(),
+        airline: nullableString(),
+        flightNumber: nullableString(),
+        from: nullableString().describe("Departure airport IATA code"),
+        to: nullableString().describe("Arrival airport IATA code"),
+        fromCity: nullableString(),
+        toCity: nullableString(),
+        departTime: nullableString(),
+        arriveTime: nullableString(),
+        date: nullableString(),
+        arriveDate: nullableString(),
         // paragraph / note
-        text: z.string().nullable().describe("Body text for paragraph/note blocks"),
+        text: nullableString().describe("Body text for paragraph/note blocks"),
       }),
     )
     .describe("Ordered list of itinerary blocks"),
