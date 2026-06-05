@@ -79,6 +79,18 @@ export const updateDossier = createServerFn({ method: "POST" })
         templateId: z.string().min(1).max(64).optional(),
         destination: z.string().min(1).max(120).optional(),
         subtitle: z.string().max(280).optional(),
+        startDate: z.string().max(40).optional(),
+        endDate: z.string().max(40).optional(),
+        meta: z
+          .object({
+            travelers: z.string().max(80).optional(),
+            pace: z.enum(["relaxed", "balanced", "packed"]).optional(),
+            budget: z
+              .enum(["shoestring", "moderate", "elevated", "luxury"])
+              .optional(),
+            interests: z.array(z.string().max(40)).max(20).optional(),
+          })
+          .optional(),
       })
       .parse(input),
   )
@@ -88,13 +100,37 @@ export const updateDossier = createServerFn({ method: "POST" })
       destination?: string;
       subtitle?: string;
       template_id?: string;
+      start_date?: string | null;
+      end_date?: string | null;
       content?: unknown;
     } = {};
     if (data.destination !== undefined) patch.destination = data.destination;
     if (data.subtitle !== undefined) patch.subtitle = data.subtitle;
     if (data.templateId !== undefined) patch.template_id = data.templateId;
-    if (data.blocks !== undefined) {
-      patch.content = { blocks: data.blocks, skin: data.templateId };
+    if (data.startDate !== undefined)
+      patch.start_date = data.startDate.trim() ? data.startDate : null;
+    if (data.endDate !== undefined)
+      patch.end_date = data.endDate.trim() ? data.endDate : null;
+    if (data.blocks !== undefined || data.meta !== undefined) {
+      // Merge into the existing content blob so we don't clobber sibling
+      // keys (blocks vs meta). Read-then-write is racy but acceptable for
+      // the autosave cadence here.
+      const { data: existing } = await supabase
+        .from("trips")
+        .select("content")
+        .eq("slug", data.slug)
+        .single();
+      const prev = (existing?.content ?? {}) as {
+        blocks?: unknown;
+        skin?: string;
+        meta?: unknown;
+      };
+      patch.content = {
+        ...prev,
+        ...(data.blocks !== undefined ? { blocks: data.blocks } : {}),
+        ...(data.meta !== undefined ? { meta: data.meta } : {}),
+        ...(data.templateId !== undefined ? { skin: data.templateId } : {}),
+      };
     }
     if (Object.keys(patch).length === 0) return { ok: true };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

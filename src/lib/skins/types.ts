@@ -126,6 +126,15 @@ export type TripView = {
   end_date?: string | null;
   hero_image_url?: string | null;
   days?: number;
+  /** Optional dossier-level preferences shown as inline chips. */
+  meta?: TripMeta | null;
+};
+
+export type TripMeta = {
+  travelers?: string;
+  pace?: "relaxed" | "balanced" | "packed";
+  budget?: "shoestring" | "moderate" | "elevated" | "luxury";
+  interests?: string[];
 };
 
 export type SkinTokens = {
