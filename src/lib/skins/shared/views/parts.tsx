@@ -236,8 +236,8 @@ export function FlightStrip({
   if (!outbound && !inbound) return null;
   return (
     <div className="tds-flightstrip" data-block="flightstrip" data-print="hide-empty">
-      {outbound ? <FlightRow flight={outbound} label="Outbound" /> : null}
-      {inbound ? <FlightRow flight={inbound} label="Inbound" /> : null}
+      {outbound ? <FlightRow flight={outbound} label="Departure" /> : null}
+      {inbound ? <FlightRow flight={inbound} label="Return" /> : null}
     </div>
   );
 }
