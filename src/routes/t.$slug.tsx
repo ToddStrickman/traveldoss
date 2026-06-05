@@ -21,6 +21,7 @@ import { DebugReportsPanel } from "@/components/studio/DebugReportsPanel";
 import { toast } from "sonner";
 import { useHistory, useUndoRedoShortcuts } from "@/hooks/use-history";
 import { useItineraryRefiner } from "@/hooks/use-itinerary-refiner";
+import { hardenItineraryAi } from "@/lib/itinerary/harden.functions";
 
 type RefineHistoryEntry = {
   id: string;
