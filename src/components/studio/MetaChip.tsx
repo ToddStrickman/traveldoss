@@ -75,16 +75,18 @@ export function MetaChip(props: MetaChipProps) {
           type="button"
           aria-label={hint ?? `Edit ${label}`}
           data-empty={empty ? "true" : "false"}
-          className={`group inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] tracking-[0.04em] transition-elegant ${
+          className={`group inline-flex items-center gap-1.5 rounded-full border px-3 py-1 tracking-[0.04em] transition-elegant ${
             empty
-              ? "td-chip-pulse border-dashed border-seal/50 bg-seal/5 text-seal hover:bg-seal/10"
-              : "border-ink/15 bg-paper/60 text-ink-soft hover:border-seal/50 hover:text-ink"
+              ? "td-chip-pulse border-dashed border-seal/60 bg-seal/10 text-ink hover:bg-seal/15 text-[11.5px]"
+              : "border-ink/15 bg-paper/60 text-ink-soft hover:border-seal/50 hover:text-ink text-[11px]"
           }`}
         >
           {empty ? (
             <>
-              <Plus className="h-3 w-3" />
-              <span className="td-eyebrow">{emptyLabel ?? `Add ${label.toLowerCase()}`}</span>
+              <Plus className="h-3 w-3 text-seal" strokeWidth={2.25} />
+              <span className="td-eyebrow font-medium text-ink/85">
+                {emptyLabel ?? `Add ${label.toLowerCase()}`}
+              </span>
             </>
           ) : (
             <>
