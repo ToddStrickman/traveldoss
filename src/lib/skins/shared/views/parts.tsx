@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { Children, useState, type ReactNode } from "react";
 import type { Block } from "../../types";
 import { CategoryIcon, AirfareIcon, categoryLabel } from "../CategoryIcon";
 import { EditableText, useEditing } from "../Editable";
@@ -393,15 +393,61 @@ export function SlotAlternativesCarousel({
   count: number;
   children: React.ReactNode;
 }) {
+  const items = Children.toArray(children);
+  const total = items.length || count;
+  const [index, setIndex] = useState(0);
+  const safeIndex = total > 0 ? ((index % total) + total) % total : 0;
+  const go = (delta: number) => setIndex((i) => i + delta);
+
   return (
-    <div className="tds-slot-carousel" data-count={count} role="group" aria-label={`${count} option${count === 1 ? "" : "s"}`}>
-      {count > 1 ? (
-        <div className="tds-slot-carousel-meta" aria-hidden>
-          <span className="tds-slot-carousel-pill">{count} options</span>
-          <span className="tds-slot-carousel-hint">Swipe to compare →</span>
+    <div
+      className="tds-slot-carousel"
+      data-count={total}
+      role="group"
+      aria-label={`${total} alternative${total === 1 ? "" : "s"}`}
+    >
+      {total > 1 ? (
+        <div className="tds-slot-carousel-meta">
+          <span className="tds-slot-carousel-pill">
+            Option {safeIndex + 1} of {total}
+          </span>
+          <div className="tds-slot-carousel-nav" aria-hidden={false}>
+            <button
+              type="button"
+              className="tds-slot-carousel-btn"
+              onClick={() => go(-1)}
+              aria-label="Previous alternative"
+            >
+              ‹
+            </button>
+            <div className="tds-slot-carousel-dots" role="tablist">
+              {items.map((_, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  role="tab"
+                  aria-selected={i === safeIndex}
+                  aria-label={`Show alternative ${i + 1}`}
+                  className={`tds-slot-carousel-dot${i === safeIndex ? " is-active" : ""}`}
+                  onClick={() => setIndex(i)}
+                />
+              ))}
+            </div>
+            <button
+              type="button"
+              className="tds-slot-carousel-btn"
+              onClick={() => go(1)}
+              aria-label="Next alternative"
+            >
+              ›
+            </button>
+            <span className="tds-slot-carousel-hint">Click to compare</span>
+          </div>
         </div>
       ) : null}
-      <div className="tds-slot-carousel-track">{children}</div>
+      <div className="tds-slot-carousel-stage">
+        {total > 0 ? items[safeIndex] : children}
+      </div>
     </div>
   );
 }
