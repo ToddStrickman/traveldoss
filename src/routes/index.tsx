@@ -156,6 +156,12 @@ function Landing() {
       {/* Center stage */}
       <main className="relative z-10 mx-auto flex min-h-[82dvh] max-w-[1400px] flex-col items-center justify-center px-6 py-10 text-center md:min-h-[76dvh] md:py-8 md:pl-32 md:pr-[340px]">
         <Parallax depth={-6}>
+        <Link
+          to="/login"
+          className="td-shimmer mb-4 inline-flex items-center gap-2 rounded-full border border-ink/20 bg-paper/40 px-4 py-1.5 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/70 backdrop-blur-sm transition-colors hover:border-seal hover:text-seal"
+        >
+          Login
+        </Link>
         <motion.span
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
