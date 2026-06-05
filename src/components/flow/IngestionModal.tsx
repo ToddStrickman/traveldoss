@@ -521,7 +521,19 @@ export function IngestionModal({
               )}
             </div>
           )}
-          {tab === "generate" && (
+          {tab === "generate" && parsing && !clarifyQs.length ? (
+            <GenerationProgress
+              phase={genPhase}
+              destination={genDestination}
+              duration={genDuration}
+              startDate={genStartDate}
+              travelers={genTravelers}
+              pace={genPace}
+              budget={genBudget}
+              interests={genInterests}
+              prompt={genPrompt}
+            />
+          ) : tab === "generate" && (
             <GenerateForm
               prompt={genPrompt}
               setPrompt={setGenPrompt}
