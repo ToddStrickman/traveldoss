@@ -1318,12 +1318,18 @@ function GenerateForm({
           className="w-full rounded-md border border-ink/15 bg-paper/60 px-4 py-3.5 text-[13.5px] leading-[1.6] text-ink outline-none transition-elegant placeholder:text-ink/35 focus:border-seal focus:bg-paper"
         />
         <p className="text-[11.5px] leading-[1.55] text-ink-soft">
-          We'll draft a complete itinerary, then verify each vendor live
-          against Google Places for current address, phone, and hours.
+          We'll read your brief and only ask follow-up questions for anything
+          we can't infer — destination, dates, travelers, pace, budget, and
+          interests are all optional.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <details className="group rounded-md border border-ink/10 bg-paper/30 px-4 py-3">
+        <summary className="td-eyebrow flex cursor-pointer list-none items-center justify-between text-ink/55 hover:text-ink">
+          <span>Add details (optional)</span>
+          <span aria-hidden className="text-ink/40 transition-transform group-open:rotate-180">⌄</span>
+        </summary>
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Labeled label="Destination">
           <input
             className={fieldCls}
@@ -1381,9 +1387,9 @@ function GenerateForm({
             <option value="luxury">Luxury</option>
           </select>
         </Labeled>
-      </div>
+        </div>
 
-      <div className="flex flex-col gap-2">
+        <div className="mt-4 flex flex-col gap-2">
         <label className="td-eyebrow text-ink/45">Interests</label>
         <div className="flex flex-wrap gap-1.5">
           {interestOptions.map((tag) => {
@@ -1404,7 +1410,8 @@ function GenerateForm({
             );
           })}
         </div>
-      </div>
+        </div>
+      </details>
     </div>
   );
 }
