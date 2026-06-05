@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { fetchWithRetry } from "@/lib/retry";
 
 /**
  * Export a dossier's blocks into a brand-new Google Doc using the
@@ -84,7 +85,7 @@ export const exportItineraryToGoogleDoc = createServerFn({ method: "POST" })
 
     // Create the doc.
     const title = `${trip.destination || "Itinerary"} — TravelDoss`.slice(0, 180);
-    const createRes = await fetch(`${DOCS_GATEWAY}/documents`, {
+    const createRes = await fetchWithRetry(`${DOCS_GATEWAY}/documents`, {
       method: "POST",
       headers: gatewayHeaders(),
       body: JSON.stringify({ title }),
@@ -192,7 +193,7 @@ export const exportItineraryToGoogleDoc = createServerFn({ method: "POST" })
     }
 
     if (reqs.length) {
-      const updateRes = await fetch(
+      const updateRes = await fetchWithRetry(
         `${DOCS_GATEWAY}/documents/${documentId}:batchUpdate`,
         { method: "POST", headers: gatewayHeaders(), body: JSON.stringify({ requests: reqs }) },
       );
