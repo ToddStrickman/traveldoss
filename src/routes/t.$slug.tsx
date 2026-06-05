@@ -236,6 +236,8 @@ function DossierPage() {
 
   useUndoRedoShortcuts(canEdit, undo, redo);
 
+  const [refineHistory, setRefineHistory] = useState<RefineHistoryEntry[]>([]);
+
   const refiner = useItineraryRefiner(
     {
       blocks,
@@ -272,8 +274,6 @@ function DossierPage() {
       },
     },
   );
-
-  const [refineHistory, setRefineHistory] = useState<RefineHistoryEntry[]>([]);
 
   const restoreRefine = useCallback(
     (id: string) => {
