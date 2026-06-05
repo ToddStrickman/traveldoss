@@ -64,8 +64,7 @@ export function MobileBubbles() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const coarse = window.matchMedia("(pointer: coarse)").matches;
-    if (reduce || !coarse) return;
+    if (reduce) return;
     setMounted(true);
     const onVis = () => setHidden(document.visibilityState === "hidden");
     document.addEventListener("visibilitychange", onVis);
@@ -84,9 +83,11 @@ export function MobileBubbles() {
     let frameIdx = 0;
     let prevTx = 0;
     let prevTy = 0;
+    let gotOrientation = false;
 
     const onOrient = (e: DeviceOrientationEvent) => {
       if (e.beta == null || e.gamma == null) return;
+      gotOrientation = true;
       const now = performance.now();
       if (now - lastOrient < orientThrottleMs) return;
       lastOrient = now;
@@ -111,6 +112,22 @@ export function MobileBubbles() {
     };
     window.addEventListener("deviceorientation", onOrient, { passive: true });
 
+    // Fallback for environments without device orientation (preview
+    // emulator, desktop, iOS pre-permission). Map pointer / scroll to a
+    // gentle drift so bubbles always feel alive.
+    const onPointer = (e: PointerEvent | MouseEvent) => {
+      if (gotOrientation) return;
+      const w = window.innerWidth || 1;
+      const h = window.innerHeight || 1;
+      const targetX = (e.clientX / w) * 2 - 1; // -1..1
+      const targetY = 1 - e.clientY / h; // 1 at top, 0 at bottom
+      smX += (targetX - smX) * 0.15;
+      smY += (targetY - smY) * 0.15;
+      tiltRef.current = { tx: smX, ty: smY, dirty: true };
+    };
+    window.addEventListener("pointermove", onPointer, { passive: true });
+    window.addEventListener("mousemove", onPointer, { passive: true });
+
     const tick = (time: number) => {
       frameIdx++;
       if (frameIdx % frameSkip !== 0) {
@@ -121,16 +138,14 @@ export function MobileBubbles() {
       const { tx, ty, dirty } = tiltRef.current;
       const t = time / 1000;
 
-      // If tilt hasn't budged we can skip all writes (bubbles just hold
-      // their last transform). The breathing opacity is handled by CSS.
-      if (dirty) {
+      // Always animate the wobble so bubbles drift visibly even when
+      // the device is perfectly still / there's no tilt source.
+      {
         BUBBLES.forEach((b, i) => {
           const el = elsRef.current[i];
           if (!el) return;
-          // tx in [-1..1] -> ±30 vmin.
-          // ty in [0..1]  -> bubble rises up to -38 vmin.
-          const wobX = Math.sin(t / 2 + b.phase) * 1.2;
-          const wobY = Math.cos(t / 2.4 + b.phase) * 1.2;
+          const wobX = Math.sin(t / 2 + b.phase) * 2.4;
+          const wobY = Math.cos(t / 2.4 + b.phase) * 2.4;
           const offX = tx * 30 + wobX;
           const offY = -ty * 38 + wobY;
           el.style.transform = `translate3d(${offX.toFixed(2)}vmin, ${offY.toFixed(2)}vmin, 0)`;
@@ -144,6 +159,8 @@ export function MobileBubbles() {
 
     return () => {
       window.removeEventListener("deviceorientation", onOrient);
+      window.removeEventListener("pointermove", onPointer);
+      window.removeEventListener("mousemove", onPointer);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
   }, [mounted]);
@@ -154,7 +171,6 @@ export function MobileBubbles() {
     <div
       aria-hidden
       className="pointer-events-none fixed inset-0 z-[2] overflow-hidden"
-      style={{ mixBlendMode: "screen" }}
     >
       {BUBBLES.map((b, i) => (
         <div
@@ -172,9 +188,9 @@ export function MobileBubbles() {
             marginTop: `${-b.size / 2}vmin`,
             borderRadius: "9999px",
             background:
-              "radial-gradient(circle at 35% 30%, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.18) 35%, rgba(255,255,255,0.05) 60%, rgba(255,255,255,0) 75%)",
+              "radial-gradient(circle at 35% 30%, rgba(186,221,255,0.85) 0%, rgba(140,190,235,0.55) 35%, rgba(90,140,200,0.22) 60%, rgba(60,110,170,0) 78%)",
             boxShadow:
-              "inset 0 0 0 1px rgba(255,255,255,0.22), inset 0 -2px 6px rgba(255,255,255,0.18)",
+              "inset 0 0 0 1px rgba(255,255,255,0.6), inset 0 -2px 6px rgba(255,255,255,0.35), 0 4px 14px rgba(40,80,140,0.18)",
             willChange: "transform",
             animation: `td-bubble-breathe ${b.drift}s ease-in-out infinite`,
           }}
@@ -182,8 +198,8 @@ export function MobileBubbles() {
       ))}
       <style>{`
         @keyframes td-bubble-breathe {
-          0%, 100% { opacity: 0.65; }
-          50% { opacity: 0.95; }
+          0%, 100% { opacity: 0.8; }
+          50% { opacity: 1; }
         }
       `}</style>
     </div>
