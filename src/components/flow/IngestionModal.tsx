@@ -23,6 +23,9 @@ import {
   Bookmark,
   X,
   Accessibility,
+  ClipboardPaste,
+  Upload,
+  Wand2,
 } from "lucide-react";
 import {
   Tooltip,
@@ -73,10 +76,15 @@ function offerDebugReport(report: DebugReport | undefined, label: string) {
 
 type Tab = "paste" | "transcript" | "generate";
 
-const TABS: { id: Tab; n: string; label: string; sub: string }[] = [
-  { id: "paste", n: "I", label: "Paste Itinerary", sub: "ChatGPT, Claude, notes." },
-  { id: "transcript", n: "II", label: "Upload Transcript", sub: "Text or .vtt / .srt files." },
-  { id: "generate", n: "III", label: "Generate Itinerary", sub: "Describe the trip — we'll draft it live." },
+const TABS: {
+  id: Tab;
+  icon: typeof ClipboardPaste;
+  label: string;
+  sub: string;
+}[] = [
+  { id: "paste", icon: ClipboardPaste, label: "Paste Itinerary", sub: "ChatGPT, Claude, notes." },
+  { id: "transcript", icon: Upload, label: "Upload Transcript", sub: "Text or .vtt / .srt files." },
+  { id: "generate", icon: Wand2, label: "Generate Itinerary", sub: "Describe the trip — we'll draft it live." },
 ];
 
 function serial() {
@@ -429,13 +437,13 @@ export function IngestionModal({
 
         {/* Serialised steps */}
         <div className="px-5 sm:px-8 md:px-10 pt-8">
-          <div className="td-eyebrow mb-4 flex items-center justify-between text-ink/45">
-            <span>Step {tabIndex + 1} of {TABS.length}</span>
-            <span>Choose a source</span>
+          <div className="td-eyebrow mb-4 text-ink/45">
+            <span>Pick a dossier generation option</span>
           </div>
           <div className="grid grid-cols-1 gap-0 overflow-hidden rounded-md border border-ink/10 md:grid-cols-3">
             {TABS.map((opt, i) => {
               const on = tab === opt.id;
+              const Icon = opt.icon;
               return (
                 <button
                   key={opt.id}
@@ -444,8 +452,8 @@ export function IngestionModal({
                     on ? "bg-paper" : "bg-paper/40 hover:bg-paper/70"
                   } ${i > 0 ? "md:border-l md:border-ink/10" : ""}`}
                 >
-                  <span className="flex items-baseline gap-2">
-                    <span className="font-mono text-[10px] tracking-[0.35em] text-seal/80">{opt.n}</span>
+                  <span className="flex items-center gap-2 text-seal/80">
+                    <Icon className="h-5 w-5" strokeWidth={1.5} aria-hidden />
                     <span className="td-rule w-6 opacity-60" />
                   </span>
                   <span
