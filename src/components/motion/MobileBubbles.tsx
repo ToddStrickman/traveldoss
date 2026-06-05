@@ -57,14 +57,14 @@ function isLowEndDevice(): boolean {
 export function MobileBubbles() {
   const [mounted, setMounted] = useState(false);
   const [hidden, setHidden] = useState(false);
+  const [reduced, setReduced] = useState(false);
   const tiltRef = useRef({ tx: 0, ty: 0, dirty: true });
   const rafRef = useRef<number | null>(null);
   const elsRef = useRef<Array<HTMLDivElement | null>>([]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduce) return;
+    setReduced(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
     setMounted(true);
     const onVis = () => setHidden(document.visibilityState === "hidden");
     document.addEventListener("visibilitychange", onVis);
