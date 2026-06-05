@@ -245,10 +245,9 @@ export function IngestionModal({
       toast.error("We couldn't read structure out of that. Try Day 1, Day 2…");
       return;
     }
-    setReviewBlocks(blocks);
-    setReviewLabel(tab === "transcript" ? "Reading your transcript…" : "Reading your itinerary…");
-    setReviewDestination(destination);
-    setStage("review");
+    const label = tab === "transcript" ? "Reading your transcript…" : "Reading your itinerary…";
+    onGenerate(blocks, label, destination);
+    handleOpenChange(false);
   }
 
   async function submitGenerate(
@@ -305,12 +304,14 @@ export function IngestionModal({
         return;
       }
       setGenPhase("done");
-      setReviewBlocks(parsed.blocks);
-      setReviewLabel("Drafting your itinerary…");
-      setReviewDestination(parsed.destination ?? genDestination.trim() ?? null);
       setClarifyQs([]);
       setClarifyAs([]);
-      setStage("review");
+      onGenerate(
+        parsed.blocks,
+        "Drafting your itinerary…",
+        parsed.destination ?? genDestination.trim() ?? null,
+      );
+      handleOpenChange(false);
     } catch (err) {
       console.error("[ai-generate] failed", err);
       toast.error(
