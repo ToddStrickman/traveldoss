@@ -28,7 +28,8 @@ export const saveDebugReport = createServerFn({ method: "POST" })
         source: String(report.source ?? "unknown").slice(0, 32),
         outcome: String(report.outcome ?? "unknown").slice(0, 32),
         attempts_count: Array.isArray(report.attempts) ? report.attempts.length : 0,
-        report: report as unknown as Record<string, unknown>,
+        // Stored as jsonb; cast through unknown to satisfy generated Json type.
+        report: JSON.parse(JSON.stringify(report)),
       })
       .select("id, created_at")
       .single();
