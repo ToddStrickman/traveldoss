@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { generateText, NoObjectGeneratedError, Output } from "ai";
+import { generateText } from "ai";
 import { z } from "zod";
 import type { Block } from "@/lib/skins/types";
 import { parseDropInWithMeta, stripEmoji } from "@/lib/itinerary/parse";
@@ -221,7 +221,7 @@ export const parseItineraryAi = createServerFn({ method: "POST" })
       if (/402|credit/i.test(msg)) {
         throw new Error("AI credits exhausted. Add credits in Workspace → Usage.");
       }
-      if (/429|rate/i.test(msg)) {
+      if (isRateLimitMessage(msg)) {
         throw new Error("AI is busy. Wait a few seconds and retry.");
       }
 
@@ -271,22 +271,12 @@ async function parseBlocksWithAi(
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
-      if (attempt === 1) {
-        const result = await generateText({
-          model: gateway("google/gemini-2.5-flash"),
-          system: SYSTEM_PROMPT,
-          prompt: basePrompt,
-          experimental_output: Output.object({ schema: BlockSchema }),
-        });
-        return result.experimental_output;
-      }
-
       const repairNote = lastIssue
         ? `\n\nYour previous response failed validation (${lastIssue}). Return one JSON object only. Include a top-level "destination" and "blocks" array. Do not include prose or code fences.`
         : "";
       const result = await generateText({
         model: gateway("google/gemini-2.5-flash"),
-        system: `${SYSTEM_PROMPT}\n\nReturn ONLY a JSON object matching the requested schema. Missing optional fields may be omitted.${repairNote}`,
+        system: `${SYSTEM_PROMPT}\n\nReturn ONLY a JSON object matching the requested schema. Missing optional fields may be omitted. No prose, no markdown, no code fences.${repairNote}`,
         prompt: basePrompt,
       });
       lastRaw = result.text.trim();
@@ -297,11 +287,8 @@ async function parseBlocksWithAi(
         .map((i) => `${i.path.join(".") || "(root)"} ${i.message}`)
         .join("; ")}`;
     } catch (err) {
-      if (NoObjectGeneratedError.isInstance(err) && err.text) {
-        lastRaw = err.text.trim();
-      }
       const msg = err instanceof Error ? err.message : String(err);
-      if (/402|credit|429|rate/i.test(msg)) throw err;
+      if (/402|credit/i.test(msg) || isRateLimitMessage(msg)) throw err;
       if (lastRaw) {
         try {
           const safe = BlockSchema.safeParse(JSON.parse(extractJsonObject(lastRaw)));
