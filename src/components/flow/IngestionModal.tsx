@@ -20,6 +20,9 @@ import {
   AlertTriangle,
   Info,
   Sparkles,
+  Bookmark,
+  X,
+  Accessibility,
 } from "lucide-react";
 import {
   Tooltip,
@@ -43,6 +46,8 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useSavedTripRequests, type SavedTripRequest } from "@/hooks/use-saved-trip-requests";
+import { useGeneratorA11y } from "@/hooks/use-generator-a11y";
 
 type Tab = "paste" | "transcript" | "generate";
 
