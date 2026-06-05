@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useDeviceTilt } from "@/hooks/use-device-tilt";
+import { useDeviceTilt, isLowPowerMode } from "@/hooks/use-device-tilt";
 
 /**
  * GyroWallpaper — full-screen ambient backdrop that drifts with device tilt.
@@ -16,15 +16,22 @@ import { useDeviceTilt } from "@/hooks/use-device-tilt";
 export function GyroWallpaper() {
   const { x, y, enabled } = useDeviceTilt();
   const [mounted, setMounted] = useState(false);
+  const [hidden, setHidden] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const coarse = window.matchMedia("(pointer: coarse)").matches;
     if (!reduce && coarse) setMounted(true);
+    const onVis = () => setHidden(document.visibilityState === "hidden");
+    document.addEventListener("visibilitychange", onVis);
+    onVis();
+    return () => document.removeEventListener("visibilitychange", onVis);
   }, []);
 
-  if (!mounted) return null;
+  if (!mounted || hidden) return null;
+
+  const lowPower = isLowPowerMode();
 
   // Per-layer offsets — larger numbers feel further away.
   const layers = [
@@ -33,7 +40,8 @@ export function GyroWallpaper() {
     { depth: 120, hue: "275 80% 55%", size: "80vmax", x: 60, y: 20, opacity: 0.32 },
   ];
 
-  const dust = enabled ? `translate3d(${(-x * 20).toFixed(2)}px, ${(-y * 20).toFixed(2)}px, 0)` : "translate3d(0,0,0)";
+  const dustDepth = lowPower ? 0 : 20;
+  const dust = enabled ? `translate3d(${(-x * dustDepth).toFixed(2)}px, ${(-y * dustDepth).toFixed(2)}px, 0)` : "translate3d(0,0,0)";
 
   return (
     <div
@@ -42,8 +50,9 @@ export function GyroWallpaper() {
       style={{ mixBlendMode: "screen" }}
     >
       {layers.map((l, i) => {
-        const tx = enabled ? -x * l.depth : 0;
-        const ty = enabled ? -y * l.depth : 0;
+        const depth = lowPower ? l.depth * 0.4 : l.depth;
+        const tx = enabled ? -x * depth : 0;
+        const ty = enabled ? -y * depth : 0;
         return (
           <div
             key={i}
