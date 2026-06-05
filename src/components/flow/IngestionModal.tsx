@@ -1089,3 +1089,188 @@ function BlockFields({
       );
   }
 }
+/* ------------------------------------------------------------------ */
+/* Generate form                                                       */
+/* ------------------------------------------------------------------ */
+
+function GenerateForm({
+  prompt, setPrompt,
+  destination, setDestination,
+  duration, setDuration,
+  startDate, setStartDate,
+  travelers, setTravelers,
+  pace, setPace,
+  budget, setBudget,
+  interests, interestOptions, onToggleInterest,
+  clarifyQs, clarifyAs, setClarifyAnswer,
+  onSubmitClarifications,
+  parsing,
+}: {
+  prompt: string; setPrompt: (v: string) => void;
+  destination: string; setDestination: (v: string) => void;
+  duration: string; setDuration: (v: string) => void;
+  startDate: string; setStartDate: (v: string) => void;
+  travelers: string; setTravelers: (v: string) => void;
+  pace: "" | "relaxed" | "balanced" | "packed"; setPace: (v: "" | "relaxed" | "balanced" | "packed") => void;
+  budget: "" | "shoestring" | "moderate" | "elevated" | "luxury"; setBudget: (v: "" | "shoestring" | "moderate" | "elevated" | "luxury") => void;
+  interests: string[]; interestOptions: string[]; onToggleInterest: (t: string) => void;
+  clarifyQs: string[]; clarifyAs: string[]; setClarifyAnswer: (i: number, v: string) => void;
+  onSubmitClarifications: () => void;
+  parsing: boolean;
+}) {
+  const fieldCls =
+    "w-full rounded-md border border-ink/15 bg-paper/60 px-3 py-2.5 text-[13px] text-ink outline-none transition-elegant placeholder:text-ink/35 focus:border-seal focus:bg-paper";
+
+  if (clarifyQs.length) {
+    return (
+      <div className="flex flex-col gap-4">
+        <div className="flex items-start gap-3 rounded-md border border-seal/30 bg-seal/10 px-4 py-3 text-[12.5px] leading-[1.6] text-ink">
+          <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-seal" />
+          <p>
+            A few details would sharpen this draft. Answer what you can —
+            leave any field blank to let us infer.
+          </p>
+        </div>
+        <ul className="flex flex-col gap-3">
+          {clarifyQs.map((q, i) => (
+            <li key={i} className="flex flex-col gap-1.5">
+              <label className="td-eyebrow text-ink/55">Question {i + 1}</label>
+              <p
+                className="text-[14px] leading-[1.5] text-ink"
+                style={{ fontFamily: "var(--font-display)" }}
+              >
+                {q}
+              </p>
+              <input
+                value={clarifyAs[i] ?? ""}
+                onChange={(e) => setClarifyAnswer(i, e.target.value)}
+                placeholder="Your answer…"
+                className={fieldCls}
+                disabled={parsing}
+              />
+            </li>
+          ))}
+        </ul>
+        <button
+          type="button"
+          onClick={onSubmitClarifications}
+          disabled={parsing}
+          className="self-end text-[11px] uppercase tracking-[0.35em] text-seal underline-offset-4 hover:underline disabled:opacity-40"
+        >
+          {parsing ? "Drafting…" : "Continue →"}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-2">
+        <label className="td-eyebrow text-ink/45">Describe your trip</label>
+        <textarea
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          placeholder='e.g. "Five days in Lisbon and Sintra for two, light on museums, big on seafood, balanced pace."'
+          rows={5}
+          className="w-full rounded-md border border-ink/15 bg-paper/60 px-4 py-3.5 text-[13.5px] leading-[1.6] text-ink outline-none transition-elegant placeholder:text-ink/35 focus:border-seal focus:bg-paper"
+        />
+        <p className="text-[11.5px] leading-[1.55] text-ink-soft">
+          We'll draft a complete itinerary, then verify each vendor live
+          against Google Places for current address, phone, and hours.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <Labeled label="Destination">
+          <input
+            className={fieldCls}
+            value={destination}
+            onChange={(e) => setDestination(e.target.value)}
+            placeholder="Lisbon · Tokyo · Amalfi Coast"
+          />
+        </Labeled>
+        <Labeled label="Duration">
+          <input
+            className={fieldCls}
+            value={duration}
+            onChange={(e) => setDuration(e.target.value)}
+            placeholder="5 days · long weekend · 2 weeks"
+          />
+        </Labeled>
+        <Labeled label="Start date (optional)">
+          <input
+            className={fieldCls}
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            placeholder="Oct 14, 2026"
+          />
+        </Labeled>
+        <Labeled label="Travelers">
+          <input
+            className={fieldCls}
+            value={travelers}
+            onChange={(e) => setTravelers(e.target.value)}
+            placeholder="2 adults · family of 4 · solo"
+          />
+        </Labeled>
+        <Labeled label="Pace">
+          <select
+            className={fieldCls}
+            value={pace}
+            onChange={(e) => setPace(e.target.value as typeof pace)}
+          >
+            <option value="">Let us decide</option>
+            <option value="relaxed">Relaxed</option>
+            <option value="balanced">Balanced</option>
+            <option value="packed">Packed</option>
+          </select>
+        </Labeled>
+        <Labeled label="Budget">
+          <select
+            className={fieldCls}
+            value={budget}
+            onChange={(e) => setBudget(e.target.value as typeof budget)}
+          >
+            <option value="">Let us decide</option>
+            <option value="shoestring">Shoestring</option>
+            <option value="moderate">Moderate</option>
+            <option value="elevated">Elevated</option>
+            <option value="luxury">Luxury</option>
+          </select>
+        </Labeled>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <label className="td-eyebrow text-ink/45">Interests</label>
+        <div className="flex flex-wrap gap-1.5">
+          {interestOptions.map((tag) => {
+            const on = interests.includes(tag);
+            return (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => onToggleInterest(tag)}
+                className={`rounded-full border px-3 py-1.5 text-[11px] uppercase tracking-[0.22em] transition-elegant ${
+                  on
+                    ? "border-seal bg-seal/20 text-seal"
+                    : "border-ink/15 bg-paper/40 text-ink-soft hover:border-seal/40 hover:text-ink"
+                }`}
+              >
+                {tag}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Labeled({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="td-eyebrow text-ink/45">{label}</label>
+      {children}
+    </div>
+  );
+}
