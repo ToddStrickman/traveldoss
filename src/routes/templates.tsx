@@ -403,12 +403,10 @@ function TemplatesPage() {
           <span className="italic text-ink/85">dossier template<span className="text-seal">.</span></span>
         </motion.h1>
         <p className="mt-6 max-w-xl text-sm leading-relaxed text-ink-soft md:text-base">
-          Eight named designs for your trip's quiet studio. One dollar mints a
-          private URL for a month — mapped routes, day-by-day plans, reservations,
-          and editorial notes composed into one shareable dossier.
+          Select an elegant dossier template from the studio. Furnish it with automation, AI, or manually. Finally, <em className="italic">mint</em> it it will go live for the duration of your trip.
         </p>
         <p className="mt-3 max-w-xl text-[10px] uppercase tracking-[0.4em] text-ink/40">
-          {SKINS.length} of 8 live · more landing this week
+          We are always crafting new Dossiers and evolving the product
         </p>
 
         {/* Search + Filter */}
