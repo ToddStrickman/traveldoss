@@ -233,14 +233,27 @@ export const generateItineraryAi = createServerFn({ method: "POST" })
     const attempts: DebugAttempt[] = [];
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       try {
+        const retryInstruction =
+          attempt > 1
+            ? "\n\nPrevious generation returned no usable itinerary. If the destination is known or inferable, you MUST return Mode B with a non-empty markdown itinerary; do not return needsClarification=true unless you also include one destination question."
+            : "";
         const sys = researchNotes
-          ? `${SYSTEM}\n\nA live research brief follows the trip brief. When a fact (hours, ticket rule, recent opening, exhibition) came from a numbered source, preserve the [n] citation at the end of the sentence in the venue rationale. Do not invent indices.`
-          : SYSTEM;
+          ? `${SYSTEM}\n\nA live research brief follows the trip brief. When a fact (hours, ticket rule, recent opening, exhibition) came from a numbered source, preserve the [n] citation at the end of the sentence in the venue rationale. Do not invent indices.${retryInstruction}`
+          : `${SYSTEM}${retryInstruction}`;
         const out = await generateStructured(gateway, sys, briefWithResearch, attempts);
-        if (out.needsClarification && out.clarifyingQuestions.length > 0) {
+        if (out.needsClarification) {
+          const questions = out.clarifyingQuestions
+            .map((q) => q.trim())
+            .filter((q) => q.length > 0);
+          if (!questions.length && !data.destination?.trim()) {
+            questions.push("What destination should I build this itinerary around?");
+          }
+          if (!questions.length) {
+            throw new Error("Generator asked for clarification without a question.");
+          }
           const base = {
             kind: "clarify" as const,
-            questions: out.clarifyingQuestions.slice(0, 3),
+            questions: questions.slice(0, 3),
           };
           return attempts.length
             ? {
@@ -274,6 +287,10 @@ export const generateItineraryAi = createServerFn({ method: "POST" })
         }
         if (/429|rate/i.test(msg) && attempt < MAX_ATTEMPTS) {
           await new Promise((r) => setTimeout(r, 750 * 2 ** (attempt - 1)));
+          continue;
+        }
+        if (/empty itinerary|clarification without a question/i.test(msg) && attempt < MAX_ATTEMPTS) {
+          await new Promise((r) => setTimeout(r, 500 * 2 ** (attempt - 1)));
           continue;
         }
         // Throw the underlying error verbatim — the client's catch handler
