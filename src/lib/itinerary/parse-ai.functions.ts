@@ -217,9 +217,10 @@ export const parseItineraryAi = createServerFn({ method: "POST" })
     const { createLovableAiGatewayProvider } = await import("@/lib/ai-gateway.server");
     const gateway = createLovableAiGatewayProvider(key);
 
+    const attempts: DebugAttempt[] = [];
     let parsed: z.infer<typeof BlockSchema>;
     try {
-      parsed = await parseBlocksWithAi(gateway, cleanText, data.source);
+      parsed = await parseBlocksWithAi(gateway, cleanText, data.source, attempts);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       if (/402|credit/i.test(msg)) {
@@ -234,7 +235,16 @@ export const parseItineraryAi = createServerFn({ method: "POST" })
       await enrichPlacesViaWebSearch(fallback.blocks, fallback.destination, gateway).catch(
         (enrichErr: unknown) => console.error("[parse-ai] fallback enrichment failed:", enrichErr),
       );
-      return fallback;
+      const debugReport: DebugReport = {
+        source: "parse-ai",
+        createdAt: new Date().toISOString(),
+        model: "google/gemini-2.5-flash",
+        outcome: "local-fallback",
+        attempts,
+        finalParsed: fallback,
+        finalError: msg,
+      };
+      return { ...fallback, debugReport };
     }
 
     // Translate the model's nullable schema into the app's Block[] (omit
@@ -255,10 +265,23 @@ export const parseItineraryAi = createServerFn({ method: "POST" })
       },
     );
 
-    return {
+    const result = {
       destination: parsed.destination ?? null,
       blocks,
     };
+    // Only attach a debug report if there were retries / mismatches worth
+    // surfacing. A clean first-attempt parse produces no attempts entries.
+    const debugReport: DebugReport | null = attempts.length
+      ? {
+          source: "parse-ai",
+          createdAt: new Date().toISOString(),
+          model: "google/gemini-2.5-flash",
+          outcome: "success-after-retry",
+          attempts,
+          finalParsed: result,
+        }
+      : null;
+    return debugReport ? { ...result, debugReport } : result;
   });
 
 /* ─── helpers ───────────────────────────────────────────────────────── */
