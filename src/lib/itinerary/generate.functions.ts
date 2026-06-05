@@ -459,11 +459,7 @@ async function generateStructured(
       ) {
         return safeNorm.data;
       }
-      const errForLog = !safe.success
-        ? safe.error
-        : !safeNorm.success
-          ? safeNorm.error
-          : null;
+      const errForLog = !safe.success ? safe.error : !safeNorm.success ? safeNorm.error : null;
       if (errForLog) {
         logZodDiagnostics("generate", attempt, MAX_JSON_ATTEMPTS, errForLog, parsed, lastRaw);
         lastIssue = summarizeIssues(errForLog.issues);
@@ -474,7 +470,7 @@ async function generateStructured(
         attempt,
         rawResponse: lastRaw,
         parsedJson: parsed,
-            zodIssues: errForLog ? errForLog.issues : [],
+        zodIssues: errForLog ? errForLog.issues : [],
         zodIssueSummary: lastIssue,
       });
     } catch (err) {
@@ -514,7 +510,9 @@ async function generateStructured(
     });
     return { needsClarification: false, clarifyingQuestions: [], itinerary: lastRaw };
   }
-  throw new Error(`Itinerary generator could not produce valid JSON after ${MAX_JSON_ATTEMPTS} attempts (${lastIssue}).`);
+  throw new Error(
+    `Itinerary generator could not produce valid JSON after ${MAX_JSON_ATTEMPTS} attempts (${lastIssue}).`,
+  );
 }
 
 function extractJsonObject(text: string): string {
