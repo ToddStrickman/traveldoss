@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { fetchWithRetry } from "@/lib/retry";
 
 /**
  * Gmail → Google Doc preview pipeline.
@@ -98,7 +99,7 @@ export const listBookingEmails = createServerFn({ method: "POST" })
     const q = encodeURIComponent(
       "category:travel OR subject:(confirmation OR itinerary OR booking OR reservation) newer_than:180d",
     );
-    const listRes = await fetch(
+    const listRes = await fetchWithRetry(
       `${GMAIL_GATEWAY}/users/me/messages?maxResults=25&q=${q}`,
       { headers: gatewayHeaders(key) },
     );
@@ -116,7 +117,7 @@ export const listBookingEmails = createServerFn({ method: "POST" })
     // Fetch metadata for each id (parallel, capped at 25).
     const details = await Promise.all(
       list.messages.slice(0, 25).map(async (m) => {
-        const r = await fetch(
+        const r = await fetchWithRetry(
           `${GMAIL_GATEWAY}/users/me/messages/${m.id}?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=Date`,
           { headers: gatewayHeaders(key) },
         );
@@ -187,7 +188,7 @@ export const importBookingEmail = createServerFn({ method: "POST" })
     if (!trip) throw new Error("Trip not found");
 
     // 1. Pull full Gmail message via gateway.
-    const msgRes = await fetch(
+    const msgRes = await fetchWithRetry(
       `${GMAIL_GATEWAY}/users/me/messages/${encodeURIComponent(data.messageId)}?format=full`,
       { headers: gatewayHeaders(gmailKey) },
     );
@@ -216,7 +217,7 @@ export const importBookingEmail = createServerFn({ method: "POST" })
 
     // 3. Create a Google Doc and write the parsed blocks into it.
     const title = `${trip.destination} — ${subject}`.slice(0, 180);
-    const createRes = await fetch(`${DOCS_GATEWAY}/documents`, {
+    const createRes = await fetchWithRetry(`${DOCS_GATEWAY}/documents`, {
       method: "POST",
       headers: gatewayHeaders(docsKey),
       body: JSON.stringify({ title }),
@@ -235,7 +236,7 @@ export const importBookingEmail = createServerFn({ method: "POST" })
     // 4. Build batchUpdate requests from blocks. Index 1 is the start of body.
     const requests = blocksToDocsRequests(parsed.blocks);
     if (requests.length > 0) {
-      const updateRes = await fetch(
+      const updateRes = await fetchWithRetry(
         `${DOCS_GATEWAY}/documents/${documentId}:batchUpdate`,
         {
           method: "POST",
