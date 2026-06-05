@@ -259,6 +259,82 @@ export const parseItineraryAi = createServerFn({ method: "POST" })
 
 /* ─── helpers ───────────────────────────────────────────────────────── */
 
+async function parseBlocksWithAi(
+  gateway: GatewayProvider,
+  cleanText: string,
+  source: "text" | "transcript" | "ai",
+): Promise<z.infer<typeof BlockSchema>> {
+  const basePrompt = `Source type: ${source}\n\n---\n${cleanText}\n---\n\nReturn the structured itinerary now.`;
+  const MAX_ATTEMPTS = 4;
+  let lastRaw = "";
+  let lastIssue = "";
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      if (attempt === 1) {
+        const result = await generateText({
+          model: gateway("google/gemini-2.5-flash"),
+          system: SYSTEM_PROMPT,
+          prompt: basePrompt,
+          experimental_output: Output.object({ schema: BlockSchema }),
+        });
+        return result.experimental_output;
+      }
+
+      const repairNote = lastIssue
+        ? `\n\nYour previous response failed validation (${lastIssue}). Return one JSON object only. Include a top-level "destination" and "blocks" array. Do not include prose or code fences.`
+        : "";
+      const result = await generateText({
+        model: gateway("google/gemini-2.5-flash"),
+        system: `${SYSTEM_PROMPT}\n\nReturn ONLY a JSON object matching the requested schema. Missing optional fields may be omitted.${repairNote}`,
+        prompt: basePrompt,
+      });
+      lastRaw = result.text.trim();
+      const safe = BlockSchema.safeParse(JSON.parse(extractJsonObject(lastRaw)));
+      if (safe.success) return safe.data;
+      lastIssue = `schema mismatch: ${safe.error.issues
+        .slice(0, 3)
+        .map((i) => `${i.path.join(".") || "(root)"} ${i.message}`)
+        .join("; ")}`;
+    } catch (err) {
+      if (NoObjectGeneratedError.isInstance(err) && err.text) {
+        lastRaw = err.text.trim();
+      }
+      const msg = err instanceof Error ? err.message : String(err);
+      if (/402|credit|429|rate/i.test(msg)) throw err;
+      if (lastRaw) {
+        try {
+          const safe = BlockSchema.safeParse(JSON.parse(extractJsonObject(lastRaw)));
+          if (safe.success) return safe.data;
+          lastIssue = `schema mismatch: ${safe.error.issues
+            .slice(0, 3)
+            .map((i) => `${i.path.join(".") || "(root)"} ${i.message}`)
+            .join("; ")}`;
+        } catch {
+          lastIssue = "invalid JSON syntax";
+        }
+      } else {
+        lastIssue = msg.slice(0, 160);
+      }
+    }
+
+    if (attempt < MAX_ATTEMPTS) {
+      await new Promise((r) => setTimeout(r, 600 * 2 ** (attempt - 1)));
+    }
+  }
+
+  throw new Error(`AI parser could not produce valid blocks after ${MAX_ATTEMPTS} attempts (${lastIssue}).`);
+}
+
+function extractJsonObject(text: string): string {
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const body = fenced ? fenced[1] : text;
+  const start = body.indexOf("{");
+  const end = body.lastIndexOf("}");
+  if (start === -1 || end === -1 || end <= start) return body.trim();
+  return body.slice(start, end + 1);
+}
+
 function clean<T extends Record<string, unknown>>(obj: T): T {
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(obj)) {
