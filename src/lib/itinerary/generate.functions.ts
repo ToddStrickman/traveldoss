@@ -35,22 +35,9 @@ const InputSchema = z.object({
 });
 
 const OutputSchema = z.object({
-  needsClarification: z
-    .boolean()
-    .describe(
-      "True ONLY if a critical detail (destination, length, dates, traveler profile) is missing AND would meaningfully change the itinerary. Prefer false: make reasonable inferences and produce a draft whenever possible.",
-    ),
-  clarifyingQuestions: z
-    .array(z.string())
-    .max(3)
-    .describe(
-      "Up to 3 targeted questions. Each must be a single concise sentence asking for ONE piece of information. Empty when needsClarification is false.",
-    ),
-  itinerary: z
-    .string()
-    .describe(
-      "When needsClarification is false, a complete itinerary in TravelDoss markdown house style (see system prompt). Empty string when needsClarification is true.",
-    ),
+  needsClarification: z.boolean().default(false),
+  clarifyingQuestions: z.array(z.string()).default([]),
+  itinerary: z.string().default(""),
 });
 
 const SYSTEM = `You are TravelDoss's master itinerary architect. You write itineraries with the polish of an elite travel advisor: specific named venues, neighborhoods, opening times, transit hints, and one-line editorial reasoning per stop.
@@ -136,13 +123,10 @@ export const generateItineraryAi = createServerFn({ method: "POST" })
     let lastErr: unknown = null;
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       try {
-        const result = await generateText({
-          model: gateway("google/gemini-2.5-flash"),
-          system: researchNotes ? `${SYSTEM}\n\nA live research brief follows the trip brief. When a fact (hours, ticket rule, recent opening, exhibition) came from a numbered source, preserve the [n] citation at the end of the sentence in the venue rationale. Do not invent indices.` : SYSTEM,
-          prompt: briefWithResearch,
-          experimental_output: Output.object({ schema: OutputSchema }),
-        });
-        const out = result.experimental_output;
+        const sys = researchNotes
+          ? `${SYSTEM}\n\nA live research brief follows the trip brief. When a fact (hours, ticket rule, recent opening, exhibition) came from a numbered source, preserve the [n] citation at the end of the sentence in the venue rationale. Do not invent indices.`
+          : SYSTEM;
+        const out = await generateStructured(gateway, sys, briefWithResearch);
         if (out.needsClarification && out.clarifyingQuestions.length > 0) {
           return {
             kind: "clarify" as const,
@@ -211,4 +195,56 @@ function buildBrief(data: z.infer<typeof InputSchema>): string {
     );
   }
   return lines.join("\n");
+}
+
+type OutShape = z.infer<typeof OutputSchema>;
+
+async function generateStructured(
+  gateway: ReturnType<typeof import("@/lib/ai-gateway.server").createLovableAiGatewayProvider>,
+  system: string,
+  prompt: string,
+): Promise<OutShape> {
+  // First try: AI SDK structured output (constrained decoding).
+  try {
+    const result = await generateText({
+      model: gateway("google/gemini-2.5-flash"),
+      system,
+      prompt,
+      experimental_output: Output.object({ schema: OutputSchema }),
+    });
+    return result.experimental_output;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    // Gemini sometimes returns text that doesn't match the schema state
+    // machine. Fall back to a plain JSON prompt and parse manually.
+    if (!/schema|object/i.test(msg)) throw err;
+  }
+
+  const jsonSystem = `${system}\n\nReturn ONLY a single JSON object (no prose, no code fences) with this exact shape:\n{\n  "needsClarification": boolean,\n  "clarifyingQuestions": string[],   // up to 3, empty if not clarifying\n  "itinerary": string                // full markdown itinerary, empty if clarifying\n}`;
+  const result = await generateText({
+    model: gateway("google/gemini-2.5-flash"),
+    system: jsonSystem,
+    prompt,
+  });
+  const raw = result.text.trim();
+  const jsonText = extractJsonObject(raw);
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(jsonText);
+  } catch {
+    // Last resort: treat the whole response as the itinerary markdown.
+    return { needsClarification: false, clarifyingQuestions: [], itinerary: raw };
+  }
+  const safe = OutputSchema.safeParse(parsed);
+  if (safe.success) return safe.data;
+  return { needsClarification: false, clarifyingQuestions: [], itinerary: raw };
+}
+
+function extractJsonObject(text: string): string {
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const body = fenced ? fenced[1] : text;
+  const start = body.indexOf("{");
+  const end = body.lastIndexOf("}");
+  if (start === -1 || end === -1 || end <= start) return body.trim();
+  return body.slice(start, end + 1);
 }
