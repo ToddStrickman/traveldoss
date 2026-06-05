@@ -1,5 +1,12 @@
 import { SKINS } from "@/lib/skins/registry";
-import { Undo2, Redo2 } from "lucide-react";
+import { Undo2, Redo2, History } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+
+export type RefineHistoryEntry = {
+  id: string;
+  at: number;
+  reason: string;
+};
 
 export function StudioBar({
   templateId,
@@ -12,6 +19,8 @@ export function StudioBar({
   canUndo,
   canRedo,
   refineStatus,
+  refineHistory,
+  onRestoreRefine,
 }: {
   templateId: string;
   saving: boolean;
@@ -23,7 +32,10 @@ export function StudioBar({
   canUndo?: boolean;
   canRedo?: boolean;
   refineStatus?: "idle" | "sharpening" | "error";
+  refineHistory?: RefineHistoryEntry[];
+  onRestoreRefine?: (id: string) => void;
 }) {
+  const hasRefineHistory = !!refineHistory && refineHistory.length > 0;
   return (
     <div
       data-print="hide"
@@ -52,6 +64,57 @@ export function StudioBar({
             >
               <Redo2 className="h-3.5 w-3.5" />
             </button>
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  disabled={!hasRefineHistory}
+                  aria-label="Refinement history"
+                  title="Refinement history"
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-ink/5 hover:text-seal disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-ink-soft sm:h-8 sm:w-8"
+                >
+                  <History className="h-3.5 w-3.5" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent
+                align="center"
+                side="top"
+                className="w-72 p-0 border border-white/10 bg-paper/95 text-ink backdrop-blur-md"
+              >
+                <div className="border-b border-white/10 px-3 py-2 text-[10px] uppercase tracking-[0.3em] text-ink-soft">
+                  Refinement history
+                </div>
+                <ul className="max-h-64 overflow-y-auto">
+                  {(refineHistory ?? []).map((entry, i) => (
+                    <li key={entry.id}>
+                      <button
+                        type="button"
+                        onClick={() => onRestoreRefine?.(entry.id)}
+                        className="flex w-full items-start justify-between gap-3 px-3 py-2 text-left text-[12px] transition-colors hover:bg-ink/5"
+                      >
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-ink">
+                            {i === 0 ? "Latest · " : ""}
+                            {entry.reason}
+                          </span>
+                          <span className="block text-[10px] uppercase tracking-[0.2em] text-ink-soft">
+                            {new Date(entry.at).toLocaleTimeString()}
+                          </span>
+                        </span>
+                        <span className="shrink-0 text-[10px] uppercase tracking-[0.3em] text-seal">
+                          Restore
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                  {!hasRefineHistory && (
+                    <li className="px-3 py-4 text-center text-[11px] text-ink-soft">
+                      No refinements yet.
+                    </li>
+                  )}
+                </ul>
+              </PopoverContent>
+            </Popover>
           </div>
           <span className="h-4 w-px bg-white/10" />
         </>
