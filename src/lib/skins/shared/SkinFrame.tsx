@@ -5,6 +5,7 @@ import { VerticalView } from "./views/VerticalView";
 import { HorizontalView } from "./views/HorizontalView";
 import { GridView } from "./views/GridView";
 import { useEditing } from "./Editable";
+import { SlotSelectionProvider } from "./views/parts";
 
 export type SkinFrameProps = {
   trip: TripView;
@@ -33,6 +34,7 @@ export function SkinFrame({ trip, blocks, tokens, view = "vertical" }: SkinFrame
   } as CSSProperties;
 
   return (
+    <SlotSelectionProvider>
     <div className="tds" data-view={view} data-editing={editing ? "true" : undefined} style={vars}>
       {/* React 19 hoists this <link> into <head> and dedupes it. */}
       {tokens.fontUrl ? <link rel="stylesheet" href={tokens.fontUrl} /> : null}
@@ -49,5 +51,6 @@ export function SkinFrame({ trip, blocks, tokens, view = "vertical" }: SkinFrame
 
       <footer className="tds-foot">Prepared with TravelDoss · /t/{trip.slug}</footer>
     </div>
+    </SlotSelectionProvider>
   );
 }
