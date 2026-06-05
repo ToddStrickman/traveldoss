@@ -111,6 +111,8 @@ export function IngestionModal({
   const [parsing, setParsing] = useState(false);
   const parseAi = useServerFn(parseItineraryAi);
   const generateAi = useServerFn(generateItineraryAi);
+  type GenPhase = "idle" | "research" | "draft" | "enrich" | "done";
+  const [genPhase, setGenPhase] = useState<GenPhase>("idle");
 
   // ── Generate-tab state ───────────────────────────────────────────────
   const [genPrompt, setGenPrompt] = useState("");
@@ -252,6 +254,7 @@ export function IngestionModal({
       return;
     }
     setParsing(true);
+    setGenPhase("research");
     try {
       const gen = await generateAi({
         data: {
@@ -274,12 +277,15 @@ export function IngestionModal({
       if (gen.kind === "clarify") {
         setClarifyQs(gen.questions);
         setClarifyAs(gen.questions.map(() => ""));
+        setGenPhase("idle");
         toast.message("A few quick questions", {
           description: "Answer these so we can tailor the itinerary.",
         });
         return;
       }
+      setGenPhase("draft");
       // Hand the AI draft to the existing parser for blocks + live enrichment.
+      setGenPhase("enrich");
       const parsed = await parseAi({
         data: { text: gen.draft, source: "ai" },
       });
@@ -291,6 +297,7 @@ export function IngestionModal({
         toast.error("Generation came back empty. Try a different prompt.");
         return;
       }
+      setGenPhase("done");
       setReviewBlocks(parsed.blocks);
       setReviewLabel("Drafting your itinerary…");
       setReviewDestination(parsed.destination ?? genDestination.trim() ?? null);
@@ -306,6 +313,7 @@ export function IngestionModal({
       );
     } finally {
       setParsing(false);
+      setGenPhase("idle");
     }
   }
 
@@ -513,7 +521,19 @@ export function IngestionModal({
               )}
             </div>
           )}
-          {tab === "generate" && (
+          {tab === "generate" && parsing && !clarifyQs.length ? (
+            <GenerationProgress
+              phase={genPhase}
+              destination={genDestination}
+              duration={genDuration}
+              startDate={genStartDate}
+              travelers={genTravelers}
+              pace={genPace}
+              budget={genBudget}
+              interests={genInterests}
+              prompt={genPrompt}
+            />
+          ) : tab === "generate" && (
             <GenerateForm
               prompt={genPrompt}
               setPrompt={setGenPrompt}
@@ -1281,73 +1301,6 @@ function GenerateForm({
       className={`flex flex-col gap-5 ${reducedMotion ? "td-no-motion" : ""}`}
       data-reduced-motion={reducedMotion ? "true" : "false"}
     >
-      {/* Saved drafts strip + accessibility toggle */}
-      <div className="flex flex-wrap items-center gap-2 rounded-md border border-ink/10 bg-paper/40 px-3 py-2">
-        <span className="td-eyebrow shrink-0 text-ink/45">Saved briefs</span>
-        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
-          {savedItems.length === 0 ? (
-            <span className="text-[11.5px] italic text-ink/45">
-              None yet — save the form to revisit with a different pace or budget.
-            </span>
-          ) : (
-            savedItems.slice(0, 8).map((r) => {
-              const on = r.id === activeSavedId;
-              return (
-                <span
-                  key={r.id}
-                  className={`group inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] transition-elegant ${
-                    on
-                      ? "border-seal/60 bg-seal/15 text-seal"
-                      : "border-ink/15 bg-paper/60 text-ink-soft hover:border-seal/40 hover:text-ink"
-                  }`}
-                >
-                  <button
-                    type="button"
-                    onClick={() => onLoadSaved(r)}
-                    className="max-w-[14ch] truncate"
-                    title={r.label}
-                  >
-                    {r.label}
-                  </button>
-                  {r.localOnly ? (
-                    <span className="font-mono text-[9px] uppercase tracking-[0.3em] text-ink/35" title="Local only — sign in to sync">
-                      ·local
-                    </span>
-                  ) : null}
-                  <button
-                    type="button"
-                    onClick={() => onRemoveSaved(r.id)}
-                    aria-label={`Delete saved brief ${r.label}`}
-                    className="inline-flex h-4 w-4 items-center justify-center rounded-full text-ink/40 hover:bg-ink/10 hover:text-ink"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </span>
-              );
-            })
-          )}
-        </div>
-        <button
-          type="button"
-          onClick={onSaveCurrent}
-          disabled={parsing}
-          className="td-eyebrow inline-flex items-center gap-1.5 rounded-md border border-ink/15 bg-paper/60 px-2.5 py-1.5 text-ink-soft transition-elegant hover:border-seal hover:text-seal disabled:opacity-40"
-        >
-          <Bookmark className="h-3 w-3" /> {activeSavedId ? "Update" : "Save"}
-        </button>
-        <label className="td-eyebrow inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-ink/15 bg-paper/60 px-2.5 py-1.5 text-ink-soft transition-elegant hover:border-seal hover:text-seal">
-          <Accessibility className="h-3 w-3" />
-          <span>Reduce motion</span>
-          <input
-            type="checkbox"
-            checked={reducedMotion}
-            onChange={(e) => onToggleReducedMotion(e.target.checked)}
-            className="ml-1 h-3 w-3 accent-seal"
-            aria-label="Reduce motion in the itinerary generator"
-          />
-        </label>
-      </div>
-
       <div className="flex flex-col gap-2">
         <label className="td-eyebrow text-ink/45">Describe your trip</label>
         <textarea
@@ -1454,6 +1407,119 @@ function Labeled({ label, children }: { label: string; children: React.ReactNode
     <div className="flex flex-col gap-1.5">
       <label className="td-eyebrow text-ink/45">{label}</label>
       {children}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Generation progress                                                 */
+/* ------------------------------------------------------------------ */
+
+type GenPhaseLocal = "idle" | "research" | "draft" | "enrich" | "done";
+
+function GenerationProgress({
+  phase,
+  destination,
+  duration,
+  startDate,
+  travelers,
+  pace,
+  budget,
+  interests,
+  prompt,
+}: {
+  phase: GenPhaseLocal;
+  destination: string;
+  duration: string;
+  startDate: string;
+  travelers: string;
+  pace: string;
+  budget: string;
+  interests: string[];
+  prompt: string;
+}) {
+  const steps: { id: GenPhaseLocal; label: string; hint: string }[] = [
+    { id: "research", label: "Researching the destination", hint: "Pulling live notes on neighborhoods, hours, and openings." },
+    { id: "draft", label: "Drafting your itinerary", hint: "Composing each day with named venues and editorial reasoning." },
+    { id: "enrich", label: "Verifying venues", hint: "Cross-checking every stop against Google Places for current details." },
+    { id: "done", label: "Ready to review", hint: "Handing off to the review stage." },
+  ];
+  const order: GenPhaseLocal[] = ["research", "draft", "enrich", "done"];
+  const currentIdx = order.indexOf(phase);
+
+  const facts: { label: string; value: string }[] = [
+    { label: "Destination", value: destination.trim() || "— to infer from brief" },
+    { label: "Dates", value: startDate.trim() || "— flexible" },
+    { label: "Duration", value: duration.trim() || "5 days (default)" },
+    { label: "Travelers", value: travelers.trim() || "2 adults (default)" },
+    { label: "Pace", value: pace || "balanced (default)" },
+    { label: "Budget", value: budget || "moderate (default)" },
+    { label: "Interests", value: interests.length ? interests.join(", ") : "— none specified" },
+  ];
+
+  return (
+    <div className="flex flex-col gap-6" aria-live="polite" aria-busy="true">
+      <div className="rounded-md border border-ink/10 bg-paper/40 px-4 py-3">
+        <div className="td-eyebrow mb-2 text-ink/45">Using these values</div>
+        <dl className="grid grid-cols-1 gap-x-6 gap-y-1.5 sm:grid-cols-2">
+          {facts.map((f) => (
+            <div key={f.label} className="flex items-baseline justify-between gap-3 text-[12.5px]">
+              <dt className="td-eyebrow text-ink/45">{f.label}</dt>
+              <dd className="truncate text-right text-ink" title={f.value}>{f.value}</dd>
+            </div>
+          ))}
+        </dl>
+        {prompt.trim() ? (
+          <p className="mt-3 border-t border-ink/10 pt-2 text-[12px] italic leading-[1.55] text-ink-soft">
+            “{prompt.trim().slice(0, 220)}{prompt.trim().length > 220 ? "…" : ""}”
+          </p>
+        ) : null}
+      </div>
+
+      <ol className="flex flex-col gap-2">
+        {steps.map((s, i) => {
+          const state: "done" | "active" | "pending" =
+            i < currentIdx ? "done" : i === currentIdx ? "active" : "pending";
+          return (
+            <li
+              key={s.id}
+              className={`flex items-start gap-3 rounded-md border px-3 py-2.5 transition-elegant ${
+                state === "active"
+                  ? "border-seal/50 bg-seal/10"
+                  : state === "done"
+                  ? "border-ink/10 bg-paper/40"
+                  : "border-ink/10 bg-transparent opacity-60"
+              }`}
+            >
+              <span
+                className={`mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[10px] font-medium ${
+                  state === "done"
+                    ? "border-seal/50 bg-seal/15 text-seal"
+                    : state === "active"
+                    ? "border-seal bg-seal text-paper"
+                    : "border-ink/25 text-ink/45"
+                }`}
+                aria-hidden
+              >
+                {state === "done" ? "✓" : state === "active" ? (
+                  <motion.span
+                    className="block h-1.5 w-1.5 rounded-full bg-paper"
+                    animate={{ opacity: [0.4, 1, 0.4] }}
+                    transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
+                  />
+                ) : i + 1}
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="text-[13px] font-medium text-ink">{s.label}</div>
+                <div className="text-[11.5px] leading-[1.5] text-ink-soft">{s.hint}</div>
+              </div>
+              <span className="td-eyebrow shrink-0 self-center text-ink/35">
+                {state === "done" ? "Done" : state === "active" ? "Working" : "Queued"}
+              </span>
+            </li>
+          );
+        })}
+      </ol>
     </div>
   );
 }
