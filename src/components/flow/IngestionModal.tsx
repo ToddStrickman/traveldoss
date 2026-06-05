@@ -205,6 +205,10 @@ export function IngestionModal({
       });
       blocks = r.blocks;
       destination = r.destination;
+      offerDebugReport(
+        (r as { debugReport?: DebugReport }).debugReport,
+        "Parsed with fallback",
+      );
     } catch (err) {
       console.error("[ai-parse] failed, falling back to local parser", err);
       toast.message("Using offline parser", {
@@ -257,6 +261,10 @@ export function IngestionModal({
           useLiveResearch: true,
         },
       });
+      offerDebugReport(
+        (gen as { debugReport?: DebugReport }).debugReport,
+        "Generated with fallback",
+      );
       if (gen.kind === "clarify") {
         setClarifyQs(gen.questions);
         setClarifyAs(gen.questions.map(() => ""));
@@ -269,6 +277,10 @@ export function IngestionModal({
       const parsed = await parseAi({
         data: { text: gen.draft, source: "ai" },
       });
+      offerDebugReport(
+        (parsed as { debugReport?: DebugReport }).debugReport,
+        "Parsed generator output",
+      );
       if (!parsed.blocks.length) {
         toast.error("Generation came back empty. Try a different prompt.");
         return;
