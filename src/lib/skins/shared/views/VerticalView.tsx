@@ -1,4 +1,4 @@
-import type { Block, TripView } from "../../types";
+import type { Block, TripView, TripMeta } from "../../types";
 import { buildItinerary } from "../itinerary";
 import { EditableText, useEditing } from "../Editable";
 import {
@@ -82,7 +82,7 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
             editable={editing && !!onMetaChange}
             onChange={(v) =>
               onMetaChange?.({
-                pace: (typeof v === "string" && v ? v : undefined) as TripView["meta"] extends infer T ? T extends { pace?: infer P } ? P : never : never,
+                pace: (typeof v === "string" && v ? v : undefined) as TripMeta["pace"],
               })
             }
           />
@@ -102,7 +102,7 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
             editable={editing && !!onMetaChange}
             onChange={(v) =>
               onMetaChange?.({
-                budget: (typeof v === "string" && v ? v : undefined) as TripView["meta"] extends infer T ? T extends { budget?: infer B } ? B : never : never,
+                budget: (typeof v === "string" && v ? v : undefined) as TripMeta["budget"],
               })
             }
           />
