@@ -106,6 +106,39 @@ export type Database = {
         }
         Relationships: []
       }
+      parse_debug_reports: {
+        Row: {
+          attempts_count: number
+          created_at: string
+          id: string
+          outcome: string
+          report: Json
+          source: string
+          trip_id: string | null
+          user_id: string
+        }
+        Insert: {
+          attempts_count?: number
+          created_at?: string
+          id?: string
+          outcome: string
+          report: Json
+          source: string
+          trip_id?: string | null
+          user_id: string
+        }
+        Update: {
+          attempts_count?: number
+          created_at?: string
+          id?: string
+          outcome?: string
+          report?: Json
+          source?: string
+          trip_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       places: {
         Row: {
           address: string | null
