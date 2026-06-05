@@ -184,6 +184,7 @@ export function IngestionModal({
           budget: genBudget || undefined,
           interests: genInterests.length ? genInterests : undefined,
           clarifications: extraAnswers,
+          useLiveResearch: true,
         },
       });
       if (gen.kind === "clarify") {
