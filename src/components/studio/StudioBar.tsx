@@ -11,6 +11,7 @@ export function StudioBar({
   onRedo,
   canUndo,
   canRedo,
+  refineStatus,
 }: {
   templateId: string;
   saving: boolean;
@@ -21,6 +22,7 @@ export function StudioBar({
   onRedo?: () => void;
   canUndo?: boolean;
   canRedo?: boolean;
+  refineStatus?: "idle" | "sharpening" | "error";
 }) {
   return (
     <div
@@ -70,6 +72,22 @@ export function StudioBar({
         </select>
       </label>
       <span className="h-4 w-px bg-white/10" />
+      {refineStatus && refineStatus !== "idle" && (
+        <span
+          className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.3em] text-ink-soft"
+          aria-live="polite"
+        >
+          <span
+            aria-hidden
+            className={`inline-block h-1.5 w-1.5 rounded-full ${
+              refineStatus === "error" ? "bg-red-500" : "bg-seal animate-pulse"
+            }`}
+          />
+          <span className="hidden sm:inline">
+            {refineStatus === "error" ? "Refine failed" : "Sharpening…"}
+          </span>
+        </span>
+      )}
       {onMint ? (
         <button
           type="button"
