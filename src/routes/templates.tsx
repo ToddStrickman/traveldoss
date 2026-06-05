@@ -157,7 +157,18 @@ function SkinCard({
     <TiltCard intensity={5} className="h-full">
     <article
       id={skin.meta.id}
-      className="group flex h-full flex-col border border-ink/10 bg-paper transition-colors duration-500 hover:border-seal/50"
+      role="button"
+      tabIndex={picking ? -1 : 0}
+      aria-disabled={picking}
+      onClick={() => !picking && onPick(skin.meta.id)}
+      onKeyDown={(e) => {
+        if (picking) return;
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onPick(skin.meta.id);
+        }
+      }}
+      className="group flex h-full cursor-pointer flex-col border border-ink/10 bg-paper transition-colors duration-500 hover:border-seal/50 focus:outline-none focus-visible:border-seal focus-visible:ring-2 focus-visible:ring-seal/40"
     >
       <SkinPreview skin={skin} />
 
@@ -193,7 +204,10 @@ function SkinCard({
         </div>
 
         <button
-          onClick={() => onPick(skin.meta.id)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onPick(skin.meta.id);
+          }}
           disabled={picking}
           className="mt-auto inline-flex items-center justify-between gap-4 border-y border-ink/20 pt-7 pb-7 text-[10px] font-medium uppercase tracking-[0.4em] text-ink transition-colors duration-500 hover:border-seal hover:text-seal disabled:cursor-wait disabled:opacity-50"
           style={{ marginTop: 28 }}
