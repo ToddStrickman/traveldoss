@@ -258,9 +258,11 @@ function SortableShell({
           type="button"
           onClick={() => onBlockAdd(index, "paragraph")}
           className="tds-block-tool"
-          aria-label="Add block below"
+          aria-label="Add paragraph below"
+          title="Add paragraph below"
         >
           <Plus size={14} />
+          <span className="tds-block-tool-label">Add paragraph</span>
         </button>
         <button
           type="button"
