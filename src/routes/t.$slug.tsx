@@ -22,6 +22,13 @@ import { toast } from "sonner";
 import { useHistory, useUndoRedoShortcuts } from "@/hooks/use-history";
 import { useItineraryRefiner } from "@/hooks/use-itinerary-refiner";
 
+type RefineHistoryEntry = {
+  id: string;
+  at: number;
+  reason: string;
+  blocks: Block[];
+};
+
 type DossierContent = {
   blocks?: Block[];
   skin?: string;
@@ -229,6 +236,8 @@ function DossierPage() {
 
   useUndoRedoShortcuts(canEdit, undo, redo);
 
+  const [refineHistory, setRefineHistory] = useState<RefineHistoryEntry[]>([]);
+
   const refiner = useItineraryRefiner(
     {
       blocks,
@@ -248,8 +257,33 @@ function DossierPage() {
           { coalesceKey: `refine:${reason}` },
         );
         queueSave({ blocks: nextBlocks });
+        setRefineHistory((prev) => {
+          const entry: RefineHistoryEntry = {
+            id:
+              typeof crypto !== "undefined" && "randomUUID" in crypto
+                ? crypto.randomUUID()
+                : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            at: Date.now(),
+            reason: reason || "Sharpened",
+            blocks: nextBlocks,
+          };
+          // Cap to last 20 refinements to keep memory bounded.
+          const next = [entry, ...prev];
+          return next.slice(0, 20);
+        });
       },
     },
+  );
+
+  const restoreRefine = useCallback(
+    (id: string) => {
+      const entry = refineHistory.find((e) => e.id === id);
+      if (!entry) return;
+      setSnap((s) => ({ ...s, blocks: entry.blocks }));
+      queueSave({ blocks: entry.blocks });
+      toast.success("Restored a previous refined version.");
+    },
+    [refineHistory, setSnap, queueSave],
   );
 
   const editingCtx = useMemo(
@@ -397,6 +431,8 @@ function DossierPage() {
           canUndo={canUndo}
           canRedo={canRedo}
           refineStatus={refiner.status}
+          refineHistory={refineHistory}
+          onRestoreRefine={restoreRefine}
         />
       )}
       <ExportMenu slug={trip.slug} trip={view} blocks={blocks} />
