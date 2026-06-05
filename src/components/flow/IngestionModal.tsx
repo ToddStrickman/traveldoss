@@ -1243,7 +1243,77 @@ function GenerateForm({
   }
 
   return (
-    <div className="flex flex-col gap-5">
+    <div
+      className={`flex flex-col gap-5 ${reducedMotion ? "td-no-motion" : ""}`}
+      data-reduced-motion={reducedMotion ? "true" : "false"}
+    >
+      {/* Saved drafts strip + accessibility toggle */}
+      <div className="flex flex-wrap items-center gap-2 rounded-md border border-ink/10 bg-paper/40 px-3 py-2">
+        <span className="td-eyebrow shrink-0 text-ink/45">Saved briefs</span>
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
+          {savedItems.length === 0 ? (
+            <span className="text-[11.5px] italic text-ink/45">
+              None yet — save the form to revisit with a different pace or budget.
+            </span>
+          ) : (
+            savedItems.slice(0, 8).map((r) => {
+              const on = r.id === activeSavedId;
+              return (
+                <span
+                  key={r.id}
+                  className={`group inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] transition-elegant ${
+                    on
+                      ? "border-seal/60 bg-seal/15 text-seal"
+                      : "border-ink/15 bg-paper/60 text-ink-soft hover:border-seal/40 hover:text-ink"
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => onLoadSaved(r)}
+                    className="max-w-[14ch] truncate"
+                    title={r.label}
+                  >
+                    {r.label}
+                  </button>
+                  {r.localOnly ? (
+                    <span className="font-mono text-[9px] uppercase tracking-[0.3em] text-ink/35" title="Local only — sign in to sync">
+                      ·local
+                    </span>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => onRemoveSaved(r.id)}
+                    aria-label={`Delete saved brief ${r.label}`}
+                    className="inline-flex h-4 w-4 items-center justify-center rounded-full text-ink/40 hover:bg-ink/10 hover:text-ink"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              );
+            })
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={onSaveCurrent}
+          disabled={parsing}
+          className="td-eyebrow inline-flex items-center gap-1.5 rounded-md border border-ink/15 bg-paper/60 px-2.5 py-1.5 text-ink-soft transition-elegant hover:border-seal hover:text-seal disabled:opacity-40"
+        >
+          <Bookmark className="h-3 w-3" /> {activeSavedId ? "Update" : "Save"}
+        </button>
+        <label className="td-eyebrow inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-ink/15 bg-paper/60 px-2.5 py-1.5 text-ink-soft transition-elegant hover:border-seal hover:text-seal">
+          <Accessibility className="h-3 w-3" />
+          <span>Reduce motion</span>
+          <input
+            type="checkbox"
+            checked={reducedMotion}
+            onChange={(e) => onToggleReducedMotion(e.target.checked)}
+            className="ml-1 h-3 w-3 accent-seal"
+            aria-label="Reduce motion in the itinerary generator"
+          />
+        </label>
+      </div>
+
       <div className="flex flex-col gap-2">
         <label className="td-eyebrow text-ink/45">Describe your trip</label>
         <textarea
