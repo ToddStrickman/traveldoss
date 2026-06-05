@@ -8,8 +8,8 @@ export function collectFlights(blocks: Block[]): Flight[] {
 }
 
 function directionLabel(d?: Flight["direction"]) {
-  if (d === "outbound") return "Outbound";
-  if (d === "inbound") return "Inbound / Return";
+  if (d === "outbound") return "Departure";
+  if (d === "inbound") return "Return";
   return "Flight";
 }
 
