@@ -9,6 +9,7 @@ import type { Block, SkinView, TripView } from "@/lib/skins/types";
 import { supabase } from "@/integrations/supabase/client";
 import { StudioBar } from "@/components/studio/StudioBar";
 import { ExportMenu } from "@/components/studio/ExportMenu";
+import { PrintScheduleGrid } from "@/components/studio/PrintScheduleGrid";
 import { CompanionToday } from "@/components/studio/CompanionToday";
 import { getTemporalPhase, phaseCopy } from "@/lib/itinerary/temporal";
 import { EditingProvider, arrayMove } from "@/lib/skins/shared/Editable";
@@ -343,6 +344,7 @@ function DossierPage() {
         />
       )}
       <ExportMenu slug={trip.slug} trip={view} blocks={blocks} />
+      <PrintScheduleGrid trip={view} blocks={blocks} />
       <IngestionModal
         open={mintOpen}
         onOpenChange={setMintOpen}
