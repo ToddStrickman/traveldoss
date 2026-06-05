@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { parseDropInWithMeta } from "@/lib/itinerary/parse";
 import { parseItineraryAi } from "@/lib/itinerary/parse-ai.functions";
+import { generateItineraryAi } from "@/lib/itinerary/generate.functions";
 import { useServerFn } from "@tanstack/react-start";
 import type { Block } from "@/lib/skins/types";
 import type { SkinModule } from "@/lib/skins/registry";
@@ -18,6 +19,7 @@ import {
   StickyNote,
   AlertTriangle,
   Info,
+  Sparkles,
 } from "lucide-react";
 import {
   Tooltip,
@@ -42,11 +44,12 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-type Tab = "paste" | "transcript";
+type Tab = "paste" | "transcript" | "generate";
 
 const TABS: { id: Tab; n: string; label: string; sub: string }[] = [
   { id: "paste", n: "I", label: "Paste Itinerary", sub: "ChatGPT, Claude, notes." },
   { id: "transcript", n: "II", label: "Upload Transcript", sub: "Text or .vtt / .srt files." },
+  { id: "generate", n: "III", label: "Generate Itinerary", sub: "Describe the trip — we'll draft it live." },
 ];
 
 function serial() {
@@ -80,9 +83,40 @@ export function IngestionModal({
   const [reviewDestination, setReviewDestination] = useState<string | null>(null);
   const [parsing, setParsing] = useState(false);
   const parseAi = useServerFn(parseItineraryAi);
+  const generateAi = useServerFn(generateItineraryAi);
+
+  // ── Generate-tab state ───────────────────────────────────────────────
+  const [genPrompt, setGenPrompt] = useState("");
+  const [genDestination, setGenDestination] = useState("");
+  const [genDuration, setGenDuration] = useState("");
+  const [genStartDate, setGenStartDate] = useState("");
+  const [genTravelers, setGenTravelers] = useState("");
+  const [genPace, setGenPace] = useState<"" | "relaxed" | "balanced" | "packed">("");
+  const [genBudget, setGenBudget] = useState<
+    "" | "shoestring" | "moderate" | "elevated" | "luxury"
+  >("");
+  const [genInterests, setGenInterests] = useState<string[]>([]);
+  const [clarifyQs, setClarifyQs] = useState<string[]>([]);
+  const [clarifyAs, setClarifyAs] = useState<string[]>([]);
+
+  const INTEREST_OPTIONS = [
+    "food", "wine", "design", "architecture", "art",
+    "history", "nature", "hiking", "beaches", "nightlife",
+    "shopping", "kids", "wellness", "music",
+  ];
+
+  function toggleInterest(tag: string) {
+    setGenInterests((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
+    );
+  }
 
   async function submit() {
     if (!template) return;
+    if (tab === "generate") {
+      await submitGenerate();
+      return;
+    }
     const trimmed = text.trim();
     if (trimmed.length < 8) {
       toast.error("Add a few lines first so we have something to craft.");
@@ -125,6 +159,74 @@ export function IngestionModal({
     setReviewLabel(tab === "transcript" ? "Reading your transcript…" : "Reading your itinerary…");
     setReviewDestination(destination);
     setStage("review");
+  }
+
+  async function submitGenerate(
+    extraAnswers?: Array<{ question: string; answer: string }>,
+  ) {
+    if (!template) return;
+    const trimmed = genPrompt.trim();
+    if (trimmed.length < 6 && !genDestination.trim()) {
+      toast.error("Tell us a little about the trip, or give us a destination.");
+      return;
+    }
+    setParsing(true);
+    try {
+      const gen = await generateAi({
+        data: {
+          prompt: trimmed || `Plan a trip to ${genDestination.trim()}.`,
+          destination: genDestination.trim() || undefined,
+          duration: genDuration.trim() || undefined,
+          startDate: genStartDate.trim() || undefined,
+          travelers: genTravelers.trim() || undefined,
+          pace: genPace || undefined,
+          budget: genBudget || undefined,
+          interests: genInterests.length ? genInterests : undefined,
+          clarifications: extraAnswers,
+        },
+      });
+      if (gen.kind === "clarify") {
+        setClarifyQs(gen.questions);
+        setClarifyAs(gen.questions.map(() => ""));
+        toast.message("A few quick questions", {
+          description: "Answer these so we can tailor the itinerary.",
+        });
+        return;
+      }
+      // Hand the AI draft to the existing parser for blocks + live enrichment.
+      const parsed = await parseAi({
+        data: { text: gen.draft, source: "ai" },
+      });
+      if (!parsed.blocks.length) {
+        toast.error("Generation came back empty. Try a different prompt.");
+        return;
+      }
+      setReviewBlocks(parsed.blocks);
+      setReviewLabel("Drafting your itinerary…");
+      setReviewDestination(parsed.destination ?? genDestination.trim() ?? null);
+      setClarifyQs([]);
+      setClarifyAs([]);
+      setStage("review");
+    } catch (err) {
+      console.error("[ai-generate] failed", err);
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Couldn't generate that itinerary. Try again in a moment.",
+      );
+    } finally {
+      setParsing(false);
+    }
+  }
+
+  function submitClarifications() {
+    if (clarifyAs.some((a) => !a.trim())) {
+      toast.error("Answer every question, or leave the field blank to skip.");
+      return;
+    }
+    void submitGenerate(
+      clarifyQs.map((q, i) => ({ question: q, answer: clarifyAs[i].trim() })),
+    );
   }
 
   function confirmReview() {
@@ -321,7 +423,34 @@ export function IngestionModal({
               )}
             </div>
           )}
-          {/* inbox/Google tab removed */}
+          {tab === "generate" && (
+            <GenerateForm
+              prompt={genPrompt}
+              setPrompt={setGenPrompt}
+              destination={genDestination}
+              setDestination={setGenDestination}
+              duration={genDuration}
+              setDuration={setGenDuration}
+              startDate={genStartDate}
+              setStartDate={setGenStartDate}
+              travelers={genTravelers}
+              setTravelers={setGenTravelers}
+              pace={genPace}
+              setPace={setGenPace}
+              budget={genBudget}
+              setBudget={setGenBudget}
+              interests={genInterests}
+              interestOptions={INTEREST_OPTIONS}
+              onToggleInterest={toggleInterest}
+              clarifyQs={clarifyQs}
+              clarifyAs={clarifyAs}
+              setClarifyAnswer={(i, v) =>
+                setClarifyAs((prev) => prev.map((a, j) => (j === i ? v : a)))
+              }
+              onSubmitClarifications={submitClarifications}
+              parsing={parsing}
+            />
+          )}
         </div>
 
         {/* Footer */}
@@ -343,7 +472,17 @@ export function IngestionModal({
             disabled={!template || parsing}
             className="group inline-flex items-center gap-4 rounded-md border border-seal/40 bg-seal/15 py-3 pl-5 pr-3 text-[11px] font-medium uppercase tracking-[0.4em] text-seal transition-elegant hover:border-seal hover:bg-seal hover:text-paper disabled:opacity-40"
           >
-            <span>{parsing ? "Reading & enriching…" : "Review & Mint"}</span>
+            <span>
+              {parsing
+                ? tab === "generate"
+                  ? "Generating live…"
+                  : "Reading & enriching…"
+                : tab === "generate"
+                ? clarifyQs.length
+                  ? "Continue"
+                  : "Generate Itinerary"
+                : "Review & Mint"}
+            </span>
             <span aria-hidden className="inline-flex h-7 w-7 items-center justify-center rounded-sm border border-seal/40 transition-elegant group-hover:border-paper/40">
               →
             </span>
