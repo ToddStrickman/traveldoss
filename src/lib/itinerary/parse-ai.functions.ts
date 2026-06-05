@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { generateText, Output } from "ai";
 import { z } from "zod";
 import type { Block } from "@/lib/skins/types";
-import { stripEmoji } from "@/lib/itinerary/parse";
+import { parseDropInWithMeta, stripEmoji } from "@/lib/itinerary/parse";
 
 /**
  * AI-powered itinerary parser. Takes raw pasted text (from ChatGPT,
@@ -14,10 +14,14 @@ import { stripEmoji } from "@/lib/itinerary/parse";
  * LOVABLE_API_KEY never leaks into the client bundle.
  */
 
+const nullableString = () => z.string().nullable().optional();
+const nullableNumber = () => z.number().nullable().optional();
+
 const BlockSchema = z.object({
   destination: z
     .string()
     .nullable()
+    .optional()
     .describe("The primary destination of the trip, e.g. 'Tokyo' or 'Amalfi Coast'. Null if undecidable."),
   blocks: z
     .array(
@@ -26,22 +30,19 @@ const BlockSchema = z.object({
           .enum(["day", "place", "flight", "paragraph", "note"])
           .describe("The block type."),
         // day fields
-        n: z.number().nullable().describe("Day number (only for kind=day)"),
-        label: z
-          .string()
-          .nullable()
+        n: nullableNumber().describe("Day number (only for kind=day)"),
+        label: nullableString()
           .describe("Short title for a day, e.g. 'Arrival in Rome'"),
-        dayDate: z
-          .string()
-          .nullable()
+        dayDate: nullableString()
           .describe(
             "Calendar date for the day if the input mentions one ('Oct 14', '10/14/25', '2025-10-14'). Null if not stated — DO NOT invent a date.",
           ),
         // place fields
-        name: z.string().nullable().describe("Name of the place/vendor"),
+        name: nullableString().describe("Name of the place/vendor"),
         tier: z
           .enum(["primary", "shadow"])
           .nullable()
+          .optional()
           .describe(
             "'shadow' for any entry the user marked as Alternative / Option / Backup / Plan B — those render in the Shadow Itinerary section. Otherwise 'primary' or null.",
           ),
@@ -56,62 +57,57 @@ const BlockSchema = z.object({
             "",
           ])
           .nullable()
+          .optional()
           .describe(
             "One of the six canonical categories. Empty string '' if genuinely ambiguous — DO NOT GUESS.",
           ),
-        address: z.string().nullable().describe("Full street address if known"),
-        phone: z.string().nullable().describe("Localized phone number if known"),
-        website: z.string().nullable().describe("Official website URL if known"),
-        hours: z.string().nullable(),
-        time: z.string().nullable().describe("Clock time like '14:30' if mentioned"),
-        reservation: z.string().nullable(),
-        note: z
-          .string()
-          .nullable()
+        address: nullableString().describe("Full street address if known"),
+        phone: nullableString().describe("Localized phone number if known"),
+        website: nullableString().describe("Official website URL if known"),
+        hours: nullableString(),
+        time: nullableString().describe("Clock time like '14:30' if mentioned"),
+        reservation: nullableString(),
+        note: nullableString()
           .describe(
             "ONE concise editorial sentence (<15 words) combining the source context with a factual insight about the vendor. Empty if the model has no insight.",
           ),
-        confidence: z
-          .number()
-          .min(0)
-          .max(1)
-          .nullable()
+        confidence: nullableNumber()
           .describe(
             "Self-rated confidence in the enriched fields (address/phone/website/hours/note) for this place, on a 0–1 scale. Use <0.85 whenever you are not certain the vendor identification or enrichment is correct. Null for non-place blocks.",
           ),
         // accommodation
-        checkIn: z.string().nullable(),
-        checkOut: z.string().nullable(),
-        amenities: z.string().nullable(),
+        checkIn: nullableString(),
+        checkOut: nullableString(),
+        amenities: nullableString(),
         // restaurant
-        dressCode: z.string().nullable(),
-        mustOrder: z.string().nullable(),
+        dressCode: nullableString(),
+        mustOrder: nullableString(),
         // transit
-        vendor: z.string().nullable(),
-        pickup: z.string().nullable(),
-        dropoff: z.string().nullable(),
+        vendor: nullableString(),
+        pickup: nullableString(),
+        dropoff: nullableString(),
         // event / culture
-        venue: z.string().nullable(),
-        ticketRequirement: z.string().nullable(),
-        tourDetails: z.string().nullable(),
+        venue: nullableString(),
+        ticketRequirement: nullableString(),
+        tourDetails: nullableString(),
         // walk
-        trailhead: z.string().nullable(),
-        distance: z.string().nullable(),
-        duration: z.string().nullable(),
-        difficulty: z.string().nullable(),
+        trailhead: nullableString(),
+        distance: nullableString(),
+        duration: nullableString(),
+        difficulty: nullableString(),
         // flight
-        airline: z.string().nullable(),
-        flightNumber: z.string().nullable(),
-        from: z.string().nullable().describe("Departure airport IATA code"),
-        to: z.string().nullable().describe("Arrival airport IATA code"),
-        fromCity: z.string().nullable(),
-        toCity: z.string().nullable(),
-        departTime: z.string().nullable(),
-        arriveTime: z.string().nullable(),
-        date: z.string().nullable(),
-        arriveDate: z.string().nullable(),
+        airline: nullableString(),
+        flightNumber: nullableString(),
+        from: nullableString().describe("Departure airport IATA code"),
+        to: nullableString().describe("Arrival airport IATA code"),
+        fromCity: nullableString(),
+        toCity: nullableString(),
+        departTime: nullableString(),
+        arriveTime: nullableString(),
+        date: nullableString(),
+        arriveDate: nullableString(),
         // paragraph / note
-        text: z.string().nullable().describe("Body text for paragraph/note blocks"),
+        text: nullableString().describe("Body text for paragraph/note blocks"),
       }),
     )
     .describe("Ordered list of itinerary blocks"),
@@ -218,42 +214,24 @@ export const parseItineraryAi = createServerFn({ method: "POST" })
     const gateway = createLovableAiGatewayProvider(key);
 
     let parsed: z.infer<typeof BlockSchema>;
-    // Retry with exponential backoff on transient 429s before giving up.
-    const MAX_ATTEMPTS = 4;
-    let lastErr: unknown = null;
-    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-      try {
-        const result = await generateText({
-          model: gateway("google/gemini-2.5-flash"),
-          system: SYSTEM_PROMPT,
-          prompt: `Source type: ${data.source}\n\n---\n${cleanText}\n---\n\nReturn the structured itinerary now.`,
-          experimental_output: Output.object({ schema: BlockSchema }),
-        });
-        parsed = result.experimental_output;
-        lastErr = null;
-        break;
-      } catch (err) {
-        lastErr = err;
-        const msg = err instanceof Error ? err.message : String(err);
-        if (/402|credit/i.test(msg)) {
-          throw new Error("AI credits exhausted. Add credits in Workspace → Usage.");
-        }
-        if (/429|rate/i.test(msg) && attempt < MAX_ATTEMPTS) {
-          // 0.75s, 1.5s, 3s — total ~5.25s of backoff before failing.
-          const delay = 750 * 2 ** (attempt - 1);
-          await new Promise((r) => setTimeout(r, delay));
-          continue;
-        }
-        if (/429|rate/i.test(msg)) {
-          throw new Error("AI is busy. Wait a few seconds and retry.");
-        }
-        throw new Error(`AI parser failed: ${msg}`);
+    try {
+      parsed = await parseBlocksWithAi(gateway, cleanText, data.source);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (/402|credit/i.test(msg)) {
+        throw new Error("AI credits exhausted. Add credits in Workspace → Usage.");
       }
+      if (isRateLimitMessage(msg)) {
+        throw new Error("AI is busy. Wait a few seconds and retry.");
+      }
+
+      console.error("[parse-ai] structured parse failed; using local parser", err);
+      const fallback = parseDropInWithMeta(cleanText, data.source);
+      await enrichPlacesViaWebSearch(fallback.blocks, fallback.destination, gateway).catch(
+        (enrichErr: unknown) => console.error("[parse-ai] fallback enrichment failed:", enrichErr),
+      );
+      return fallback;
     }
-    if (lastErr) {
-      throw new Error("AI is busy. Wait a few seconds and retry.");
-    }
-    parsed = parsed!;
 
     // Translate the model's nullable schema into the app's Block[] (omit
     // null/empty fields so the UI doesn't render stray "—" placeholders).
@@ -280,6 +258,73 @@ export const parseItineraryAi = createServerFn({ method: "POST" })
   });
 
 /* ─── helpers ───────────────────────────────────────────────────────── */
+
+async function parseBlocksWithAi(
+  gateway: GatewayProvider,
+  cleanText: string,
+  source: "text" | "transcript" | "ai",
+): Promise<z.infer<typeof BlockSchema>> {
+  const basePrompt = `Source type: ${source}\n\n---\n${cleanText}\n---\n\nReturn the structured itinerary now.`;
+  const MAX_ATTEMPTS = 4;
+  let lastRaw = "";
+  let lastIssue = "";
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      const repairNote = lastIssue
+        ? `\n\nYour previous response failed validation (${lastIssue}). Return one JSON object only. Include a top-level "destination" and "blocks" array. Do not include prose or code fences.`
+        : "";
+      const result = await generateText({
+        model: gateway("google/gemini-2.5-flash"),
+        system: `${SYSTEM_PROMPT}\n\nReturn ONLY a JSON object matching the requested schema. Missing optional fields may be omitted. No prose, no markdown, no code fences.${repairNote}`,
+        prompt: basePrompt,
+      });
+      lastRaw = result.text.trim();
+      const safe = BlockSchema.safeParse(JSON.parse(extractJsonObject(lastRaw)));
+      if (safe.success) return safe.data;
+      lastIssue = `schema mismatch: ${safe.error.issues
+        .slice(0, 3)
+        .map((i) => `${i.path.join(".") || "(root)"} ${i.message}`)
+        .join("; ")}`;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (/402|credit/i.test(msg) || isRateLimitMessage(msg)) throw err;
+      if (lastRaw) {
+        try {
+          const safe = BlockSchema.safeParse(JSON.parse(extractJsonObject(lastRaw)));
+          if (safe.success) return safe.data;
+          lastIssue = `schema mismatch: ${safe.error.issues
+            .slice(0, 3)
+            .map((i) => `${i.path.join(".") || "(root)"} ${i.message}`)
+            .join("; ")}`;
+        } catch {
+          lastIssue = "invalid JSON syntax";
+        }
+      } else {
+        lastIssue = msg.slice(0, 160);
+      }
+    }
+
+    if (attempt < MAX_ATTEMPTS) {
+      await new Promise((r) => setTimeout(r, 600 * 2 ** (attempt - 1)));
+    }
+  }
+
+  throw new Error(`AI parser could not produce valid blocks after ${MAX_ATTEMPTS} attempts (${lastIssue}).`);
+}
+
+function extractJsonObject(text: string): string {
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const body = fenced ? fenced[1] : text;
+  const start = body.indexOf("{");
+  const end = body.lastIndexOf("}");
+  if (start === -1 || end === -1 || end <= start) return body.trim();
+  return body.slice(start, end + 1);
+}
+
+function isRateLimitMessage(message: string): boolean {
+  return /\b429\b|rate limit|rate-limit|too many requests/i.test(message);
+}
 
 function clean<T extends Record<string, unknown>>(obj: T): T {
   const out: Record<string, unknown> = {};
