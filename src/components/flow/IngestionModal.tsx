@@ -79,12 +79,13 @@ type Tab = "paste" | "transcript" | "generate";
 const TABS: {
   id: Tab;
   icon: typeof ClipboardPaste;
-  label: string;
+  word: string;
+  accent: string;
   sub: string;
 }[] = [
-  { id: "paste", icon: ClipboardPaste, label: "Paste Itinerary", sub: "ChatGPT, Claude, notes." },
-  { id: "transcript", icon: Upload, label: "Upload Transcript", sub: "Text or .vtt / .srt files." },
-  { id: "generate", icon: Wand2, label: "Generate Itinerary", sub: "Describe the trip — we'll draft it live." },
+  { id: "paste", icon: ClipboardPaste, word: "Paste", accent: "Itinerary", sub: "ChatGPT, Claude, notes." },
+  { id: "transcript", icon: Upload, word: "Upload", accent: "Transcript", sub: "Text or .vtt / .srt files." },
+  { id: "generate", icon: Wand2, word: "Generate", accent: "Itinerary", sub: "Describe the trip — we'll draft it live." },
 ];
 
 function serial() {
