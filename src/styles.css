@@ -264,6 +264,18 @@
   body.td-print-mode [data-print="only"] { display: block !important; }
 }
 
+/* Scoped "reduce motion" — applied only inside the itinerary generator UI
+   when the user toggles it. Keeps the rest of the app untouched. */
+.td-no-motion,
+.td-no-motion * {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  transition-delay: 0ms !important;
+  scroll-behavior: auto !important;
+}
+.td-no-motion [style*="transform"] { transform: none !important; }
+
 /* ---- Mint button shimmer (diamond-edge sweep) ---- */
 @keyframes td-mint-shimmer {
   0%   { background-position: 200% 0; }
