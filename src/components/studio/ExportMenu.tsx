@@ -7,6 +7,7 @@ import { useNavigate, useLocation } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { exportItineraryToGoogleDoc } from "@/lib/itinerary/export.functions";
 import { useState } from "react";
+import { withRetry } from "@/lib/retry";
 
 export function ExportMenu({
   slug,
@@ -21,6 +22,7 @@ export function ExportMenu({
   const location = useLocation();
   const exportDoc = useServerFn(exportItineraryToGoogleDoc);
   const [exporting, setExporting] = useState(false);
+  const [exportAttempt, setExportAttempt] = useState(0);
   function copyLink() {
     const url = `${window.location.origin}/t/${slug}`;
     navigator.clipboard.writeText(url).then(
@@ -38,6 +40,7 @@ export function ExportMenu({
   async function exportToGoogleDoc() {
     if (exporting) return;
     setExporting(true);
+    setExportAttempt(0);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -47,16 +50,21 @@ export function ExportMenu({
         navigate({ to: "/login", search: { redirect: location.pathname } });
         return;
       }
-      const r = await exportDoc({ data: { slug } });
+      const r = await withRetry(() => exportDoc({ data: { slug } }), {
+        attempts: 3,
+        onAttempt: ({ attempt }) => setExportAttempt(attempt),
+      });
       toast.success("Opened in Google Docs", { description: r.googleDocUrl });
       window.open(r.googleDocUrl, "_blank", "noopener");
     } catch (err) {
       console.error("[export-doc] failed", err);
-      toast.error(
-        err instanceof Error ? err.message : "Couldn't export to Google Docs.",
-      );
+      toast.error("Couldn't export to Google Docs", {
+        description: err instanceof Error ? err.message : String(err),
+        action: { label: "Retry", onClick: () => void exportToGoogleDoc() },
+      });
     } finally {
       setExporting(false);
+      setExportAttempt(0);
     }
   }
   async function addToCalendar() {
@@ -155,7 +163,13 @@ export function ExportMenu({
       <ExportButton
         onClick={exportToGoogleDoc}
         icon={<FileText className="h-3.5 w-3.5" />}
-        label={exporting ? "Exporting…" : "Google Doc"}
+        label={
+          exporting
+            ? exportAttempt > 1
+              ? `Retrying (${exportAttempt}/3)…`
+              : "Exporting…"
+            : "Google Doc"
+        }
         disabled={exporting}
       />
       <ExportButton onClick={printPdf} icon={<Printer className="h-3.5 w-3.5" />} label="PDF" />
