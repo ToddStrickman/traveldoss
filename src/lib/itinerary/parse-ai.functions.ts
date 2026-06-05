@@ -290,11 +290,16 @@ async function parseBlocksWithAi(
   gateway: GatewayProvider,
   cleanText: string,
   source: "text" | "transcript" | "ai",
+  attempts?: DebugAttempt[],
 ): Promise<z.infer<typeof BlockSchema>> {
   const basePrompt = `Source type: ${source}\n\n---\n${cleanText}\n---\n\nReturn the structured itinerary now.`;
   const MAX_ATTEMPTS = 4;
   let lastRaw = "";
   let lastIssue = "";
+
+  const recordAttempt = (entry: DebugAttempt) => {
+    if (attempts) attempts.push(entry);
+  };
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
@@ -316,6 +321,11 @@ async function parseBlocksWithAi(
           `[parse-ai] attempt ${attempt}/${MAX_ATTEMPTS} JSON.parse failed: ${(jsonErr as Error).message}\n  raw[0..600]: ${snippet}`,
         );
         lastIssue = `invalid JSON syntax: ${(jsonErr as Error).message.slice(0, 120)}`;
+        recordAttempt({
+          attempt,
+          rawResponse: lastRaw,
+          jsonParseError: (jsonErr as Error).message,
+        });
         if (attempt < MAX_ATTEMPTS) {
           await new Promise((r) => setTimeout(r, 600 * 2 ** (attempt - 1)));
         }
@@ -325,6 +335,13 @@ async function parseBlocksWithAi(
       if (safe.success) return safe.data;
       logZodDiagnostics("parse-ai", attempt, MAX_ATTEMPTS, safe.error, parsedJson, lastRaw);
       lastIssue = summarizeIssues(safe.error.issues);
+      recordAttempt({
+        attempt,
+        rawResponse: lastRaw,
+        parsedJson,
+        zodIssues: safe.error.issues,
+        zodIssueSummary: lastIssue,
+      });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       if (/402|credit/i.test(msg) || isRateLimitMessage(msg)) throw err;
@@ -336,11 +353,30 @@ async function parseBlocksWithAi(
           if (safe.success) return safe.data;
           logZodDiagnostics("parse-ai", attempt, MAX_ATTEMPTS, safe.error, reparsed, lastRaw);
           lastIssue = summarizeIssues(safe.error.issues);
+          recordAttempt({
+            attempt,
+            rawResponse: lastRaw,
+            parsedJson: reparsed,
+            zodIssues: safe.error.issues,
+            zodIssueSummary: lastIssue,
+            threwError: msg,
+          });
         } catch {
           lastIssue = "invalid JSON syntax";
+          recordAttempt({
+            attempt,
+            rawResponse: lastRaw,
+            jsonParseError: "invalid JSON syntax",
+            threwError: msg,
+          });
         }
       } else {
         lastIssue = msg.slice(0, 160);
+        recordAttempt({
+          attempt,
+          rawResponse: "",
+          threwError: msg,
+        });
       }
     }
 
