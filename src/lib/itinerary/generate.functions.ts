@@ -188,9 +188,7 @@ export const generateItineraryAi = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const key = process.env.LOVABLE_API_KEY;
     if (!key) {
-      throw new Error(
-        "AI generator is not configured. Missing LOVABLE_API_KEY on the server."
-      );
+      throw new Error("AI generator is not configured. Missing LOVABLE_API_KEY on the server.");
     }
 
     const { createLovableAiGatewayProvider } = await import("@/lib/ai-gateway.server");
