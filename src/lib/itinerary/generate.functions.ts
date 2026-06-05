@@ -44,6 +44,110 @@ const OutputSchema = z.object({
   itinerary: z.string().default(""),
 });
 
+/**
+ * Loose schema used before strict OutputSchema validation. Coerces common
+ * shape drift from the model:
+ *   - clarifyingQuestions returned as a single string → wrap in array
+ *   - itinerary returned as string[] of lines → join with newlines
+ *   - itinerary nested under {markdown|text|content|body}
+ *   - needsClarification returned as "true"/"false" string
+ *   - top-level array wrapper [{...}] → unwrap
+ */
+function normalizeOutput(input: unknown): unknown {
+  let node: unknown = input;
+  if (Array.isArray(node) && node.length > 0) node = node[0];
+  if (!node || typeof node !== "object") return input;
+  const obj = { ...(node as Record<string, unknown>) };
+
+  if (typeof obj.needsClarification === "string") {
+    obj.needsClarification = /^true$/i.test(obj.needsClarification);
+  }
+
+  const cq = obj.clarifyingQuestions ?? obj.questions;
+  if (typeof cq === "string") {
+    obj.clarifyingQuestions = cq.trim() ? [cq.trim()] : [];
+  } else if (Array.isArray(cq)) {
+    obj.clarifyingQuestions = cq
+      .map((q) => (typeof q === "string" ? q.trim() : ""))
+      .filter((q) => q.length > 0);
+  } else if (cq == null) {
+    obj.clarifyingQuestions = [];
+  }
+
+  let itin: unknown = obj.itinerary;
+  if (itin == null) {
+    itin = obj.markdown ?? obj.text ?? obj.content ?? obj.body ?? obj.draft;
+  }
+  if (Array.isArray(itin)) {
+    itin = itin
+      .map((line) => (typeof line === "string" ? line : ""))
+      .filter((line) => line.length > 0)
+      .join("\n");
+  } else if (itin && typeof itin === "object") {
+    // Sometimes wrapped as { markdown: "..." }
+    const nested = itin as Record<string, unknown>;
+    const inner = nested.markdown ?? nested.text ?? nested.content ?? nested.body;
+    if (typeof inner === "string") itin = inner;
+  }
+  if (typeof itin !== "string") itin = "";
+  obj.itinerary = (itin as string).trim();
+
+  return obj;
+}
+
+/**
+ * Last-resort recovery: pull a usable markdown itinerary out of a raw text
+ * payload even when JSON.parse failed (e.g. truncated output, unescaped
+ * quotes inside the itinerary string).
+ */
+function salvageItineraryFromRaw(raw: string): string | null {
+  if (!raw) return null;
+  // Strip fences if present.
+  const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const body = fenced ? fenced[1] : raw;
+
+  // Try to find an "itinerary": "..." field and extract its contents,
+  // tolerating truncation (no closing quote) and embedded newlines.
+  const keyIdx = body.search(/"itinerary"\s*:\s*"/);
+  if (keyIdx !== -1) {
+    const afterQuote = body.indexOf('"', body.indexOf(":", keyIdx) + 1) + 1;
+    let end = afterQuote;
+    while (end < body.length) {
+      const next = body.indexOf('"', end);
+      if (next === -1) {
+        end = body.length;
+        break;
+      }
+      // Unescaped closing quote — count preceding backslashes.
+      let slashes = 0;
+      for (let i = next - 1; i >= 0 && body[i] === "\\"; i--) slashes++;
+      if (slashes % 2 === 0) {
+        end = next;
+        break;
+      }
+      end = next + 1;
+    }
+    const slice = body.slice(afterQuote, end);
+    const unescaped = slice
+      .replace(/\\n/g, "\n")
+      .replace(/\\t/g, "\t")
+      .replace(/\\"/g, '"')
+      .replace(/\\\\/g, "\\")
+      .trim();
+    if (looksLikeItinerary(unescaped)) return unescaped;
+  }
+
+  // Otherwise, if the raw body itself looks like a markdown itinerary, use it.
+  if (looksLikeItinerary(body)) return body.trim();
+  return null;
+}
+
+function looksLikeItinerary(text: string): boolean {
+  if (!text || text.trim().length < 40) return false;
+  // Require at least one Day heading or a clear time-of-day bullet.
+  return /(^|\n)#{1,3}\s*Day\s*\d/i.test(text) || /(Morning|Afternoon|Evening)\s*·/.test(text);
+}
+
 const SYSTEM = `You are TravelDoss's master itinerary architect. You write itineraries with the polish of an elite travel advisor: specific named venues, neighborhoods, opening times, transit hints, and one-line editorial reasoning per stop.
 
 Your job has two modes:
@@ -256,7 +360,9 @@ async function generateStructured(
       experimental_output: Output.object({ schema: OutputSchema }),
       maxOutputTokens: 8192,
     });
-    const out = result.experimental_output;
+    const normalized = normalizeOutput(result.experimental_output);
+    const safe = OutputSchema.safeParse(normalized);
+    const out = safe.success ? safe.data : result.experimental_output;
     // Gemini sometimes returns a valid-shape object with an empty itinerary
     // string when it hits a token limit or stalls. Treat that as a failure
     // so we fall through to the JSON-prompt retry path below instead of
@@ -327,7 +433,12 @@ async function generateStructured(
         continue;
       }
       const safe = OutputSchema.safeParse(parsed);
-      if (safe.success) return safe.data;
+      const normalized = normalizeOutput(parsed);
+      const safeNorm = OutputSchema.safeParse(normalized);
+      if (safe.success && safe.data.itinerary.trim().length >= 40) return safe.data;
+      if (safeNorm.success && (safeNorm.data.needsClarification || looksLikeItinerary(safeNorm.data.itinerary))) {
+        return safeNorm.data;
+      }
       logZodDiagnostics("generate", attempt, MAX_JSON_ATTEMPTS, safe.error, parsed, lastRaw);
       lastIssue = summarizeIssues(safe.error.issues);
       recordAttempt({
@@ -358,6 +469,15 @@ async function generateStructured(
   // Final fallback: treat the last raw response as itinerary markdown so the
   // user still gets something useful instead of a hard error.
   if (lastRaw) {
+    const salvaged = salvageItineraryFromRaw(lastRaw);
+    if (salvaged) {
+      recordAttempt({
+        attempt: MAX_JSON_ATTEMPTS + 1,
+        rawResponse: lastRaw,
+        threwError: `salvaged-from-raw: ${lastIssue}`,
+      });
+      return { needsClarification: false, clarifyingQuestions: [], itinerary: salvaged };
+    }
     recordAttempt({
       attempt: MAX_JSON_ATTEMPTS + 1,
       rawResponse: lastRaw,
