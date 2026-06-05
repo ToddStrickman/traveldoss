@@ -111,7 +111,6 @@ export function IngestionModal({
   const [text, setText] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
   const [ref] = useState(serial);
-  const tabIndex = TABS.findIndex((t) => t.id === tab);
   const [stage, setStage] = useState<"source" | "review">("source");
   const [reviewBlocks, setReviewBlocks] = useState<Block[]>([]);
   const [reviewLabel, setReviewLabel] = useState("Reading your itinerary…");
