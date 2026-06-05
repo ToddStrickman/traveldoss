@@ -1170,6 +1170,13 @@ function GenerateForm({
   clarifyQs, clarifyAs, setClarifyAnswer,
   onSubmitClarifications,
   parsing,
+  savedItems,
+  activeSavedId,
+  onLoadSaved,
+  onSaveCurrent,
+  onRemoveSaved,
+  reducedMotion,
+  onToggleReducedMotion,
 }: {
   prompt: string; setPrompt: (v: string) => void;
   destination: string; setDestination: (v: string) => void;
@@ -1182,6 +1189,13 @@ function GenerateForm({
   clarifyQs: string[]; clarifyAs: string[]; setClarifyAnswer: (i: number, v: string) => void;
   onSubmitClarifications: () => void;
   parsing: boolean;
+  savedItems: SavedTripRequest[];
+  activeSavedId: string | null;
+  onLoadSaved: (r: SavedTripRequest) => void;
+  onSaveCurrent: () => void;
+  onRemoveSaved: (id: string) => void;
+  reducedMotion: boolean;
+  onToggleReducedMotion: (v: boolean) => void;
 }) {
   const fieldCls =
     "w-full rounded-md border border-ink/15 bg-paper/60 px-3 py-2.5 text-[13px] text-ink outline-none transition-elegant placeholder:text-ink/35 focus:border-seal focus:bg-paper";
