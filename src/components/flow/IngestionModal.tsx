@@ -48,6 +48,22 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { useSavedTripRequests, type SavedTripRequest } from "@/hooks/use-saved-trip-requests";
 import { useGeneratorA11y } from "@/hooks/use-generator-a11y";
+import {
+  downloadDebugReport,
+  type DebugReport,
+} from "@/lib/itinerary/debug-report";
+
+function offerDebugReport(report: DebugReport | undefined, label: string) {
+  if (!report) return;
+  toast.message(`${label} — debug report ready`, {
+    description: `${report.outcome} after ${report.attempts.length} attempt(s). Download the raw Gemini response, Zod issues, and final fallback as JSON.`,
+    duration: 12_000,
+    action: {
+      label: "Download JSON",
+      onClick: () => downloadDebugReport(report),
+    },
+  });
+}
 
 type Tab = "paste" | "transcript" | "generate";
 
