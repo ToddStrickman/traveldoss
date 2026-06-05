@@ -415,8 +415,9 @@ export function IngestionModal({
                 className="max-w-md text-[15px] leading-[1.55] text-ink-soft"
                 style={{ fontFamily: "var(--font-display)" }}
               >
-                Three ways in. One result —{" "}
-                <span className="italic text-ink/70">a quietly composed dossier,</span> set in this dossier template.
+                One entry —{" "}
+                <span className="italic text-ink/70">paste, upload, or describe.</span>{" "}
+                We'll only ask for what we can't infer.
               </p>
             </div>
             <div className="hidden shrink-0 text-right md:block">
@@ -434,149 +435,129 @@ export function IngestionModal({
           </div>
         </div>
 
-        {/* Serialised steps */}
+        {/* Unified composer */}
         <div className="px-5 sm:px-8 md:px-10 pt-8">
-          <div className="td-eyebrow mb-4 text-ink/45">
-            <span>Pick a dossier generation option</span>
-          </div>
-          <div className="grid grid-cols-1 gap-0 overflow-hidden rounded-md border border-ink/10 md:grid-cols-3">
-            {TABS.map((opt, i) => {
-              const on = tab === opt.id;
-              const Icon = opt.icon;
-              return (
-                <button
-                  key={opt.id}
-                  onClick={() => setTab(opt.id)}
-                  className={`group relative flex flex-col items-start gap-3 px-6 py-6 text-left transition-elegant ${
-                    on ? "bg-paper" : "bg-paper/40 hover:bg-paper/70"
-                  } ${i > 0 ? "md:border-l md:border-ink/10" : ""}`}
-                >
-                  <span className="flex items-center gap-2 text-seal/80">
-                    <Icon className="h-5 w-5" strokeWidth={1.5} aria-hidden />
-                    <span className="td-rule w-6 opacity-60" />
-                  </span>
-                  <span
-                    className="text-[19px] leading-[1.15] tracking-[-0.005em] text-ink"
-                    style={{ fontFamily: "var(--font-display)" }}
-                  >
-                    {opt.label.split(" ")[0]}{" "}
-                    <span className="italic text-ink/75">{opt.label.split(" ").slice(1).join(" ")}</span>
-                  </span>
-                  <span className="text-[12px] leading-[1.55] text-ink-soft">{opt.sub}</span>
-                  {on && (
-                    <span aria-hidden className="absolute inset-x-6 bottom-0 h-px bg-seal" />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="px-5 sm:px-8 md:px-10 pt-8">
-          {tab === "paste" && (
-            <div className="flex flex-col gap-3">
-              <p
-                className="text-[15px] leading-[1.55] text-ink/80"
-                style={{ fontFamily: "var(--font-display)" }}
-              >
-                Paste anything —{" "}
-                <span className="italic text-ink/65">a draft, a list, a stream of consciousness.</span>
-              </p>
-              <textarea
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                placeholder="Day 1: arrive, check into hotel, dinner at…"
-                rows={8}
-                className="w-full rounded-md border border-ink/15 bg-paper/60 px-4 py-3.5 font-mono text-[12.5px] leading-[1.6] text-ink outline-none transition-elegant placeholder:text-ink/35 focus:border-seal focus:bg-paper"
-              />
-            </div>
-          )}
-          {tab === "transcript" && (
-            <div
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={onDrop}
-              className="flex flex-col items-center justify-center rounded-md border border-dashed border-ink/20 bg-paper/40 px-6 py-14 text-center transition-elegant hover:border-seal/60 hover:bg-paper/60"
-            >
-              <p
-                className="text-[19px] leading-[1.2] text-ink/85"
-                style={{ fontFamily: "var(--font-display)" }}
-              >
-                <span className="italic">Drop a transcript</span>{" "}
-                <span className="text-ink/55">— or</span>{" "}
-                <button
-                  onClick={() => fileRef.current?.click()}
-                  className="text-seal underline-offset-4 hover:underline"
-                >
-                  browse
-                </button>
-              </p>
-              <p className="td-eyebrow mt-4 text-ink/40">
-                .txt, .vtt, .srt — audio coming soon
-              </p>
-              <input
-                ref={fileRef}
-                type="file"
-                accept=".txt,.vtt,.srt,text/*,audio/*"
-                className="hidden"
-                onChange={onFile}
-              />
-              {text && (
-                <pre className="mt-6 max-h-32 w-full overflow-y-auto rounded-md border border-ink/10 bg-paper/70 p-3 text-left font-mono text-[11px] leading-[1.6] text-ink-soft">
-                  {text.slice(0, 600)}
-                  {text.length > 600 ? "…" : ""}
-                </pre>
-              )}
-            </div>
-          )}
           {tab === "generate" && parsing && !clarifyQs.length ? (
             <GenerationProgress
               phase={genPhase}
-              destination={genDestination}
-              duration={genDuration}
-              startDate={genStartDate}
-              travelers={genTravelers}
-              pace={genPace}
-              budget={genBudget}
-              interests={genInterests}
+              destination=""
+              duration=""
+              startDate=""
+              travelers=""
+              pace=""
+              budget=""
+              interests={[]}
               prompt={genPrompt}
             />
-          ) : tab === "generate" && (
-            <GenerateForm
-              prompt={genPrompt}
-              setPrompt={setGenPrompt}
-              destination={genDestination}
-              setDestination={setGenDestination}
-              duration={genDuration}
-              setDuration={setGenDuration}
-              startDate={genStartDate}
-              setStartDate={setGenStartDate}
-              travelers={genTravelers}
-              setTravelers={setGenTravelers}
-              pace={genPace}
-              setPace={setGenPace}
-              budget={genBudget}
-              setBudget={setGenBudget}
-              interests={genInterests}
-              interestOptions={INTEREST_OPTIONS}
-              onToggleInterest={toggleInterest}
-              clarifyQs={clarifyQs}
-              clarifyAs={clarifyAs}
-              setClarifyAnswer={(i: number, v: string) =>
-                setClarifyAs((prev) => prev.map((a, j) => (j === i ? v : a)))
-              }
-              onSubmitClarifications={submitClarifications}
-              parsing={parsing}
-              savedItems={saved.items}
-              activeSavedId={activeSavedId}
-              onLoadSaved={loadSavedDraft}
-              onSaveCurrent={saveCurrentDraft}
-              onRemoveSaved={(id: string) => {
-                if (activeSavedId === id) setActiveSavedId(null);
-                void saved.remove(id);
-              }}
-              reducedMotion={reducedMotion}
-              onToggleReducedMotion={setReducedMotion}
-            />
+          ) : clarifyQs.length ? (
+            <div className="flex flex-col gap-4">
+              <div className="flex items-start gap-3 rounded-md border border-seal/30 bg-seal/10 px-4 py-3 text-[12.5px] leading-[1.6] text-ink">
+                <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-seal" />
+                <p>
+                  A few details would sharpen this draft. Answer what you can —
+                  leave any field blank to let us infer.
+                </p>
+              </div>
+              <ul className="flex flex-col gap-3">
+                {clarifyQs.map((q, i) => (
+                  <li key={i} className="flex flex-col gap-1.5">
+                    <label className="td-eyebrow text-ink/55">Question {i + 1}</label>
+                    <p
+                      className="text-[14px] leading-[1.5] text-ink"
+                      style={{ fontFamily: "var(--font-display)" }}
+                    >
+                      {q}
+                    </p>
+                    <input
+                      value={clarifyAs[i] ?? ""}
+                      onChange={(e) =>
+                        setClarifyAs((prev) => prev.map((a, j) => (j === i ? e.target.value : a)))
+                      }
+                      placeholder="Your answer…"
+                      className="w-full rounded-md border border-ink/15 bg-paper/60 px-3 py-2.5 text-[13px] text-ink outline-none transition-elegant placeholder:text-ink/35 focus:border-seal focus:bg-paper"
+                      disabled={parsing}
+                    />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {/* Mode pills */}
+              <div className="flex items-center justify-between gap-2">
+                <div
+                  role="tablist"
+                  aria-label="Composer mode"
+                  className="inline-flex items-center gap-1 rounded-full border border-ink/10 bg-paper/40 p-1"
+                >
+                  {TABS.map((opt) => {
+                    const on = tab === opt.id;
+                    const Icon = opt.icon;
+                    return (
+                      <button
+                        key={opt.id}
+                        role="tab"
+                        aria-selected={on}
+                        onClick={() => setTab(opt.id)}
+                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] uppercase tracking-[0.25em] transition-elegant ${
+                          on
+                            ? "bg-seal/15 text-seal"
+                            : "text-ink/55 hover:text-ink"
+                        }`}
+                      >
+                        <Icon className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
+                        {opt.id === "paste" ? "Paste" : opt.id === "transcript" ? "Upload" : "Generate"}
+                      </button>
+                    );
+                  })}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  className="td-eyebrow inline-flex items-center gap-1.5 rounded-full border border-ink/15 bg-paper/40 px-3 py-1.5 text-ink/55 transition-elegant hover:border-seal hover:text-seal"
+                  aria-label="Attach a transcript file"
+                  title="Attach .txt, .vtt, or .srt"
+                >
+                  <Upload className="h-3.5 w-3.5" /> Attach
+                </button>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept=".txt,.vtt,.srt,text/*,audio/*"
+                  className="hidden"
+                  onChange={onFile}
+                />
+              </div>
+
+              {/* Single textarea */}
+              <div
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={onDrop}
+              >
+                <textarea
+                  value={tab === "generate" ? genPrompt : text}
+                  onChange={(e) =>
+                    tab === "generate" ? setGenPrompt(e.target.value) : setText(e.target.value)
+                  }
+                  placeholder={
+                    tab === "paste"
+                      ? "Paste an itinerary — Day 1: arrive, check into hotel, dinner at…"
+                      : tab === "transcript"
+                      ? "Paste or drop a transcript here — .txt, .vtt, .srt"
+                      : 'Describe the trip — "Five days in Lisbon for two, seafood-heavy, balanced pace."'
+                  }
+                  rows={8}
+                  className={`w-full rounded-md border border-ink/15 bg-paper/60 px-4 py-3.5 leading-[1.6] text-ink outline-none transition-elegant placeholder:text-ink/35 focus:border-seal focus:bg-paper ${
+                    tab === "generate" ? "text-[13.5px]" : "font-mono text-[12.5px]"
+                  }`}
+                />
+              </div>
+
+              <p className="text-[11.5px] leading-[1.55] text-ink-soft">
+                One field, three ways in. We'll only ask for dates, travelers, pace, budget, or
+                interests if the dossier can't infer them — directly on the draft, where they belong.
+              </p>
+            </div>
           )}
         </div>
 
@@ -602,13 +583,11 @@ export function IngestionModal({
             <span>
               {parsing
                 ? tab === "generate"
-                  ? "Generating live…"
+                  ? "Composing live…"
                   : "Reading & enriching…"
-                : tab === "generate"
-                ? clarifyQs.length
-                  ? "Continue"
-                  : "Generate Itinerary"
-                : "Review & Mint"}
+                : clarifyQs.length
+                ? "Continue"
+                : "Compose Dossier"}
             </span>
             <span aria-hidden className="inline-flex h-7 w-7 items-center justify-center rounded-sm border border-seal/40 transition-elegant group-hover:border-paper/40">
               →
