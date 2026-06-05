@@ -3,6 +3,10 @@ import { generateText, Output } from "ai";
 import { z, ZodError, type ZodIssue } from "zod";
 import type { Block } from "@/lib/skins/types";
 import { parseDropInWithMeta, stripEmoji } from "@/lib/itinerary/parse";
+import type {
+  DebugAttempt,
+  DebugReport,
+} from "@/lib/itinerary/debug-report";
 
 /**
  * AI-powered itinerary parser. Takes raw pasted text (from ChatGPT,
