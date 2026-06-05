@@ -1026,3 +1026,38 @@
   padding: 0 6px;
   min-width: 22px;
 }
+
+/* Inline day header: Day No · Label · Date all on one row, with the
+   date chip sitting next to the label rather than dropping below. */
+.tds-day-headline {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.tds-day-headline .tds-day-no { align-self: center; }
+.tds-day-headline .tds-day-label { margin-top: 0; }
+
+.tds-day-date-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--tds-fs-meta);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--tds-inkSoft);
+  padding: 2px 8px;
+  border: 1px dashed color-mix(in oklab, var(--tds-rule) 70%, transparent);
+  border-radius: 9999px;
+  background: transparent;
+  cursor: pointer;
+  transition: border-color .15s ease, color .15s ease, background .15s ease;
+}
+.tds-day-date-chip:hover {
+  color: var(--tds-accent);
+  border-color: var(--tds-accent);
+}
+.tds-day-date-chip[data-placeholder="true"] {
+  color: color-mix(in oklab, var(--tds-inkSoft) 60%, transparent);
+  font-style: italic;
+}
