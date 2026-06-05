@@ -111,6 +111,8 @@ export function IngestionModal({
   const [parsing, setParsing] = useState(false);
   const parseAi = useServerFn(parseItineraryAi);
   const generateAi = useServerFn(generateItineraryAi);
+  type GenPhase = "idle" | "research" | "draft" | "enrich" | "done";
+  const [genPhase, setGenPhase] = useState<GenPhase>("idle");
 
   // ── Generate-tab state ───────────────────────────────────────────────
   const [genPrompt, setGenPrompt] = useState("");
@@ -252,6 +254,7 @@ export function IngestionModal({
       return;
     }
     setParsing(true);
+    setGenPhase("research");
     try {
       const gen = await generateAi({
         data: {
@@ -274,12 +277,15 @@ export function IngestionModal({
       if (gen.kind === "clarify") {
         setClarifyQs(gen.questions);
         setClarifyAs(gen.questions.map(() => ""));
+        setGenPhase("idle");
         toast.message("A few quick questions", {
           description: "Answer these so we can tailor the itinerary.",
         });
         return;
       }
+      setGenPhase("draft");
       // Hand the AI draft to the existing parser for blocks + live enrichment.
+      setGenPhase("enrich");
       const parsed = await parseAi({
         data: { text: gen.draft, source: "ai" },
       });
@@ -291,6 +297,7 @@ export function IngestionModal({
         toast.error("Generation came back empty. Try a different prompt.");
         return;
       }
+      setGenPhase("done");
       setReviewBlocks(parsed.blocks);
       setReviewLabel("Drafting your itinerary…");
       setReviewDestination(parsed.destination ?? genDestination.trim() ?? null);
@@ -306,6 +313,7 @@ export function IngestionModal({
       );
     } finally {
       setParsing(false);
+      setGenPhase("idle");
     }
   }
 
