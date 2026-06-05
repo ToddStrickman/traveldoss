@@ -79,12 +79,13 @@ type Tab = "paste" | "transcript" | "generate";
 const TABS: {
   id: Tab;
   icon: typeof ClipboardPaste;
-  label: string;
+  word: string;
+  accent: string;
   sub: string;
 }[] = [
-  { id: "paste", icon: ClipboardPaste, label: "Paste Itinerary", sub: "ChatGPT, Claude, notes." },
-  { id: "transcript", icon: Upload, label: "Upload Transcript", sub: "Text or .vtt / .srt files." },
-  { id: "generate", icon: Wand2, label: "Generate Itinerary", sub: "Describe the trip — we'll draft it live." },
+  { id: "paste", icon: ClipboardPaste, word: "Paste", accent: "Itinerary", sub: "ChatGPT, Claude, notes." },
+  { id: "transcript", icon: Upload, word: "Upload", accent: "Transcript", sub: "Text or .vtt / .srt files." },
+  { id: "generate", icon: Wand2, word: "Generate", accent: "Itinerary", sub: "Describe the trip — we'll draft it live." },
 ];
 
 function serial() {
@@ -483,35 +484,52 @@ export function IngestionModal({
               </ul>
             </div>
           ) : (
-            <div className="flex flex-col gap-3">
-              {/* Mode pills */}
-              <div className="flex items-center justify-between gap-2">
-                <div
-                  role="tablist"
-                  aria-label="Composer mode"
-                  className="inline-flex items-center gap-1 rounded-full border border-ink/10 bg-paper/40 p-1"
-                >
-                  {TABS.map((opt) => {
-                    const on = tab === opt.id;
-                    const Icon = opt.icon;
-                    return (
-                      <button
-                        key={opt.id}
-                        role="tab"
-                        aria-selected={on}
-                        onClick={() => setTab(opt.id)}
-                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] uppercase tracking-[0.25em] transition-elegant ${
-                          on
-                            ? "bg-seal/15 text-seal"
-                            : "text-ink/55 hover:text-ink"
-                        }`}
+            <div className="flex flex-col gap-4">
+              {/* Mode cards */}
+              <div
+                role="tablist"
+                aria-label="Composer mode"
+                className="grid grid-cols-1 gap-0 overflow-hidden rounded-md border border-ink/10 bg-paper/30 sm:grid-cols-3"
+              >
+                {TABS.map((opt, i) => {
+                  const on = tab === opt.id;
+                  const Icon = opt.icon;
+                  return (
+                    <button
+                      key={opt.id}
+                      role="tab"
+                      aria-selected={on}
+                      onClick={() => setTab(opt.id)}
+                      className={`group relative flex flex-col items-start gap-2 px-5 py-5 text-left transition-elegant ${
+                        i > 0 ? "border-t border-ink/10 sm:border-t-0 sm:border-l" : ""
+                      } ${on ? "bg-paper/60" : "hover:bg-paper/40"}`}
+                    >
+                      <Icon
+                        className={`h-4 w-4 ${on ? "text-seal" : "text-ink/55"}`}
+                        strokeWidth={1.5}
+                        aria-hidden
+                      />
+                      <div
+                        className="text-[19px] leading-tight text-ink"
+                        style={{ fontFamily: "var(--font-display)" }}
                       >
-                        <Icon className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
-                        {opt.id === "paste" ? "Paste" : opt.id === "transcript" ? "Upload" : "Generate"}
-                      </button>
-                    );
-                  })}
-                </div>
+                        {opt.word}{" "}
+                        <span className="italic text-ink/85">{opt.accent}</span>
+                      </div>
+                      <div className="text-[12px] leading-[1.5] text-ink-soft">
+                        {opt.sub}
+                      </div>
+                      <span
+                        aria-hidden
+                        className={`absolute inset-x-5 bottom-2 h-px origin-left transition-elegant ${
+                          on ? "scale-x-100 bg-seal/70" : "scale-x-0 bg-seal/0"
+                        }`}
+                      />
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="flex items-center justify-end">
                 <button
                   type="button"
                   onClick={() => fileRef.current?.click()}

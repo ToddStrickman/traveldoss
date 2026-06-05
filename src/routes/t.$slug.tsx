@@ -21,6 +21,7 @@ import { DebugReportsPanel } from "@/components/studio/DebugReportsPanel";
 import { toast } from "sonner";
 import { useHistory, useUndoRedoShortcuts } from "@/hooks/use-history";
 import { useItineraryRefiner } from "@/hooks/use-itinerary-refiner";
+import { hardenItineraryAi } from "@/lib/itinerary/harden.functions";
 
 type RefineHistoryEntry = {
   id: string;
@@ -285,6 +286,40 @@ function DossierPage() {
     },
     [refineHistory, setSnap, queueSave],
   );
+
+  // Background hardening pipeline: once per trip load when blocks exist
+  // and the user can edit, run search → logic confirm → re-harden → final
+  // completeness pass server-side and silently merge the result.
+  const hardenFn = useServerFn(hardenItineraryAi);
+  const hardenedFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (!canEdit) return;
+    if (!blocks.length) return;
+    if (hardenedFor.current === trip.id) return;
+    hardenedFor.current = trip.id;
+    const handle = setTimeout(() => {
+      hardenFn({
+        data: {
+          blocks,
+          destination: destination || undefined,
+          startDate: startDate || undefined,
+          endDate: endDate || undefined,
+          meta,
+        },
+      })
+        .then((res) => {
+          if (!res?.blocks?.length) return;
+          setSnap(
+            (s) => ({ ...s, blocks: res.blocks as Block[] }),
+            { coalesceKey: "harden:initial" },
+          );
+          queueSave({ blocks: res.blocks as Block[] });
+        })
+        .catch((err) => console.error("[harden] background pass failed", err));
+    }, 2500);
+    return () => clearTimeout(handle);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trip.id, canEdit, blocks.length]);
 
   const editingCtx = useMemo(
     () => ({
