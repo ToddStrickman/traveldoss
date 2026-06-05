@@ -6,7 +6,6 @@ import {
   FlightStrip,
   PartHeading,
   partOrder,
-  dayDateLabel,
   SlotAlternativesCarousel,
 } from "./parts";
 import { ActivityDndContext, DraggableActivity, DroppableBucket } from "./dnd";
