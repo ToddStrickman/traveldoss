@@ -1,10 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { generateText, Output } from "ai";
 import { z, ZodError, type ZodIssue } from "zod";
-import type {
-  DebugAttempt,
-  DebugReport,
-} from "@/lib/itinerary/debug-report";
+import type { DebugAttempt, DebugReport } from "@/lib/itinerary/debug-report";
 
 /**
  * AI itinerary generator.
@@ -192,13 +189,11 @@ export const generateItineraryAi = createServerFn({ method: "POST" })
     const key = process.env.LOVABLE_API_KEY;
     if (!key) {
       throw new Error(
-        "AI generator is not configured. Missing LOVABLE_API_KEY on the server.",
+        "AI generator is not configured. Missing LOVABLE_API_KEY on the server."
       );
     }
 
-    const { createLovableAiGatewayProvider } = await import(
-      "@/lib/ai-gateway.server"
-    );
+    const { createLovableAiGatewayProvider } = await import("@/lib/ai-gateway.server");
     const gateway = createLovableAiGatewayProvider(key);
 
     const brief = buildBrief(data);
@@ -289,7 +284,10 @@ export const generateItineraryAi = createServerFn({ method: "POST" })
           await new Promise((r) => setTimeout(r, 750 * 2 ** (attempt - 1)));
           continue;
         }
-        if (/empty itinerary|clarification without a question/i.test(msg) && attempt < MAX_ATTEMPTS) {
+        if (
+          /empty itinerary|clarification without a question/i.test(msg) &&
+          attempt < MAX_ATTEMPTS
+        ) {
           await new Promise((r) => setTimeout(r, 500 * 2 ** (attempt - 1)));
           continue;
         }
