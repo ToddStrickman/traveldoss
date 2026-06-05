@@ -198,8 +198,8 @@ export function MobileBubbles() {
       ))}
       <style>{`
         @keyframes td-bubble-breathe {
-          0%, 100% { opacity: 0.75; transform: scale(1); }
-          50% { opacity: 1; transform: scale(1.05); }
+          0%, 100% { opacity: 0.8; }
+          50% { opacity: 1; }
         }
       `}</style>
     </div>
