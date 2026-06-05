@@ -187,21 +187,28 @@ export function MobileBubbles() {
             marginLeft: `${-b.size / 2}vmin`,
             marginTop: `${-b.size / 2}vmin`,
             borderRadius: "9999px",
-            background:
-              "radial-gradient(circle at 35% 30%, rgba(186,221,255,0.85) 0%, rgba(140,190,235,0.55) 35%, rgba(90,140,200,0.22) 60%, rgba(60,110,170,0) 78%)",
-            boxShadow:
-              "inset 0 0 0 1px rgba(255,255,255,0.6), inset 0 -2px 6px rgba(255,255,255,0.35), 0 4px 14px rgba(40,80,140,0.18)",
-            willChange: "transform",
-            animation: `td-bubble-breathe ${b.drift}s ease-in-out infinite`,
+            opacity: reduced ? 0.55 : undefined,
+            background: reduced
+              ? "rgba(186,221,255,0.35)"
+              : "radial-gradient(circle at 35% 30%, rgba(186,221,255,0.85) 0%, rgba(140,190,235,0.55) 35%, rgba(90,140,200,0.22) 60%, rgba(60,110,170,0) 78%)",
+            boxShadow: reduced
+              ? undefined
+              : "inset 0 0 0 1px rgba(255,255,255,0.6), inset 0 -2px 6px rgba(255,255,255,0.35), 0 4px 14px rgba(40,80,140,0.18)",
+            willChange: reduced ? undefined : "transform",
+            animation: reduced
+              ? undefined
+              : `td-bubble-breathe ${b.drift}s ease-in-out infinite`,
           }}
         />
       ))}
-      <style>{`
-        @keyframes td-bubble-breathe {
-          0%, 100% { opacity: 0.8; }
-          50% { opacity: 1; }
-        }
-      `}</style>
+      {!reduced && (
+        <style>{`
+          @keyframes td-bubble-breathe {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 1; }
+          }
+        `}</style>
+      )}
     </div>
   );
 }
