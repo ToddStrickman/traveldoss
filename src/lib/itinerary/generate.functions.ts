@@ -125,17 +125,24 @@ export const generateItineraryAi = createServerFn({ method: "POST" })
 
     const MAX_ATTEMPTS = 3;
     let lastErr: unknown = null;
+    const attempts: DebugAttempt[] = [];
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       try {
         const sys = researchNotes
           ? `${SYSTEM}\n\nA live research brief follows the trip brief. When a fact (hours, ticket rule, recent opening, exhibition) came from a numbered source, preserve the [n] citation at the end of the sentence in the venue rationale. Do not invent indices.`
           : SYSTEM;
-        const out = await generateStructured(gateway, sys, briefWithResearch);
+        const out = await generateStructured(gateway, sys, briefWithResearch, attempts);
         if (out.needsClarification && out.clarifyingQuestions.length > 0) {
-          return {
+          const base = {
             kind: "clarify" as const,
             questions: out.clarifyingQuestions.slice(0, 3),
           };
+          return attempts.length
+            ? {
+                ...base,
+                debugReport: buildDebugReport(attempts, "success-after-retry", base),
+              }
+            : base;
         }
         if (!out.itinerary || out.itinerary.trim().length < 40) {
           throw new Error("Generator returned an empty itinerary.");
@@ -147,7 +154,13 @@ export const generateItineraryAi = createServerFn({ method: "POST" })
               .map((c) => `[${c.n}] ${c.title} — ${c.url}`)
               .join("\n")}\n`
           : out.itinerary;
-        return { kind: "draft" as const, draft, citations };
+        const base = { kind: "draft" as const, draft, citations };
+        return attempts.length
+          ? {
+              ...base,
+              debugReport: buildDebugReport(attempts, "success-after-retry", base),
+            }
+          : base;
       } catch (err) {
         lastErr = err;
         const msg = err instanceof Error ? err.message : String(err);
@@ -158,11 +171,32 @@ export const generateItineraryAi = createServerFn({ method: "POST" })
           await new Promise((r) => setTimeout(r, 750 * 2 ** (attempt - 1)));
           continue;
         }
+        // Throw the underlying error verbatim — the client's catch handler
+        // doesn't have access to the attempts array; the debugReport is
+        // already serialized into the inner generateStructured fallback
+        // return when applicable.
         throw new Error(`Itinerary generator failed: ${msg}`);
       }
     }
     throw lastErr instanceof Error ? lastErr : new Error("Generator failed.");
   });
+
+function buildDebugReport(
+  attempts: DebugAttempt[],
+  outcome: DebugReport["outcome"],
+  finalParsed?: unknown,
+  finalError?: string,
+): DebugReport {
+  return {
+    source: "generate",
+    createdAt: new Date().toISOString(),
+    model: "google/gemini-2.5-flash",
+    outcome,
+    attempts,
+    finalParsed,
+    finalError,
+  };
+}
 
 function buildBrief(data: z.infer<typeof InputSchema>): string {
   const lines: string[] = [];
