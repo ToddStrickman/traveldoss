@@ -338,6 +338,17 @@
 .tds-td-strong { font-weight: 600; }
 .tds-td-muted { color: var(--tds-soft); opacity: .6; }
 .tds-table-day td { width: 33.333%; }
+.tds-table-day { table-layout: fixed; }
+.tds-table-day td { word-break: break-word; overflow-wrap: anywhere; }
+
+/* Mobile collapse wrapper for grid-view cells. On desktop the summary is
+   hidden and content is always visible; on narrow screens each part-of-day
+   becomes a tappable disclosure so dense activity stacks can be truncated. */
+.tds-grid-disclosure > summary { list-style: none; cursor: pointer; }
+.tds-grid-disclosure > summary::-webkit-details-marker { display: none; }
+.tds-grid-disclosure > summary { display: none; }
+.tds-grid-disclosure[open] > .tds-grid-disclosure-body,
+.tds-grid-disclosure > .tds-grid-disclosure-body { display: block; }
 
 .tds-act-cell + .tds-act-cell {
   margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--tds-rule);
@@ -452,6 +463,18 @@
     display: block; font-size: 10px; letter-spacing: .35em; text-transform: uppercase;
     color: var(--tds-accent); margin-bottom: 6px;
   }
+  /* Hide the duplicated ::before label when the disclosure summary is shown. */
+  .tds-table-day td:has(.tds-grid-disclosure)::before { content: none; }
+  .tds-grid-disclosure > summary {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    font-size: 10px; letter-spacing: .35em; text-transform: uppercase;
+    color: var(--tds-accent); margin-bottom: 6px;
+  }
+  .tds-grid-disclosure > summary::after {
+    content: "+"; font-size: 14px; line-height: 1; color: var(--tds-accent);
+  }
+  .tds-grid-disclosure[open] > summary::after { content: "−"; }
+  .tds-grid-disclosure:not([open]) > .tds-grid-disclosure-body { display: none; }
 }
 
 /* ---- hero ---- */
@@ -588,33 +611,14 @@
 }
 
 /* ==========================================================================
-   VIEW: Grid — day cards in a responsive matrix at every viewport
+   VIEW: Grid — the GridView component owns its internal table layout.
+   Canvas stays block-level so tables can expand to the full viewport width.
    ========================================================================== */
 .tds[data-view="grid"] .tds-canvas {
-  max-width: 1320px;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(clamp(260px, 28vw, 320px), 1fr));
-  gap: var(--tds-s2);
-  align-items: start;
-}
-.tds[data-view="grid"] .tds-hero,
-.tds[data-view="grid"] .tds-section,
-.tds[data-view="grid"] .tds-quote,
-.tds[data-view="grid"] .tds-p,
-.tds[data-view="grid"] .tds-flights { grid-column: 1 / -1; }
-.tds[data-view="grid"] .tds-daycard,
-.tds[data-view="grid"] .tds-card {
-  background: var(--tds-bg);
-  box-shadow: inset 0 0 0 9999px color-mix(in srgb, var(--tds-ink) 4%, transparent);
-  position: relative;
-  z-index: 1;
-  border: 1px solid var(--tds-rule);
-  border-radius: 0;
-  padding: clamp(16px, 2vw, 22px);
-}
-.tds[data-view="grid"] .tds-daycard .tds-place { margin: 10px 0 0; }
-@media (max-width: 480px) {
-  .tds[data-view="grid"] .tds-canvas { grid-template-columns: 1fr; }
+  max-width: min(1600px, 100%);
+  width: 100%;
+  padding-left: clamp(16px, 3vw, 40px);
+  padding-right: clamp(16px, 3vw, 40px);
 }
 
 /* Kinetic Minimalism: smooth canvas-level transition between view modes
