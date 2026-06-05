@@ -20,6 +20,9 @@ import {
   AlertTriangle,
   Info,
   Sparkles,
+  Bookmark,
+  X,
+  Accessibility,
 } from "lucide-react";
 import {
   Tooltip,
@@ -43,6 +46,8 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useSavedTripRequests, type SavedTripRequest } from "@/hooks/use-saved-trip-requests";
+import { useGeneratorA11y } from "@/hooks/use-generator-a11y";
 
 type Tab = "paste" | "transcript" | "generate";
 
@@ -99,6 +104,11 @@ export function IngestionModal({
   const [clarifyQs, setClarifyQs] = useState<string[]>([]);
   const [clarifyAs, setClarifyAs] = useState<string[]>([]);
 
+  // Saved drafts (local-first, syncs when signed in) + a11y toggle.
+  const saved = useSavedTripRequests();
+  const { reducedMotion, setReducedMotion } = useGeneratorA11y();
+  const [activeSavedId, setActiveSavedId] = useState<string | null>(null);
+
   const INTEREST_OPTIONS = [
     "food", "wine", "design", "architecture", "art",
     "history", "nature", "hiking", "beaches", "nightlife",
@@ -109,6 +119,50 @@ export function IngestionModal({
     setGenInterests((prev) =>
       prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
     );
+  }
+
+  function currentPayload() {
+    return {
+      prompt: genPrompt,
+      destination: genDestination,
+      duration: genDuration,
+      startDate: genStartDate,
+      travelers: genTravelers,
+      pace: genPace,
+      budget: genBudget,
+      interests: genInterests,
+      useLiveResearch: true,
+    };
+  }
+
+  async function saveCurrentDraft() {
+    const labelGuess =
+      genDestination.trim() ||
+      genPrompt.trim().slice(0, 60) ||
+      "Untitled brief";
+    if (!labelGuess.trim()) {
+      toast.error("Add a destination or short prompt before saving.");
+      return;
+    }
+    const id = await saved.save(labelGuess, currentPayload(), activeSavedId ?? undefined);
+    setActiveSavedId(id);
+    toast.success(
+      saved.signedIn ? "Saved — synced to your account." : "Saved on this device.",
+    );
+  }
+
+  function loadSavedDraft(r: SavedTripRequest) {
+    const p = r.payload;
+    setGenPrompt(p.prompt ?? "");
+    setGenDestination(p.destination ?? "");
+    setGenDuration(p.duration ?? "");
+    setGenStartDate(p.startDate ?? "");
+    setGenTravelers(p.travelers ?? "");
+    setGenPace((p.pace ?? "") as typeof genPace);
+    setGenBudget((p.budget ?? "") as typeof genBudget);
+    setGenInterests(Array.isArray(p.interests) ? p.interests : []);
+    setActiveSavedId(r.id);
+    toast.message(`Loaded "${r.label}"`, { description: "Tweak pace or budget and regenerate." });
   }
 
   async function submit() {
@@ -451,6 +505,16 @@ export function IngestionModal({
               }
               onSubmitClarifications={submitClarifications}
               parsing={parsing}
+              savedItems={saved.items}
+              activeSavedId={activeSavedId}
+              onLoadSaved={loadSavedDraft}
+              onSaveCurrent={saveCurrentDraft}
+              onRemoveSaved={(id: string) => {
+                if (activeSavedId === id) setActiveSavedId(null);
+                void saved.remove(id);
+              }}
+              reducedMotion={reducedMotion}
+              onToggleReducedMotion={setReducedMotion}
             />
           )}
         </div>
@@ -1106,6 +1170,13 @@ function GenerateForm({
   clarifyQs, clarifyAs, setClarifyAnswer,
   onSubmitClarifications,
   parsing,
+  savedItems,
+  activeSavedId,
+  onLoadSaved,
+  onSaveCurrent,
+  onRemoveSaved,
+  reducedMotion,
+  onToggleReducedMotion,
 }: {
   prompt: string; setPrompt: (v: string) => void;
   destination: string; setDestination: (v: string) => void;
@@ -1118,6 +1189,13 @@ function GenerateForm({
   clarifyQs: string[]; clarifyAs: string[]; setClarifyAnswer: (i: number, v: string) => void;
   onSubmitClarifications: () => void;
   parsing: boolean;
+  savedItems: SavedTripRequest[];
+  activeSavedId: string | null;
+  onLoadSaved: (r: SavedTripRequest) => void;
+  onSaveCurrent: () => void;
+  onRemoveSaved: (id: string) => void;
+  reducedMotion: boolean;
+  onToggleReducedMotion: (v: boolean) => void;
 }) {
   const fieldCls =
     "w-full rounded-md border border-ink/15 bg-paper/60 px-3 py-2.5 text-[13px] text-ink outline-none transition-elegant placeholder:text-ink/35 focus:border-seal focus:bg-paper";
@@ -1165,7 +1243,77 @@ function GenerateForm({
   }
 
   return (
-    <div className="flex flex-col gap-5">
+    <div
+      className={`flex flex-col gap-5 ${reducedMotion ? "td-no-motion" : ""}`}
+      data-reduced-motion={reducedMotion ? "true" : "false"}
+    >
+      {/* Saved drafts strip + accessibility toggle */}
+      <div className="flex flex-wrap items-center gap-2 rounded-md border border-ink/10 bg-paper/40 px-3 py-2">
+        <span className="td-eyebrow shrink-0 text-ink/45">Saved briefs</span>
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
+          {savedItems.length === 0 ? (
+            <span className="text-[11.5px] italic text-ink/45">
+              None yet — save the form to revisit with a different pace or budget.
+            </span>
+          ) : (
+            savedItems.slice(0, 8).map((r) => {
+              const on = r.id === activeSavedId;
+              return (
+                <span
+                  key={r.id}
+                  className={`group inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] transition-elegant ${
+                    on
+                      ? "border-seal/60 bg-seal/15 text-seal"
+                      : "border-ink/15 bg-paper/60 text-ink-soft hover:border-seal/40 hover:text-ink"
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => onLoadSaved(r)}
+                    className="max-w-[14ch] truncate"
+                    title={r.label}
+                  >
+                    {r.label}
+                  </button>
+                  {r.localOnly ? (
+                    <span className="font-mono text-[9px] uppercase tracking-[0.3em] text-ink/35" title="Local only — sign in to sync">
+                      ·local
+                    </span>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => onRemoveSaved(r.id)}
+                    aria-label={`Delete saved brief ${r.label}`}
+                    className="inline-flex h-4 w-4 items-center justify-center rounded-full text-ink/40 hover:bg-ink/10 hover:text-ink"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              );
+            })
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={onSaveCurrent}
+          disabled={parsing}
+          className="td-eyebrow inline-flex items-center gap-1.5 rounded-md border border-ink/15 bg-paper/60 px-2.5 py-1.5 text-ink-soft transition-elegant hover:border-seal hover:text-seal disabled:opacity-40"
+        >
+          <Bookmark className="h-3 w-3" /> {activeSavedId ? "Update" : "Save"}
+        </button>
+        <label className="td-eyebrow inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-ink/15 bg-paper/60 px-2.5 py-1.5 text-ink-soft transition-elegant hover:border-seal hover:text-seal">
+          <Accessibility className="h-3 w-3" />
+          <span>Reduce motion</span>
+          <input
+            type="checkbox"
+            checked={reducedMotion}
+            onChange={(e) => onToggleReducedMotion(e.target.checked)}
+            className="ml-1 h-3 w-3 accent-seal"
+            aria-label="Reduce motion in the itinerary generator"
+          />
+        </label>
+      </div>
+
       <div className="flex flex-col gap-2">
         <label className="td-eyebrow text-ink/45">Describe your trip</label>
         <textarea
