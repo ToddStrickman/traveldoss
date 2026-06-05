@@ -109,21 +109,31 @@ function DossierPage() {
   const { trip, expired } = Route.useLoaderData();
   useNavigate();
   const [layout, setLayout] = useState<SkinView>("vertical");
-  const initial = (trip.content ?? {}) as { blocks?: Block[]; skin?: string };
+  const initial = (trip.content ?? {}) as {
+    blocks?: Block[];
+    skin?: string;
+    meta?: import("@/lib/skins/types").TripMeta;
+  };
   type Snapshot = {
     blocks: Block[];
     templateId: string;
     destination: string;
     subtitle: string;
+    startDate: string;
+    endDate: string;
+    meta: import("@/lib/skins/types").TripMeta;
   };
   const history = useHistory<Snapshot>({
     blocks: initial.blocks ?? [],
     templateId: trip.template_id ?? FALLBACK_SKIN.meta.id,
     destination: trip.destination,
     subtitle: trip.subtitle ?? "",
+    startDate: trip.start_date ?? "",
+    endDate: trip.end_date ?? "",
+    meta: initial.meta ?? {},
   });
   const { state: snap, set: setSnap, undo, redo, canUndo, canRedo } = history;
-  const { blocks, templateId, destination, subtitle } = snap;
+  const { blocks, templateId, destination, subtitle, startDate, endDate, meta } = snap;
   const [isOwner, setIsOwner] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -147,6 +157,9 @@ function DossierPage() {
     templateId?: string;
     destination?: string;
     subtitle?: string;
+    startDate?: string;
+    endDate?: string;
+    meta?: import("@/lib/skins/types").TripMeta;
   }) => {
     if (!canEdit) return;
     if (debounce.current) clearTimeout(debounce.current);
@@ -207,6 +220,9 @@ function DossierPage() {
       templateId: snap.templateId,
       destination: snap.destination,
       subtitle: snap.subtitle,
+      startDate: snap.startDate,
+      endDate: snap.endDate,
+      meta: snap.meta,
     });
   }, [snap, canEdit, queueSave]);
 
@@ -272,6 +288,18 @@ function DossierPage() {
           { coalesceKey: `trip:${field}` },
         );
       },
+      onTripDatesChange: (start: string, end: string) => {
+        setSnap(
+          (s) => ({ ...s, startDate: start, endDate: end }),
+          { coalesceKey: "trip:dates" },
+        );
+      },
+      onMetaChange: (patch: Partial<import("@/lib/skins/types").TripMeta>) => {
+        setSnap(
+          (s) => ({ ...s, meta: { ...s.meta, ...patch } }),
+          { coalesceKey: `trip:meta:${Object.keys(patch)[0] ?? "_"}` },
+        );
+      },
     }),
     [canEdit, setSnap],
   );
@@ -284,9 +312,10 @@ function DossierPage() {
     destination,
     subtitle,
     slug: trip.slug,
-    start_date: trip.start_date,
-    end_date: trip.end_date,
+    start_date: startDate || trip.start_date,
+    end_date: endDate || trip.end_date,
     hero_image_url: trip.hero_image_url,
+    meta,
   };
 
   return (
