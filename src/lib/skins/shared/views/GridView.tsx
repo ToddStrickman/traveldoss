@@ -98,15 +98,22 @@ export function GridView({ trip, blocks }: { trip: TripView; blocks: Block[] }) 
                   const list = d[part];
                   return (
                     <DroppableBucket key={part} as="td" dayIndex={d.dayIndex} part={part}>
-                      {list.length === 0 ? (
-                        <span className="tds-td-muted">—</span>
-                      ) : (
-                        list.map(({ activity, index }) => (
-                          <DraggableActivity key={index} index={index}>
-                            <ActivityCell activity={activity} />
-                          </DraggableActivity>
-                        ))
-                      )}
+                      <details className="tds-grid-disclosure" open>
+                        <summary>
+                          <span>{part}{list.length > 0 ? ` · ${list.length}` : ""}</span>
+                        </summary>
+                        <div className="tds-grid-disclosure-body">
+                          {list.length === 0 ? (
+                            <span className="tds-td-muted">—</span>
+                          ) : (
+                            list.map(({ activity, index }) => (
+                              <DraggableActivity key={index} index={index}>
+                                <ActivityCell activity={activity} />
+                              </DraggableActivity>
+                            ))
+                          )}
+                        </div>
+                      </details>
                     </DroppableBucket>
                   );
                 })}
