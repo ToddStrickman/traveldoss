@@ -20,6 +20,7 @@ import { TripDocPreviews } from "@/components/flow/TripDocPreviews";
 import { DebugReportsPanel } from "@/components/studio/DebugReportsPanel";
 import { toast } from "sonner";
 import { useHistory, useUndoRedoShortcuts } from "@/hooks/use-history";
+import { useItineraryRefiner } from "@/hooks/use-itinerary-refiner";
 
 type DossierContent = {
   blocks?: Block[];
@@ -228,6 +229,29 @@ function DossierPage() {
 
   useUndoRedoShortcuts(canEdit, undo, redo);
 
+  const refiner = useItineraryRefiner(
+    {
+      blocks,
+      destination,
+      startDate,
+      endDate,
+      meta,
+    },
+    {
+      enabled: canEdit && blocks.length > 0,
+      onRefined: (nextBlocks, reason) => {
+        // Silent merge: replace blocks with the refined set. The history
+        // entry coalesces under a single key so the user can undo a
+        // sharpening pass with one Cmd-Z.
+        setSnap(
+          (s) => ({ ...s, blocks: nextBlocks }),
+          { coalesceKey: `refine:${reason}` },
+        );
+        queueSave({ blocks: nextBlocks });
+      },
+    },
+  );
+
   const editingCtx = useMemo(
     () => ({
       editing: canEdit,
@@ -372,6 +396,7 @@ function DossierPage() {
           onRedo={redo}
           canUndo={canUndo}
           canRedo={canRedo}
+          refineStatus={refiner.status}
         />
       )}
       <ExportMenu slug={trip.slug} trip={view} blocks={blocks} />
