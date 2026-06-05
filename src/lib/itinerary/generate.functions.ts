@@ -1,10 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { generateText, Output } from "ai";
 import { z, ZodError, type ZodIssue } from "zod";
-import type {
-  DebugAttempt,
-  DebugReport,
-} from "@/lib/itinerary/debug-report";
+import type { DebugAttempt, DebugReport } from "@/lib/itinerary/debug-report";
 
 /**
  * AI itinerary generator.
@@ -191,14 +188,10 @@ export const generateItineraryAi = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const key = process.env.LOVABLE_API_KEY;
     if (!key) {
-      throw new Error(
-        "AI generator is not configured. Missing LOVABLE_API_KEY on the server.",
-      );
+      throw new Error("AI generator is not configured. Missing LOVABLE_API_KEY on the server.");
     }
 
-    const { createLovableAiGatewayProvider } = await import(
-      "@/lib/ai-gateway.server"
-    );
+    const { createLovableAiGatewayProvider } = await import("@/lib/ai-gateway.server");
     const gateway = createLovableAiGatewayProvider(key);
 
     const brief = buildBrief(data);
@@ -233,14 +226,27 @@ export const generateItineraryAi = createServerFn({ method: "POST" })
     const attempts: DebugAttempt[] = [];
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       try {
+        const retryInstruction =
+          attempt > 1
+            ? "\n\nPrevious generation returned no usable itinerary. If the destination is known or inferable, you MUST return Mode B with a non-empty markdown itinerary; do not return needsClarification=true unless you also include one destination question."
+            : "";
         const sys = researchNotes
-          ? `${SYSTEM}\n\nA live research brief follows the trip brief. When a fact (hours, ticket rule, recent opening, exhibition) came from a numbered source, preserve the [n] citation at the end of the sentence in the venue rationale. Do not invent indices.`
-          : SYSTEM;
+          ? `${SYSTEM}\n\nA live research brief follows the trip brief. When a fact (hours, ticket rule, recent opening, exhibition) came from a numbered source, preserve the [n] citation at the end of the sentence in the venue rationale. Do not invent indices.${retryInstruction}`
+          : `${SYSTEM}${retryInstruction}`;
         const out = await generateStructured(gateway, sys, briefWithResearch, attempts);
-        if (out.needsClarification && out.clarifyingQuestions.length > 0) {
+        if (out.needsClarification) {
+          const questions = out.clarifyingQuestions
+            .map((q) => q.trim())
+            .filter((q) => q.length > 0);
+          if (!questions.length && !data.destination?.trim()) {
+            questions.push("What destination should I build this itinerary around?");
+          }
+          if (!questions.length) {
+            throw new Error("Generator asked for clarification without a question.");
+          }
           const base = {
             kind: "clarify" as const,
-            questions: out.clarifyingQuestions.slice(0, 3),
+            questions: questions.slice(0, 3),
           };
           return attempts.length
             ? {
@@ -274,6 +280,13 @@ export const generateItineraryAi = createServerFn({ method: "POST" })
         }
         if (/429|rate/i.test(msg) && attempt < MAX_ATTEMPTS) {
           await new Promise((r) => setTimeout(r, 750 * 2 ** (attempt - 1)));
+          continue;
+        }
+        if (
+          /empty itinerary|clarification without a question/i.test(msg) &&
+          attempt < MAX_ATTEMPTS
+        ) {
+          await new Promise((r) => setTimeout(r, 500 * 2 ** (attempt - 1)));
           continue;
         }
         // Throw the underlying error verbatim — the client's catch handler
@@ -329,9 +342,7 @@ function buildBrief(data: z.infer<typeof InputSchema>): string {
       lines.push(`  A: ${answer}`);
     }
     lines.push("");
-    lines.push(
-      "All blocking ambiguity is now resolved — produce the full itinerary (Mode B).",
-    );
+    lines.push("All blocking ambiguity is now resolved — produce the full itinerary (Mode B).");
   } else {
     lines.push(
       "Decide whether you have enough to draft (Mode B) or must ask up to 3 clarifying questions (Mode A).",
@@ -341,6 +352,8 @@ function buildBrief(data: z.infer<typeof InputSchema>): string {
 }
 
 type OutShape = z.infer<typeof OutputSchema>;
+
+const ITINERARY_MODEL = "google/gemini-3-flash-preview";
 
 async function generateStructured(
   gateway: ReturnType<typeof import("@/lib/ai-gateway.server").createLovableAiGatewayProvider>,
@@ -354,12 +367,13 @@ async function generateStructured(
   // First try: AI SDK structured output (constrained decoding).
   try {
     const result = await generateText({
-      model: gateway("google/gemini-2.5-flash"),
+      model: gateway(ITINERARY_MODEL),
       system,
       prompt,
       experimental_output: Output.object({ schema: OutputSchema }),
       maxOutputTokens: 8192,
     });
+    const rawText = (result as unknown as { text?: string }).text?.trim() ?? "";
     const normalized = normalizeOutput(result.experimental_output);
     const safe = OutputSchema.safeParse(normalized);
     const out = safe.success ? safe.data : result.experimental_output;
@@ -368,13 +382,14 @@ async function generateStructured(
     // so we fall through to the JSON-prompt retry path below instead of
     // bubbling an "empty itinerary" error all the way to the user.
     const finishReason = (result as unknown as { finishReason?: string }).finishReason;
-    if (
-      !out.needsClarification &&
-      (!out.itinerary || out.itinerary.trim().length < 40)
-    ) {
+    if (!out.needsClarification && (!out.itinerary || out.itinerary.trim().length < 40)) {
+      const salvaged = salvageItineraryFromRaw(rawText);
+      if (salvaged) {
+        return { needsClarification: false, clarifyingQuestions: [], itinerary: salvaged };
+      }
       recordAttempt({
         attempt: 0,
-        rawResponse: out.itinerary ?? "",
+        rawResponse: rawText || out.itinerary || "",
         threwError: `structured-output: empty itinerary (finishReason=${finishReason ?? "unknown"})`,
       });
       // fall through to JSON-prompt path
@@ -396,7 +411,7 @@ async function generateStructured(
   const jsonSystem = `${system}\n\nReturn ONLY a single JSON object (no prose, no code fences) with this exact shape:\n{\n  "needsClarification": boolean,\n  "clarifyingQuestions": string[],   // up to 3, empty if not clarifying\n  "itinerary": string                // full markdown itinerary, empty if clarifying\n}`;
 
   // Retry the JSON-prompt path with exponential backoff. Each retry appends
- // the previous failure so the model can self-correct.
+  // the previous failure so the model can self-correct.
   const MAX_JSON_ATTEMPTS = 3;
   let lastRaw = "";
   let lastIssue = "";
@@ -406,7 +421,7 @@ async function generateStructured(
       : "";
     try {
       const result = await generateText({
-        model: gateway("google/gemini-2.5-flash"),
+        model: gateway(ITINERARY_MODEL),
         system: jsonSystem + repairNote,
         prompt,
         maxOutputTokens: 8192,
@@ -442,11 +457,7 @@ async function generateStructured(
       ) {
         return safeNorm.data;
       }
-      const errForLog = !safe.success
-        ? safe.error
-        : !safeNorm.success
-          ? safeNorm.error
-          : null;
+      const errForLog = !safe.success ? safe.error : !safeNorm.success ? safeNorm.error : null;
       if (errForLog) {
         logZodDiagnostics("generate", attempt, MAX_JSON_ATTEMPTS, errForLog, parsed, lastRaw);
         lastIssue = summarizeIssues(errForLog.issues);
@@ -457,7 +468,7 @@ async function generateStructured(
         attempt,
         rawResponse: lastRaw,
         parsedJson: parsed,
-            zodIssues: errForLog ? errForLog.issues : [],
+        zodIssues: errForLog ? errForLog.issues : [],
         zodIssueSummary: lastIssue,
       });
     } catch (err) {
@@ -497,7 +508,9 @@ async function generateStructured(
     });
     return { needsClarification: false, clarifyingQuestions: [], itinerary: lastRaw };
   }
-  throw new Error(`Itinerary generator could not produce valid JSON after ${MAX_JSON_ATTEMPTS} attempts (${lastIssue}).`);
+  throw new Error(
+    `Itinerary generator could not produce valid JSON after ${MAX_JSON_ATTEMPTS} attempts (${lastIssue}).`,
+  );
 }
 
 function extractJsonObject(text: string): string {
