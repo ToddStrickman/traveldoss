@@ -196,3 +196,55 @@ function buildBrief(data: z.infer<typeof InputSchema>): string {
   }
   return lines.join("\n");
 }
+
+type OutShape = z.infer<typeof OutputSchema>;
+
+async function generateStructured(
+  gateway: ReturnType<typeof import("@/lib/ai-gateway.server").createLovableAiGatewayProvider>,
+  system: string,
+  prompt: string,
+): Promise<OutShape> {
+  // First try: AI SDK structured output (constrained decoding).
+  try {
+    const result = await generateText({
+      model: gateway("google/gemini-2.5-flash"),
+      system,
+      prompt,
+      experimental_output: Output.object({ schema: OutputSchema }),
+    });
+    return result.experimental_output;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    // Gemini sometimes returns text that doesn't match the schema state
+    // machine. Fall back to a plain JSON prompt and parse manually.
+    if (!/schema|object/i.test(msg)) throw err;
+  }
+
+  const jsonSystem = `${system}\n\nReturn ONLY a single JSON object (no prose, no code fences) with this exact shape:\n{\n  "needsClarification": boolean,\n  "clarifyingQuestions": string[],   // up to 3, empty if not clarifying\n  "itinerary": string                // full markdown itinerary, empty if clarifying\n}`;
+  const result = await generateText({
+    model: gateway("google/gemini-2.5-flash"),
+    system: jsonSystem,
+    prompt,
+  });
+  const raw = result.text.trim();
+  const jsonText = extractJsonObject(raw);
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(jsonText);
+  } catch {
+    // Last resort: treat the whole response as the itinerary markdown.
+    return { needsClarification: false, clarifyingQuestions: [], itinerary: raw };
+  }
+  const safe = OutputSchema.safeParse(parsed);
+  if (safe.success) return safe.data;
+  return { needsClarification: false, clarifyingQuestions: [], itinerary: raw };
+}
+
+function extractJsonObject(text: string): string {
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const body = fenced ? fenced[1] : text;
+  const start = body.indexOf("{");
+  const end = body.lastIndexOf("}");
+  if (start === -1 || end === -1 || end <= start) return body.trim();
+  return body.slice(start, end + 1);
+}
