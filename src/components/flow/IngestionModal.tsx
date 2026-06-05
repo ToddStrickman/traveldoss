@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { parseDropInWithMeta } from "@/lib/itinerary/parse";
 import { parseItineraryAi } from "@/lib/itinerary/parse-ai.functions";
+import { generateItineraryAi } from "@/lib/itinerary/generate.functions";
 import { useServerFn } from "@tanstack/react-start";
 import type { Block } from "@/lib/skins/types";
 import type { SkinModule } from "@/lib/skins/registry";
@@ -18,6 +19,7 @@ import {
   StickyNote,
   AlertTriangle,
   Info,
+  Sparkles,
 } from "lucide-react";
 import {
   Tooltip,
@@ -42,11 +44,12 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-type Tab = "paste" | "transcript";
+type Tab = "paste" | "transcript" | "generate";
 
 const TABS: { id: Tab; n: string; label: string; sub: string }[] = [
   { id: "paste", n: "I", label: "Paste Itinerary", sub: "ChatGPT, Claude, notes." },
   { id: "transcript", n: "II", label: "Upload Transcript", sub: "Text or .vtt / .srt files." },
+  { id: "generate", n: "III", label: "Generate Itinerary", sub: "Describe the trip — we'll draft it live." },
 ];
 
 function serial() {
@@ -80,9 +83,41 @@ export function IngestionModal({
   const [reviewDestination, setReviewDestination] = useState<string | null>(null);
   const [parsing, setParsing] = useState(false);
   const parseAi = useServerFn(parseItineraryAi);
+  const generateAi = useServerFn(generateItineraryAi);
+
+  // ── Generate-tab state ───────────────────────────────────────────────
+  const [genPrompt, setGenPrompt] = useState("");
+  const [genDestination, setGenDestination] = useState("");
+  const [genDuration, setGenDuration] = useState("");
+  const [genStartDate, setGenStartDate] = useState("");
+  const [genTravelers, setGenTravelers] = useState("");
+  const [genPace, setGenPace] = useState<"" | "relaxed" | "balanced" | "packed">("");
+  const [genBudget, setGenBudget] = useState<
+    "" | "shoestring" | "moderate" | "elevated" | "luxury"
+  >("");
+  const [genInterests, setGenInterests] = useState<string[]>([]);
+  const [clarifyQs, setClarifyQs] = useState<string[]>([]);
+  const [clarifyAs, setClarifyAs] = useState<string[]>([]);
+
+  const INTEREST_OPTIONS = [
+    "food", "wine", "design", "architecture", "art",
+    "history", "nature", "hiking", "beaches", "nightlife",
+    "shopping", "kids", "wellness", "music",
+  ];
+
+  function toggleInterest(tag: string) {
+    setGenInterests((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
+    );
+  }
 
   async function submit() {
     if (!template) return;
+    if (tab === "generate") {
+      if (clarifyQs.length) submitClarifications();
+      else await submitGenerate();
+      return;
+    }
     const trimmed = text.trim();
     if (trimmed.length < 8) {
       toast.error("Add a few lines first so we have something to craft.");
@@ -125,6 +160,74 @@ export function IngestionModal({
     setReviewLabel(tab === "transcript" ? "Reading your transcript…" : "Reading your itinerary…");
     setReviewDestination(destination);
     setStage("review");
+  }
+
+  async function submitGenerate(
+    extraAnswers?: Array<{ question: string; answer: string }>,
+  ) {
+    if (!template) return;
+    const trimmed = genPrompt.trim();
+    if (trimmed.length < 6 && !genDestination.trim()) {
+      toast.error("Tell us a little about the trip, or give us a destination.");
+      return;
+    }
+    setParsing(true);
+    try {
+      const gen = await generateAi({
+        data: {
+          prompt: trimmed || `Plan a trip to ${genDestination.trim()}.`,
+          destination: genDestination.trim() || undefined,
+          duration: genDuration.trim() || undefined,
+          startDate: genStartDate.trim() || undefined,
+          travelers: genTravelers.trim() || undefined,
+          pace: genPace || undefined,
+          budget: genBudget || undefined,
+          interests: genInterests.length ? genInterests : undefined,
+          clarifications: extraAnswers,
+        },
+      });
+      if (gen.kind === "clarify") {
+        setClarifyQs(gen.questions);
+        setClarifyAs(gen.questions.map(() => ""));
+        toast.message("A few quick questions", {
+          description: "Answer these so we can tailor the itinerary.",
+        });
+        return;
+      }
+      // Hand the AI draft to the existing parser for blocks + live enrichment.
+      const parsed = await parseAi({
+        data: { text: gen.draft, source: "ai" },
+      });
+      if (!parsed.blocks.length) {
+        toast.error("Generation came back empty. Try a different prompt.");
+        return;
+      }
+      setReviewBlocks(parsed.blocks);
+      setReviewLabel("Drafting your itinerary…");
+      setReviewDestination(parsed.destination ?? genDestination.trim() ?? null);
+      setClarifyQs([]);
+      setClarifyAs([]);
+      setStage("review");
+    } catch (err) {
+      console.error("[ai-generate] failed", err);
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Couldn't generate that itinerary. Try again in a moment.",
+      );
+    } finally {
+      setParsing(false);
+    }
+  }
+
+  function submitClarifications() {
+    if (clarifyAs.some((a) => !a.trim())) {
+      toast.error("Answer every question, or leave the field blank to skip.");
+      return;
+    }
+    void submitGenerate(
+      clarifyQs.map((q, i) => ({ question: q, answer: clarifyAs[i].trim() })),
+    );
   }
 
   function confirmReview() {
@@ -321,7 +424,34 @@ export function IngestionModal({
               )}
             </div>
           )}
-          {/* inbox/Google tab removed */}
+          {tab === "generate" && (
+            <GenerateForm
+              prompt={genPrompt}
+              setPrompt={setGenPrompt}
+              destination={genDestination}
+              setDestination={setGenDestination}
+              duration={genDuration}
+              setDuration={setGenDuration}
+              startDate={genStartDate}
+              setStartDate={setGenStartDate}
+              travelers={genTravelers}
+              setTravelers={setGenTravelers}
+              pace={genPace}
+              setPace={setGenPace}
+              budget={genBudget}
+              setBudget={setGenBudget}
+              interests={genInterests}
+              interestOptions={INTEREST_OPTIONS}
+              onToggleInterest={toggleInterest}
+              clarifyQs={clarifyQs}
+              clarifyAs={clarifyAs}
+              setClarifyAnswer={(i: number, v: string) =>
+                setClarifyAs((prev) => prev.map((a, j) => (j === i ? v : a)))
+              }
+              onSubmitClarifications={submitClarifications}
+              parsing={parsing}
+            />
+          )}
         </div>
 
         {/* Footer */}
@@ -343,7 +473,17 @@ export function IngestionModal({
             disabled={!template || parsing}
             className="group inline-flex items-center gap-4 rounded-md border border-seal/40 bg-seal/15 py-3 pl-5 pr-3 text-[11px] font-medium uppercase tracking-[0.4em] text-seal transition-elegant hover:border-seal hover:bg-seal hover:text-paper disabled:opacity-40"
           >
-            <span>{parsing ? "Reading & enriching…" : "Review & Mint"}</span>
+            <span>
+              {parsing
+                ? tab === "generate"
+                  ? "Generating live…"
+                  : "Reading & enriching…"
+                : tab === "generate"
+                ? clarifyQs.length
+                  ? "Continue"
+                  : "Generate Itinerary"
+                : "Review & Mint"}
+            </span>
             <span aria-hidden className="inline-flex h-7 w-7 items-center justify-center rounded-sm border border-seal/40 transition-elegant group-hover:border-paper/40">
               →
             </span>
@@ -948,4 +1088,189 @@ function BlockFields({
         </div>
       );
   }
+}
+/* ------------------------------------------------------------------ */
+/* Generate form                                                       */
+/* ------------------------------------------------------------------ */
+
+function GenerateForm({
+  prompt, setPrompt,
+  destination, setDestination,
+  duration, setDuration,
+  startDate, setStartDate,
+  travelers, setTravelers,
+  pace, setPace,
+  budget, setBudget,
+  interests, interestOptions, onToggleInterest,
+  clarifyQs, clarifyAs, setClarifyAnswer,
+  onSubmitClarifications,
+  parsing,
+}: {
+  prompt: string; setPrompt: (v: string) => void;
+  destination: string; setDestination: (v: string) => void;
+  duration: string; setDuration: (v: string) => void;
+  startDate: string; setStartDate: (v: string) => void;
+  travelers: string; setTravelers: (v: string) => void;
+  pace: "" | "relaxed" | "balanced" | "packed"; setPace: (v: "" | "relaxed" | "balanced" | "packed") => void;
+  budget: "" | "shoestring" | "moderate" | "elevated" | "luxury"; setBudget: (v: "" | "shoestring" | "moderate" | "elevated" | "luxury") => void;
+  interests: string[]; interestOptions: string[]; onToggleInterest: (t: string) => void;
+  clarifyQs: string[]; clarifyAs: string[]; setClarifyAnswer: (i: number, v: string) => void;
+  onSubmitClarifications: () => void;
+  parsing: boolean;
+}) {
+  const fieldCls =
+    "w-full rounded-md border border-ink/15 bg-paper/60 px-3 py-2.5 text-[13px] text-ink outline-none transition-elegant placeholder:text-ink/35 focus:border-seal focus:bg-paper";
+
+  if (clarifyQs.length) {
+    return (
+      <div className="flex flex-col gap-4">
+        <div className="flex items-start gap-3 rounded-md border border-seal/30 bg-seal/10 px-4 py-3 text-[12.5px] leading-[1.6] text-ink">
+          <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-seal" />
+          <p>
+            A few details would sharpen this draft. Answer what you can —
+            leave any field blank to let us infer.
+          </p>
+        </div>
+        <ul className="flex flex-col gap-3">
+          {clarifyQs.map((q, i) => (
+            <li key={i} className="flex flex-col gap-1.5">
+              <label className="td-eyebrow text-ink/55">Question {i + 1}</label>
+              <p
+                className="text-[14px] leading-[1.5] text-ink"
+                style={{ fontFamily: "var(--font-display)" }}
+              >
+                {q}
+              </p>
+              <input
+                value={clarifyAs[i] ?? ""}
+                onChange={(e) => setClarifyAnswer(i, e.target.value)}
+                placeholder="Your answer…"
+                className={fieldCls}
+                disabled={parsing}
+              />
+            </li>
+          ))}
+        </ul>
+        <button
+          type="button"
+          onClick={onSubmitClarifications}
+          disabled={parsing}
+          className="self-end text-[11px] uppercase tracking-[0.35em] text-seal underline-offset-4 hover:underline disabled:opacity-40"
+        >
+          {parsing ? "Drafting…" : "Continue →"}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-2">
+        <label className="td-eyebrow text-ink/45">Describe your trip</label>
+        <textarea
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          placeholder='e.g. "Five days in Lisbon and Sintra for two, light on museums, big on seafood, balanced pace."'
+          rows={5}
+          className="w-full rounded-md border border-ink/15 bg-paper/60 px-4 py-3.5 text-[13.5px] leading-[1.6] text-ink outline-none transition-elegant placeholder:text-ink/35 focus:border-seal focus:bg-paper"
+        />
+        <p className="text-[11.5px] leading-[1.55] text-ink-soft">
+          We'll draft a complete itinerary, then verify each vendor live
+          against Google Places for current address, phone, and hours.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <Labeled label="Destination">
+          <input
+            className={fieldCls}
+            value={destination}
+            onChange={(e) => setDestination(e.target.value)}
+            placeholder="Lisbon · Tokyo · Amalfi Coast"
+          />
+        </Labeled>
+        <Labeled label="Duration">
+          <input
+            className={fieldCls}
+            value={duration}
+            onChange={(e) => setDuration(e.target.value)}
+            placeholder="5 days · long weekend · 2 weeks"
+          />
+        </Labeled>
+        <Labeled label="Start date (optional)">
+          <input
+            className={fieldCls}
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            placeholder="Oct 14, 2026"
+          />
+        </Labeled>
+        <Labeled label="Travelers">
+          <input
+            className={fieldCls}
+            value={travelers}
+            onChange={(e) => setTravelers(e.target.value)}
+            placeholder="2 adults · family of 4 · solo"
+          />
+        </Labeled>
+        <Labeled label="Pace">
+          <select
+            className={fieldCls}
+            value={pace}
+            onChange={(e) => setPace(e.target.value as typeof pace)}
+          >
+            <option value="">Let us decide</option>
+            <option value="relaxed">Relaxed</option>
+            <option value="balanced">Balanced</option>
+            <option value="packed">Packed</option>
+          </select>
+        </Labeled>
+        <Labeled label="Budget">
+          <select
+            className={fieldCls}
+            value={budget}
+            onChange={(e) => setBudget(e.target.value as typeof budget)}
+          >
+            <option value="">Let us decide</option>
+            <option value="shoestring">Shoestring</option>
+            <option value="moderate">Moderate</option>
+            <option value="elevated">Elevated</option>
+            <option value="luxury">Luxury</option>
+          </select>
+        </Labeled>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <label className="td-eyebrow text-ink/45">Interests</label>
+        <div className="flex flex-wrap gap-1.5">
+          {interestOptions.map((tag) => {
+            const on = interests.includes(tag);
+            return (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => onToggleInterest(tag)}
+                className={`rounded-full border px-3 py-1.5 text-[11px] uppercase tracking-[0.22em] transition-elegant ${
+                  on
+                    ? "border-seal bg-seal/20 text-seal"
+                    : "border-ink/15 bg-paper/40 text-ink-soft hover:border-seal/40 hover:text-ink"
+                }`}
+              >
+                {tag}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Labeled({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="td-eyebrow text-ink/45">{label}</label>
+      {children}
+    </div>
+  );
 }
