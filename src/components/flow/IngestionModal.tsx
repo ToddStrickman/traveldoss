@@ -1415,9 +1415,9 @@ function Labeled({ label, children }: { label: string; children: React.ReactNode
 /* Generation progress                                                 */
 /* ------------------------------------------------------------------ */
 
-type GenPhaseLocal = "idle" | "research" | "draft" | "enrich" | "done";
+export type GenPhaseLocal = "idle" | "research" | "draft" | "enrich" | "done";
 
-function GenerationProgress({
+export function GenerationProgress({
   phase,
   destination,
   duration,
