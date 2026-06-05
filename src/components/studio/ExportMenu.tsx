@@ -1,9 +1,12 @@
-import { CalendarPlus, Link2, Printer } from "lucide-react";
+import { CalendarPlus, FileText, Link2, Printer } from "lucide-react";
 import { toast } from "sonner";
 import type { Block, TripView } from "@/lib/skins/types";
 import { buildItineraryIcs, downloadIcs } from "@/lib/ics";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useLocation } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { exportItineraryToGoogleDoc } from "@/lib/itinerary/export.functions";
+import { useState } from "react";
 
 export function ExportMenu({
   slug,
@@ -16,6 +19,8 @@ export function ExportMenu({
 }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const exportDoc = useServerFn(exportItineraryToGoogleDoc);
+  const [exporting, setExporting] = useState(false);
   function copyLink() {
     const url = `${window.location.origin}/t/${slug}`;
     navigator.clipboard.writeText(url).then(
@@ -29,6 +34,30 @@ export function ExportMenu({
       window.print();
       document.body.classList.remove("td-print-mode");
     }, 50);
+  }
+  async function exportToGoogleDoc() {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.message("Sign in to export to Google Docs", {
+          description: "We'll bring you right back here.",
+        });
+        navigate({ to: "/login", search: { redirect: location.pathname } });
+        return;
+      }
+      const r = await exportDoc({ data: { slug } });
+      toast.success("Opened in Google Docs", { description: r.googleDocUrl });
+      window.open(r.googleDocUrl, "_blank", "noopener");
+    } catch (err) {
+      console.error("[export-doc] failed", err);
+      toast.error(
+        err instanceof Error ? err.message : "Couldn't export to Google Docs.",
+      );
+    } finally {
+      setExporting(false);
+    }
   }
   async function addToCalendar() {
     if (!trip || !blocks) {
@@ -122,6 +151,12 @@ export function ExportMenu({
         icon={<CalendarPlus className="h-3.5 w-3.5" />}
         label="Calendar"
         disabled={!trip || !blocks}
+      />
+      <ExportButton
+        onClick={exportToGoogleDoc}
+        icon={<FileText className="h-3.5 w-3.5" />}
+        label={exporting ? "Exporting…" : "Google Doc"}
+        disabled={exporting}
       />
       <ExportButton onClick={printPdf} icon={<Printer className="h-3.5 w-3.5" />} label="PDF" />
     </div>
