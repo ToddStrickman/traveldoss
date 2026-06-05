@@ -73,7 +73,7 @@ export function MobileBubbles() {
   }, []);
 
   useEffect(() => {
-    if (!mounted) return;
+    if (!mounted || reduced) return;
 
     let smX = 0;
     let smY = 0;
@@ -135,7 +135,7 @@ export function MobileBubbles() {
         return;
       }
 
-      const { tx, ty, dirty } = tiltRef.current;
+      const { tx, ty } = tiltRef.current;
       const t = time / 1000;
 
       // Always animate the wobble so bubbles drift visibly even when
@@ -163,7 +163,7 @@ export function MobileBubbles() {
       window.removeEventListener("mousemove", onPointer);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, [mounted]);
+  }, [mounted, reduced]);
 
   if (!mounted || hidden) return null;
 
