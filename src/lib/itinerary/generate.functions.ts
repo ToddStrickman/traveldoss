@@ -254,8 +254,27 @@ async function generateStructured(
       system,
       prompt,
       experimental_output: Output.object({ schema: OutputSchema }),
+      maxOutputTokens: 8192,
     });
-    return result.experimental_output;
+    const out = result.experimental_output;
+    // Gemini sometimes returns a valid-shape object with an empty itinerary
+    // string when it hits a token limit or stalls. Treat that as a failure
+    // so we fall through to the JSON-prompt retry path below instead of
+    // bubbling an "empty itinerary" error all the way to the user.
+    const finishReason = (result as unknown as { finishReason?: string }).finishReason;
+    if (
+      !out.needsClarification &&
+      (!out.itinerary || out.itinerary.trim().length < 40)
+    ) {
+      recordAttempt({
+        attempt: 0,
+        rawResponse: out.itinerary ?? "",
+        threwError: `structured-output: empty itinerary (finishReason=${finishReason ?? "unknown"})`,
+      });
+      // fall through to JSON-prompt path
+    } else {
+      return out;
+    }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     recordAttempt({
@@ -284,6 +303,7 @@ async function generateStructured(
         model: gateway("google/gemini-2.5-flash"),
         system: jsonSystem + repairNote,
         prompt,
+        maxOutputTokens: 8192,
       });
       lastRaw = result.text.trim();
       const jsonText = extractJsonObject(lastRaw);
