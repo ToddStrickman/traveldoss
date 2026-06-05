@@ -48,6 +48,22 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { useSavedTripRequests, type SavedTripRequest } from "@/hooks/use-saved-trip-requests";
 import { useGeneratorA11y } from "@/hooks/use-generator-a11y";
+import {
+  downloadDebugReport,
+  type DebugReport,
+} from "@/lib/itinerary/debug-report";
+
+function offerDebugReport(report: DebugReport | undefined, label: string) {
+  if (!report) return;
+  toast.message(`${label} — debug report ready`, {
+    description: `${report.outcome} after ${report.attempts.length} attempt(s). Download the raw Gemini response, Zod issues, and final fallback as JSON.`,
+    duration: 12_000,
+    action: {
+      label: "Download JSON",
+      onClick: () => downloadDebugReport(report),
+    },
+  });
+}
 
 type Tab = "paste" | "transcript" | "generate";
 
@@ -189,6 +205,10 @@ export function IngestionModal({
       });
       blocks = r.blocks;
       destination = r.destination;
+      offerDebugReport(
+        (r as { debugReport?: DebugReport }).debugReport,
+        "Parsed with fallback",
+      );
     } catch (err) {
       console.error("[ai-parse] failed, falling back to local parser", err);
       toast.message("Using offline parser", {
@@ -241,6 +261,10 @@ export function IngestionModal({
           useLiveResearch: true,
         },
       });
+      offerDebugReport(
+        (gen as { debugReport?: DebugReport }).debugReport,
+        "Generated with fallback",
+      );
       if (gen.kind === "clarify") {
         setClarifyQs(gen.questions);
         setClarifyAs(gen.questions.map(() => ""));
@@ -253,6 +277,10 @@ export function IngestionModal({
       const parsed = await parseAi({
         data: { text: gen.draft, source: "ai" },
       });
+      offerDebugReport(
+        (parsed as { debugReport?: DebugReport }).debugReport,
+        "Parsed generator output",
+      );
       if (!parsed.blocks.length) {
         toast.error("Generation came back empty. Try a different prompt.");
         return;

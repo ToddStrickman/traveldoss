@@ -3,6 +3,10 @@ import { generateText, Output } from "ai";
 import { z, ZodError, type ZodIssue } from "zod";
 import type { Block } from "@/lib/skins/types";
 import { parseDropInWithMeta, stripEmoji } from "@/lib/itinerary/parse";
+import type {
+  DebugAttempt,
+  DebugReport,
+} from "@/lib/itinerary/debug-report";
 
 /**
  * AI-powered itinerary parser. Takes raw pasted text (from ChatGPT,
@@ -213,9 +217,10 @@ export const parseItineraryAi = createServerFn({ method: "POST" })
     const { createLovableAiGatewayProvider } = await import("@/lib/ai-gateway.server");
     const gateway = createLovableAiGatewayProvider(key);
 
+    const attempts: DebugAttempt[] = [];
     let parsed: z.infer<typeof BlockSchema>;
     try {
-      parsed = await parseBlocksWithAi(gateway, cleanText, data.source);
+      parsed = await parseBlocksWithAi(gateway, cleanText, data.source, attempts);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       if (/402|credit/i.test(msg)) {
@@ -230,7 +235,16 @@ export const parseItineraryAi = createServerFn({ method: "POST" })
       await enrichPlacesViaWebSearch(fallback.blocks, fallback.destination, gateway).catch(
         (enrichErr: unknown) => console.error("[parse-ai] fallback enrichment failed:", enrichErr),
       );
-      return fallback;
+      const debugReport: DebugReport = {
+        source: "parse-ai",
+        createdAt: new Date().toISOString(),
+        model: "google/gemini-2.5-flash",
+        outcome: "local-fallback",
+        attempts,
+        finalParsed: fallback,
+        finalError: msg,
+      };
+      return { ...fallback, debugReport };
     }
 
     // Translate the model's nullable schema into the app's Block[] (omit
@@ -251,10 +265,23 @@ export const parseItineraryAi = createServerFn({ method: "POST" })
       },
     );
 
-    return {
+    const result = {
       destination: parsed.destination ?? null,
       blocks,
     };
+    // Only attach a debug report if there were retries / mismatches worth
+    // surfacing. A clean first-attempt parse produces no attempts entries.
+    const debugReport: DebugReport | null = attempts.length
+      ? {
+          source: "parse-ai",
+          createdAt: new Date().toISOString(),
+          model: "google/gemini-2.5-flash",
+          outcome: "success-after-retry",
+          attempts,
+          finalParsed: result,
+        }
+      : null;
+    return debugReport ? { ...result, debugReport } : result;
   });
 
 /* ─── helpers ───────────────────────────────────────────────────────── */
@@ -263,11 +290,16 @@ async function parseBlocksWithAi(
   gateway: GatewayProvider,
   cleanText: string,
   source: "text" | "transcript" | "ai",
+  attempts?: DebugAttempt[],
 ): Promise<z.infer<typeof BlockSchema>> {
   const basePrompt = `Source type: ${source}\n\n---\n${cleanText}\n---\n\nReturn the structured itinerary now.`;
   const MAX_ATTEMPTS = 4;
   let lastRaw = "";
   let lastIssue = "";
+
+  const recordAttempt = (entry: DebugAttempt) => {
+    if (attempts) attempts.push(entry);
+  };
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
@@ -289,6 +321,11 @@ async function parseBlocksWithAi(
           `[parse-ai] attempt ${attempt}/${MAX_ATTEMPTS} JSON.parse failed: ${(jsonErr as Error).message}\n  raw[0..600]: ${snippet}`,
         );
         lastIssue = `invalid JSON syntax: ${(jsonErr as Error).message.slice(0, 120)}`;
+        recordAttempt({
+          attempt,
+          rawResponse: lastRaw,
+          jsonParseError: (jsonErr as Error).message,
+        });
         if (attempt < MAX_ATTEMPTS) {
           await new Promise((r) => setTimeout(r, 600 * 2 ** (attempt - 1)));
         }
@@ -298,6 +335,13 @@ async function parseBlocksWithAi(
       if (safe.success) return safe.data;
       logZodDiagnostics("parse-ai", attempt, MAX_ATTEMPTS, safe.error, parsedJson, lastRaw);
       lastIssue = summarizeIssues(safe.error.issues);
+      recordAttempt({
+        attempt,
+        rawResponse: lastRaw,
+        parsedJson,
+        zodIssues: safe.error.issues,
+        zodIssueSummary: lastIssue,
+      });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       if (/402|credit/i.test(msg) || isRateLimitMessage(msg)) throw err;
@@ -309,11 +353,30 @@ async function parseBlocksWithAi(
           if (safe.success) return safe.data;
           logZodDiagnostics("parse-ai", attempt, MAX_ATTEMPTS, safe.error, reparsed, lastRaw);
           lastIssue = summarizeIssues(safe.error.issues);
+          recordAttempt({
+            attempt,
+            rawResponse: lastRaw,
+            parsedJson: reparsed,
+            zodIssues: safe.error.issues,
+            zodIssueSummary: lastIssue,
+            threwError: msg,
+          });
         } catch {
           lastIssue = "invalid JSON syntax";
+          recordAttempt({
+            attempt,
+            rawResponse: lastRaw,
+            jsonParseError: "invalid JSON syntax",
+            threwError: msg,
+          });
         }
       } else {
         lastIssue = msg.slice(0, 160);
+        recordAttempt({
+          attempt,
+          rawResponse: "",
+          threwError: msg,
+        });
       }
     }
 

@@ -1,6 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { generateText, Output } from "ai";
 import { z, ZodError, type ZodIssue } from "zod";
+import type {
+  DebugAttempt,
+  DebugReport,
+} from "@/lib/itinerary/debug-report";
 
 /**
  * AI itinerary generator.
@@ -121,17 +125,24 @@ export const generateItineraryAi = createServerFn({ method: "POST" })
 
     const MAX_ATTEMPTS = 3;
     let lastErr: unknown = null;
+    const attempts: DebugAttempt[] = [];
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       try {
         const sys = researchNotes
           ? `${SYSTEM}\n\nA live research brief follows the trip brief. When a fact (hours, ticket rule, recent opening, exhibition) came from a numbered source, preserve the [n] citation at the end of the sentence in the venue rationale. Do not invent indices.`
           : SYSTEM;
-        const out = await generateStructured(gateway, sys, briefWithResearch);
+        const out = await generateStructured(gateway, sys, briefWithResearch, attempts);
         if (out.needsClarification && out.clarifyingQuestions.length > 0) {
-          return {
+          const base = {
             kind: "clarify" as const,
             questions: out.clarifyingQuestions.slice(0, 3),
           };
+          return attempts.length
+            ? {
+                ...base,
+                debugReport: buildDebugReport(attempts, "success-after-retry", base),
+              }
+            : base;
         }
         if (!out.itinerary || out.itinerary.trim().length < 40) {
           throw new Error("Generator returned an empty itinerary.");
@@ -143,7 +154,13 @@ export const generateItineraryAi = createServerFn({ method: "POST" })
               .map((c) => `[${c.n}] ${c.title} — ${c.url}`)
               .join("\n")}\n`
           : out.itinerary;
-        return { kind: "draft" as const, draft, citations };
+        const base = { kind: "draft" as const, draft, citations };
+        return attempts.length
+          ? {
+              ...base,
+              debugReport: buildDebugReport(attempts, "success-after-retry", base),
+            }
+          : base;
       } catch (err) {
         lastErr = err;
         const msg = err instanceof Error ? err.message : String(err);
@@ -154,11 +171,32 @@ export const generateItineraryAi = createServerFn({ method: "POST" })
           await new Promise((r) => setTimeout(r, 750 * 2 ** (attempt - 1)));
           continue;
         }
+        // Throw the underlying error verbatim — the client's catch handler
+        // doesn't have access to the attempts array; the debugReport is
+        // already serialized into the inner generateStructured fallback
+        // return when applicable.
         throw new Error(`Itinerary generator failed: ${msg}`);
       }
     }
     throw lastErr instanceof Error ? lastErr : new Error("Generator failed.");
   });
+
+function buildDebugReport(
+  attempts: DebugAttempt[],
+  outcome: DebugReport["outcome"],
+  finalParsed?: unknown,
+  finalError?: string,
+): DebugReport {
+  return {
+    source: "generate",
+    createdAt: new Date().toISOString(),
+    model: "google/gemini-2.5-flash",
+    outcome,
+    attempts,
+    finalParsed,
+    finalError,
+  };
+}
 
 function buildBrief(data: z.infer<typeof InputSchema>): string {
   const lines: string[] = [];
@@ -203,7 +241,11 @@ async function generateStructured(
   gateway: ReturnType<typeof import("@/lib/ai-gateway.server").createLovableAiGatewayProvider>,
   system: string,
   prompt: string,
+  attempts?: DebugAttempt[],
 ): Promise<OutShape> {
+  const recordAttempt = (entry: DebugAttempt) => {
+    if (attempts) attempts.push(entry);
+  };
   // First try: AI SDK structured output (constrained decoding).
   try {
     const result = await generateText({
@@ -215,6 +257,11 @@ async function generateStructured(
     return result.experimental_output;
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
+    recordAttempt({
+      attempt: 0,
+      rawResponse: "",
+      threwError: `structured-output: ${msg}`,
+    });
     // Gemini sometimes returns text that doesn't match the schema state
     // machine. Fall back to a plain JSON prompt and parse manually.
     if (!/schema|object/i.test(msg)) throw err;
@@ -248,6 +295,11 @@ async function generateStructured(
           `[generate] attempt ${attempt}/${MAX_JSON_ATTEMPTS} JSON.parse failed: ${(jsonErr as Error).message}\n  raw[0..400]: ${snippet}`,
         );
         lastIssue = `invalid JSON syntax: ${(jsonErr as Error).message.slice(0, 120)}`;
+        recordAttempt({
+          attempt,
+          rawResponse: lastRaw,
+          jsonParseError: (jsonErr as Error).message,
+        });
         if (attempt < MAX_JSON_ATTEMPTS) {
           await new Promise((r) => setTimeout(r, 500 * 2 ** (attempt - 1)));
         }
@@ -257,6 +309,13 @@ async function generateStructured(
       if (safe.success) return safe.data;
       logZodDiagnostics("generate", attempt, MAX_JSON_ATTEMPTS, safe.error, parsed, lastRaw);
       lastIssue = summarizeIssues(safe.error.issues);
+      recordAttempt({
+        attempt,
+        rawResponse: lastRaw,
+        parsedJson: parsed,
+        zodIssues: safe.error.issues,
+        zodIssueSummary: lastIssue,
+      });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       if (/402|credit/i.test(msg)) {
@@ -264,6 +323,11 @@ async function generateStructured(
       }
       console.error(`[generate] attempt ${attempt}/${MAX_JSON_ATTEMPTS} threw:`, err);
       lastIssue = /JSON/i.test(msg) ? "invalid JSON syntax" : msg.slice(0, 120);
+      recordAttempt({
+        attempt,
+        rawResponse: lastRaw,
+        threwError: msg,
+      });
     }
     if (attempt < MAX_JSON_ATTEMPTS) {
       await new Promise((r) => setTimeout(r, 500 * 2 ** (attempt - 1)));
@@ -273,6 +337,11 @@ async function generateStructured(
   // Final fallback: treat the last raw response as itinerary markdown so the
   // user still gets something useful instead of a hard error.
   if (lastRaw) {
+    recordAttempt({
+      attempt: MAX_JSON_ATTEMPTS + 1,
+      rawResponse: lastRaw,
+      threwError: `raw-fallback: ${lastIssue}`,
+    });
     return { needsClarification: false, clarifyingQuestions: [], itinerary: lastRaw };
   }
   throw new Error(`Itinerary generator could not produce valid JSON after ${MAX_JSON_ATTEMPTS} attempts (${lastIssue}).`);
