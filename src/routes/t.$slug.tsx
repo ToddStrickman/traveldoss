@@ -312,8 +312,8 @@ function DossierPage() {
     destination,
     subtitle,
     slug: trip.slug,
-    start_date: startDate || trip.start_date,
-    end_date: endDate || trip.end_date,
+    start_date: startDate || null,
+    end_date: endDate || null,
     hero_image_url: trip.hero_image_url,
     meta,
   };
