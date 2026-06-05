@@ -1,6 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { generateText, Output } from "ai";
 import { z, ZodError, type ZodIssue } from "zod";
+import type {
+  DebugAttempt,
+  DebugReport,
+} from "@/lib/itinerary/debug-report";
 
 /**
  * AI itinerary generator.
