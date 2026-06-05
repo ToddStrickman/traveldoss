@@ -249,6 +249,38 @@
   text-align: center; color: var(--tds-soft); opacity: .5;
   font-size: 11px; letter-spacing: .3em; padding: 8px 0;
 }
+
+/* ----- Meta rail (dossier-level chips under the hero) ---------------- */
+.tds-meta-rail {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  margin-top: 12px;
+}
+
+/* ----- Open slot placeholder (always-visible for empty parts) -------- */
+.tds-open-slot {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 14px;
+  border: 1px dashed var(--tds-rule);
+  border-radius: 999px;
+  color: var(--tds-soft); opacity: .7;
+  font-size: 11px; letter-spacing: .25em; text-transform: uppercase;
+  background: transparent;
+  align-self: flex-start;
+}
+.tds-open-slot-dot {
+  width: 6px; height: 6px; border-radius: 999px;
+  background: var(--tds-accent); opacity: .6;
+}
+
+/* ----- Pulsing call-to-action ring for empty meta chips -------------- */
+@keyframes td-chip-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--tds-accent) 35%, transparent); }
+  50%      { box-shadow: 0 0 0 6px color-mix(in oklab, var(--tds-accent) 0%, transparent); }
+}
+.td-chip-pulse { animation: td-chip-pulse 2.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .td-chip-pulse { animation: none; }
+}
 .tds-act-card {
   background: var(--tds-bg);
   border: 1px solid var(--tds-rule);
