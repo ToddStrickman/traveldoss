@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { fetchWithRetry } from "@/lib/retry";
 
 /**
@@ -25,6 +26,25 @@ function gatewayHeaders() {
 
 type AnyBlock = Record<string, unknown> & { kind: string };
 
+/**
+ * Stable idempotency key derived from the trip + its current block payload.
+ * The same trip with the same blocks always yields the same key, so a retry
+ * after a partial failure reuses the already-created Google Doc instead of
+ * creating a duplicate.
+ */
+async function computeIdempotencyKey(
+  tripId: string,
+  blocks: AnyBlock[],
+): Promise<string> {
+  const payload = JSON.stringify({ tripId, blocks });
+  const bytes = new TextEncoder().encode(payload);
+  const hash = await crypto.subtle.digest("SHA-256", bytes);
+  const hex = Array.from(new Uint8Array(hash))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+  return `export:${tripId}:${hex.slice(0, 32)}`;
+}
+
 function bucketFor(time?: string): "morning" | "afternoon" | "evening" {
   if (!time) return "morning";
   const m = /^(\d{1,2})(?::(\d{2}))?/.exec(time.trim());
@@ -41,7 +61,7 @@ export const exportItineraryToGoogleDoc = createServerFn({ method: "POST" })
     z.object({ slug: z.string().min(1).max(128) }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
     const { data: trip, error } = await supabase
       .from("trips")
       .select("id, destination, slug, content")
@@ -52,6 +72,22 @@ export const exportItineraryToGoogleDoc = createServerFn({ method: "POST" })
 
     const blocks = (trip.content as { blocks?: AnyBlock[] } | null)?.blocks ?? [];
     if (!blocks.length) throw new Error("This dossier has no blocks to export yet.");
+
+    /* ── Idempotency: short-circuit if this exact export already produced a doc. */
+    const idempotencyKey = await computeIdempotencyKey(trip.id, blocks);
+    const { data: existingExport } = await supabaseAdmin
+      .from("trip_doc_previews")
+      .select("id, google_doc_id, google_doc_url, status")
+      .eq("user_id", userId)
+      .eq("source_message_id", idempotencyKey)
+      .maybeSingle();
+    if (existingExport && existingExport.status === "ready") {
+      return {
+        googleDocId: existingExport.google_doc_id,
+        googleDocUrl: existingExport.google_doc_url,
+        reused: true as const,
+      };
+    }
 
     // Group places under their preceding day, bucketed by time-of-day.
     type Slot = "morning" | "afternoon" | "evening";
@@ -85,18 +121,63 @@ export const exportItineraryToGoogleDoc = createServerFn({ method: "POST" })
 
     // Create the doc.
     const title = `${trip.destination || "Itinerary"} — TravelDoss`.slice(0, 180);
-    const createRes = await fetchWithRetry(`${DOCS_GATEWAY}/documents`, {
-      method: "POST",
-      headers: gatewayHeaders(),
-      body: JSON.stringify({ title }),
-    });
-    if (!createRes.ok) {
-      throw new Error(
-        `Google Docs create failed (${createRes.status}): ${(await createRes.text().catch(() => "")).slice(0, 200)}`,
-      );
+    let documentId: string;
+    let googleDocUrl: string;
+    let reservationId: string | null = null;
+    if (existingExport?.google_doc_id) {
+      // A previous attempt created the doc but didn't finish writing. Reuse it.
+      documentId = existingExport.google_doc_id;
+      googleDocUrl = existingExport.google_doc_url;
+      reservationId = existingExport.id;
+    } else {
+      const createRes = await fetchWithRetry(`${DOCS_GATEWAY}/documents`, {
+        method: "POST",
+        headers: gatewayHeaders(),
+        body: JSON.stringify({ title }),
+      });
+      if (!createRes.ok) {
+        throw new Error(
+          `Google Docs create failed (${createRes.status}): ${(await createRes.text().catch(() => "")).slice(0, 200)}`,
+        );
+      }
+      const docJson = (await createRes.json()) as { documentId: string };
+      documentId = docJson.documentId;
+      googleDocUrl = `https://docs.google.com/document/d/${documentId}/edit`;
+
+      // Reserve the idempotency row in 'pending' state BEFORE writing content,
+      // so a retry between create + batchUpdate reuses the same doc id.
+      const { data: reserved, error: reserveErr } = await supabaseAdmin
+        .from("trip_doc_previews")
+        .insert({
+          trip_id: trip.id,
+          user_id: userId,
+          source: "export",
+          source_message_id: idempotencyKey,
+          google_doc_id: documentId,
+          google_doc_url: googleDocUrl,
+          status: "pending",
+        })
+        .select("id")
+        .single();
+      if (reserveErr) {
+        // Unique-violation race: another retry won. Re-read and return that doc.
+        const { data: raced } = await supabaseAdmin
+          .from("trip_doc_previews")
+          .select("id, google_doc_id, google_doc_url, status")
+          .eq("user_id", userId)
+          .eq("source_message_id", idempotencyKey)
+          .maybeSingle();
+        if (raced) {
+          return {
+            googleDocId: raced.google_doc_id,
+            googleDocUrl: raced.google_doc_url,
+            reused: true as const,
+          };
+        }
+        throw new Error(reserveErr.message);
+      }
+      reservationId = reserved.id;
     }
-    const docJson = (await createRes.json()) as { documentId: string };
-    const documentId = docJson.documentId;
 
     // Build batchUpdate requests: header + per-day Morning/Afternoon/Evening sections.
     type Req =
@@ -199,11 +280,23 @@ export const exportItineraryToGoogleDoc = createServerFn({ method: "POST" })
       );
       if (!updateRes.ok) {
         console.error("[export] batchUpdate failed", updateRes.status, await updateRes.text().catch(() => ""));
+        throw new Error(
+          `Google Docs write failed (${updateRes.status}). Doc was created — retry to finish writing it.`,
+        );
       }
+    }
+
+    // Mark the reservation ready so future calls short-circuit.
+    if (reservationId) {
+      await supabaseAdmin
+        .from("trip_doc_previews")
+        .update({ status: "ready" })
+        .eq("id", reservationId);
     }
 
     return {
       googleDocId: documentId,
-      googleDocUrl: `https://docs.google.com/document/d/${documentId}/edit`,
+      googleDocUrl,
+      reused: false as const,
     };
   });
