@@ -147,6 +147,12 @@ function Landing() {
 
       <Ribbon />
 
+      {/* Under Construction banner */}
+      <div className="relative z-20 flex items-center justify-center gap-2 bg-seal/10 px-4 py-2 text-center text-[11px] font-medium uppercase tracking-[0.3em] text-seal backdrop-blur-sm border-b border-seal/10">
+        <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-seal" />
+        Under Construction — Things may change.
+      </div>
+
       {/* Center stage */}
       <main className="relative z-10 mx-auto flex min-h-[82dvh] max-w-[1400px] flex-col items-center justify-center px-6 py-10 text-center md:min-h-[76dvh] md:py-8 md:pl-32 md:pr-[340px]">
         <Parallax depth={-6}>
