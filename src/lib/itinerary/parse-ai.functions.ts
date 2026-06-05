@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { generateText, Output } from "ai";
-import { z } from "zod";
+import { z, ZodError, type ZodIssue } from "zod";
 import type { Block } from "@/lib/skins/types";
 import { parseDropInWithMeta, stripEmoji } from "@/lib/itinerary/parse";
 
@@ -280,23 +280,35 @@ async function parseBlocksWithAi(
         prompt: basePrompt,
       });
       lastRaw = result.text.trim();
-      const safe = BlockSchema.safeParse(JSON.parse(extractJsonObject(lastRaw)));
+      let parsedJson: unknown;
+      try {
+        parsedJson = JSON.parse(extractJsonObject(lastRaw));
+      } catch (jsonErr) {
+        const snippet = lastRaw.slice(0, 600).replace(/\s+/g, " ");
+        console.error(
+          `[parse-ai] attempt ${attempt}/${MAX_ATTEMPTS} JSON.parse failed: ${(jsonErr as Error).message}\n  raw[0..600]: ${snippet}`,
+        );
+        lastIssue = `invalid JSON syntax: ${(jsonErr as Error).message.slice(0, 120)}`;
+        if (attempt < MAX_ATTEMPTS) {
+          await new Promise((r) => setTimeout(r, 600 * 2 ** (attempt - 1)));
+        }
+        continue;
+      }
+      const safe = BlockSchema.safeParse(parsedJson);
       if (safe.success) return safe.data;
-      lastIssue = `schema mismatch: ${safe.error.issues
-        .slice(0, 3)
-        .map((i) => `${i.path.join(".") || "(root)"} ${i.message}`)
-        .join("; ")}`;
+      logZodDiagnostics("parse-ai", attempt, MAX_ATTEMPTS, safe.error, parsedJson, lastRaw);
+      lastIssue = summarizeIssues(safe.error.issues);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       if (/402|credit/i.test(msg) || isRateLimitMessage(msg)) throw err;
+      console.error(`[parse-ai] attempt ${attempt}/${MAX_ATTEMPTS} threw:`, err);
       if (lastRaw) {
         try {
-          const safe = BlockSchema.safeParse(JSON.parse(extractJsonObject(lastRaw)));
+          const reparsed: unknown = JSON.parse(extractJsonObject(lastRaw));
+          const safe = BlockSchema.safeParse(reparsed);
           if (safe.success) return safe.data;
-          lastIssue = `schema mismatch: ${safe.error.issues
-            .slice(0, 3)
-            .map((i) => `${i.path.join(".") || "(root)"} ${i.message}`)
-            .join("; ")}`;
+          logZodDiagnostics("parse-ai", attempt, MAX_ATTEMPTS, safe.error, reparsed, lastRaw);
+          lastIssue = summarizeIssues(safe.error.issues);
         } catch {
           lastIssue = "invalid JSON syntax";
         }
@@ -324,6 +336,54 @@ function extractJsonObject(text: string): string {
 
 function isRateLimitMessage(message: string): boolean {
   return /\b429\b|rate limit|rate-limit|too many requests/i.test(message);
+}
+
+/* ─── schema-mismatch diagnostics ─────────────────────────────────── */
+
+function formatIssueDetailed(issue: ZodIssue, root: unknown): string {
+  const path = issue.path.length ? issue.path.join(".") : "(root)";
+  const meta = issue as ZodIssue & { expected?: unknown; received?: unknown };
+  const typeBits =
+    meta.expected !== undefined || meta.received !== undefined
+      ? ` [expected=${JSON.stringify(meta.expected)} received=${JSON.stringify(meta.received)}]`
+      : "";
+  let valuePreview = "";
+  try {
+    let cursor: unknown = root;
+    for (const seg of issue.path) {
+      if (cursor == null) break;
+      cursor = (cursor as Record<string | number, unknown>)[seg as string | number];
+    }
+    const json = JSON.stringify(cursor);
+    if (json !== undefined) {
+      valuePreview = ` value=${json.length > 160 ? json.slice(0, 157) + "…" : json}`;
+    }
+  } catch {
+    /* ignore */
+  }
+  return `  • [${issue.code}] ${path}: ${issue.message}${typeBits}${valuePreview}`;
+}
+
+function summarizeIssues(issues: ZodIssue[]): string {
+  return `schema mismatch (${issues.length} issue${issues.length === 1 ? "" : "s"}): ${issues
+    .slice(0, 3)
+    .map((i) => `${i.path.join(".") || "(root)"} → ${i.message}`)
+    .join("; ")}`;
+}
+
+function logZodDiagnostics(
+  tag: string,
+  attempt: number,
+  max: number,
+  error: ZodError,
+  parsed: unknown,
+  raw: string,
+): void {
+  const lines = error.issues.map((i) => formatIssueDetailed(i, parsed));
+  const rawSnippet = raw.slice(0, 800).replace(/\s+/g, " ");
+  console.error(
+    `[${tag}] attempt ${attempt}/${max} schema mismatch — ${error.issues.length} issue(s):\n${lines.join("\n")}\n  raw[0..800]: ${rawSnippet}`,
+  );
 }
 
 function clean<T extends Record<string, unknown>>(obj: T): T {
