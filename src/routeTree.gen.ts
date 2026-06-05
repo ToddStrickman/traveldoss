@@ -18,6 +18,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as TSlugRouteImport } from './routes/t.$slug'
 import { Route as E2eKanbanRouteImport } from './routes/e2e.kanban'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
+import { Route as ApiPublicHooksCleanupPendingDocExportsRouteImport } from './routes/api/public/hooks/cleanup-pending-doc-exports'
 
 const TemplatesRoute = TemplatesRouteImport.update({
   id: '/templates',
@@ -63,6 +64,12 @@ const AuthenticatedAppRoute = AuthenticatedAppRouteImport.update({
   path: '/app',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const ApiPublicHooksCleanupPendingDocExportsRoute =
+  ApiPublicHooksCleanupPendingDocExportsRouteImport.update({
+    id: '/api/public/hooks/cleanup-pending-doc-exports',
+    path: '/api/public/hooks/cleanup-pending-doc-exports',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -73,6 +80,7 @@ export interface FileRoutesByFullPath {
   '/app': typeof AuthenticatedAppRoute
   '/e2e/kanban': typeof E2eKanbanRoute
   '/t/$slug': typeof TSlugRoute
+  '/api/public/hooks/cleanup-pending-doc-exports': typeof ApiPublicHooksCleanupPendingDocExportsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -83,6 +91,7 @@ export interface FileRoutesByTo {
   '/app': typeof AuthenticatedAppRoute
   '/e2e/kanban': typeof E2eKanbanRoute
   '/t/$slug': typeof TSlugRoute
+  '/api/public/hooks/cleanup-pending-doc-exports': typeof ApiPublicHooksCleanupPendingDocExportsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -95,6 +104,7 @@ export interface FileRoutesById {
   '/_authenticated/app': typeof AuthenticatedAppRoute
   '/e2e/kanban': typeof E2eKanbanRoute
   '/t/$slug': typeof TSlugRoute
+  '/api/public/hooks/cleanup-pending-doc-exports': typeof ApiPublicHooksCleanupPendingDocExportsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -107,6 +117,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/e2e/kanban'
     | '/t/$slug'
+    | '/api/public/hooks/cleanup-pending-doc-exports'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -117,6 +128,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/e2e/kanban'
     | '/t/$slug'
+    | '/api/public/hooks/cleanup-pending-doc-exports'
   id:
     | '__root__'
     | '/'
@@ -128,6 +140,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app'
     | '/e2e/kanban'
     | '/t/$slug'
+    | '/api/public/hooks/cleanup-pending-doc-exports'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -139,6 +152,7 @@ export interface RootRouteChildren {
   TemplatesRoute: typeof TemplatesRoute
   E2eKanbanRoute: typeof E2eKanbanRoute
   TSlugRoute: typeof TSlugRoute
+  ApiPublicHooksCleanupPendingDocExportsRoute: typeof ApiPublicHooksCleanupPendingDocExportsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -206,6 +220,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/api/public/hooks/cleanup-pending-doc-exports': {
+      id: '/api/public/hooks/cleanup-pending-doc-exports'
+      path: '/api/public/hooks/cleanup-pending-doc-exports'
+      fullPath: '/api/public/hooks/cleanup-pending-doc-exports'
+      preLoaderRoute: typeof ApiPublicHooksCleanupPendingDocExportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -230,7 +251,19 @@ const rootRouteChildren: RootRouteChildren = {
   TemplatesRoute: TemplatesRoute,
   E2eKanbanRoute: E2eKanbanRoute,
   TSlugRoute: TSlugRoute,
+  ApiPublicHooksCleanupPendingDocExportsRoute:
+    ApiPublicHooksCleanupPendingDocExportsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
