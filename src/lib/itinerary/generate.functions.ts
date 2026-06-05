@@ -221,23 +221,49 @@ async function generateStructured(
   }
 
   const jsonSystem = `${system}\n\nReturn ONLY a single JSON object (no prose, no code fences) with this exact shape:\n{\n  "needsClarification": boolean,\n  "clarifyingQuestions": string[],   // up to 3, empty if not clarifying\n  "itinerary": string                // full markdown itinerary, empty if clarifying\n}`;
-  const result = await generateText({
-    model: gateway("google/gemini-2.5-flash"),
-    system: jsonSystem,
-    prompt,
-  });
-  const raw = result.text.trim();
-  const jsonText = extractJsonObject(raw);
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(jsonText);
-  } catch {
-    // Last resort: treat the whole response as the itinerary markdown.
-    return { needsClarification: false, clarifyingQuestions: [], itinerary: raw };
+
+  // Retry the JSON-prompt path with exponential backoff. Each retry appends
+ // the previous failure so the model can self-correct.
+  const MAX_JSON_ATTEMPTS = 3;
+  let lastRaw = "";
+  let lastIssue = "";
+  for (let attempt = 1; attempt <= MAX_JSON_ATTEMPTS; attempt++) {
+    const repairNote = lastIssue
+      ? `\n\nYour previous response could not be parsed (${lastIssue}). Return ONLY the JSON object this time — no prose, no code fences, no trailing commentary.`
+      : "";
+    try {
+      const result = await generateText({
+        model: gateway("google/gemini-2.5-flash"),
+        system: jsonSystem + repairNote,
+        prompt,
+      });
+      lastRaw = result.text.trim();
+      const jsonText = extractJsonObject(lastRaw);
+      const parsed = JSON.parse(jsonText);
+      const safe = OutputSchema.safeParse(parsed);
+      if (safe.success) return safe.data;
+      lastIssue = `schema mismatch: ${safe.error.issues
+        .slice(0, 2)
+        .map((i) => `${i.path.join(".") || "(root)"} ${i.message}`)
+        .join("; ")}`;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (/402|credit/i.test(msg)) {
+        throw new Error("AI credits exhausted. Add credits in Workspace → Usage.");
+      }
+      lastIssue = /JSON/i.test(msg) ? "invalid JSON syntax" : msg.slice(0, 120);
+    }
+    if (attempt < MAX_JSON_ATTEMPTS) {
+      await new Promise((r) => setTimeout(r, 500 * 2 ** (attempt - 1)));
+    }
   }
-  const safe = OutputSchema.safeParse(parsed);
-  if (safe.success) return safe.data;
-  return { needsClarification: false, clarifyingQuestions: [], itinerary: raw };
+
+  // Final fallback: treat the last raw response as itinerary markdown so the
+  // user still gets something useful instead of a hard error.
+  if (lastRaw) {
+    return { needsClarification: false, clarifyingQuestions: [], itinerary: lastRaw };
+  }
+  throw new Error(`Itinerary generator could not produce valid JSON after ${MAX_JSON_ATTEMPTS} attempts (${lastIssue}).`);
 }
 
 function extractJsonObject(text: string): string {
