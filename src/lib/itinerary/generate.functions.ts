@@ -241,7 +241,11 @@ async function generateStructured(
   gateway: ReturnType<typeof import("@/lib/ai-gateway.server").createLovableAiGatewayProvider>,
   system: string,
   prompt: string,
+  attempts?: DebugAttempt[],
 ): Promise<OutShape> {
+  const recordAttempt = (entry: DebugAttempt) => {
+    if (attempts) attempts.push(entry);
+  };
   // First try: AI SDK structured output (constrained decoding).
   try {
     const result = await generateText({
@@ -253,6 +257,11 @@ async function generateStructured(
     return result.experimental_output;
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
+    recordAttempt({
+      attempt: 0,
+      rawResponse: "",
+      threwError: `structured-output: ${msg}`,
+    });
     // Gemini sometimes returns text that doesn't match the schema state
     // machine. Fall back to a plain JSON prompt and parse manually.
     if (!/schema|object/i.test(msg)) throw err;
@@ -286,6 +295,11 @@ async function generateStructured(
           `[generate] attempt ${attempt}/${MAX_JSON_ATTEMPTS} JSON.parse failed: ${(jsonErr as Error).message}\n  raw[0..400]: ${snippet}`,
         );
         lastIssue = `invalid JSON syntax: ${(jsonErr as Error).message.slice(0, 120)}`;
+        recordAttempt({
+          attempt,
+          rawResponse: lastRaw,
+          jsonParseError: (jsonErr as Error).message,
+        });
         if (attempt < MAX_JSON_ATTEMPTS) {
           await new Promise((r) => setTimeout(r, 500 * 2 ** (attempt - 1)));
         }
@@ -295,6 +309,13 @@ async function generateStructured(
       if (safe.success) return safe.data;
       logZodDiagnostics("generate", attempt, MAX_JSON_ATTEMPTS, safe.error, parsed, lastRaw);
       lastIssue = summarizeIssues(safe.error.issues);
+      recordAttempt({
+        attempt,
+        rawResponse: lastRaw,
+        parsedJson: parsed,
+        zodIssues: safe.error.issues,
+        zodIssueSummary: lastIssue,
+      });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       if (/402|credit/i.test(msg)) {
@@ -302,6 +323,11 @@ async function generateStructured(
       }
       console.error(`[generate] attempt ${attempt}/${MAX_JSON_ATTEMPTS} threw:`, err);
       lastIssue = /JSON/i.test(msg) ? "invalid JSON syntax" : msg.slice(0, 120);
+      recordAttempt({
+        attempt,
+        rawResponse: lastRaw,
+        threwError: msg,
+      });
     }
     if (attempt < MAX_JSON_ATTEMPTS) {
       await new Promise((r) => setTimeout(r, 500 * 2 ** (attempt - 1)));
@@ -311,6 +337,11 @@ async function generateStructured(
   // Final fallback: treat the last raw response as itinerary markdown so the
   // user still gets something useful instead of a hard error.
   if (lastRaw) {
+    recordAttempt({
+      attempt: MAX_JSON_ATTEMPTS + 1,
+      rawResponse: lastRaw,
+      threwError: `raw-fallback: ${lastIssue}`,
+    });
     return { needsClarification: false, clarifyingQuestions: [], itinerary: lastRaw };
   }
   throw new Error(`Itinerary generator could not produce valid JSON after ${MAX_JSON_ATTEMPTS} attempts (${lastIssue}).`);
