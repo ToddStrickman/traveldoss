@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { generateText, Output } from "ai";
-import { z } from "zod";
+import { z, ZodError, type ZodIssue } from "zod";
 
 /**
  * AI itinerary generator.
@@ -239,18 +239,30 @@ async function generateStructured(
       });
       lastRaw = result.text.trim();
       const jsonText = extractJsonObject(lastRaw);
-      const parsed = JSON.parse(jsonText);
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(jsonText);
+      } catch (jsonErr) {
+        const snippet = lastRaw.slice(0, 400).replace(/\s+/g, " ");
+        console.error(
+          `[generate] attempt ${attempt}/${MAX_JSON_ATTEMPTS} JSON.parse failed: ${(jsonErr as Error).message}\n  raw[0..400]: ${snippet}`,
+        );
+        lastIssue = `invalid JSON syntax: ${(jsonErr as Error).message.slice(0, 120)}`;
+        if (attempt < MAX_JSON_ATTEMPTS) {
+          await new Promise((r) => setTimeout(r, 500 * 2 ** (attempt - 1)));
+        }
+        continue;
+      }
       const safe = OutputSchema.safeParse(parsed);
       if (safe.success) return safe.data;
-      lastIssue = `schema mismatch: ${safe.error.issues
-        .slice(0, 2)
-        .map((i) => `${i.path.join(".") || "(root)"} ${i.message}`)
-        .join("; ")}`;
+      logZodDiagnostics("generate", attempt, MAX_JSON_ATTEMPTS, safe.error, parsed, lastRaw);
+      lastIssue = summarizeIssues(safe.error.issues);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       if (/402|credit/i.test(msg)) {
         throw new Error("AI credits exhausted. Add credits in Workspace → Usage.");
       }
+      console.error(`[generate] attempt ${attempt}/${MAX_JSON_ATTEMPTS} threw:`, err);
       lastIssue = /JSON/i.test(msg) ? "invalid JSON syntax" : msg.slice(0, 120);
     }
     if (attempt < MAX_JSON_ATTEMPTS) {
@@ -273,4 +285,55 @@ function extractJsonObject(text: string): string {
   const end = body.lastIndexOf("}");
   if (start === -1 || end === -1 || end <= start) return body.trim();
   return body.slice(start, end + 1);
+}
+
+/**
+ * Format every Zod issue with its full path, expected/received types when
+ * available, and the parsed-value preview at that path so we can see
+ * exactly which field the model got wrong.
+ */
+function formatIssueDetailed(issue: ZodIssue, root: unknown): string {
+  const path = issue.path.length ? issue.path.join(".") : "(root)";
+  const meta = issue as ZodIssue & { expected?: unknown; received?: unknown };
+  const typeBits =
+    meta.expected !== undefined || meta.received !== undefined
+      ? ` [expected=${JSON.stringify(meta.expected)} received=${JSON.stringify(meta.received)}]`
+      : "";
+  let valuePreview = "";
+  try {
+    let cursor: unknown = root;
+    for (const seg of issue.path) {
+      if (cursor == null) break;
+      cursor = (cursor as Record<string | number, unknown>)[seg as string | number];
+    }
+    const json = JSON.stringify(cursor);
+    if (json !== undefined) {
+      valuePreview = ` value=${json.length > 160 ? json.slice(0, 157) + "…" : json}`;
+    }
+  } catch {
+    /* ignore preview errors */
+  }
+  return `  • [${issue.code}] ${path}: ${issue.message}${typeBits}${valuePreview}`;
+}
+
+function summarizeIssues(issues: ZodIssue[]): string {
+  return `schema mismatch (${issues.length} issue${issues.length === 1 ? "" : "s"}): ${issues
+    .slice(0, 3)
+    .map((i) => `${i.path.join(".") || "(root)"} → ${i.message}`)
+    .join("; ")}`;
+}
+
+function logZodDiagnostics(
+  tag: string,
+  attempt: number,
+  max: number,
+  error: ZodError,
+  parsed: unknown,
+  raw: string,
+): void {
+  const lines = error.issues.map((i) => formatIssueDetailed(i, parsed));
+  const rawSnippet = raw.slice(0, 600).replace(/\s+/g, " ");
+  console.error(
+    `[${tag}] attempt ${attempt}/${max} schema mismatch — ${error.issues.length} issue(s):\n${lines.join("\n")}\n  raw[0..600]: ${rawSnippet}`,
+  );
 }
