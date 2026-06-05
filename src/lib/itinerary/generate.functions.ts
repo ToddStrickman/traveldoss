@@ -359,6 +359,8 @@ function buildBrief(data: z.infer<typeof InputSchema>): string {
 
 type OutShape = z.infer<typeof OutputSchema>;
 
+const ITINERARY_MODEL = "google/gemini-3-flash-preview";
+
 async function generateStructured(
   gateway: ReturnType<typeof import("@/lib/ai-gateway.server").createLovableAiGatewayProvider>,
   system: string,
@@ -371,12 +373,13 @@ async function generateStructured(
   // First try: AI SDK structured output (constrained decoding).
   try {
     const result = await generateText({
-      model: gateway("google/gemini-2.5-flash"),
+      model: gateway(ITINERARY_MODEL),
       system,
       prompt,
       experimental_output: Output.object({ schema: OutputSchema }),
       maxOutputTokens: 8192,
     });
+    const rawText = (result as unknown as { text?: string }).text?.trim() ?? "";
     const normalized = normalizeOutput(result.experimental_output);
     const safe = OutputSchema.safeParse(normalized);
     const out = safe.success ? safe.data : result.experimental_output;
@@ -389,9 +392,13 @@ async function generateStructured(
       !out.needsClarification &&
       (!out.itinerary || out.itinerary.trim().length < 40)
     ) {
+      const salvaged = salvageItineraryFromRaw(rawText);
+      if (salvaged) {
+        return { needsClarification: false, clarifyingQuestions: [], itinerary: salvaged };
+      }
       recordAttempt({
         attempt: 0,
-        rawResponse: out.itinerary ?? "",
+        rawResponse: rawText || out.itinerary || "",
         threwError: `structured-output: empty itinerary (finishReason=${finishReason ?? "unknown"})`,
       });
       // fall through to JSON-prompt path
