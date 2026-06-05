@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { generateText } from "ai";
+import { generateText, Output } from "ai";
 import { z } from "zod";
 import type { Block } from "@/lib/skins/types";
 import { parseDropInWithMeta, stripEmoji } from "@/lib/itinerary/parse";
@@ -320,6 +320,10 @@ function extractJsonObject(text: string): string {
   const end = body.lastIndexOf("}");
   if (start === -1 || end === -1 || end <= start) return body.trim();
   return body.slice(start, end + 1);
+}
+
+function isRateLimitMessage(message: string): boolean {
+  return /\b429\b|rate limit|rate-limit|too many requests/i.test(message);
 }
 
 function clean<T extends Record<string, unknown>>(obj: T): T {
