@@ -1,4 +1,4 @@
-import { describe, it, expect } from "bun:test";
+/// <reference types="bun" />
 import { render, screen } from "@testing-library/react";
 import { GenerationProgress } from "./IngestionModal";
 
