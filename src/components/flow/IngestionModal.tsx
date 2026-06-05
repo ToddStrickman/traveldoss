@@ -114,7 +114,8 @@ export function IngestionModal({
   async function submit() {
     if (!template) return;
     if (tab === "generate") {
-      await submitGenerate();
+      if (clarifyQs.length) submitClarifications();
+      else await submitGenerate();
       return;
     }
     const trimmed = text.trim();
@@ -444,7 +445,7 @@ export function IngestionModal({
               onToggleInterest={toggleInterest}
               clarifyQs={clarifyQs}
               clarifyAs={clarifyAs}
-              setClarifyAnswer={(i, v) =>
+              setClarifyAnswer={(i: number, v: string) =>
                 setClarifyAs((prev) => prev.map((a, j) => (j === i ? v : a)))
               }
               onSubmitClarifications={submitClarifications}
