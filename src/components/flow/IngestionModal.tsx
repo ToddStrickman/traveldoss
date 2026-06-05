@@ -52,9 +52,15 @@ import {
   downloadDebugReport,
   type DebugReport,
 } from "@/lib/itinerary/debug-report";
+import { saveDebugReport } from "@/lib/itinerary/debug-reports.functions";
 
 function offerDebugReport(report: DebugReport | undefined, label: string) {
   if (!report) return;
+  // Fire-and-forget persistence so the owner can review it later from the
+  // trip detail page. Failure here must never block the UI.
+  void saveDebugReport({ data: { report } }).catch((err) => {
+    console.error("[debug-report] persist failed", err);
+  });
   toast.message(`${label} — debug report ready`, {
     description: `${report.outcome} after ${report.attempts.length} attempt(s). Download the raw Gemini response, Zod issues, and final fallback as JSON.`,
     duration: 12_000,
