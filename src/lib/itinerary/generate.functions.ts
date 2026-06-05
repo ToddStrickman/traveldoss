@@ -436,16 +436,28 @@ async function generateStructured(
       const normalized = normalizeOutput(parsed);
       const safeNorm = OutputSchema.safeParse(normalized);
       if (safe.success && safe.data.itinerary.trim().length >= 40) return safe.data;
-      if (safeNorm.success && (safeNorm.data.needsClarification || looksLikeItinerary(safeNorm.data.itinerary))) {
+      if (
+        safeNorm.success &&
+        (safeNorm.data.needsClarification || looksLikeItinerary(safeNorm.data.itinerary))
+      ) {
         return safeNorm.data;
       }
-      logZodDiagnostics("generate", attempt, MAX_JSON_ATTEMPTS, safe.error, parsed, lastRaw);
-      lastIssue = summarizeIssues(safe.error.issues);
+      const errForLog = !safe.success
+        ? safe.error
+        : !safeNorm.success
+          ? safeNorm.error
+          : null;
+      if (errForLog) {
+        logZodDiagnostics("generate", attempt, MAX_JSON_ATTEMPTS, errForLog, parsed, lastRaw);
+        lastIssue = summarizeIssues(errForLog.issues);
+      } else {
+        lastIssue = "itinerary too short or missing day structure";
+      }
       recordAttempt({
         attempt,
         rawResponse: lastRaw,
         parsedJson: parsed,
-        zodIssues: safe.error.issues,
+            zodIssues: errForLog ? errForLog.issues : [],
         zodIssueSummary: lastIssue,
       });
     } catch (err) {
