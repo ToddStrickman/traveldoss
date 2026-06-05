@@ -57,14 +57,14 @@ function isLowEndDevice(): boolean {
 export function MobileBubbles() {
   const [mounted, setMounted] = useState(false);
   const [hidden, setHidden] = useState(false);
+  const [reduced, setReduced] = useState(false);
   const tiltRef = useRef({ tx: 0, ty: 0, dirty: true });
   const rafRef = useRef<number | null>(null);
   const elsRef = useRef<Array<HTMLDivElement | null>>([]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduce) return;
+    setReduced(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
     setMounted(true);
     const onVis = () => setHidden(document.visibilityState === "hidden");
     document.addEventListener("visibilitychange", onVis);
@@ -73,7 +73,7 @@ export function MobileBubbles() {
   }, []);
 
   useEffect(() => {
-    if (!mounted) return;
+    if (!mounted || reduced) return;
 
     let smX = 0;
     let smY = 0;
@@ -135,7 +135,7 @@ export function MobileBubbles() {
         return;
       }
 
-      const { tx, ty, dirty } = tiltRef.current;
+      const { tx, ty } = tiltRef.current;
       const t = time / 1000;
 
       // Always animate the wobble so bubbles drift visibly even when
@@ -163,7 +163,7 @@ export function MobileBubbles() {
       window.removeEventListener("mousemove", onPointer);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, [mounted]);
+  }, [mounted, reduced]);
 
   if (!mounted || hidden) return null;
 
@@ -187,21 +187,28 @@ export function MobileBubbles() {
             marginLeft: `${-b.size / 2}vmin`,
             marginTop: `${-b.size / 2}vmin`,
             borderRadius: "9999px",
-            background:
-              "radial-gradient(circle at 35% 30%, rgba(186,221,255,0.85) 0%, rgba(140,190,235,0.55) 35%, rgba(90,140,200,0.22) 60%, rgba(60,110,170,0) 78%)",
-            boxShadow:
-              "inset 0 0 0 1px rgba(255,255,255,0.6), inset 0 -2px 6px rgba(255,255,255,0.35), 0 4px 14px rgba(40,80,140,0.18)",
-            willChange: "transform",
-            animation: `td-bubble-breathe ${b.drift}s ease-in-out infinite`,
+            opacity: reduced ? 0.55 : undefined,
+            background: reduced
+              ? "rgba(186,221,255,0.35)"
+              : "radial-gradient(circle at 35% 30%, rgba(186,221,255,0.85) 0%, rgba(140,190,235,0.55) 35%, rgba(90,140,200,0.22) 60%, rgba(60,110,170,0) 78%)",
+            boxShadow: reduced
+              ? undefined
+              : "inset 0 0 0 1px rgba(255,255,255,0.6), inset 0 -2px 6px rgba(255,255,255,0.35), 0 4px 14px rgba(40,80,140,0.18)",
+            willChange: reduced ? undefined : "transform",
+            animation: reduced
+              ? undefined
+              : `td-bubble-breathe ${b.drift}s ease-in-out infinite`,
           }}
         />
       ))}
-      <style>{`
-        @keyframes td-bubble-breathe {
-          0%, 100% { opacity: 0.8; }
-          50% { opacity: 1; }
-        }
-      `}</style>
+      {!reduced && (
+        <style>{`
+          @keyframes td-bubble-breathe {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 1; }
+          }
+        `}</style>
+      )}
     </div>
   );
 }
