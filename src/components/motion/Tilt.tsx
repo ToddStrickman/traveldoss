@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { useDeviceTilt, requestTiltPermission, getTiltPermissionState } from "@/hooks/use-device-tilt";
+import { type CSSProperties, type ReactNode } from "react";
+import { useDeviceTilt } from "@/hooks/use-device-tilt";
 
 /**
  * Parallax — translates content opposite the device tilt to create depth.
@@ -89,55 +89,11 @@ export function TiltCard({
 }
 
 /**
- * MotionPermissionPrompt — one-tap iOS gate that asks the device for
- * orientation access. Auto-shows only on iOS Safari where permission is
- * required; otherwise it self-removes silently.
+ * MotionPermissionPrompt — intentionally a no-op. Motion effects must
+ * never require user acceptance on phones; if a platform (iOS) requires
+ * explicit permission, we simply leave the effect off rather than prompt.
+ * Kept as an export so existing imports continue to work.
  */
 export function MotionPermissionPrompt() {
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (sessionStorage.getItem("td_tilt_dismissed") === "1") return;
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const coarse = window.matchMedia("(pointer: coarse)").matches;
-    if (reduce || !coarse) return;
-    const Ctor = window.DeviceOrientationEvent as
-      | (typeof DeviceOrientationEvent & { requestPermission?: () => Promise<string> })
-      | undefined;
-    const needsGate = Ctor && typeof Ctor.requestPermission === "function";
-    if (needsGate && getTiltPermissionState() === "unknown") setVisible(true);
-  }, []);
-
-  if (!visible) return null;
-  return (
-    <div className="fixed inset-x-3 bottom-4 z-[60] md:hidden">
-      <div className="surface-card flex items-center justify-between gap-3 rounded-lg border border-ink/10 bg-paper/90 px-4 py-3 text-[11px] text-ink shadow-2xl backdrop-blur">
-        <span className="leading-snug">
-          Enable motion for the full feel — pages tilt with your phone.
-        </span>
-        <div className="flex shrink-0 items-center gap-2">
-          <button
-            onClick={() => {
-              sessionStorage.setItem("td_tilt_dismissed", "1");
-              setVisible(false);
-            }}
-            className="text-[10px] uppercase tracking-[0.3em] text-ink/45"
-          >
-            Skip
-          </button>
-          <button
-            onClick={async () => {
-              await requestTiltPermission();
-              sessionStorage.setItem("td_tilt_dismissed", "1");
-              setVisible(false);
-            }}
-            className="rounded-sm border border-seal bg-seal px-3 py-1.5 text-[10px] uppercase tracking-[0.3em] text-paper"
-          >
-            Enable
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+  return null;
 }

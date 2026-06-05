@@ -43,7 +43,7 @@ export const createTripFromIngestion = createServerFn({ method: "POST" })
     if (!skin) throw new Error("Unknown template");
     const slug = `${skin.meta.id}-${randomSuffix()}`;
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-    const destination = data.destination?.trim() || "Untitled Trip";
+    const destination = data.destination?.trim() || "Sample Trip";
     const { data: trip, error } = await supabaseAdmin
       .from("trips")
       .insert({

@@ -999,3 +999,65 @@
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 12px;
 }
+
+/* Add-block tool label: hidden until hover/focus, then revealed inline
+   so the user always sees what the + button will create. */
+.tds-block-tool .tds-block-tool-label {
+  font-size: 10px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  max-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  opacity: 0;
+  transition: max-width .18s ease, opacity .18s ease, margin-left .18s ease;
+  margin-left: 0;
+}
+.tds-block-shell:hover .tds-block-tool .tds-block-tool-label,
+.tds-block-shell:focus-within .tds-block-tool .tds-block-tool-label,
+.tds-block-tool:hover .tds-block-tool-label,
+.tds-block-tool:focus-visible .tds-block-tool-label {
+  max-width: 140px;
+  opacity: 1;
+  margin-left: 6px;
+}
+.tds-block-tool:has(.tds-block-tool-label) {
+  width: auto;
+  padding: 0 6px;
+  min-width: 22px;
+}
+
+/* Inline day header: Day No · Label · Date all on one row, with the
+   date chip sitting next to the label rather than dropping below. */
+.tds-day-headline {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.tds-day-headline .tds-day-no { align-self: center; }
+.tds-day-headline .tds-day-label { margin-top: 0; }
+
+.tds-day-date-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--tds-fs-meta);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--tds-inkSoft);
+  padding: 2px 8px;
+  border: 1px dashed color-mix(in oklab, var(--tds-rule) 70%, transparent);
+  border-radius: 9999px;
+  background: transparent;
+  cursor: pointer;
+  transition: border-color .15s ease, color .15s ease, background .15s ease;
+}
+.tds-day-date-chip:hover {
+  color: var(--tds-accent);
+  border-color: var(--tds-accent);
+}
+.tds-day-date-chip[data-placeholder="true"] {
+  color: color-mix(in oklab, var(--tds-inkSoft) 60%, transparent);
+  font-style: italic;
+}

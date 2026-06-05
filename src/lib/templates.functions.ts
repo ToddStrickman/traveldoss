@@ -41,7 +41,7 @@ export const pickTemplate = createServerFn({ method: "POST" })
       .from("trips")
       .insert({
         user_id: userId,
-        destination: "Untitled Trip",
+        destination: "Sample Trip",
         subtitle: skin.meta.personality,
         tone: skin.meta.codename,
         template_id: skin.meta.id,

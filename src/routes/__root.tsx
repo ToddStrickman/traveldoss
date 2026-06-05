@@ -14,6 +14,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { registerServiceWorker } from "@/lib/pwa/register-sw";
 import { MotionPermissionPrompt } from "@/components/motion/Tilt";
 import { GyroWallpaper } from "@/components/motion/GyroWallpaper";
+import { MobileBubbles } from "@/components/motion/MobileBubbles";
 
 function NotFoundComponent() {
   return (
@@ -160,6 +161,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <GyroWallpaper />
+      <MobileBubbles />
       <Outlet />
       <Toaster richColors position="top-center" />
       <MotionPermissionPrompt />

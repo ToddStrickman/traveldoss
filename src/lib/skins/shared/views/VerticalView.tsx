@@ -6,12 +6,12 @@ import {
   FlightStrip,
   PartHeading,
   partOrder,
-  dayDateLabel,
   SlotAlternativesCarousel,
 } from "./parts";
 import { ActivityDndContext, DraggableActivity, DroppableBucket } from "./dnd";
 import { ShadowItinerary, PlanBCue } from "../ShadowItinerary";
 import { MetaChip } from "@/components/studio/MetaChip";
+import { DayDateChip } from "../DayDateChip";
 
 /** Chronological vertical reading view.
  *  Outbound flight → Day 01 (morning/afternoon/evening) → … → Inbound flight. */
@@ -131,20 +131,19 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
       {it.days.map((d) => (
         <section key={d.dayIndex} className="tds-day-section" data-block="day">
           <header className="tds-day-head">
-            <div className="tds-day-no">Day {String(d.day.n).padStart(2, "0")}</div>
-            <div className="tds-day-label">
-              <EditableText
-                as="span"
-                value={d.day.label}
-                placeholder="Day label"
-                onChange={(v) => onBlockChange(d.dayIndex, { label: v } as Partial<Block>)}
-              />
-            </div>
-            <div className="tds-day-date" data-placeholder={!d.day.date}>
-              <EditableText
-                as="span"
+            <div className="tds-day-headline">
+              <div className="tds-day-no">Day {String(d.day.n).padStart(2, "0")}</div>
+              <div className="tds-day-label">
+                <EditableText
+                  as="span"
+                  value={d.day.label}
+                  placeholder="Day label"
+                  onChange={(v) => onBlockChange(d.dayIndex, { label: v } as Partial<Block>)}
+                />
+              </div>
+              <DayDateChip
                 value={d.day.date ?? ""}
-                placeholder={dayDateLabel(undefined)}
+                editable={editing}
                 onChange={(v) => onBlockChange(d.dayIndex, { date: v } as Partial<Block>)}
               />
             </div>
