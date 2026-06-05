@@ -48,6 +48,37 @@ function bucketDays(blocks: Block[]): Day[] {
 }
 
 export function PrintScheduleGrid({ trip, blocks }: { trip: TripView; blocks: Block[] }) {
+  function PrintRow({ b }: { b: Block }) {
+    if (b.kind === "place") {
+      return (
+        <div style={{ marginBottom: 8, fontSize: 11, lineHeight: 1.4 }}>
+          <div style={{ fontWeight: 600 }}>
+            {b.time ? <span style={{ color: "#666", marginRight: 6 }}>{b.time}</span> : null}
+            {b.name}
+          </div>
+          {b.address ? <div style={{ color: "#444" }}>{b.address}</div> : null}
+          {b.website ? (
+            <div>
+              <a href={b.website} style={{ color: "#0a4", textDecoration: "underline" }}>
+                {b.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}
+              </a>
+            </div>
+          ) : null}
+        </div>
+      );
+    }
+    if (b.kind === "flight") {
+      return (
+        <div style={{ marginBottom: 8, fontSize: 11, lineHeight: 1.4, fontWeight: 600 }}>
+          {[b.airline, b.flightNumber].filter(Boolean).join(" ")} —{" "}
+          {[b.fromCity ?? b.from, b.toCity ?? b.to].filter(Boolean).join(" → ")}
+          {b.departTime ? <span style={{ color: "#666" }}> · {b.departTime}</span> : null}
+        </div>
+      );
+    }
+    return null;
+  }
+
   const days = bucketDays(blocks);
   if (!days.length) return null;
 
