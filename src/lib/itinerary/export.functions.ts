@@ -129,6 +129,47 @@ export const exportItineraryToGoogleDoc = createServerFn({ method: "POST" })
       documentId = existingExport.google_doc_id;
       googleDocUrl = existingExport.google_doc_url;
       reservationId = existingExport.id;
+      // Flip the row back to 'pending' so the cleanup sweep keeps tracking it
+      // and concurrent retries see a fresh updated_at.
+      await supabaseAdmin
+        .from("trip_doc_previews")
+        .update({ status: "pending" })
+        .eq("id", reservationId);
+      // Wipe any partial content left by the previous attempt so we don't
+      // append duplicate sections on this retry.
+      try {
+        const getRes = await fetchWithRetry(
+          `${DOCS_GATEWAY}/documents/${documentId}`,
+          { headers: gatewayHeaders() },
+        );
+        if (getRes.ok) {
+          const doc = (await getRes.json()) as {
+            body?: { content?: Array<{ endIndex?: number }> };
+          };
+          const last = doc.body?.content?.[doc.body.content.length - 1];
+          const endIndex = last?.endIndex ?? 1;
+          if (endIndex > 2) {
+            await fetchWithRetry(
+              `${DOCS_GATEWAY}/documents/${documentId}:batchUpdate`,
+              {
+                method: "POST",
+                headers: gatewayHeaders(),
+                body: JSON.stringify({
+                  requests: [
+                    {
+                      deleteContentRange: {
+                        range: { startIndex: 1, endIndex: endIndex - 1 },
+                      },
+                    },
+                  ],
+                }),
+              },
+            );
+          }
+        }
+      } catch (e) {
+        console.warn("[export] could not clear reused doc, will append", e);
+      }
     } else {
       const createRes = await fetchWithRetry(`${DOCS_GATEWAY}/documents`, {
         method: "POST",
