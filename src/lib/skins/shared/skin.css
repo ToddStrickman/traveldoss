@@ -999,3 +999,30 @@
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 12px;
 }
+
+/* Add-block tool label: hidden until hover/focus, then revealed inline
+   so the user always sees what the + button will create. */
+.tds-block-tool .tds-block-tool-label {
+  font-size: 10px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  max-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  opacity: 0;
+  transition: max-width .18s ease, opacity .18s ease, margin-left .18s ease;
+  margin-left: 0;
+}
+.tds-block-shell:hover .tds-block-tool .tds-block-tool-label,
+.tds-block-shell:focus-within .tds-block-tool .tds-block-tool-label,
+.tds-block-tool:hover .tds-block-tool-label,
+.tds-block-tool:focus-visible .tds-block-tool-label {
+  max-width: 140px;
+  opacity: 1;
+  margin-left: 6px;
+}
+.tds-block-tool:has(.tds-block-tool-label) {
+  width: auto;
+  padding: 0 6px;
+  min-width: 22px;
+}
