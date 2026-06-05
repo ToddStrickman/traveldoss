@@ -30,6 +30,8 @@ const InputSchema = z.object({
     .array(z.object({ question: z.string(), answer: z.string() }))
     .max(8)
     .optional(),
+  /** When true, run the live web-research step before drafting. */
+  useLiveResearch: z.boolean().optional(),
 });
 
 const OutputSchema = z.object({
@@ -105,14 +107,39 @@ export const generateItineraryAi = createServerFn({ method: "POST" })
 
     const brief = buildBrief(data);
 
+    // ── Live research (optional) ────────────────────────────────────
+    // Only worth the call when we have a destination to anchor it.
+    let researchNotes = "";
+    let citations: { n: number; title: string; url: string }[] = [];
+    if (data.useLiveResearch && data.destination?.trim()) {
+      try {
+        const { researchDestination } = await import("./research.functions");
+        const r = await researchDestination({
+          data: {
+            destination: data.destination.trim(),
+            startDate: data.startDate,
+            duration: data.duration,
+            interests: data.interests,
+          },
+        });
+        researchNotes = r.notes;
+        citations = r.citations;
+      } catch (err) {
+        console.error("[generate] research step failed; continuing without it", err);
+      }
+    }
+    const briefWithResearch = researchNotes
+      ? `${brief}\n\nLive research brief (cite by bracketed index — these numbers map to URLs the user will see):\n${researchNotes}`
+      : brief;
+
     const MAX_ATTEMPTS = 3;
     let lastErr: unknown = null;
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       try {
         const result = await generateText({
           model: gateway("google/gemini-2.5-flash"),
-          system: SYSTEM,
-          prompt: brief,
+          system: researchNotes ? `${SYSTEM}\n\nA live research brief follows the trip brief. When a fact (hours, ticket rule, recent opening, exhibition) came from a numbered source, preserve the [n] citation at the end of the sentence in the venue rationale. Do not invent indices.` : SYSTEM,
+          prompt: briefWithResearch,
           experimental_output: Output.object({ schema: OutputSchema }),
         });
         const out = result.experimental_output;
@@ -125,7 +152,14 @@ export const generateItineraryAi = createServerFn({ method: "POST" })
         if (!out.itinerary || out.itinerary.trim().length < 40) {
           throw new Error("Generator returned an empty itinerary.");
         }
-        return { kind: "draft" as const, draft: out.itinerary };
+        // Append a "Sources" footer so citations survive the markdown-
+        // to-Block parser as a single paragraph block at the end.
+        const draft = citations.length
+          ? `${out.itinerary.trim()}\n\n## Sources\n${citations
+              .map((c) => `[${c.n}] ${c.title} — ${c.url}`)
+              .join("\n")}\n`
+          : out.itinerary;
+        return { kind: "draft" as const, draft, citations };
       } catch (err) {
         lastErr = err;
         const msg = err instanceof Error ? err.message : String(err);
