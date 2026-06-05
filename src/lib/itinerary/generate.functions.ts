@@ -430,7 +430,7 @@ async function generateStructured(
       : "";
     try {
       const result = await generateText({
-        model: gateway("google/gemini-2.5-flash"),
+        model: gateway(ITINERARY_MODEL),
         system: jsonSystem + repairNote,
         prompt,
         maxOutputTokens: 8192,
