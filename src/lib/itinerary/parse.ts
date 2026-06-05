@@ -220,13 +220,13 @@ function makePlaceBlock(clauseRaw: string): Extract<Block, { kind: "place" }> {
   return block;
 }
 
-function guessCategory(s: string): "stay" | "eat" | "see" | "do" | "drink" | "other" {
+function guessCategory(s: string): "accommodation" | "restaurant" | "culture" | "other" {
   const t = s.toLowerCase();
-  if (/(hotel|hostel|airbnb|check.?in|inn|resort|boutique|ryokan|guesthouse|guest house|b&b|bnb|villa|agriturismo|lodge|riad)/.test(t)) return "stay";
-  if (/\bstay\b/.test(t)) return "stay";
-  if (/(breakfast|lunch|dinner|eat|restaurant|cafe|café|food|tasting)/.test(t)) return "eat";
-  if (/(drink|bar|wine|cocktail|aperiti|coffee)/.test(t)) return "drink";
-  if (/(museum|gallery|see|view|temple|church|park|beach|tour|visit)/.test(t)) return "see";
+  if (/(hotel|hostel|airbnb|check.?in|inn|resort|boutique|ryokan|guesthouse|guest house|b&b|bnb|villa|agriturismo|lodge|riad)/.test(t)) return "accommodation";
+  if (/\bstay\b/.test(t)) return "accommodation";
+  if (/(breakfast|lunch|dinner|eat|restaurant|cafe|café|food|tasting)/.test(t)) return "restaurant";
+  if (/(drink|bar|wine|cocktail|aperiti|coffee)/.test(t)) return "restaurant";
+  if (/(museum|gallery|see|view|temple|church|park|beach|tour|visit)/.test(t)) return"culture";
   return "other";
 }
 
