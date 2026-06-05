@@ -505,6 +505,16 @@ export function IngestionModal({
               }
               onSubmitClarifications={submitClarifications}
               parsing={parsing}
+              savedItems={saved.items}
+              activeSavedId={activeSavedId}
+              onLoadSaved={loadSavedDraft}
+              onSaveCurrent={saveCurrentDraft}
+              onRemoveSaved={(id: string) => {
+                if (activeSavedId === id) setActiveSavedId(null);
+                void saved.remove(id);
+              }}
+              reducedMotion={reducedMotion}
+              onToggleReducedMotion={setReducedMotion}
             />
           )}
         </div>
