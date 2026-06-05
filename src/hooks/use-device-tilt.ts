@@ -21,19 +21,70 @@ let sharedState: { x: number; y: number } = { x: 0, y: 0 };
 let listeners = new Set<(s: { x: number; y: number }) => void>();
 let attached = false;
 let permission: "unknown" | "granted" | "denied" | "unsupported" = "unknown";
+let lowPower = false;
+let pageHidden = false;
+let lastEmit = 0;
+
+/**
+ * Detects whether the device should run in low-power mode. Triggers on:
+ * - Save-Data header / `connection.saveData`
+ * - `navigator.deviceMemory <= 2` (≤ 2GB RAM)
+ * - `navigator.hardwareConcurrency <= 4` (≤ 4 logical cores)
+ * - Battery API: discharging at < 20% charge
+ */
+function detectLowPower() {
+  if (typeof navigator === "undefined") return;
+  const nav = navigator as Navigator & {
+    deviceMemory?: number;
+    connection?: { saveData?: boolean };
+    getBattery?: () => Promise<{ level: number; charging: boolean; addEventListener: (e: string, cb: () => void) => void }>;
+  };
+  if (nav.connection?.saveData) lowPower = true;
+  if (typeof nav.deviceMemory === "number" && nav.deviceMemory <= 2) lowPower = true;
+  if (typeof nav.hardwareConcurrency === "number" && nav.hardwareConcurrency <= 4) lowPower = true;
+  if (typeof nav.getBattery === "function") {
+    nav.getBattery().then((b) => {
+      const update = () => {
+        lowPower = lowPower || (!b.charging && b.level < 0.2);
+      };
+      update();
+      b.addEventListener("levelchange", update);
+      b.addEventListener("chargingchange", update);
+    }).catch(() => {});
+  }
+}
+
+if (typeof window !== "undefined") {
+  detectLowPower();
+  document.addEventListener("visibilitychange", () => {
+    pageHidden = document.visibilityState === "hidden";
+  });
+  pageHidden = document.visibilityState === "hidden";
+}
+
+export function isLowPowerMode() {
+  return lowPower || pageHidden;
+}
 
 function attach() {
   if (attached || typeof window === "undefined") return;
   attached = true;
   const onOrient = (e: DeviceOrientationEvent) => {
     if (e.beta == null || e.gamma == null) return;
+    // Throttle hard when the tab is hidden or on low-power devices.
+    if (pageHidden) return;
+    const now = performance.now();
+    const minInterval = lowPower ? 100 : 16; // ~10fps low-power, ~60fps otherwise
+    if (now - lastEmit < minInterval) return;
+    lastEmit = now;
     const targetX = clamp(e.gamma / RANGE_DEG, -1, 1);
     // Phones are typically held with screen tilted ~45° back; subtract that
     // baseline so the resting position reads as neutral.
     const targetY = clamp((e.beta - 45) / RANGE_DEG, -1, 1);
+    const smooth = lowPower ? 0.35 : SMOOTHING;
     sharedState = {
-      x: sharedState.x + (targetX - sharedState.x) * SMOOTHING,
-      y: sharedState.y + (targetY - sharedState.y) * SMOOTHING,
+      x: sharedState.x + (targetX - sharedState.x) * smooth,
+      y: sharedState.y + (targetY - sharedState.y) * smooth,
     };
     listeners.forEach((fn) => fn(sharedState));
   };
