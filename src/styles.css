@@ -261,6 +261,7 @@
   [data-print="hide"] { display: none !important; }
   body.td-print-mode .tds { background: #fff !important; color: #111 !important; }
   body.td-print-mode a { color: #1a4fb2 !important; text-decoration: underline; }
+  body.td-print-mode [data-print="only"] { display: block !important; }
 }
 
 /* ---- Mint button shimmer (diamond-edge sweep) ---- */
