@@ -94,7 +94,10 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
               >
                 <PartHeading part={part} />
                 {list.length > 1 ? (
-                  <SlotAlternativesCarousel count={list.length}>
+                  <SlotAlternativesCarousel
+                    count={list.length}
+                    slotKey={`${d.dayIndex}:${part}`}
+                  >
                     {list.map(({ activity, index }) => (
                       <DraggableActivity key={index} index={index}>
                         <ActivityRow activity={activity} index={index} />
