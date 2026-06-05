@@ -344,9 +344,7 @@ function buildBrief(data: z.infer<typeof InputSchema>): string {
       lines.push(`  A: ${answer}`);
     }
     lines.push("");
-    lines.push(
-      "All blocking ambiguity is now resolved — produce the full itinerary (Mode B).",
-    );
+    lines.push("All blocking ambiguity is now resolved — produce the full itinerary (Mode B).");
   } else {
     lines.push(
       "Decide whether you have enough to draft (Mode B) or must ask up to 3 clarifying questions (Mode A).",
@@ -386,10 +384,7 @@ async function generateStructured(
     // so we fall through to the JSON-prompt retry path below instead of
     // bubbling an "empty itinerary" error all the way to the user.
     const finishReason = (result as unknown as { finishReason?: string }).finishReason;
-    if (
-      !out.needsClarification &&
-      (!out.itinerary || out.itinerary.trim().length < 40)
-    ) {
+    if (!out.needsClarification && (!out.itinerary || out.itinerary.trim().length < 40)) {
       const salvaged = salvageItineraryFromRaw(rawText);
       if (salvaged) {
         return { needsClarification: false, clarifyingQuestions: [], itinerary: salvaged };
@@ -418,7 +413,7 @@ async function generateStructured(
   const jsonSystem = `${system}\n\nReturn ONLY a single JSON object (no prose, no code fences) with this exact shape:\n{\n  "needsClarification": boolean,\n  "clarifyingQuestions": string[],   // up to 3, empty if not clarifying\n  "itinerary": string                // full markdown itinerary, empty if clarifying\n}`;
 
   // Retry the JSON-prompt path with exponential backoff. Each retry appends
- // the previous failure so the model can self-correct.
+  // the previous failure so the model can self-correct.
   const MAX_JSON_ATTEMPTS = 3;
   let lastRaw = "";
   let lastIssue = "";
