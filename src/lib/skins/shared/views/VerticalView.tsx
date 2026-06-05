@@ -11,13 +11,22 @@ import {
 } from "./parts";
 import { ActivityDndContext, DraggableActivity, DroppableBucket } from "./dnd";
 import { ShadowItinerary, PlanBCue } from "../ShadowItinerary";
+import { MetaChip } from "@/components/studio/MetaChip";
 
 /** Chronological vertical reading view.
  *  Outbound flight → Day 01 (morning/afternoon/evening) → … → Inbound flight. */
 export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[] }) {
   const it = buildItinerary(blocks);
-  const { onBlockChange, editing } = useEditing();
+  const { onBlockChange, editing, onMetaChange, onTripDatesChange } = useEditing();
   const dates = [trip.start_date, trip.end_date].filter(Boolean).join(" – ");
+  const meta = trip.meta ?? {};
+  const dateValue = { start: trip.start_date ?? "", end: trip.end_date ?? "" };
+  const INTERESTS = [
+    "food","wine","design","architecture","art","history",
+    "nature","hiking","beaches","nightlife","shopping","kids","wellness","music",
+  ];
+  const placeholderFor = (part: "morning" | "afternoon" | "evening"): string =>
+    part === "morning" ? "Open Morning" : part === "afternoon" ? "Open Afternoon" : "Open Evening";
   return (
     <div className="tds-vertical">
       <header className="tds-hero">
@@ -34,6 +43,77 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
         <div className="tds-byline">
           <span>{trip.destination}</span>
           {dates ? <span>{dates}</span> : null}
+        </div>
+        <div className="tds-meta-rail" data-print="hide">
+          <MetaChip
+            label="Dates"
+            value={dateValue}
+            emptyLabel="Add dates"
+            editor={{ kind: "dateRange" }}
+            editable={editing && !!onTripDatesChange}
+            onChange={(v) => {
+              if (!onTripDatesChange) return;
+              const r = (v && typeof v === "object" && !Array.isArray(v))
+                ? v
+                : { start: "", end: "" };
+              onTripDatesChange(r.start, r.end);
+            }}
+          />
+          <MetaChip
+            label="Travelers"
+            value={meta.travelers}
+            emptyLabel="Add travelers"
+            editor={{ kind: "text", placeholder: "e.g. 2 adults" }}
+            editable={editing && !!onMetaChange}
+            onChange={(v) => onMetaChange?.({ travelers: typeof v === "string" ? v : "" })}
+          />
+          <MetaChip
+            label="Pace"
+            value={meta.pace}
+            emptyLabel="Add pace"
+            editor={{
+              kind: "select",
+              options: [
+                { value: "relaxed", label: "Relaxed" },
+                { value: "balanced", label: "Balanced" },
+                { value: "packed", label: "Packed" },
+              ],
+            }}
+            editable={editing && !!onMetaChange}
+            onChange={(v) =>
+              onMetaChange?.({
+                pace: (typeof v === "string" && v ? v : undefined) as TripView["meta"] extends infer T ? T extends { pace?: infer P } ? P : never : never,
+              })
+            }
+          />
+          <MetaChip
+            label="Budget"
+            value={meta.budget}
+            emptyLabel="Add budget"
+            editor={{
+              kind: "select",
+              options: [
+                { value: "shoestring", label: "Shoestring" },
+                { value: "moderate", label: "Moderate" },
+                { value: "elevated", label: "Elevated" },
+                { value: "luxury", label: "Luxury" },
+              ],
+            }}
+            editable={editing && !!onMetaChange}
+            onChange={(v) =>
+              onMetaChange?.({
+                budget: (typeof v === "string" && v ? v : undefined) as TripView["meta"] extends infer T ? T extends { budget?: infer B } ? B : never : never,
+              })
+            }
+          />
+          <MetaChip
+            label="Interests"
+            value={meta.interests}
+            emptyLabel="Add interests"
+            editor={{ kind: "tags", options: INTERESTS }}
+            editable={editing && !!onMetaChange}
+            onChange={(v) => onMetaChange?.({ interests: Array.isArray(v) ? v : [] })}
+          />
         </div>
       </header>
 
@@ -84,7 +164,8 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
 
           {partOrder.map((part) => {
             const list = d[part];
-            if (list.length === 0 && !editing) return null;
+            // Always render the slot so the dossier reads complete even when
+            // empty — a soft "Open …" placeholder fills the gap.
             return (
               <DroppableBucket
                 key={part}
@@ -112,7 +193,10 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
                       </DraggableActivity>
                     ))}
                     {list.length === 0 ? (
-                      <div className="tds-board-empty">Drop activity here</div>
+                      <div className="tds-open-slot" aria-label={`${placeholderFor(part)} — drag or add an activity`}>
+                        <span className="tds-open-slot-dot" aria-hidden />
+                        <span>{placeholderFor(part)}</span>
+                      </div>
                     ) : null}
                   </div>
                 )}
