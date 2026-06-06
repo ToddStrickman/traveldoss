@@ -68,10 +68,21 @@ export function MobileBubbles() {
     let tgtX = 0;
     let tgtY = 0;
     let gotOrientation = false;
+    let lastT = 0;
+    // Critically-damped spring constants (rad/s). Higher = snappier.
+    // Gyro feels best a touch snappier than pointer drift.
+    let omega = 6.0;
+    // Time constant after which a continuous gyro stream "warms up" the
+    // spring so flick motions don't feel laggy.
+    let lastInputT = 0;
 
     const onOrient = (e: DeviceOrientationEvent) => {
       if (e.beta == null || e.gamma == null) return;
-      gotOrientation = true;
+      if (!gotOrientation) {
+        gotOrientation = true;
+        omega = 7.5; // snappier for real device tilt
+      }
+      lastInputT = performance.now();
       // beta: 0 = flat face-up, 90 = upright. Map 0..90 -> 0..1.
       tgtY = Math.max(0, Math.min(1, e.beta / 90));
       // gamma: tilt left/right in degrees. ±45 saturates.
@@ -86,6 +97,7 @@ export function MobileBubbles() {
       if (gotOrientation) return;
       const w = window.innerWidth || 1;
       const h = window.innerHeight || 1;
+      lastInputT = performance.now();
       tgtX = (e.clientX / w) * 2 - 1; // -1..1
       tgtY = 1 - e.clientY / h; // 1 at top, 0 at bottom
     };
@@ -93,9 +105,18 @@ export function MobileBubbles() {
     window.addEventListener("mousemove", onPointer, { passive: true });
 
     const tick = (time: number) => {
-      // Smooth toward target every frame for plush motion.
-      smX += (tgtX - smX) * 0.12;
-      smY += (tgtY - smY) * 0.12;
+      // Frame-rate-independent exponential smoothing.
+      // alpha = 1 - exp(-omega * dt) gives the same perceived response
+      // whether the loop runs at 60, 90, or 120 Hz.
+      const dt = lastT === 0 ? 1 / 60 : Math.min(0.05, (time - lastT) / 1000);
+      lastT = time;
+      // If input has been idle for >800ms, relax the spring so the bubbles
+      // settle gently instead of hunting around the last target.
+      const idle = time - lastInputT > 800;
+      const k = idle ? omega * 0.55 : omega;
+      const alpha = 1 - Math.exp(-k * dt);
+      smX += (tgtX - smX) * alpha;
+      smY += (tgtY - smY) * alpha;
       const t = time / 1000;
 
       for (let i = 0; i < BUBBLES.length; i++) {
