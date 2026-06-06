@@ -42,18 +42,6 @@ const BUBBLES: Bubble[] = [
   { id: 3, size: 3, drift: 13, phase: 3.1 },
 ];
 
-/** Threshold below which a tilt delta is considered noise. */
-const TILT_EPSILON = 0.005;
-
-function isLowEndDevice(): boolean {
-  if (typeof navigator === "undefined") return false;
-  const hw = navigator.hardwareConcurrency;
-  if (typeof hw === "number" && hw <= 4) return true;
-  const nav = navigator as Navigator & { deviceMemory?: number };
-  if (typeof nav.deviceMemory === "number" && nav.deviceMemory <= 2) return true;
-  return false;
-}
-
 export function MobileBubbles() {
   const [mounted, setMounted] = useState(false);
   const [hidden, setHidden] = useState(false);
@@ -77,38 +65,17 @@ export function MobileBubbles() {
 
     let smX = 0;
     let smY = 0;
-    let lastOrient = 0;
-    const orientThrottleMs = 50; // cap tilt input at ~20 Hz
-    const frameSkip = isLowEndDevice() ? 2 : 1; // render every 2nd frame on low-end
-    let frameIdx = 0;
-    let prevTx = 0;
-    let prevTy = 0;
+    let tgtX = 0;
+    let tgtY = 0;
     let gotOrientation = false;
 
     const onOrient = (e: DeviceOrientationEvent) => {
       if (e.beta == null || e.gamma == null) return;
       gotOrientation = true;
-      const now = performance.now();
-      if (now - lastOrient < orientThrottleMs) return;
-      lastOrient = now;
-
       // beta: 0 = flat face-up, 90 = upright. Map 0..90 -> 0..1.
-      const upright = Math.max(0, Math.min(1, e.beta / 90));
+      tgtY = Math.max(0, Math.min(1, e.beta / 90));
       // gamma: tilt left/right in degrees. ±45 saturates.
-      const sideways = Math.max(-1, Math.min(1, e.gamma / 45));
-      // Smooth toward the target so motion stays plush.
-      smX += (sideways - smX) * 0.18;
-      smY += (upright - smY) * 0.18;
-
-      // Mark dirty only when the change is perceptible.
-      if (
-        Math.abs(smX - prevTx) > TILT_EPSILON ||
-        Math.abs(smY - prevTy) > TILT_EPSILON
-      ) {
-        tiltRef.current = { tx: smX, ty: smY, dirty: true };
-        prevTx = smX;
-        prevTy = smY;
-      }
+      tgtX = Math.max(-1, Math.min(1, e.gamma / 45));
     };
     window.addEventListener("deviceorientation", onOrient, { passive: true });
 
@@ -119,38 +86,27 @@ export function MobileBubbles() {
       if (gotOrientation) return;
       const w = window.innerWidth || 1;
       const h = window.innerHeight || 1;
-      const targetX = (e.clientX / w) * 2 - 1; // -1..1
-      const targetY = 1 - e.clientY / h; // 1 at top, 0 at bottom
-      smX += (targetX - smX) * 0.15;
-      smY += (targetY - smY) * 0.15;
-      tiltRef.current = { tx: smX, ty: smY, dirty: true };
+      tgtX = (e.clientX / w) * 2 - 1; // -1..1
+      tgtY = 1 - e.clientY / h; // 1 at top, 0 at bottom
     };
     window.addEventListener("pointermove", onPointer, { passive: true });
     window.addEventListener("mousemove", onPointer, { passive: true });
 
     const tick = (time: number) => {
-      frameIdx++;
-      if (frameIdx % frameSkip !== 0) {
-        rafRef.current = requestAnimationFrame(tick);
-        return;
-      }
-
-      const { tx, ty } = tiltRef.current;
+      // Smooth toward target every frame for plush motion.
+      smX += (tgtX - smX) * 0.12;
+      smY += (tgtY - smY) * 0.12;
       const t = time / 1000;
 
-      // Always animate the wobble so bubbles drift visibly even when
-      // the device is perfectly still / there's no tilt source.
-      {
-        BUBBLES.forEach((b, i) => {
-          const el = elsRef.current[i];
-          if (!el) return;
-          const wobX = Math.sin(t / 2 + b.phase) * 2.4;
-          const wobY = Math.cos(t / 2.4 + b.phase) * 2.4;
-          const offX = tx * 30 + wobX;
-          const offY = -ty * 38 + wobY;
-          el.style.transform = `translate3d(${offX.toFixed(2)}vmin, ${offY.toFixed(2)}vmin, 0)`;
-        });
-        tiltRef.current.dirty = false;
+      for (let i = 0; i < BUBBLES.length; i++) {
+        const el = elsRef.current[i];
+        if (!el) continue;
+        const b = BUBBLES[i];
+        const wobX = Math.sin(t / 2 + b.phase) * 2.4;
+        const wobY = Math.cos(t / 2.4 + b.phase) * 2.4;
+        const offX = smX * 30 + wobX;
+        const offY = -smY * 38 + wobY;
+        el.style.transform = `translate3d(${offX.toFixed(2)}vmin, ${offY.toFixed(2)}vmin, 0)`;
       }
 
       rafRef.current = requestAnimationFrame(tick);
