@@ -55,6 +55,7 @@ export function MobileBubbles() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     setReduced(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+    setDebugMode(new URLSearchParams(window.location.search).get("debug") === "bubbles");
     setMounted(true);
     const onVis = () => setHidden(document.visibilityState === "hidden");
     document.addEventListener("visibilitychange", onVis);
