@@ -470,7 +470,9 @@ function DossierPage() {
           onRestoreRefine={restoreRefine}
         />
       )}
-      <ExportMenu slug={trip.slug} trip={view} blocks={blocks} />
+      {blocks.length > 0 && (
+        <ExportMenu slug={trip.slug} trip={view} blocks={blocks} />
+      )}
       <PrintScheduleGrid trip={view} blocks={blocks} />
       <IngestionModal
         open={mintOpen}
