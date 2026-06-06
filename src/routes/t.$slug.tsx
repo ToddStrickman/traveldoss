@@ -424,7 +424,7 @@ function DossierPage() {
       <div className="mx-auto max-w-3xl px-6 pb-24" data-print="hide">
         <TripDocPreviews tripId={trip.id} />
         {canEdit && <GmailImportPanel tripId={trip.id} />}
-        {canEdit && <DebugReportsPanel tripId={trip.id} />}
+        {canEdit && import.meta.env.DEV && <DebugReportsPanel tripId={trip.id} />}
       </div>
       <Link
         to="/"
@@ -460,7 +460,22 @@ function DossierPage() {
           saving={saving}
           savedAt={savedAt}
           onTemplateChange={onTemplateChange}
-          onMint={() => setMintOpen(true)}
+          onMint={() => {
+            const hasUserContent =
+              blocks.length > 0 && destination !== "Sample Trip";
+            if (hasUserContent) {
+              const ok = window.confirm(
+                "Replace this dossier's itinerary? Your current blocks will be overwritten. (Undo with ⌘Z afterwards.)",
+              );
+              if (!ok) return;
+            }
+            setMintOpen(true);
+          }}
+          mintLabel={
+            blocks.length > 0 && destination !== "Sample Trip"
+              ? "Replace"
+              : "Mint"
+          }
           onUndo={undo}
           onRedo={redo}
           canUndo={canUndo}
@@ -471,7 +486,7 @@ function DossierPage() {
         />
       )}
       {blocks.length > 0 && (
-        <ExportMenu slug={trip.slug} trip={view} blocks={blocks} />
+        <ExportMenu slug={trip.slug} trip={view} blocks={blocks} isOwner={isOwner} />
       )}
       <PrintScheduleGrid trip={view} blocks={blocks} />
       <IngestionModal
