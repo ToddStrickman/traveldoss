@@ -14,6 +14,7 @@ export function StudioBar({
   savedAt,
   onTemplateChange,
   onMint,
+  mintLabel,
   onUndo,
   onRedo,
   canUndo,
@@ -27,6 +28,7 @@ export function StudioBar({
   savedAt: string | null;
   onTemplateChange: (id: string) => void;
   onMint?: () => void;
+  mintLabel?: string;
   onUndo?: () => void;
   onRedo?: () => void;
   canUndo?: boolean;
@@ -163,8 +165,10 @@ export function StudioBar({
             className="td-mint-pulse inline-block h-2 w-2 rounded-full bg-paper shadow-[0_0_10px_rgba(255,255,255,0.9)]"
           />
           <span className="relative">
-            <span className="sm:hidden">Mint</span>
-            <span className="hidden sm:inline">Mint Your Trip</span>
+            <span className="sm:hidden">{mintLabel ?? "Mint"}</span>
+            <span className="hidden sm:inline">
+              {mintLabel === "Replace" ? "Replace itinerary" : "Mint your trip"}
+            </span>
           </span>
           <span
             aria-hidden
