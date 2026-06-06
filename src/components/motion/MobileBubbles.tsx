@@ -46,13 +46,16 @@ export function MobileBubbles() {
   const [mounted, setMounted] = useState(false);
   const [hidden, setHidden] = useState(false);
   const [reduced, setReduced] = useState(false);
+  const [debugMode, setDebugMode] = useState(false);
   const tiltRef = useRef({ tx: 0, ty: 0, dirty: true });
   const rafRef = useRef<number | null>(null);
   const elsRef = useRef<Array<HTMLDivElement | null>>([]);
+  const debugRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     setReduced(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+    setDebugMode(new URLSearchParams(window.location.search).get("debug") === "bubbles");
     setMounted(true);
     const onVis = () => setHidden(document.visibilityState === "hidden");
     document.addEventListener("visibilitychange", onVis);
@@ -130,6 +133,14 @@ export function MobileBubbles() {
         el.style.transform = `translate3d(${offX.toFixed(2)}vmin, ${offY.toFixed(2)}vmin, 0)`;
       }
 
+      if (debugRef.current) {
+        debugRef.current.textContent = [
+          `target  x:${tgtX.toFixed(3)} y:${tgtY.toFixed(3)}  [${gotOrientation ? "gyro" : "pointer"}]`,
+          `spring  x:${smX.toFixed(3)} y:${smY.toFixed(3)}  ω:${omega.toFixed(1)}`,
+          `dt:${dt.toFixed(4)}s  α:${alpha.toFixed(4)}  idle:${idle}`,
+        ].join("\n");
+      }
+
       rafRef.current = requestAnimationFrame(tick);
     };
     rafRef.current = requestAnimationFrame(tick);
@@ -185,6 +196,21 @@ export function MobileBubbles() {
             50% { opacity: 1; }
           }
         `}</style>
+      )}
+      {debugMode && (
+        <div
+          ref={debugRef}
+          className="fixed bottom-2 left-2 z-[9999] rounded px-2 py-1.5 text-[10px] leading-tight"
+          style={{
+            fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, monospace",
+            color: "#a5f3fc",
+            background: "rgba(2,6,23,0.75)",
+            WebkitBackdropFilter: "blur(4px)",
+            backdropFilter: "blur(4px)",
+            pointerEvents: "none",
+            whiteSpace: "pre",
+          }}
+        />
       )}
     </div>
   );
