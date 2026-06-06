@@ -1,11 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { ArrowLeft, Search, X } from "lucide-react";
 import { SKINS, type SkinModule } from "@/lib/skins/registry";
-import { pickTemplate } from "@/lib/templates.functions";
-import { supabase } from "@/integrations/supabase/client";
 import { TiltCard } from "@/components/motion/Tilt";
 
 function TemplatesSkeleton() {
@@ -223,10 +220,8 @@ function SkinCard({
 
 function TemplatesPage() {
   const [picking, setPicking] = useState<string | null>(null);
-  const [authed, setAuthed] = useState<boolean | null>(null);
   const [query, setQuery] = useState("");
   const [activeTag, setActiveTag] = useState<string | null>(null);
-  const pickFn = useServerFn(pickTemplate);
   const navigate = useNavigate();
   const { pick: pickParam } = Route.useSearch();
 
@@ -248,26 +243,16 @@ function TemplatesPage() {
     });
   }, [query, activeTag]);
 
-  useEffect(() => {
-    let mounted = true;
-    supabase.auth.getUser().then(({ data }) => {
-      if (mounted) setAuthed(!!data.user);
-    });
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  // Auto-trigger pick when arriving with ?pick=<id> (e.g. from the homepage rail).
+  // Auto-jump to preview when arriving with ?pick=<id> (e.g. from the homepage rail).
   const autoPickedRef = useRef(false);
   useEffect(() => {
     if (autoPickedRef.current) return;
-    if (!pickParam || authed === null) return;
+    if (!pickParam) return;
     if (!SKINS.some((s) => s.meta.id === pickParam)) return;
     autoPickedRef.current = true;
     handlePick(pickParam);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pickParam, authed]);
+  }, [pickParam]);
 
   // Restore + persist scroll position across navigations
   useEffect(() => {
@@ -342,21 +327,9 @@ function TemplatesPage() {
     };
   }, []);
 
-  const handlePick = async (id: string) => {
-    if (authed === false) {
-      navigate({ to: "/login" });
-      return;
-    }
+  const handlePick = (id: string) => {
     setPicking(id);
-    try {
-      const result = await pickFn({ data: { templateId: id } });
-      navigate({ to: "/t/$slug", params: { slug: result.slug } });
-    } catch (e) {
-      console.error(e);
-      alert("Could not mint your dossier. Please try again.");
-    } finally {
-      setPicking(null);
-    }
+    navigate({ to: "/templates/$id/preview", params: { id } });
   };
 
   return (
