@@ -197,6 +197,21 @@ export function MobileBubbles() {
           }
         `}</style>
       )}
+      {debugMode && (
+        <div
+          ref={debugRef}
+          className="fixed bottom-2 left-2 z-[9999] rounded px-2 py-1.5 text-[10px] leading-tight"
+          style={{
+            fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, monospace",
+            color: "#a5f3fc",
+            background: "rgba(2,6,23,0.75)",
+            WebkitBackdropFilter: "blur(4px)",
+            backdropFilter: "blur(4px)",
+            pointerEvents: "none",
+            whiteSpace: "pre",
+          }}
+        />
+      )}
     </div>
   );
 }
