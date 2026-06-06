@@ -100,10 +100,12 @@ export function MobileBubbles() {
         profile = GYRO;
       }
       lastInputT = performance.now();
-      // beta: 0 = flat face-up, 90 = upright. Map 0..90 -> 0..1.
-      tgtY = Math.max(0, Math.min(1, e.beta / 90));
-      // gamma: tilt left/right in degrees. ±45 saturates.
-      tgtX = Math.max(-1, Math.min(1, e.gamma / 45));
+      // beta: 0 = flat face-up, +90 = upright, -90 = tilted backward.
+      // Map ±45° -> ±1 so a normal phone tilt fully reaches the edge.
+      // Positive = top, negative = bottom; flat phone stays centered.
+      tgtY = Math.max(-1, Math.min(1, e.beta / 45));
+      // gamma: tilt left/right in degrees. ±35 saturates.
+      tgtX = Math.max(-1, Math.min(1, e.gamma / 35));
     };
     window.addEventListener("deviceorientation", onOrient, { passive: true });
 
@@ -116,7 +118,7 @@ export function MobileBubbles() {
       const h = window.innerHeight || 1;
       lastInputT = performance.now();
       tgtX = (e.clientX / w) * 2 - 1; // -1..1
-      tgtY = 1 - e.clientY / h; // 1 at top, 0 at bottom
+        tgtY = 1 - (e.clientY / h) * 2; // 1 at top, -1 at bottom
     };
     window.addEventListener("pointermove", onPointer, { passive: true });
     window.addEventListener("mousemove", onPointer, { passive: true });
@@ -136,15 +138,18 @@ export function MobileBubbles() {
       smY += (tgtY - smY) * alpha;
       const t = time / 1000;
 
+      // Travel almost the entire viewport so bubbles can reach edges.
+      const TRAVEL_X = 42; // vw
+      const TRAVEL_Y = 44; // vh
       for (let i = 0; i < BUBBLES.length; i++) {
         const el = elsRef.current[i];
         if (!el) continue;
         const b = BUBBLES[i];
         const wobX = Math.sin(t / 2 + b.phase) * 2.4;
         const wobY = Math.cos(t / 2.4 + b.phase) * 2.4;
-        const offX = smX * 30 + wobX;
-        const offY = -smY * 38 + wobY;
-        el.style.transform = `translate3d(${offX.toFixed(2)}vmin, ${offY.toFixed(2)}vmin, 0)`;
+        const offX = smX * TRAVEL_X + wobX;
+        const offY = -smY * TRAVEL_Y + wobY;
+        el.style.transform = `translate3d(${offX.toFixed(2)}vw, ${offY.toFixed(2)}vh, 0)`;
       }
 
       if (debugRef.current) {
