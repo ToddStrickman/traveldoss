@@ -18,6 +18,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as TSlugRouteImport } from './routes/t.$slug'
 import { Route as E2eKanbanRouteImport } from './routes/e2e.kanban'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
+import { Route as TemplatesIdPreviewRouteImport } from './routes/templates.$id.preview'
 import { Route as ApiPublicHooksCleanupPendingDocExportsRouteImport } from './routes/api/public/hooks/cleanup-pending-doc-exports'
 
 const TemplatesRoute = TemplatesRouteImport.update({
@@ -64,6 +65,11 @@ const AuthenticatedAppRoute = AuthenticatedAppRouteImport.update({
   path: '/app',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const TemplatesIdPreviewRoute = TemplatesIdPreviewRouteImport.update({
+  id: '/$id/preview',
+  path: '/$id/preview',
+  getParentRoute: () => TemplatesRoute,
+} as any)
 const ApiPublicHooksCleanupPendingDocExportsRoute =
   ApiPublicHooksCleanupPendingDocExportsRouteImport.update({
     id: '/api/public/hooks/cleanup-pending-doc-exports',
@@ -76,10 +82,11 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/plan': typeof PlanRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
-  '/templates': typeof TemplatesRoute
+  '/templates': typeof TemplatesRouteWithChildren
   '/app': typeof AuthenticatedAppRoute
   '/e2e/kanban': typeof E2eKanbanRoute
   '/t/$slug': typeof TSlugRoute
+  '/templates/$id/preview': typeof TemplatesIdPreviewRoute
   '/api/public/hooks/cleanup-pending-doc-exports': typeof ApiPublicHooksCleanupPendingDocExportsRoute
 }
 export interface FileRoutesByTo {
@@ -87,10 +94,11 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/plan': typeof PlanRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
-  '/templates': typeof TemplatesRoute
+  '/templates': typeof TemplatesRouteWithChildren
   '/app': typeof AuthenticatedAppRoute
   '/e2e/kanban': typeof E2eKanbanRoute
   '/t/$slug': typeof TSlugRoute
+  '/templates/$id/preview': typeof TemplatesIdPreviewRoute
   '/api/public/hooks/cleanup-pending-doc-exports': typeof ApiPublicHooksCleanupPendingDocExportsRoute
 }
 export interface FileRoutesById {
@@ -100,10 +108,11 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/plan': typeof PlanRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
-  '/templates': typeof TemplatesRoute
+  '/templates': typeof TemplatesRouteWithChildren
   '/_authenticated/app': typeof AuthenticatedAppRoute
   '/e2e/kanban': typeof E2eKanbanRoute
   '/t/$slug': typeof TSlugRoute
+  '/templates/$id/preview': typeof TemplatesIdPreviewRoute
   '/api/public/hooks/cleanup-pending-doc-exports': typeof ApiPublicHooksCleanupPendingDocExportsRoute
 }
 export interface FileRouteTypes {
@@ -117,6 +126,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/e2e/kanban'
     | '/t/$slug'
+    | '/templates/$id/preview'
     | '/api/public/hooks/cleanup-pending-doc-exports'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -128,6 +138,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/e2e/kanban'
     | '/t/$slug'
+    | '/templates/$id/preview'
     | '/api/public/hooks/cleanup-pending-doc-exports'
   id:
     | '__root__'
@@ -140,6 +151,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app'
     | '/e2e/kanban'
     | '/t/$slug'
+    | '/templates/$id/preview'
     | '/api/public/hooks/cleanup-pending-doc-exports'
   fileRoutesById: FileRoutesById
 }
@@ -149,7 +161,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   PlanRoute: typeof PlanRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
-  TemplatesRoute: typeof TemplatesRoute
+  TemplatesRoute: typeof TemplatesRouteWithChildren
   E2eKanbanRoute: typeof E2eKanbanRoute
   TSlugRoute: typeof TSlugRoute
   ApiPublicHooksCleanupPendingDocExportsRoute: typeof ApiPublicHooksCleanupPendingDocExportsRoute
@@ -220,6 +232,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/templates/$id/preview': {
+      id: '/templates/$id/preview'
+      path: '/$id/preview'
+      fullPath: '/templates/$id/preview'
+      preLoaderRoute: typeof TemplatesIdPreviewRouteImport
+      parentRoute: typeof TemplatesRoute
+    }
     '/api/public/hooks/cleanup-pending-doc-exports': {
       id: '/api/public/hooks/cleanup-pending-doc-exports'
       path: '/api/public/hooks/cleanup-pending-doc-exports'
@@ -242,13 +261,25 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
   AuthenticatedRouteChildren,
 )
 
+interface TemplatesRouteChildren {
+  TemplatesIdPreviewRoute: typeof TemplatesIdPreviewRoute
+}
+
+const TemplatesRouteChildren: TemplatesRouteChildren = {
+  TemplatesIdPreviewRoute: TemplatesIdPreviewRoute,
+}
+
+const TemplatesRouteWithChildren = TemplatesRoute._addFileChildren(
+  TemplatesRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
   PlanRoute: PlanRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
-  TemplatesRoute: TemplatesRoute,
+  TemplatesRoute: TemplatesRouteWithChildren,
   E2eKanbanRoute: E2eKanbanRoute,
   TSlugRoute: TSlugRoute,
   ApiPublicHooksCleanupPendingDocExportsRoute:
@@ -257,13 +288,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
