@@ -133,6 +133,14 @@ export function MobileBubbles() {
         el.style.transform = `translate3d(${offX.toFixed(2)}vmin, ${offY.toFixed(2)}vmin, 0)`;
       }
 
+      if (debugRef.current) {
+        debugRef.current.textContent = [
+          `target  x:${tgtX.toFixed(3)} y:${tgtY.toFixed(3)}  [${gotOrientation ? "gyro" : "pointer"}]`,
+          `spring  x:${smX.toFixed(3)} y:${smY.toFixed(3)}  ω:${omega.toFixed(1)}`,
+          `dt:${dt.toFixed(4)}s  α:${alpha.toFixed(4)}  idle:${idle}`,
+        ].join("\n");
+      }
+
       rafRef.current = requestAnimationFrame(tick);
     };
     rafRef.current = requestAnimationFrame(tick);
