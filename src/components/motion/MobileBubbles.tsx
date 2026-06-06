@@ -74,18 +74,30 @@ export function MobileBubbles() {
     let tgtY = 0;
     let gotOrientation = false;
     let lastT = 0;
-    // Critically-damped spring constants (rad/s). Higher = snappier.
-    // Gyro feels best a touch snappier than pointer drift.
-    let omega = 6.0;
-    // Time constant after which a continuous gyro stream "warms up" the
-    // spring so flick motions don't feel laggy.
+    // Per-input-source spring tuning. Pointer events are large discrete
+    // jumps (a finger lands somewhere new), so a softer spring with a
+    // deeper idle relaxation keeps motion from snapping. Gyro is a
+    // continuous stream of small deltas, so a snappier spring tracks
+    // flicks without lag while still settling quickly when the phone
+    // stops moving.
+    type Profile = {
+      /** Active spring stiffness (rad/s). */
+      omega: number;
+      /** Idle multiplier applied after `idleMs` of no input. */
+      idleScale: number;
+      /** How long with no input before the spring relaxes. */
+      idleMs: number;
+    };
+    const POINTER: Profile = { omega: 5.5, idleScale: 0.45, idleMs: 700 };
+    const GYRO: Profile = { omega: 8.5, idleScale: 0.6, idleMs: 900 };
+    let profile: Profile = POINTER;
     let lastInputT = 0;
 
     const onOrient = (e: DeviceOrientationEvent) => {
       if (e.beta == null || e.gamma == null) return;
       if (!gotOrientation) {
         gotOrientation = true;
-        omega = 7.5; // snappier for real device tilt
+        profile = GYRO;
       }
       lastInputT = performance.now();
       // beta: 0 = flat face-up, 90 = upright. Map 0..90 -> 0..1.
@@ -117,8 +129,8 @@ export function MobileBubbles() {
       lastT = time;
       // If input has been idle for >800ms, relax the spring so the bubbles
       // settle gently instead of hunting around the last target.
-      const idle = time - lastInputT > 800;
-      const k = idle ? omega * 0.55 : omega;
+      const idle = time - lastInputT > profile.idleMs;
+      const k = idle ? profile.omega * profile.idleScale : profile.omega;
       const alpha = 1 - Math.exp(-k * dt);
       smX += (tgtX - smX) * alpha;
       smY += (tgtY - smY) * alpha;
@@ -138,7 +150,7 @@ export function MobileBubbles() {
       if (debugRef.current) {
         debugRef.current.textContent = [
           `target  x:${tgtX.toFixed(3)} y:${tgtY.toFixed(3)}  [${gotOrientation ? "gyro" : "pointer"}]`,
-          `spring  x:${smX.toFixed(3)} y:${smY.toFixed(3)}  ω:${omega.toFixed(1)}`,
+          `spring  x:${smX.toFixed(3)} y:${smY.toFixed(3)}  ω:${profile.omega.toFixed(1)} (${gotOrientation ? "gyro" : "pointer"})`,
           `dt:${dt.toFixed(4)}s  α:${alpha.toFixed(4)}  idle:${idle}`,
         ].join("\n");
       }
