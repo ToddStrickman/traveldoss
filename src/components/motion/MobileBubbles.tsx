@@ -46,9 +46,11 @@ export function MobileBubbles() {
   const [mounted, setMounted] = useState(false);
   const [hidden, setHidden] = useState(false);
   const [reduced, setReduced] = useState(false);
+  const [debugMode, setDebugMode] = useState(false);
   const tiltRef = useRef({ tx: 0, ty: 0, dirty: true });
   const rafRef = useRef<number | null>(null);
   const elsRef = useRef<Array<HTMLDivElement | null>>([]);
+  const debugRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
