@@ -49,6 +49,15 @@ function Landing() {
   const create = useServerFn(createTripFromIngestion);
   const navigate = useNavigate();
 
+  // As soon as the server returns a slug, navigate — don't wait on the
+  // loader's cosmetic step timing. The loader unmounts on route change.
+  useEffect(() => {
+    if (!pendingSlug) return;
+    navigate({ to: "/t/$slug", params: { slug: pendingSlug }, search: { mode: "edit" } });
+    setGenSteps(null);
+    setPendingSlug(null);
+  }, [pendingSlug, navigate]);
+
   useEffect(() => {
     const pendingTemplateId = window.sessionStorage.getItem("td_pending_template");
     if (!pendingTemplateId) return;
