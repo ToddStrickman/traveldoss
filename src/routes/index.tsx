@@ -270,9 +270,10 @@ function Landing() {
         onDone={() => {
           if (pendingSlug) {
             navigate({ to: "/t/$slug", params: { slug: pendingSlug }, search: { mode: "edit" } });
+            setGenSteps(null);
+            setPendingSlug(null);
           }
-          setGenSteps(null);
-          setPendingSlug(null);
+          // If slug isn't ready yet, keep the loader open until it arrives.
         }}
       />
     </div>
