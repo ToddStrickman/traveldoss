@@ -54,6 +54,8 @@ export function MobileBubbles() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    const coarse = window.matchMedia("(pointer: coarse)").matches;
+    if (!coarse) return;
     setReduced(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
     setDebugMode(new URLSearchParams(window.location.search).get("debug") === "bubbles");
     setMounted(true);
