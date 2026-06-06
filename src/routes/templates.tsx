@@ -209,7 +209,7 @@ function SkinCard({
           className="mt-auto inline-flex items-center justify-between gap-4 border-y border-ink/20 pt-7 pb-7 text-[10px] font-medium uppercase tracking-[0.4em] text-ink transition-colors duration-500 hover:border-seal hover:text-seal disabled:cursor-wait disabled:opacity-50"
           style={{ marginTop: 28 }}
         >
-          <span>{picking ? "Minting your dossier…" : "Use this dossier template · $1"}</span>
+          <span>{picking ? "Opening preview…" : "Preview this template · $1"}</span>
           <span className="text-ink/40 group-hover:text-seal">→</span>
         </button>
       </div>
