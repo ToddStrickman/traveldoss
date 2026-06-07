@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 /**
  * MobileBubbles — a quiet floating-bubble overlay on touch devices.
@@ -44,6 +45,7 @@ const BUBBLES: Bubble[] = [
 
 export function MobileBubbles() {
   const [mounted, setMounted] = useState(false);
+  const [coarse, setCoarse] = useState(false);
   const [hidden, setHidden] = useState(false);
   const [reduced, setReduced] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
@@ -54,11 +56,12 @@ export function MobileBubbles() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const coarse = window.matchMedia("(pointer: coarse)").matches;
-    if (!coarse) return;
+    const isCoarse = window.matchMedia("(pointer: coarse)").matches;
+    setCoarse(isCoarse);
     setReduced(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
     setDebugMode(new URLSearchParams(window.location.search).get("debug") === "bubbles");
     setMounted(true);
+    if (!isCoarse) return;
     const onVis = () => setHidden(document.visibilityState === "hidden");
     document.addEventListener("visibilitychange", onVis);
     onVis();
@@ -66,7 +69,7 @@ export function MobileBubbles() {
   }, []);
 
   useEffect(() => {
-    if (!mounted || reduced) return;
+    if (!mounted || !coarse || reduced) return;
 
     let smX = 0;
     let smY = 0;
@@ -170,11 +173,15 @@ export function MobileBubbles() {
       window.removeEventListener("mousemove", onPointer);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, [mounted, reduced]);
+  }, [mounted, coarse, reduced]);
 
-  if (!mounted || hidden) return null;
+  // Render nothing on the server and on the very first client paint so
+  // hydration cannot mismatch. After mount, only render on touch devices
+  // and only via a portal attached to document.body — keeps the overlay
+  // out of the hydrated React tree entirely.
+  if (!mounted || !coarse || hidden) return null;
 
-  return (
+  return createPortal(
     <div
       aria-hidden
       className="pointer-events-none fixed inset-0 z-[2] overflow-hidden"
@@ -185,37 +192,16 @@ export function MobileBubbles() {
           ref={(n) => {
             elsRef.current[i] = n;
           }}
+          className="td-bubble"
           style={{
-            position: "absolute",
-            left: "50%",
-            top: "50%",
             width: `${b.size}vmin`,
             height: `${b.size}vmin`,
             marginLeft: `${-b.size / 2}vmin`,
             marginTop: `${-b.size / 2}vmin`,
-            borderRadius: "9999px",
-            opacity: reduced ? 0.55 : undefined,
-            background: reduced
-              ? "rgba(186,221,255,0.35)"
-              : "radial-gradient(circle at 35% 30%, rgba(186,221,255,0.85) 0%, rgba(140,190,235,0.55) 35%, rgba(90,140,200,0.22) 60%, rgba(60,110,170,0) 78%)",
-            boxShadow: reduced
-              ? undefined
-              : "inset 0 0 0 1px rgba(255,255,255,0.6), inset 0 -2px 6px rgba(255,255,255,0.35), 0 4px 14px rgba(40,80,140,0.18)",
-            willChange: reduced ? undefined : "transform",
-            animation: reduced
-              ? undefined
-              : `td-bubble-breathe ${b.drift}s ease-in-out infinite`,
+            ["--td-bubble-drift" as string]: `${b.drift}s`,
           }}
         />
       ))}
-      {!reduced && (
-        <style>{`
-          @keyframes td-bubble-breathe {
-            0%, 100% { opacity: 0.8; }
-            50% { opacity: 1; }
-          }
-        `}</style>
-      )}
       {debugMode && (
         <div
           ref={debugRef}
@@ -231,6 +217,7 @@ export function MobileBubbles() {
           }}
         />
       )}
-    </div>
+    </div>,
+    document.body,
   );
 }
