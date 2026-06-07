@@ -69,7 +69,7 @@ export function MobileBubbles() {
   }, []);
 
   useEffect(() => {
-    if (!mounted || !coarse || reduced) return;
+    if (!mounted || !coarse || reduced || hidden) return;
 
     let smX = 0;
     let smY = 0;
@@ -171,9 +171,13 @@ export function MobileBubbles() {
       window.removeEventListener("deviceorientation", onOrient);
       window.removeEventListener("pointermove", onPointer);
       window.removeEventListener("mousemove", onPointer);
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+      elsRef.current = [];
     };
-  }, [mounted, coarse, reduced]);
+  }, [mounted, coarse, reduced, hidden]);
 
   // Render nothing on the server and on the very first client paint so
   // hydration cannot mismatch. After mount, only render on touch devices
