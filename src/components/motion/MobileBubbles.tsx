@@ -88,11 +88,9 @@ export function MobileBubbles() {
     let smY = 0;
     let tgtX = 0;
     let tgtY = 0;
-    // Raw EMA of the most recent orientation samples — knocks out the
-    // high-frequency jitter that noisy MEMS gyros emit between frames
-    // before the spring (smX/smY) ever sees the value.
-    let rawX = 0;
-    let rawY = 0;
+    // Pre-spring EMA of the most recent orientation samples — knocks out
+    // high-frequency jitter that noisy MEMS gyros emit before the spring
+    // (smX/smY) ever sees the value.
     let hasRaw = false;
     // Per-event EMA factor. Lower = smoother but laggier. Tuned so a 60 Hz
     // orientation stream settles in ~80 ms.
@@ -176,9 +174,6 @@ export function MobileBubbles() {
       if (Math.abs(tgtX - smX) < DEADBAND) tgtX = smX;
       if (Math.abs(tgtY - smY) < DEADBAND) tgtY = smY;
     };
-    // Reuse rawX/rawY locals inside onOrient — declare them per-call to
-    // avoid colliding with the outer EMA accumulators.
-    void rawX; void rawY;
     // Some browsers (Chrome on Android) only fire `deviceorientationabsolute`
     // when the platform can resolve absolute heading. Listen to both and let
     // whichever fires first drive the bubbles.
