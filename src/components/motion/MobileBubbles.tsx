@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { getTiltPermissionState, requestTiltPermission } from "@/hooks/use-device-tilt";
+import { getTiltPermissionState } from "@/hooks/use-device-tilt";
 
 /**
  * MobileBubbles — a quiet floating-bubble overlay on touch devices.
@@ -83,6 +83,7 @@ export function MobileBubbles() {
       !!OrientationCtor &&
       typeof OrientationCtor.requestPermission === "function" &&
       getTiltPermissionState() !== "granted";
+    let requestingPermission = false;
     let smX = 0;
     let smY = 0;
     let tgtX = 0;
@@ -126,9 +127,19 @@ export function MobileBubbles() {
     window.addEventListener("deviceorientation", onOrient, { passive: true });
 
     const primeOrientation = () => {
-      if (!needsGesturePermission) return;
-      needsGesturePermission = false;
-      void requestTiltPermission();
+      if (!needsGesturePermission || requestingPermission || !OrientationCtor?.requestPermission) return;
+      requestingPermission = true;
+      const permissionRequest = OrientationCtor.requestPermission();
+      void permissionRequest
+        .then((result) => {
+          needsGesturePermission = result !== "granted" && result !== "denied";
+        })
+        .catch(() => {
+          needsGesturePermission = true;
+        })
+        .finally(() => {
+          requestingPermission = false;
+        });
     };
     window.addEventListener("touchstart", primeOrientation, { passive: true, capture: true });
     window.addEventListener("pointerdown", primeOrientation, { passive: true, capture: true });
