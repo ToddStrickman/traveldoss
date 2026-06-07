@@ -54,7 +54,6 @@ export function MobileBubbles() {
   const [hidden, setHidden] = useState(false);
   const [reduced, setReduced] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
-  const tiltRef = useRef({ tx: 0, ty: 0, dirty: true });
   const rafRef = useRef<number | null>(null);
   const elsRef = useRef<Array<HTMLDivElement | null>>([]);
   const debugRef = useRef<HTMLDivElement | null>(null);
@@ -144,7 +143,7 @@ export function MobileBubbles() {
       const h = window.innerHeight || 1;
       lastInputT = performance.now();
       tgtX = (e.clientX / w) * 2 - 1; // -1..1
-        tgtY = 1 - (e.clientY / h) * 2; // 1 at top, -1 at bottom
+      tgtY = 1 - (e.clientY / h) * 2; // 1 at top, -1 at bottom
     };
     window.addEventListener("pointermove", onPointer, { passive: true });
     window.addEventListener("mousemove", onPointer, { passive: true });
