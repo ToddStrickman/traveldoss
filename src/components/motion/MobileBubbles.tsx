@@ -48,7 +48,35 @@ const BUBBLES: Bubble[] = [
   { id: 3, size: 3, drift: 13, phase: 3.1 },
 ];
 
-export function MobileBubbles() {
+/**
+ * Configurable low-pass filter applied to the raw gyro stream BEFORE the
+ * spring (smX/smY) sees the value.
+ *
+ * - `kind: "ema"` is a first-order exponential moving average. `cutoffHz`
+ *   maps to alpha via `alpha = 1 - exp(-2π·fc·dt)`, which behaves like a
+ *   first-order Butterworth low-pass at the same cutoff.
+ * - `kind: "butterworth"` is a 2nd-order Butterworth cascade (two
+ *   one-poles in series) — steeper roll-off, less ripple, at the cost of
+ *   ~1 extra frame of group delay.
+ *
+ * `deadband` (in normalized 0..1 tilt units) snaps sub-noise residuals to
+ * the previous frame so a still phone reads as still.
+ */
+export type GyroFilterConfig = {
+  kind?: "ema" | "butterworth";
+  /** -3 dB cutoff frequency in Hz. Lower = smoother + laggier. */
+  cutoffHz?: number;
+  /** Snap-to-still threshold in normalized tilt units (0..1). */
+  deadband?: number;
+};
+
+const DEFAULT_FILTER: Required<GyroFilterConfig> = {
+  kind: "butterworth",
+  cutoffHz: 6,
+  deadband: 0.012,
+};
+
+export function MobileBubbles({ filter }: { filter?: GyroFilterConfig } = {}) {
   const [mounted, setMounted] = useState(false);
   const [coarse, setCoarse] = useState(false);
   const [hidden, setHidden] = useState(false);
@@ -57,6 +85,8 @@ export function MobileBubbles() {
   const rafRef = useRef<number | null>(null);
   const elsRef = useRef<Array<HTMLDivElement | null>>([]);
   const debugRef = useRef<HTMLDivElement | null>(null);
+  const filterRef = useRef<Required<GyroFilterConfig>>({ ...DEFAULT_FILTER, ...filter });
+  filterRef.current = { ...DEFAULT_FILTER, ...filter };
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -88,16 +118,12 @@ export function MobileBubbles() {
     let smY = 0;
     let tgtX = 0;
     let tgtY = 0;
-    // Pre-spring EMA of the most recent orientation samples — knocks out
-    // high-frequency jitter that noisy MEMS gyros emit before the spring
-    // (smX/smY) ever sees the value.
+    // Low-pass filter state. The 2nd Butterworth stage uses fX1/fY1 as the
+    // intermediate one-pole; the first stage writes directly to tgtX/tgtY.
+    let fX1 = 0;
+    let fY1 = 0;
     let hasRaw = false;
-    // Per-event EMA factor. Lower = smoother but laggier. Tuned so a 60 Hz
-    // orientation stream settles in ~80 ms.
-    const RAW_EMA = 0.22;
-    // Deadband: ignore sub-degree wiggle that's almost certainly sensor
-    // noise rather than real hand movement.
-    const DEADBAND = 0.012;
+    let lastSampleT = 0;
     let gotOrientation = false;
     let lastT = 0;
     // Per-input-source spring tuning. Pointer events are large discrete
@@ -161,18 +187,32 @@ export function MobileBubbles() {
       }
       const nx = Math.max(-1, Math.min(1, rawX / 35));
       const ny = Math.max(-1, Math.min(1, rawY / 45));
+      const now = performance.now();
+      const sampleDt = lastSampleT === 0 ? 1 / 60 : Math.min(0.1, (now - lastSampleT) / 1000);
+      lastSampleT = now;
+      const { kind, cutoffHz, deadband } = filterRef.current;
+      // alpha for a first-order low-pass at `cutoffHz` given this sample dt.
+      const alpha = 1 - Math.exp(-2 * Math.PI * cutoffHz * sampleDt);
       if (!hasRaw) {
         tgtX = nx;
         tgtY = ny;
+        fX1 = nx;
+        fY1 = ny;
         hasRaw = true;
+      } else if (kind === "butterworth") {
+        // Two cascaded one-poles ≈ 2nd-order Butterworth response.
+        fX1 += (nx - fX1) * alpha;
+        fY1 += (ny - fY1) * alpha;
+        tgtX += (fX1 - tgtX) * alpha;
+        tgtY += (fY1 - tgtY) * alpha;
       } else {
-        tgtX += (nx - tgtX) * RAW_EMA;
-        tgtY += (ny - tgtY) * RAW_EMA;
+        tgtX += (nx - tgtX) * alpha;
+        tgtY += (ny - tgtY) * alpha;
       }
       // Snap small residuals to the previous frame so a still phone reads
       // as truly still.
-      if (Math.abs(tgtX - smX) < DEADBAND) tgtX = smX;
-      if (Math.abs(tgtY - smY) < DEADBAND) tgtY = smY;
+      if (Math.abs(tgtX - smX) < deadband) tgtX = smX;
+      if (Math.abs(tgtY - smY) < deadband) tgtY = smY;
     };
     // Some browsers (Chrome on Android) only fire `deviceorientationabsolute`
     // when the platform can resolve absolute heading. Listen to both and let
