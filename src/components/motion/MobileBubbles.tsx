@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { getTiltPermissionState } from "@/hooks/use-device-tilt";
 
 /**
  * MobileBubbles — a quiet floating-bubble overlay on touch devices.
@@ -14,8 +15,8 @@ import { createPortal } from "react-dom";
  *
  * Listens directly to `deviceorientation` rather than going through the
  * shared tilt hook so we can use a screen-relative mapping (no -45°
- * resting baseline). No permission gate, no UI — on iOS where permission
- * is required, the event simply never fires and bubbles stay centered.
+ * resting baseline). On iOS, gyro permission must be requested synchronously
+ * from a real gesture, so we prime it from the user's first touch/click.
  *
  * PERFORMANCE NOTES
  * - Orientation events are throttled to ~20 Hz so low-end SoCs don't burn
@@ -37,6 +38,10 @@ type Bubble = {
   phase: number;
 };
 
+type OrientationPermissionEvent = typeof DeviceOrientationEvent & {
+  requestPermission?: () => Promise<"granted" | "denied">;
+};
+
 const BUBBLES: Bubble[] = [
   { id: 1, size: 6, drift: 11, phase: 0 },
   { id: 2, size: 4, drift: 8, phase: 1.4 },
@@ -49,19 +54,21 @@ export function MobileBubbles() {
   const [hidden, setHidden] = useState(false);
   const [reduced, setReduced] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
-  const tiltRef = useRef({ tx: 0, ty: 0, dirty: true });
   const rafRef = useRef<number | null>(null);
   const elsRef = useRef<Array<HTMLDivElement | null>>([]);
   const debugRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const isCoarse = window.matchMedia("(pointer: coarse)").matches;
-    setCoarse(isCoarse);
+    const isTouchish =
+      window.matchMedia("(pointer: coarse)").matches ||
+      window.matchMedia("(hover: none)").matches ||
+      "ontouchstart" in window;
+    setCoarse(isTouchish);
     setReduced(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
     setDebugMode(new URLSearchParams(window.location.search).get("debug") === "bubbles");
     setMounted(true);
-    if (!isCoarse) return;
+    if (!isTouchish) return;
     const onVis = () => setHidden(document.visibilityState === "hidden");
     document.addEventListener("visibilitychange", onVis);
     onVis();
@@ -71,6 +78,12 @@ export function MobileBubbles() {
   useEffect(() => {
     if (!mounted || !coarse || reduced || hidden) return;
 
+    const OrientationCtor = window.DeviceOrientationEvent as OrientationPermissionEvent | undefined;
+    let needsGesturePermission =
+      !!OrientationCtor &&
+      typeof OrientationCtor.requestPermission === "function" &&
+      getTiltPermissionState() !== "granted";
+    let requestingPermission = false;
     let smX = 0;
     let smY = 0;
     let tgtX = 0;
@@ -98,6 +111,7 @@ export function MobileBubbles() {
 
     const onOrient = (e: DeviceOrientationEvent) => {
       if (e.beta == null || e.gamma == null) return;
+      needsGesturePermission = false;
       if (!gotOrientation) {
         gotOrientation = true;
         profile = GYRO;
@@ -112,6 +126,25 @@ export function MobileBubbles() {
     };
     window.addEventListener("deviceorientation", onOrient, { passive: true });
 
+    const primeOrientation = () => {
+      if (!needsGesturePermission || requestingPermission || !OrientationCtor?.requestPermission) return;
+      requestingPermission = true;
+      const permissionRequest = OrientationCtor.requestPermission();
+      void permissionRequest
+        .then((result) => {
+          needsGesturePermission = result !== "granted" && result !== "denied";
+        })
+        .catch(() => {
+          needsGesturePermission = true;
+        })
+        .finally(() => {
+          requestingPermission = false;
+        });
+    };
+    window.addEventListener("touchstart", primeOrientation, { passive: true, capture: true });
+    window.addEventListener("pointerdown", primeOrientation, { passive: true, capture: true });
+    window.addEventListener("click", primeOrientation, { passive: true, capture: true });
+
     // Fallback for environments without device orientation (preview
     // emulator, desktop, iOS pre-permission). Map pointer / scroll to a
     // gentle drift so bubbles always feel alive.
@@ -121,7 +154,7 @@ export function MobileBubbles() {
       const h = window.innerHeight || 1;
       lastInputT = performance.now();
       tgtX = (e.clientX / w) * 2 - 1; // -1..1
-        tgtY = 1 - (e.clientY / h) * 2; // 1 at top, -1 at bottom
+      tgtY = 1 - (e.clientY / h) * 2; // 1 at top, -1 at bottom
     };
     window.addEventListener("pointermove", onPointer, { passive: true });
     window.addEventListener("mousemove", onPointer, { passive: true });
@@ -169,6 +202,9 @@ export function MobileBubbles() {
 
     return () => {
       window.removeEventListener("deviceorientation", onOrient);
+      window.removeEventListener("touchstart", primeOrientation, { capture: true });
+      window.removeEventListener("pointerdown", primeOrientation, { capture: true });
+      window.removeEventListener("click", primeOrientation, { capture: true });
       window.removeEventListener("pointermove", onPointer);
       window.removeEventListener("mousemove", onPointer);
       if (rafRef.current) {
