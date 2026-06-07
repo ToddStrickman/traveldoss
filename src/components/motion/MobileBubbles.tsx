@@ -235,14 +235,20 @@ export function MobileBubbles() {
       // Travel almost the entire viewport so bubbles can reach edges.
       const TRAVEL_X = 42; // vw
       const TRAVEL_Y = 44; // vh
+      // Hard caps so a runaway sensor spike or pointer jump can never
+      // launch a bubble past the viewport edge.
+      const MAX_X = 48;
+      const MAX_Y = 48;
       for (let i = 0; i < BUBBLES.length; i++) {
         const el = elsRef.current[i];
         if (!el) continue;
         const b = BUBBLES[i];
         const wobX = Math.sin(t / 2 + b.phase) * 2.4;
         const wobY = Math.cos(t / 2.4 + b.phase) * 2.4;
-        const offX = smX * TRAVEL_X + wobX;
-        const offY = -smY * TRAVEL_Y + wobY;
+        const rawOffX = smX * TRAVEL_X + wobX;
+        const rawOffY = -smY * TRAVEL_Y + wobY;
+        const offX = Math.max(-MAX_X, Math.min(MAX_X, rawOffX));
+        const offY = Math.max(-MAX_Y, Math.min(MAX_Y, rawOffY));
         el.style.transform = `translate3d(${offX.toFixed(2)}vw, ${offY.toFixed(2)}vh, 0)`;
       }
 
