@@ -88,6 +88,18 @@ export function MobileBubbles() {
     let smY = 0;
     let tgtX = 0;
     let tgtY = 0;
+    // Raw EMA of the most recent orientation samples — knocks out the
+    // high-frequency jitter that noisy MEMS gyros emit between frames
+    // before the spring (smX/smY) ever sees the value.
+    let rawX = 0;
+    let rawY = 0;
+    let hasRaw = false;
+    // Per-event EMA factor. Lower = smoother but laggier. Tuned so a 60 Hz
+    // orientation stream settles in ~80 ms.
+    const RAW_EMA = 0.22;
+    // Deadband: ignore sub-degree wiggle that's almost certainly sensor
+    // noise rather than real hand movement.
+    const DEADBAND = 0.012;
     let gotOrientation = false;
     let lastT = 0;
     // Per-input-source spring tuning. Pointer events are large discrete
@@ -149,9 +161,24 @@ export function MobileBubbles() {
           rawX = gamma;
           rawY = beta;
       }
-      tgtX = Math.max(-1, Math.min(1, rawX / 35));
-      tgtY = Math.max(-1, Math.min(1, rawY / 45));
+      const nx = Math.max(-1, Math.min(1, rawX / 35));
+      const ny = Math.max(-1, Math.min(1, rawY / 45));
+      if (!hasRaw) {
+        tgtX = nx;
+        tgtY = ny;
+        hasRaw = true;
+      } else {
+        tgtX += (nx - tgtX) * RAW_EMA;
+        tgtY += (ny - tgtY) * RAW_EMA;
+      }
+      // Snap small residuals to the previous frame so a still phone reads
+      // as truly still.
+      if (Math.abs(tgtX - smX) < DEADBAND) tgtX = smX;
+      if (Math.abs(tgtY - smY) < DEADBAND) tgtY = smY;
     };
+    // Reuse rawX/rawY locals inside onOrient — declare them per-call to
+    // avoid colliding with the outer EMA accumulators.
+    void rawX; void rawY;
     // Some browsers (Chrome on Android) only fire `deviceorientationabsolute`
     // when the platform can resolve absolute heading. Listen to both and let
     // whichever fires first drive the bubbles.
