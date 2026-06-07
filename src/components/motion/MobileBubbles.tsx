@@ -88,6 +88,16 @@ export function MobileBubbles() {
     let smY = 0;
     let tgtX = 0;
     let tgtY = 0;
+    // Pre-spring EMA of the most recent orientation samples — knocks out
+    // high-frequency jitter that noisy MEMS gyros emit before the spring
+    // (smX/smY) ever sees the value.
+    let hasRaw = false;
+    // Per-event EMA factor. Lower = smoother but laggier. Tuned so a 60 Hz
+    // orientation stream settles in ~80 ms.
+    const RAW_EMA = 0.22;
+    // Deadband: ignore sub-degree wiggle that's almost certainly sensor
+    // noise rather than real hand movement.
+    const DEADBAND = 0.012;
     let gotOrientation = false;
     let lastT = 0;
     // Per-input-source spring tuning. Pointer events are large discrete
@@ -149,8 +159,20 @@ export function MobileBubbles() {
           rawX = gamma;
           rawY = beta;
       }
-      tgtX = Math.max(-1, Math.min(1, rawX / 35));
-      tgtY = Math.max(-1, Math.min(1, rawY / 45));
+      const nx = Math.max(-1, Math.min(1, rawX / 35));
+      const ny = Math.max(-1, Math.min(1, rawY / 45));
+      if (!hasRaw) {
+        tgtX = nx;
+        tgtY = ny;
+        hasRaw = true;
+      } else {
+        tgtX += (nx - tgtX) * RAW_EMA;
+        tgtY += (ny - tgtY) * RAW_EMA;
+      }
+      // Snap small residuals to the previous frame so a still phone reads
+      // as truly still.
+      if (Math.abs(tgtX - smX) < DEADBAND) tgtX = smX;
+      if (Math.abs(tgtY - smY) < DEADBAND) tgtY = smY;
     };
     // Some browsers (Chrome on Android) only fire `deviceorientationabsolute`
     // when the platform can resolve absolute heading. Listen to both and let
@@ -213,14 +235,20 @@ export function MobileBubbles() {
       // Travel almost the entire viewport so bubbles can reach edges.
       const TRAVEL_X = 42; // vw
       const TRAVEL_Y = 44; // vh
+      // Hard caps so a runaway sensor spike or pointer jump can never
+      // launch a bubble past the viewport edge.
+      const MAX_X = 48;
+      const MAX_Y = 48;
       for (let i = 0; i < BUBBLES.length; i++) {
         const el = elsRef.current[i];
         if (!el) continue;
         const b = BUBBLES[i];
         const wobX = Math.sin(t / 2 + b.phase) * 2.4;
         const wobY = Math.cos(t / 2.4 + b.phase) * 2.4;
-        const offX = smX * TRAVEL_X + wobX;
-        const offY = -smY * TRAVEL_Y + wobY;
+        const rawOffX = smX * TRAVEL_X + wobX;
+        const rawOffY = -smY * TRAVEL_Y + wobY;
+        const offX = Math.max(-MAX_X, Math.min(MAX_X, rawOffX));
+        const offY = Math.max(-MAX_Y, Math.min(MAX_Y, rawOffY));
         el.style.transform = `translate3d(${offX.toFixed(2)}vw, ${offY.toFixed(2)}vh, 0)`;
       }
 
