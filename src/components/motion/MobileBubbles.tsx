@@ -79,6 +79,11 @@ export function MobileBubbles() {
   useEffect(() => {
     if (!mounted || !coarse || reduced || hidden) return;
 
+    const OrientationCtor = window.DeviceOrientationEvent as OrientationPermissionEvent | undefined;
+    let needsGesturePermission =
+      !!OrientationCtor &&
+      typeof OrientationCtor.requestPermission === "function" &&
+      getTiltPermissionState() !== "granted";
     let smX = 0;
     let smY = 0;
     let tgtX = 0;
@@ -106,6 +111,7 @@ export function MobileBubbles() {
 
     const onOrient = (e: DeviceOrientationEvent) => {
       if (e.beta == null || e.gamma == null) return;
+      needsGesturePermission = false;
       if (!gotOrientation) {
         gotOrientation = true;
         profile = GYRO;
@@ -119,6 +125,15 @@ export function MobileBubbles() {
       tgtX = Math.max(-1, Math.min(1, e.gamma / 35));
     };
     window.addEventListener("deviceorientation", onOrient, { passive: true });
+
+    const primeOrientation = () => {
+      if (!needsGesturePermission) return;
+      needsGesturePermission = false;
+      void requestTiltPermission();
+    };
+    window.addEventListener("touchstart", primeOrientation, { passive: true, capture: true });
+    window.addEventListener("pointerdown", primeOrientation, { passive: true, capture: true });
+    window.addEventListener("click", primeOrientation, { passive: true, capture: true });
 
     // Fallback for environments without device orientation (preview
     // emulator, desktop, iOS pre-permission). Map pointer / scroll to a
@@ -177,6 +192,9 @@ export function MobileBubbles() {
 
     return () => {
       window.removeEventListener("deviceorientation", onOrient);
+      window.removeEventListener("touchstart", primeOrientation, { capture: true });
+      window.removeEventListener("pointerdown", primeOrientation, { capture: true });
+      window.removeEventListener("click", primeOrientation, { capture: true });
       window.removeEventListener("pointermove", onPointer);
       window.removeEventListener("mousemove", onPointer);
       if (rafRef.current) {
