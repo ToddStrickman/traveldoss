@@ -109,6 +109,13 @@ export function MobileBubbles() {
     let profile: Profile = POINTER;
     let lastInputT = 0;
 
+    const getScreenAngle = (): number => {
+      const so = (window.screen && (window.screen.orientation as ScreenOrientation | undefined)) || undefined;
+      if (so && typeof so.angle === "number") return so.angle;
+      const legacy = (window as unknown as { orientation?: number }).orientation;
+      return typeof legacy === "number" ? legacy : 0;
+    };
+
     const onOrient = (e: DeviceOrientationEvent) => {
       if (e.beta == null || e.gamma == null) return;
       needsGesturePermission = false;
@@ -117,14 +124,43 @@ export function MobileBubbles() {
         profile = GYRO;
       }
       lastInputT = performance.now();
-      // beta: 0 = flat face-up, +90 = upright, -90 = tilted backward.
-      // Map ±45° -> ±1 so a normal phone tilt fully reaches the edge.
-      // Positive = top, negative = bottom; flat phone stays centered.
-      tgtY = Math.max(-1, Math.min(1, e.beta / 45));
-      // gamma: tilt left/right in degrees. ±35 saturates.
-      tgtX = Math.max(-1, Math.min(1, e.gamma / 35));
+      // Re-map raw beta/gamma to screen-relative axes so landscape and
+      // upside-down orientations feel correct.
+      const beta = e.beta;
+      const gamma = e.gamma;
+      const angle = getScreenAngle();
+      let rawX: number;
+      let rawY: number;
+      switch (angle) {
+        case 90:
+          rawX = beta;
+          rawY = -gamma;
+          break;
+        case -90:
+        case 270:
+          rawX = -beta;
+          rawY = gamma;
+          break;
+        case 180:
+          rawX = -gamma;
+          rawY = -beta;
+          break;
+        default:
+          rawX = gamma;
+          rawY = beta;
+      }
+      tgtX = Math.max(-1, Math.min(1, rawX / 35));
+      tgtY = Math.max(-1, Math.min(1, rawY / 45));
     };
+    // Some browsers (Chrome on Android) only fire `deviceorientationabsolute`
+    // when the platform can resolve absolute heading. Listen to both and let
+    // whichever fires first drive the bubbles.
     window.addEventListener("deviceorientation", onOrient, { passive: true });
+    window.addEventListener(
+      "deviceorientationabsolute" as "deviceorientation",
+      onOrient,
+      { passive: true },
+    );
 
     const primeOrientation = () => {
       if (!needsGesturePermission || requestingPermission || !OrientationCtor?.requestPermission) return;
@@ -202,6 +238,10 @@ export function MobileBubbles() {
 
     return () => {
       window.removeEventListener("deviceorientation", onOrient);
+      window.removeEventListener(
+        "deviceorientationabsolute" as "deviceorientation",
+        onOrient,
+      );
       window.removeEventListener("touchstart", primeOrientation, { capture: true });
       window.removeEventListener("pointerdown", primeOrientation, { capture: true });
       window.removeEventListener("click", primeOrientation, { capture: true });
