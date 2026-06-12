@@ -83,7 +83,7 @@ function DesktopFlow() {
     >
       <div className="sticky top-0 h-dvh overflow-hidden">
         {/* Section label */}
-        <div className="pointer-events-none absolute left-8 right-8 top-6 z-20 flex items-center justify-between text-[10px] font-medium uppercase tracking-[0.4em] text-ink/45 md:left-12 md:right-12 lg:left-20 lg:right-[280px] xl:left-32 xl:right-[340px] xl:top-8">
+        <div className="pointer-events-none absolute left-8 right-8 top-6 z-20 flex items-center justify-between text-[10px] font-medium uppercase tracking-[0.4em] text-ink/45 md:left-12 md:right-[340px] lg:left-20 xl:left-32 xl:top-8">
           <span className="inline-flex items-center gap-3">
             <span className="h-px w-8 bg-ink/25" />
             The Flow
@@ -95,7 +95,7 @@ function DesktopFlow() {
         </div>
 
         {/* Horizontal track clipped strictly to the rail-safe area */}
-        <div className="absolute inset-y-0 left-8 right-8 overflow-hidden pt-14 pb-16 md:left-12 md:right-12 md:pt-14 md:pb-16 lg:left-20 lg:right-[280px] lg:pt-16 xl:left-32 xl:right-[340px]">
+        <div className="absolute inset-y-0 left-8 right-8 overflow-hidden pt-14 pb-16 md:left-12 md:right-[340px] md:pt-14 md:pb-16 lg:left-20 lg:pt-16 xl:left-32">
           <motion.div
             style={{ x, width: `${STEPS.length * 100}%` }}
             className="flex h-full"
@@ -107,7 +107,7 @@ function DesktopFlow() {
         </div>
 
         {/* Bottom progress + counter */}
-        <div className="pointer-events-none absolute bottom-6 left-8 right-8 z-20 md:left-12 md:right-12 lg:left-20 lg:right-[280px] xl:bottom-8 xl:left-32 xl:right-[340px]">
+        <div className="pointer-events-none absolute bottom-6 left-8 right-8 z-20 md:left-12 md:right-[340px] lg:left-20 xl:bottom-8 xl:left-32">
           <div className="mb-3 flex items-center justify-between text-[10px] font-medium uppercase tracking-[0.4em] text-ink/45">
             <Counter scrollYProgress={scrollYProgress} total={STEPS.length} />
             <span>Your itinerary, unfolding.</span>
@@ -254,7 +254,7 @@ function Panel({ step, index, total }: { step: Step; index: number; total: numbe
             <span>{step.kicker}</span>
           </div>
           <h2
-            className="text-[10vw] font-normal leading-[0.95] tracking-[-0.02em] text-ink md:text-[5vw] lg:text-[4.5vw]"
+            className="text-[clamp(2.25rem,4.5vw,3.5rem)] font-normal leading-[0.95] tracking-[-0.02em] text-ink"
             style={{ fontFamily: "var(--font-display)" }}
           >
             {step.title}
@@ -264,8 +264,9 @@ function Panel({ step, index, total }: { step: Step; index: number; total: numbe
           </p>
         </div>
 
-        {/* Visual */}
-        <div className="relative flex h-full min-h-[360px] items-center justify-center md:min-h-[400px] lg:min-h-[440px]">
+        {/* Visual — capped height + centered so cards never stretch to fill
+            the full viewport on large screens (was h-full → over-expanded). */}
+        <div className="relative mx-auto flex h-[44vh] max-h-[460px] min-h-[300px] w-full max-w-[440px] items-center justify-center">
           <Visual variant={step.visual} index={index} />
         </div>
       </div>

@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { ArrowLeft, Search, X } from "lucide-react";
@@ -144,10 +144,12 @@ function SkinPreview({ skin }: { skin: SkinModule }) {
 function SkinCard({
   skin,
   onPick,
+  onPrefetch,
   picking,
 }: {
   skin: SkinModule;
   onPick: (id: string) => void;
+  onPrefetch: (id: string) => void;
   picking: boolean;
 }) {
   return (
@@ -157,7 +159,10 @@ function SkinCard({
       role="button"
       tabIndex={picking ? -1 : 0}
       aria-disabled={picking}
+      aria-busy={picking}
       onClick={() => !picking && onPick(skin.meta.id)}
+      onMouseEnter={() => onPrefetch(skin.meta.id)}
+      onFocus={() => onPrefetch(skin.meta.id)}
       onKeyDown={(e) => {
         if (picking) return;
         if (e.key === "Enter" || e.key === " ") {
@@ -205,11 +210,21 @@ function SkinCard({
             e.stopPropagation();
             onPick(skin.meta.id);
           }}
+          onMouseEnter={() => onPrefetch(skin.meta.id)}
+          onFocus={() => onPrefetch(skin.meta.id)}
           disabled={picking}
           className="mt-auto inline-flex items-center justify-between gap-4 border-y border-ink/20 pt-7 pb-7 text-[10px] font-medium uppercase tracking-[0.4em] text-ink transition-colors duration-500 hover:border-seal hover:text-seal disabled:cursor-wait disabled:opacity-50"
           style={{ marginTop: 28 }}
         >
-          <span>{picking ? "Opening preview…" : "Preview this template · $1"}</span>
+          <span className="inline-flex items-center gap-2">
+            {picking && (
+              <span
+                aria-hidden
+                className="h-3 w-3 animate-spin rounded-full border border-current border-t-transparent"
+              />
+            )}
+            {picking ? "Opening preview…" : "Preview this template · $1"}
+          </span>
           <span className="text-ink/40 group-hover:text-seal">→</span>
         </button>
       </div>
@@ -223,7 +238,14 @@ function TemplatesPage() {
   const [query, setQuery] = useState("");
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const navigate = useNavigate();
+  const router = useRouter();
   const { pick: pickParam } = Route.useSearch();
+
+  // Warm the preview route's chunk on hover/focus so the click feels instant
+  // (cards aren't <Link>s, so they don't get intent-preload for free).
+  const prefetch = (id: string) => {
+    void router.preloadRoute({ to: "/templates/$id/preview", params: { id } }).catch(() => {});
+  };
 
   const allTags = useMemo(
     () => Array.from(new Set(SKINS.flatMap((s) => s.meta.tags))).sort(),
@@ -329,7 +351,8 @@ function TemplatesPage() {
 
   const handlePick = (id: string) => {
     setPicking(id);
-    navigate({ to: "/templates/$id/preview", params: { id } });
+    // If navigation never resolves (rare), don't leave the button stuck.
+    void navigate({ to: "/templates/$id/preview", params: { id } }).catch(() => setPicking(null));
   };
 
   return (
@@ -450,6 +473,7 @@ function TemplatesPage() {
               key={skin.meta.id}
               skin={skin}
               onPick={handlePick}
+              onPrefetch={prefetch}
               picking={picking === skin.meta.id}
             />
           ))}

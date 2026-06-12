@@ -7,8 +7,13 @@ import { pickTemplate } from "@/lib/templates.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/templates/$id/preview")({
+export const Route = createFileRoute("/templates_/$id/preview")({
   component: TemplatePreview,
+  // Show a lightweight skeleton almost immediately while the route's chunk and
+  // skin render mount, so a slow open reads as "loading" instead of a frozen
+  // gallery with a stuck "Opening preview…" button.
+  pendingComponent: PreviewPending,
+  pendingMs: 150,
   loader: ({ params }) => {
     const skin = getSkin(params.id);
     if (!skin) throw notFound();
@@ -28,6 +33,39 @@ export const Route = createFileRoute("/templates/$id/preview")({
     };
   },
 });
+
+function PreviewPending() {
+  return (
+    <div className="relative min-h-dvh bg-background text-foreground">
+      <header className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-ink/10 bg-paper/85 px-4 py-3 backdrop-blur-md sm:px-6">
+        <Link
+          to="/templates"
+          className="inline-flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.35em] text-ink/65 transition-colors hover:text-seal"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Back to templates</span>
+          <span className="sm:hidden">Back</span>
+        </Link>
+        <div className="h-7 w-40 animate-pulse rounded-full bg-ink/10" />
+      </header>
+      <div className="mx-auto max-w-[1400px] px-3 pt-4 sm:px-6">
+        <p className="mb-6 text-center text-[10px] uppercase tracking-[0.35em] text-ink/45">
+          Preparing your preview…
+        </p>
+        <div className="mx-auto max-w-3xl space-y-4">
+          <div className="h-40 w-full animate-pulse rounded-lg bg-ink/10" />
+          <div className="h-4 w-2/3 animate-pulse rounded bg-ink/10" />
+          <div className="h-4 w-1/2 animate-pulse rounded bg-ink/10" />
+          <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-48 animate-pulse rounded-lg bg-ink/10" />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function TemplatePreview() {
   const { skinId } = Route.useLoaderData();
