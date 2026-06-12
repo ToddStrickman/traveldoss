@@ -24,10 +24,18 @@ export function TemplateGallery({ onPick }: { onPick: (skin: SkinModule) => void
             transition={{ duration: 0.6, delay: i * 0.05, ease: [0.22, 1, 0.36, 1] }}
           >
           <TiltCard intensity={6} className="block">
-          <button
-            type="button"
+          <div
+            role="button"
+            tabIndex={0}
+            aria-label={`Use the ${skin.meta.codename} dossier template`}
             onClick={() => onPick(skin)}
-            className="surface-card group relative flex w-full flex-col overflow-hidden rounded-lg text-left transition-elegant hover:-translate-y-1 hover:ring-1 hover:ring-seal/60"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onPick(skin);
+              }
+            }}
+            className="surface-card group relative flex w-full cursor-pointer flex-col overflow-hidden rounded-lg text-left transition-elegant hover:-translate-y-1 hover:ring-1 hover:ring-seal/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-seal/60"
           >
             <div
               className="absolute left-0 top-0 h-full w-px"
@@ -72,7 +80,7 @@ export function TemplateGallery({ onPick }: { onPick: (skin: SkinModule) => void
                 <span className="text-seal/70 transition-elegant group-hover:text-seal">→</span>
               </div>
             </div>
-          </button>
+          </div>
           </TiltCard>
           </motion.div>
         ))}

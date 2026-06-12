@@ -5,7 +5,7 @@ import type { Block, TripView } from "./types";
  * so users are comparing chrome — not content.
  */
 export const DEMO_TRIP: TripView = {
-  destination: "Lisbon",
+  destination: "Sample",
   subtitle: "Three slow days along the Tagus.",
   slug: "demo-lisbon",
   start_date: "2026-06-12",
