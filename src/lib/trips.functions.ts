@@ -3,6 +3,8 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { getSkin } from "@/lib/skins/registry";
+import { enrichBlocksWithLinkTitles } from "@/lib/itinerary/link-titles.server";
+import type { Block } from "@/lib/skins/types";
 
 function randomSuffix(len = 6) {
   const alphabet = "abcdefghjkmnpqrstuvwxyz23456789";
@@ -44,6 +46,9 @@ export const createTripFromIngestion = createServerFn({ method: "POST" })
     const slug = `${skin.meta.id}-${randomSuffix()}`;
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
     const destination = data.destination?.trim() || "Sample Trip";
+    // Raw URLs in the ingested content become titled links (best-effort,
+    // bounded — anything unresolved is picked up by the next autosave).
+    const blocks = await enrichBlocksWithLinkTitles(data.blocks as Block[], { budgetMs: 5_000 });
     const { data: trip, error } = await supabaseAdmin
       .from("trips")
       .insert({
@@ -57,7 +62,7 @@ export const createTripFromIngestion = createServerFn({ method: "POST" })
         visibility: "unlisted",
         status: "draft",
         expires_at: expiresAt,
-        content: { blocks: data.blocks, skin: skin.meta.id },
+        content: { blocks, skin: skin.meta.id },
       })
       .select("id, slug")
       .single();
@@ -125,9 +130,15 @@ export const updateDossier = createServerFn({ method: "POST" })
         skin?: string;
         meta?: unknown;
       };
+      // Backfill link titles on every save: new or previously-unresolved raw
+      // URLs gain stored human titles (bounded; failures retried next save).
+      const blocks =
+        data.blocks !== undefined
+          ? await enrichBlocksWithLinkTitles(data.blocks as Block[], { budgetMs: 3_000 })
+          : undefined;
       patch.content = {
         ...prev,
-        ...(data.blocks !== undefined ? { blocks: data.blocks } : {}),
+        ...(blocks !== undefined ? { blocks } : {}),
         ...(data.meta !== undefined ? { meta: data.meta } : {}),
         ...(data.templateId !== undefined ? { skin: data.templateId } : {}),
       };

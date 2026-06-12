@@ -12,7 +12,56 @@ import {
 import type { Block } from "../../types";
 import { CategoryIcon, AirfareIcon, categoryLabel } from "../CategoryIcon";
 import { EditableText, useEditing } from "../Editable";
+import { extractUrls, prettyDomain } from "@/lib/links";
 import type { FlightBlock, ActivityBlock, PartOfDay } from "../itinerary";
+
+/**
+ * Inert-render mode: set when a skin renders inside an interactive wrapper
+ * (gallery tiles, the landing rail's <Link> thumbnails). Anything that would
+ * emit an <a> renders the same titled text as a plain span instead, so
+ * thumbnails stay valid HTML (no <a>-in-<a>) and purely decorative.
+ */
+const InertRenderContext = createContext(false);
+export function InertRender({ children }: { children: ReactNode }) {
+  return <InertRenderContext.Provider value={true}>{children}</InertRenderContext.Provider>;
+}
+export const useInertRender = () => useContext(InertRenderContext);
+
+/**
+ * Renders free text with any raw URL replaced by a titled hyperlink:
+ * stored resolved title → prettified domain. Travelers never see bare URLs.
+ */
+export function LinkifiedText({
+  text,
+  linkTitles,
+}: {
+  text: string;
+  linkTitles?: Record<string, string>;
+}) {
+  const inert = useInertRender();
+  const urls = extractUrls(text);
+  if (urls.length === 0) return <>{text}</>;
+  const parts: ReactNode[] = [];
+  let rest = text;
+  urls.forEach((url, i) => {
+    const at = rest.indexOf(url);
+    if (at === -1) return;
+    if (at > 0) parts.push(rest.slice(0, at));
+    const label = linkTitles?.[url] ?? prettyDomain(url);
+    parts.push(
+      inert ? (
+        <span key={`${url}-${i}`}>{label}</span>
+      ) : (
+        <a key={`${url}-${i}`} href={url} target="_blank" rel="noreferrer">
+          {label}
+        </a>
+      ),
+    );
+    rest = rest.slice(at + url.length);
+  });
+  if (rest) parts.push(rest);
+  return <>{parts}</>;
+}
 import { PART_LABEL } from "../itinerary";
 
 /* ============================================================
@@ -146,7 +195,14 @@ function buildDetailRows(a: ActivityBlock): DetailRow[] {
   // Universal contact / location
   push("address", "Address", a.address, <GlyphPin />, a.mapsUrl);
   push("phone", "Phone", a.phone, <GlyphPhone />, a.phone ? `tel:${a.phone.replace(/[^+\d]/g, "")}` : undefined);
-  push("website", "Website", a.website, <GlyphGlobe />, a.website);
+  // Links never display as raw URLs: resolved title → place name → domain.
+  push(
+    "website",
+    "Website",
+    a.website ? a.websiteTitle ?? a.name ?? prettyDomain(a.website) : undefined,
+    <GlyphGlobe />,
+    a.website,
+  );
   push("hours", "Hours", a.hours, <GlyphClock />);
   push("reservation", "Reference", a.reservation, <GlyphHash />);
 
@@ -170,7 +226,13 @@ function buildDetailRows(a: ActivityBlock): DetailRow[] {
   // Event
   push("venue", "Venue", a.venue, <GlyphPin />);
   push("doorOpen", "Doors", a.doorOpen, <GlyphClock />);
-  push("ticketLink", "Ticket", a.ticketLink, <GlyphTicket />, a.ticketLink);
+  push(
+    "ticketLink",
+    "Ticket",
+    a.ticketLink ? a.ticketLinkTitle ?? prettyDomain(a.ticketLink) : undefined,
+    <GlyphTicket />,
+    a.ticketLink,
+  );
   push("seat", "Seat", a.seat, <GlyphSeat />);
   push("venueRules", "Rules", a.venueRules, <GlyphShield />);
 
@@ -210,6 +272,7 @@ export function ActivityChips({ activity, max = 3 }: { activity: ActivityBlock; 
  * field as an icon-labeled key/value pair with phone / link / map affordances.
  */
 export function ActivityDetails({ activity }: { activity: ActivityBlock }) {
+  const inert = useInertRender();
   const rows = buildDetailRows(activity);
   if (rows.length === 0) return null;
   return (
@@ -221,7 +284,7 @@ export function ActivityDetails({ activity }: { activity: ActivityBlock }) {
             <span className="tds-act-detail-label">{r.label}</span>
           </dt>
           <dd>
-            {r.href ? (
+            {r.href && !inert ? (
               <a href={r.href} target={r.href.startsWith("http") ? "_blank" : undefined} rel="noreferrer">
                 {r.value}
               </a>
@@ -294,7 +357,7 @@ export function ActivityRow({
   activity: ActivityBlock;
   index: number;
 }) {
-  const { onBlockChange } = useEditing();
+  const { onBlockChange, editing } = useEditing();
   return (
     <div className="tds-act-row" data-block="activity">
       <div className="tds-act-time">{activity.time ?? ""}</div>
@@ -313,13 +376,17 @@ export function ActivityRow({
         <ActivityChips activity={activity} max={3} />
         {activity.note ? (
           <div className="tds-act-meta tds-act-note">
-            <EditableText
-              as="span"
-              multiline
-              value={activity.note}
-              placeholder="Note"
-              onChange={(v) => onBlockChange(index, { note: v } as Partial<Block>)}
-            />
+            {editing ? (
+              <EditableText
+                as="span"
+                multiline
+                value={activity.note}
+                placeholder="Note"
+                onChange={(v) => onBlockChange(index, { note: v } as Partial<Block>)}
+              />
+            ) : (
+              <LinkifiedText text={activity.note} linkTitles={activity.linkTitles} />
+            )}
           </div>
         ) : null}
       </div>
@@ -346,7 +413,11 @@ export function ActivityCard({ activity, index }: { activity: ActivityBlock; ind
         />
       </div>
       <ActivityChips activity={activity} max={2} />
-      {activity.note ? <div className="tds-act-card-note">{activity.note}</div> : null}
+      {activity.note ? (
+        <div className="tds-act-card-note">
+          <LinkifiedText text={activity.note} linkTitles={activity.linkTitles} />
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -362,7 +433,11 @@ export function ActivityCell({ activity }: { activity: ActivityBlock }) {
       </div>
       <div className="tds-act-cell-name">{activity.name}</div>
       <ActivityDetails activity={activity} />
-      {activity.note ? <div className="tds-act-cell-note">{activity.note}</div> : null}
+      {activity.note ? (
+        <div className="tds-act-cell-note">
+          <LinkifiedText text={activity.note} linkTitles={activity.linkTitles} />
+        </div>
+      ) : null}
     </div>
   );
 }

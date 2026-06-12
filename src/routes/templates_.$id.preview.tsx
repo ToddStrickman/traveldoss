@@ -3,6 +3,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { getSkin, SKINS } from "@/lib/skins/registry";
+import type { SkinView } from "@/lib/skins/types";
+import { ViewSwitch } from "@/components/ViewSwitch";
 import { pickTemplate } from "@/lib/templates.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -74,6 +76,8 @@ function TemplatePreview() {
   const pickFn = useServerFn(pickTemplate);
   const [minting, setMinting] = useState(false);
   const [authed, setAuthed] = useState<boolean | null>(null);
+  // Sample dossier layout — same three views the minted studio offers.
+  const [layout, setLayout] = useState<SkinView>("vertical");
 
   useEffect(() => {
     let m = true;
@@ -122,35 +126,51 @@ function TemplatePreview() {
       {/* Top bar */}
       <header
         data-print="hide"
-        className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-ink/10 bg-paper/85 px-4 py-3 backdrop-blur-md sm:px-6"
+        className="sticky top-0 z-40 border-b border-ink/10 bg-paper/85 px-4 py-3 backdrop-blur-md sm:px-6"
       >
-        <Link
-          to="/templates"
-          className="inline-flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.35em] text-ink/65 transition-colors hover:text-seal"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Back to templates</span>
-          <span className="sm:hidden">Back</span>
-        </Link>
-        <div className="hidden items-center gap-2 text-[10px] font-medium uppercase tracking-[0.35em] text-ink/55 sm:flex">
-          <span className="h-1 w-1 rounded-full" style={{ background: tokens.accent }} />
-          {skin.meta.codename} · Sample preview
+        <div className="flex items-center justify-between gap-3">
+          <Link
+            to="/templates"
+            className="inline-flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.35em] text-ink/65 transition-colors hover:text-seal"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Back to templates</span>
+            <span className="sm:hidden">Back</span>
+          </Link>
+          {/* Same three-view pivot the minted studio has — sample is explorable
+              in Vertical · Horizontal · Grid before any payment. */}
+          <ViewSwitch
+            value={layout}
+            onChange={setLayout}
+            tokens={tokens}
+            className="hidden gap-1 rounded-full p-1 sm:flex"
+          />
+          <button
+            type="button"
+            onClick={mint}
+            disabled={minting || authed === null}
+            className="td-mint-button inline-flex shrink-0 items-center gap-2 rounded-full bg-seal px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.3em] text-paper transition-all hover:-translate-y-0.5 disabled:opacity-60 sm:px-5 sm:py-2.5"
+          >
+            <span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full bg-paper" />
+            {minting ? "Minting…" : "Mint this dossier"}
+            <span aria-hidden>→</span>
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={mint}
-          disabled={minting || authed === null}
-          className="td-mint-button inline-flex shrink-0 items-center gap-2 rounded-full bg-seal px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.3em] text-paper transition-all hover:-translate-y-0.5 disabled:opacity-60 sm:px-5 sm:py-2.5"
-        >
-          <span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full bg-paper" />
-          {minting ? "Minting…" : "Mint this dossier"}
-          <span aria-hidden>→</span>
-        </button>
+        {/* Mobile: the pivot gets its own row so all three targets stay 44px. */}
+        <div className="mt-2 flex justify-center sm:hidden">
+          <ViewSwitch
+            value={layout}
+            onChange={setLayout}
+            tokens={tokens}
+            className="flex gap-1 rounded-full p-1"
+          />
+        </div>
       </header>
 
       <div className="mx-auto max-w-[1400px] px-3 pt-4 sm:px-6">
         <p className="mb-3 text-center text-[10px] uppercase tracking-[0.35em] text-ink/45">
-          You're previewing with sample content. Mint to make it yours.
+          <span className="mr-2 inline-block h-1 w-1 -translate-y-px rounded-full" style={{ background: tokens.accent }} />
+          {skin.meta.codename} · sample content — switch the layout above, mint to make it yours.
         </p>
       </div>
 
@@ -158,7 +178,7 @@ function TemplatePreview() {
       <div className="relative">
         {tokens.fontUrl && <link rel="stylesheet" href={tokens.fontUrl} />}
         <div className="pointer-events-none">
-          <Render trip={previewFixture.trip} blocks={previewFixture.blocks} />
+          <Render trip={previewFixture.trip} blocks={previewFixture.blocks} view={layout} />
         </div>
       </div>
 

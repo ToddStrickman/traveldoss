@@ -1,6 +1,6 @@
 import type { Block, TripView } from "../../types";
 import { buildItinerary } from "../itinerary";
-import { ActivityCell, dayDateLabel } from "./parts";
+import { ActivityCell, dayDateLabel, LinkifiedText } from "./parts";
 import { ActivityDndContext, DraggableActivity, DroppableBucket } from "./dnd";
 import type { PartOfDay } from "../itinerary";
 import { ShadowItinerary, PlanBCue } from "../ShadowItinerary";
@@ -83,7 +83,11 @@ export function GridView({ trip, blocks }: { trip: TripView; blocks: Block[] }) 
             </span>
             <PlanBCue count={d.shadows.length} />
           </h2>
-          {d.day.notes ? <p className="tds-grid-day-notes">{d.day.notes}</p> : null}
+          {d.day.notes ? (
+            <p className="tds-grid-day-notes">
+              <LinkifiedText text={d.day.notes} linkTitles={d.day.linkTitles} />
+            </p>
+          ) : null}
           <table className="tds-table tds-table-day">
             <thead>
               <tr>
