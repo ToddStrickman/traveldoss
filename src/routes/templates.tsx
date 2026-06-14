@@ -223,7 +223,7 @@ function SkinCard({
                 className="h-3 w-3 animate-spin rounded-full border border-current border-t-transparent"
               />
             )}
-            {picking ? "Opening preview…" : "Preview this template · $1"}
+            {picking ? "Opening preview…" : "Preview this template"}
           </span>
           <span className="text-ink/40 group-hover:text-seal">→</span>
         </button>
