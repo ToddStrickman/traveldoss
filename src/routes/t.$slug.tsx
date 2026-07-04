@@ -427,12 +427,17 @@ function DossierPage() {
       {isSample && (
         <div
           data-print="hide"
-          className="fixed right-3 top-3 z-50 inline-flex items-center gap-2 rounded-full border border-white/20 bg-paper/85 px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.35em] text-ink-soft backdrop-blur-md sm:right-4 sm:top-4"
-          aria-label="Sample preview"
-          title="This is a sample preview. Mint your trip to unlock exports."
+          className="fixed right-3 top-3 z-50 flex max-w-[280px] flex-col items-end gap-1 sm:right-4 sm:top-4"
+          role="status"
+          aria-label="Sample preview — mint your trip to begin"
         >
-          <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-seal" aria-hidden />
-          Preview
+          <div className="inline-flex items-center gap-2 rounded-full border border-seal/50 bg-paper/90 px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.35em] text-seal backdrop-blur-md">
+            <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-seal" aria-hidden />
+            Preview
+          </div>
+          <p className="rounded-md bg-paper/80 px-2 py-1 text-right text-[10px] leading-snug text-ink-soft backdrop-blur-md">
+            This is a sample. Mint your trip to start the real dossier and unlock exports.
+          </p>
         </div>
       )}
       <div className="mx-auto max-w-3xl px-6 pb-24" data-print="hide">
