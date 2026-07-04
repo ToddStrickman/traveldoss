@@ -147,6 +147,7 @@ function DossierPage() {
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [mintOpen, setMintOpen] = useState(false);
+  const [justMinted, setJustMinted] = useState(false);
   const save = useServerFn(updateDossier);
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -213,6 +214,7 @@ function DossierPage() {
       });
       queueSave(patch);
       setMintOpen(false);
+      setJustMinted(true);
       toast.success("Trip minted — your dossier is live.");
     },
     [setSnap, queueSave, templateId],
@@ -401,7 +403,7 @@ function DossierPage() {
 
   const skin = getSkin(templateId) ?? FALLBACK_SKIN;
 
-  const isSample = destination === "Sample Trip";
+  const isSample = destination === "Sample Trip" && !justMinted;
   const isMinted = !isSample;
 
   const view: TripView = {
