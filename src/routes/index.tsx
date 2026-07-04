@@ -208,9 +208,8 @@ function Landing() {
           transition={{ duration: 1, delay: 0.3 }}
           className="mt-6 max-w-md text-[13px] leading-relaxed text-ink-soft md:text-sm"
         >
-          Dossiers of your dreams, delivered. Transform scattered plans into a beautifully
-          organized dossier, complete with mapped routes, reservations, and a
-          day-by-day journey.
+          Transform scattered plans into a beautifully organized dossier,
+          complete with mapped routes, reservations, and a day-by-day journey.
         </motion.p>
 
         {/* Editorial CTA */}
