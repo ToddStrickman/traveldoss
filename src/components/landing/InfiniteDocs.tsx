@@ -91,8 +91,8 @@ export function InfiniteDocs({ onPickTemplate: _onPickTemplate }: { onPickTempla
         {loop.map((s, i) => (
           <Link
             key={`${s.meta.id}-${i}`}
-            to="/templates/$id/preview"
-            params={{ id: s.meta.id }}
+            to="/templates"
+            search={{ pick: s.meta.id }}
             className="td-marquee-item block text-left"
             aria-label={`Use the ${s.meta.codename} dossier template`}
           >
