@@ -401,6 +401,9 @@ function DossierPage() {
 
   const skin = getSkin(templateId) ?? FALLBACK_SKIN;
 
+  const isSample = destination === "Sample Trip";
+  const isMinted = !isSample;
+
   const view: TripView = {
     destination,
     subtitle,
@@ -421,6 +424,17 @@ function DossierPage() {
         </div>
       )}
       <skin.Render trip={view} blocks={blocks} view={layout} />
+      {isSample && (
+        <div
+          data-print="hide"
+          className="fixed right-3 top-3 z-50 inline-flex items-center gap-2 rounded-full border border-white/20 bg-paper/85 px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.35em] text-ink-soft backdrop-blur-md sm:right-4 sm:top-4"
+          aria-label="Sample preview"
+          title="This is a sample preview. Mint your trip to unlock exports."
+        >
+          <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-seal" aria-hidden />
+          Preview
+        </div>
+      )}
       <div className="mx-auto max-w-3xl px-6 pb-24" data-print="hide">
         <TripDocPreviews tripId={trip.id} />
         {canEdit && <GmailImportPanel tripId={trip.id} />}
@@ -485,7 +499,7 @@ function DossierPage() {
           onRestoreRefine={restoreRefine}
         />
       )}
-      {blocks.length > 0 && (
+      {isMinted && blocks.length > 0 && (
         <ExportMenu slug={trip.slug} trip={view} blocks={blocks} isOwner={isOwner} />
       )}
       <PrintScheduleGrid trip={view} blocks={blocks} />
