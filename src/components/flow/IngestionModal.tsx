@@ -88,14 +88,7 @@ const TABS: {
   { id: "generate", icon: Wand2, word: "Generate", accent: "Itinerary", sub: "Describe the trip — we'll draft it live." },
 ];
 
-function serial() {
-  const d = new Date();
-  const y = String(d.getFullYear()).slice(-2);
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  const r = Math.floor(Math.random() * 9000 + 1000);
-  return `TD-${y}${m}${day}-${r}`;
-}
+import { tripRef } from "@/lib/trip-ref";
 
 export function IngestionModal({
   open,
@@ -107,11 +100,14 @@ export function IngestionModal({
   onOpenChange: (v: boolean) => void;
   template: SkinModule | null;
   onGenerate: (blocks: Block[], sourceLabel: string, destination: string | null) => void;
+  /** Stable reference derived from the trip id + created_at. */
+  tripId?: string | null;
+  tripCreatedAt?: string | null;
 }) {
   const [tab, setTab] = useState<Tab>("paste");
   const [text, setText] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
-  const [ref] = useState(serial);
+  const ref = tripRef(tripId ?? undefined, tripCreatedAt ?? undefined);
   const [stage, setStage] = useState<"source" | "review">("source");
   const [reviewBlocks, setReviewBlocks] = useState<Block[]>([]);
   const [reviewLabel, setReviewLabel] = useState("Reading your itinerary…");
