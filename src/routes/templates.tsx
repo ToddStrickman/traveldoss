@@ -246,13 +246,9 @@ function TemplatesPage() {
   const { pick: pickParam } = Route.useSearch();
   const pickFn = useServerFn(pickTemplate);
 
-  // Warm the dossier editor chunk on hover/focus so the mint→edit hop feels
-  // instant. Cards aren't <Link>s, so they don't get intent-preload for free.
-  const prefetch = (_id: string) => {
-    void router
-      .preloadRoute({ to: "/t/$slug", params: { slug: "__warm__" } })
-      .catch(() => {});
-  };
+  // No route preload here: the destination /t/$slug depends on the freshly
+  // minted slug, and there's no template-side chunk to warm anymore.
+  const prefetch = (_id: string) => {};
 
   const allTags = useMemo(
     () => Array.from(new Set(SKINS.flatMap((s) => s.meta.tags))).sort(),
