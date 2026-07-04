@@ -21,7 +21,6 @@ import { Route as E2eKanbanRouteImport } from './routes/e2e.kanban'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
-import { Route as TemplatesIdPreviewRouteImport } from './routes/templates_.$id.preview'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as ApiPublicHooksCleanupPendingDocExportsRouteImport } from './routes/api/public/hooks/cleanup-pending-doc-exports'
@@ -87,11 +86,6 @@ const Char91DotmcpChar93ListToolsRoute =
     path: '/.mcp/list-tools',
     getParentRoute: () => rootRouteImport,
   } as any)
-const TemplatesIdPreviewRoute = TemplatesIdPreviewRouteImport.update({
-  id: '/templates_/$id/preview',
-  path: '/templates/$id/preview',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const Char91DotmcpChar93InvokeToolToolRoute =
   Char91DotmcpChar93InvokeToolToolRouteImport.update({
     id: '/.mcp/invoke-tool/$tool',
@@ -124,7 +118,6 @@ export interface FileRoutesByFullPath {
   '/t/$slug': typeof TSlugRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
-  '/templates/$id/preview': typeof TemplatesIdPreviewRoute
   '/api/public/hooks/cleanup-pending-doc-exports': typeof ApiPublicHooksCleanupPendingDocExportsRoute
 }
 export interface FileRoutesByTo {
@@ -141,7 +134,6 @@ export interface FileRoutesByTo {
   '/t/$slug': typeof TSlugRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
-  '/templates/$id/preview': typeof TemplatesIdPreviewRoute
   '/api/public/hooks/cleanup-pending-doc-exports': typeof ApiPublicHooksCleanupPendingDocExportsRoute
 }
 export interface FileRoutesById {
@@ -160,7 +152,6 @@ export interface FileRoutesById {
   '/t/$slug': typeof TSlugRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
-  '/templates_/$id/preview': typeof TemplatesIdPreviewRoute
   '/api/public/hooks/cleanup-pending-doc-exports': typeof ApiPublicHooksCleanupPendingDocExportsRoute
 }
 export interface FileRouteTypes {
@@ -179,7 +170,6 @@ export interface FileRouteTypes {
     | '/t/$slug'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
-    | '/templates/$id/preview'
     | '/api/public/hooks/cleanup-pending-doc-exports'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -196,7 +186,6 @@ export interface FileRouteTypes {
     | '/t/$slug'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
-    | '/templates/$id/preview'
     | '/api/public/hooks/cleanup-pending-doc-exports'
   id:
     | '__root__'
@@ -214,7 +203,6 @@ export interface FileRouteTypes {
     | '/t/$slug'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
-    | '/templates_/$id/preview'
     | '/api/public/hooks/cleanup-pending-doc-exports'
   fileRoutesById: FileRoutesById
 }
@@ -232,7 +220,6 @@ export interface RootRouteChildren {
   TSlugRoute: typeof TSlugRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
-  TemplatesIdPreviewRoute: typeof TemplatesIdPreviewRoute
   ApiPublicHooksCleanupPendingDocExportsRoute: typeof ApiPublicHooksCleanupPendingDocExportsRoute
 }
 
@@ -322,13 +309,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotmcpChar93ListToolsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/templates_/$id/preview': {
-      id: '/templates_/$id/preview'
-      path: '/templates/$id/preview'
-      fullPath: '/templates/$id/preview'
-      preLoaderRoute: typeof TemplatesIdPreviewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/.mcp/invoke-tool/$tool': {
       id: '/.mcp/invoke-tool/$tool'
       path: '/.mcp/invoke-tool/$tool'
@@ -380,7 +360,6 @@ const rootRouteChildren: RootRouteChildren = {
   TSlugRoute: TSlugRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
-  TemplatesIdPreviewRoute: TemplatesIdPreviewRoute,
   ApiPublicHooksCleanupPendingDocExportsRoute:
     ApiPublicHooksCleanupPendingDocExportsRoute,
 }
