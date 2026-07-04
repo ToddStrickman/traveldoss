@@ -7,6 +7,8 @@ import { useServerFn } from "@tanstack/react-start";
 import type { Block } from "@/lib/skins/types";
 import type { SkinModule } from "@/lib/skins/registry";
 import { toast } from "sonner";
+import { useNavigate, useLocation } from "@tanstack/react-router";
+import { supabase } from "@/integrations/supabase/client";
 import {
   GripVertical,
   Trash2,
@@ -116,6 +118,28 @@ export function IngestionModal({
   const [reviewDestination, setReviewDestination] = useState<string | null>(null);
   const [parsing, setParsing] = useState(false);
   const parseAi = useServerFn(parseItineraryAi);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  /**
+   * Gate every compose-dossier code path on an authenticated user. Login
+   * enables background inference (interests, contact enrichment, name for the
+   * eventual payments flow). Returns true when the caller may proceed.
+   */
+  async function ensureAuthed(): Promise<boolean> {
+    const { data } = await supabase.auth.getUser();
+    if (data.user) return true;
+    toast.message("Sign in to compose your dossier", {
+      description:
+        "We use your account to personalize the itinerary, add contact details, and prepare checkout.",
+    });
+    const back = `${location.pathname}${location.searchStr}${
+      location.searchStr.includes("mint=1") ? "" : (location.searchStr ? "&" : "?") + "mint=1"
+    }`;
+    onOpenChange(false);
+    navigate({ to: "/login", search: { redirect: back } });
+    return false;
+  }
   const generateAi = useServerFn(generateItineraryAi);
   type GenPhase = "idle" | "research" | "draft" | "enrich" | "done";
   const [genPhase, setGenPhase] = useState<GenPhase>("idle");
@@ -197,6 +221,7 @@ export function IngestionModal({
 
   async function submit() {
     if (!template) return;
+    if (!(await ensureAuthed())) return;
     if (tab === "generate") {
       if (clarifyQs.length) submitClarifications();
       else await submitGenerate();

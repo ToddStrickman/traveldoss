@@ -36,7 +36,10 @@ type DossierContent = {
 };
 
 export const Route = createFileRoute("/t/$slug")({
-  validateSearch: z.object({ mode: z.enum(["edit", "view"]).optional() }),
+  validateSearch: z.object({
+    mode: z.enum(["edit", "view"]).optional(),
+    mint: z.union([z.literal("1"), z.literal(1), z.boolean()]).optional(),
+  }),
   loader: async ({ params }) => {
     const { trip, expired } = await getDossierBySlug({ data: { slug: params.slug } });
     if (!trip) throw notFound();
@@ -116,7 +119,8 @@ export const Route = createFileRoute("/t/$slug")({
 
 function DossierPage() {
   const { trip, expired } = Route.useLoaderData();
-  useNavigate();
+  const navigate = useNavigate();
+  const search = Route.useSearch();
   const [layout, setLayout] = useState<SkinView>("vertical");
   const initial = (trip.content ?? {}) as {
     blocks?: Block[];
@@ -158,6 +162,28 @@ function DossierPage() {
       else setIsOwner(false);
     });
   }, [trip]);
+
+  // Re-open the mint modal after the login round-trip. Users who click
+  // "Compose Dossier" while signed out are bounced through /login with
+  // ?mint=1 preserved; on return we auto-open the modal (once they're
+  // actually signed in) and strip the flag so a manual close sticks.
+  useEffect(() => {
+    if (!search.mint) return;
+    let cancelled = false;
+    supabase.auth.getUser().then(({ data }) => {
+      if (cancelled || !data.user) return;
+      setMintOpen(true);
+      navigate({
+        to: "/t/$slug",
+        params: { slug: trip.slug },
+        search: { mode: search.mode },
+        replace: true,
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [search.mint, search.mode, trip.slug, navigate]);
 
   const phase = getTemporalPhase(trip.start_date, trip.end_date);
   const canEdit = isOwner && phase !== "archive" && !expired;
