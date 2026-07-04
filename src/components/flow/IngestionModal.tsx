@@ -131,7 +131,7 @@ export function IngestionModal({
     if (data.user) return true;
     toast.message("Sign in to compose your dossier", {
       description:
-        "We use your account to personalize the itinerary, add contact details, and prepare checkout.",
+        "Signing in lets us tailor the itinerary to you, attach real contact details, and put your name on the trip for checkout.",
     });
     const back = `${location.pathname}${location.searchStr}${
       location.searchStr.includes("mint=1") ? "" : (location.searchStr ? "&" : "?") + "mint=1"
