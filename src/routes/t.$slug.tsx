@@ -36,7 +36,10 @@ type DossierContent = {
 };
 
 export const Route = createFileRoute("/t/$slug")({
-  validateSearch: z.object({ mode: z.enum(["edit", "view"]).optional() }),
+  validateSearch: z.object({
+    mode: z.enum(["edit", "view"]).optional(),
+    mint: z.union([z.literal("1"), z.literal(1), z.boolean()]).optional(),
+  }),
   loader: async ({ params }) => {
     const { trip, expired } = await getDossierBySlug({ data: { slug: params.slug } });
     if (!trip) throw notFound();
