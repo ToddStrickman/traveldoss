@@ -1,6 +1,7 @@
 import { auth, defineMcp } from "@lovable.dev/mcp-js";
 import listTripsTool from "./tools/list-trips";
 import getTripTool from "./tools/get-trip";
+import createTripTool from "./tools/create-trip";
 
 // The OAuth issuer MUST be the direct Supabase host. VITE_SUPABASE_PROJECT_ID
 // is inlined at build time and survives publish; the fallback keeps the
@@ -17,5 +18,5 @@ export default defineMcp({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated",
   }),
-  tools: [listTripsTool, getTripTool],
+  tools: [listTripsTool, getTripTool, createTripTool],
 });
