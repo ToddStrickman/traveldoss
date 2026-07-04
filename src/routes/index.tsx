@@ -3,6 +3,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "motion/react";
 import { Ribbon } from "@/components/landing/Ribbon";
+import { SandHero } from "@/components/landing/SandHero";
 import { InfiniteDocs } from "@/components/landing/InfiniteDocs";
 import { FlowScroller } from "@/components/landing/FlowScroller";
 import { TopoBackground } from "@/components/landing/TopoBackground";
@@ -189,17 +190,12 @@ function Landing() {
         </Parallax>
 
         <Parallax depth={-14}>
-        <motion.h1
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
-          className="text-[18vw] font-normal leading-[0.95] tracking-[-0.03em] md:text-[9vw]"
-          style={{ fontFamily: "var(--font-display)" }}
-        >
-          <span className="text-ink">Travel</span>
-          <br />
-          <span className="italic text-ink/90">Doss<span className="text-seal">.</span></span>
-        </motion.h1>
+        {/* The headline is a living excavation: ~30k sand grains forming
+            "Travel Doss.", uncovered by wind and the visitor's cursor. */}
+        <SandHero
+          className="h-[44vw] max-h-[460px] min-h-[240px] w-[min(94vw,1100px)] md:h-[24vw]"
+          accessibleText="Travel Doss."
+        />
         </Parallax>
 
         <motion.p

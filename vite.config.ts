@@ -16,7 +16,10 @@ export default defineConfig({
   },
   vite: {
     plugins: [
-      mcpPlugin(),
+      // mcp-js 0.20 compares paths with a raw string-prefix check, which can
+      // never match Windows backslash paths — skip the plugin on win32 (it
+      // only serves the Lovable cloud agent anyway, which runs on Linux).
+      ...(process.platform === "win32" ? [] : [mcpPlugin()]),
       VitePWA({
         // We register the SW ourselves from a guarded wrapper so we can
         // refuse registration in dev / Lovable preview / iframes.
