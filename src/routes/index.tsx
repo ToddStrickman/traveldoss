@@ -208,7 +208,7 @@ function Landing() {
           transition={{ duration: 1, delay: 0.3 }}
           className="mt-6 max-w-md text-[13px] leading-relaxed text-ink-soft md:text-sm"
         >
-          A quiet studio for travel. Transform scattered plans into a beautifully
+          Dream Dossiers Delivered. Transform scattered plans into a beautifully
           organized dossier, complete with mapped routes, reservations, and a
           day-by-day journey.
         </motion.p>
