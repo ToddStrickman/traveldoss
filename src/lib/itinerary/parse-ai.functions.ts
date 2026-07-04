@@ -3,6 +3,7 @@ import { generateText, Output } from "ai";
 import { z, ZodError, type ZodIssue } from "zod";
 import type { Block } from "@/lib/skins/types";
 import { parseDropInWithMeta, stripEmoji } from "@/lib/itinerary/parse";
+import { normalizeParsedShape } from "@/lib/itinerary/normalize-ai";
 import type {
   DebugAttempt,
   DebugReport,
@@ -159,6 +160,8 @@ Final itinerary must feel complete, polished, cohesive, logistically realistic, 
 
 ── SCHEMA RULES (non-negotiable) ──
 Return the structured object only. Emit blocks in execution order:
+• ONE flat top-level "blocks" array. NEVER nest blocks inside day objects — a day is just a marker block followed by its stops.
+• "kind" MUST be exactly one of: "day", "place", "flight", "paragraph", "note". There is NO kind "transit" or "accommodation" — those are CATEGORIES on a place block, e.g. {kind:"place", category:"transit", name:"Train to Bologna"}.
 • One {kind:"day", n, label} per day, then that day's stops as {kind:"place", …} with "time" set.
 • Flights become {kind:"flight", …} with IATA codes when knowable.
 • Free prose preamble becomes {kind:"paragraph", text} (use for the Trip Overview / Summary).
@@ -331,9 +334,13 @@ async function parseBlocksWithAi(
         }
         continue;
       }
-      const safe = BlockSchema.safeParse(parsedJson);
+      // Coerce known model deviations (kind:"transit", nested days[],
+      // free-text categories) before validation — the first attempt
+      // should succeed even when Gemini drifts from the schema.
+      const normalized = normalizeParsedShape(parsedJson);
+      const safe = BlockSchema.safeParse(normalized);
       if (safe.success) return safe.data;
-      logZodDiagnostics("parse-ai", attempt, MAX_ATTEMPTS, safe.error, parsedJson, lastRaw);
+      logZodDiagnostics("parse-ai", attempt, MAX_ATTEMPTS, safe.error, normalized, lastRaw);
       lastIssue = summarizeIssues(safe.error.issues);
       recordAttempt({
         attempt,
@@ -348,7 +355,9 @@ async function parseBlocksWithAi(
       console.error(`[parse-ai] attempt ${attempt}/${MAX_ATTEMPTS} threw:`, err);
       if (lastRaw) {
         try {
-          const reparsed: unknown = JSON.parse(extractJsonObject(lastRaw));
+          const reparsed: unknown = normalizeParsedShape(
+            JSON.parse(extractJsonObject(lastRaw)),
+          );
           const safe = BlockSchema.safeParse(reparsed);
           if (safe.success) return safe.data;
           logZodDiagnostics("parse-ai", attempt, MAX_ATTEMPTS, safe.error, reparsed, lastRaw);

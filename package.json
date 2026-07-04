@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "test": "bun test",
+    "test": "bun test src tests",
     "test:e2e": "playwright test"
   },
   "dependencies": {

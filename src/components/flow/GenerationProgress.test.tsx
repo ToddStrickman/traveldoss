@@ -1,10 +1,14 @@
 import { describe, it, expect } from "bun:test";
-import { render, screen } from "@testing-library/react";
+import { render } from "@testing-library/react";
 import { GenerationProgress } from "./IngestionModal";
+
+// Queries come from the render result rather than the `screen` re-export:
+// @testing-library/react v16 sources `screen` types from the optional
+// @testing-library/dom peer, which this project doesn't install.
 
 describe("GenerationProgress", () => {
   it("renders all steps with correct labels and statuses", () => {
-    render(
+    const { getByText, getAllByText } = render(
       <GenerationProgress
         phase="draft"
         destination="Kyoto"
@@ -18,27 +22,27 @@ describe("GenerationProgress", () => {
       />
     );
 
-    expect(screen.getByText("Using these values")).toBeDefined();
-    expect(screen.getByText("Kyoto")).toBeDefined();
-    expect(screen.getByText("7 days")).toBeDefined();
-    expect(screen.getByText("2025-04-10")).toBeDefined();
-    expect(screen.getByText("2 adults")).toBeDefined();
-    expect(screen.getByText("relaxed")).toBeDefined();
-    expect(screen.getByText("luxury")).toBeDefined();
-    expect(screen.getByText("temples, food, nature")).toBeDefined();
+    expect(getByText("Using these values")).toBeDefined();
+    expect(getByText("Kyoto")).toBeDefined();
+    expect(getByText("7 days")).toBeDefined();
+    expect(getByText("2025-04-10")).toBeDefined();
+    expect(getByText("2 adults")).toBeDefined();
+    expect(getByText("relaxed")).toBeDefined();
+    expect(getByText("luxury")).toBeDefined();
+    expect(getByText("temples, food, nature")).toBeDefined();
 
-    expect(screen.getByText("Researching the destination")).toBeDefined();
-    expect(screen.getByText("Drafting your itinerary")).toBeDefined();
-    expect(screen.getByText("Verifying venues")).toBeDefined();
-    expect(screen.getByText("Ready to review")).toBeDefined();
+    expect(getByText("Researching the destination")).toBeDefined();
+    expect(getByText("Drafting your itinerary")).toBeDefined();
+    expect(getByText("Verifying venues")).toBeDefined();
+    expect(getByText("Ready to review")).toBeDefined();
 
-    expect(screen.getByText("Done")).toBeDefined();
-    expect(screen.getByText("Working")).toBeDefined();
-    expect(screen.getAllByText("Queued").length).toBe(2);
+    expect(getByText("Done")).toBeDefined();
+    expect(getByText("Working")).toBeDefined();
+    expect(getAllByText("Queued").length).toBe(2);
   });
 
   it("shows default values when props are empty", () => {
-    render(
+    const { getByText } = render(
       <GenerationProgress
         phase="research"
         destination=""
@@ -52,19 +56,19 @@ describe("GenerationProgress", () => {
       />
     );
 
-    expect(screen.getByText("— to infer from brief")).toBeDefined();
-    expect(screen.getByText("— flexible")).toBeDefined();
-    expect(screen.getByText("5 days (default)")).toBeDefined();
-    expect(screen.getByText("2 adults (default)")).toBeDefined();
-    expect(screen.getByText("balanced (default)")).toBeDefined();
-    expect(screen.getByText("moderate (default)")).toBeDefined();
-    expect(screen.getByText("— none specified")).toBeDefined();
+    expect(getByText("— to infer from brief")).toBeDefined();
+    expect(getByText("— flexible")).toBeDefined();
+    expect(getByText("5 days (default)")).toBeDefined();
+    expect(getByText("2 adults (default)")).toBeDefined();
+    expect(getByText("balanced (default)")).toBeDefined();
+    expect(getByText("moderate (default)")).toBeDefined();
+    expect(getByText("— none specified")).toBeDefined();
   });
 
   it("marks the active step correctly for each phase", () => {
     const phases = ["research", "draft", "enrich", "done"] as const;
     for (const phase of phases) {
-      const { unmount } = render(
+      const { queryAllByText, unmount } = render(
         <GenerationProgress
           phase={phase}
           destination="Paris"
@@ -78,7 +82,7 @@ describe("GenerationProgress", () => {
         />
       );
 
-      const working = screen.queryAllByText("Working");
+      const working = queryAllByText("Working");
       expect(working.length).toBe(1);
       unmount();
     }

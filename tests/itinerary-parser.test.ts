@@ -70,22 +70,22 @@ describe("parser: ChatGPT-style Tuscany paste", () => {
       /hotel lungarno/i.test(p.name),
     );
     expect(hotel).toBeDefined();
-    expect(hotel!.category).toBe("stay");
+    expect(hotel!.category).toBe("accommodation");
   });
 
-  test("captures a lunch-prefixed dining stop as eat", () => {
+  test("captures a lunch-prefixed dining stop as restaurant", () => {
     const vinaio = places(parsed.blocks).find((p) =>
       /vinaio/i.test(p.name),
     );
-    expect(vinaio?.category).toBe("eat");
+    expect(vinaio?.category).toBe("restaurant");
   });
 
-  test("DOCUMENTED QUIRK: clauses with 'dinner' route to stay (inn-in-dInNer)", () => {
+  test("DOCUMENTED QUIRK: clauses with 'dinner' route to accommodation (inn-in-dInNer)", () => {
     // guessCategory's stay regex matches 'inn' substring, which fires
     // inside 'dinner'. Pinned here so a future refactor is intentional;
     // AI enrichment is the long-term fix.
     const logge = places(parsed.blocks).find((p) => /le logge/i.test(p.name));
-    expect(logge?.category).toBe("stay");
+    expect(logge?.category).toBe("accommodation");
   });
 
   test("DOCUMENTED QUIRK: a short cultural first-clause becomes the day label, not a place", () => {
@@ -98,11 +98,11 @@ describe("parser: ChatGPT-style Tuscany paste", () => {
     ).toBe("other");
   });
 
-  test("captures a drink stop with the drink category", () => {
+  test("captures a drink stop with the restaurant category", () => {
     const cocktails = places(parsed.blocks).find((p) =>
       /cocktails at locale/i.test(p.name),
     );
-    expect(cocktails?.category).toBe("drink");
+    expect(cocktails?.category).toBe("restaurant");
   });
 });
 
@@ -135,36 +135,36 @@ describe("parser: messy Japan notes paste", () => {
     ]);
   });
 
-  test("named hotel routes to the stay bucket", () => {
+  test("named hotel routes to the accommodation bucket", () => {
     const hoshinoya = places(parsed.blocks).find((p) =>
       /hoshinoya/i.test(p.name),
     );
-    expect(hoshinoya?.category).toBe("stay");
+    expect(hoshinoya?.category).toBe("accommodation");
     // "taxi to the hotel" should at least register the word hotel → stay.
     const taxiHotel = places(parsed.blocks).find((p) =>
       /taxi to the hotel/i.test(p.name),
     );
-    expect(taxiHotel?.category).toBe("stay");
+    expect(taxiHotel?.category).toBe("accommodation");
   });
 
-  test("dining stops with eat keywords route to the eat bucket", () => {
+  test("dining stops with eat keywords route to the restaurant bucket", () => {
     // "casual cafe" → eat via the `cafe` keyword in guessCategory.
     expect(
       places(parsed.blocks).find((p) => /casual cafe/i.test(p.name))?.category,
-    ).toBe("eat");
+    ).toBe("restaurant");
   });
 
-  test("cultural stops with visit-keywords route to see", () => {
+  test("cultural stops with visit-keywords route to culture", () => {
     expect(
       places(parsed.blocks).find((p) => /temple visit/i.test(p.name))
         ?.category,
-    ).toBe("see");
+    ).toBe("culture");
   });
 
-  test("cocktail/wine/coffee stops route to drink", () => {
+  test("cocktail/wine/coffee stops route to restaurant", () => {
     expect(
       places(parsed.blocks).find((p) => /golden gai/i.test(p.name))?.category,
-    ).toBe("drink");
+    ).toBe("restaurant");
   });
 
   test("DOCUMENTED QUIRK: single-clause days fold their only stop into the day label", () => {
@@ -217,12 +217,12 @@ describe("parser: voice-transcript Lisbon run-on", () => {
     expect(parsed.destination).toMatch(/portugal|lisbon/i);
   });
 
-  test("the hotel is captured and tagged as stay", () => {
+  test("the hotel is captured and tagged as accommodation", () => {
     expect(hasPlaceMatching(parsed.blocks, /memmo alfama/i)).toBe(true);
     const stay = places(parsed.blocks).find((p) =>
       /memmo|check into/i.test(p.name),
     );
-    expect(stay?.category).toBe("stay");
+    expect(stay?.category).toBe("accommodation");
   });
 
   test("DOCUMENTED QUIRK: the day-3 transit clause becomes the day label", () => {
@@ -240,11 +240,11 @@ describe("parser: voice-transcript Lisbon run-on", () => {
     expect(names).toMatch(/tascantiga/);
   });
 
-  test("a coffee stop routes to drink", () => {
+  test("a coffee stop routes to restaurant", () => {
     const coffee = places(parsed.blocks).find((p) =>
       /a brasileira/i.test(p.name),
     );
-    expect(coffee?.category).toBe("drink");
+    expect(coffee?.category).toBe("restaurant");
   });
 });
 
@@ -360,11 +360,11 @@ describe("parser: missing destination, inferred from body", () => {
     expect(days(parsed.blocks).map((d) => d.n)).toEqual([1, 2, 3]);
   });
 
-  test("ryokan stop routes to stay (accommodation keyword)", () => {
+  test("ryokan stop routes to accommodation (lodging keyword)", () => {
     const ryokan = places(parsed.blocks).find((p) =>
       /ryokan/i.test(p.name),
     );
-    expect(ryokan?.category).toBe("stay");
+    expect(ryokan?.category).toBe("accommodation");
   });
 });
 
@@ -490,13 +490,13 @@ describe("parser: emoji-laced paste is sanitized", () => {
     }
   });
 
-  test("hotel still resolves to the stay category despite emoji", () => {
+  test("hotel still resolves to the accommodation category despite emoji", () => {
     const hotel = parsed.blocks.find(
       (b): b is Extract<Block, { kind: "place" }> =>
         b.kind === "place" && /art hotel commercianti/i.test(b.name),
     );
     expect(hotel).toBeDefined();
-    expect(hotel!.category).toBe("stay");
+    expect(hotel!.category).toBe("accommodation");
   });
 });
 

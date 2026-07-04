@@ -230,11 +230,13 @@ describe("kanban DnD · cross-day moves", () => {
       toPart: "morning",
     });
     expect(bucket(next, 2, "morning")).toEqual(["Brunch", "Float A"]);
-    // Day 1 still has Float B unassigned.
+    // Float B stays on day 1. Since the auto-bucketing change, sectionless
+    // untimed activities default into the morning rail (bucketFor's
+    // "never silently dropped" contract) instead of an unassigned pile.
     const it = buildItinerary(next);
     const d1 = it.days.find((x) => x.day.n === 1)!;
-    expect(d1.unassigned.map((e) => e.activity.name)).toEqual(["Float B"]);
-    expect(d1.morning).toEqual([]);
+    expect(d1.unassigned).toEqual([]);
+    expect(d1.morning.map((e) => e.activity.name)).toEqual(["Float B"]);
   });
 
   test("UNSECTIONED template: move free-floating activity into a new bucket on its own day creates section", () => {

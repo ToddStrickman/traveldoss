@@ -8,11 +8,14 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/login")({
-  validateSearch: (search) => ({
+  // Optional key so plain <Link to="/login"> typechecks everywhere; the
+  // open-redirect guard stays (same-origin paths only) and the "/app"
+  // default is applied at the use site below.
+  validateSearch: (search: Record<string, unknown>): { redirect?: string } => ({
     redirect:
       typeof search.redirect === "string" && search.redirect.startsWith("/") && !search.redirect.startsWith("//")
         ? search.redirect
-        : "/app",
+        : undefined,
   }),
   component: LoginPage,
   head: () => ({
@@ -36,7 +39,7 @@ export const Route = createFileRoute("/login")({
 });
 
 function LoginPage() {
-  const { redirect } = Route.useSearch();
+  const { redirect = "/app" } = Route.useSearch();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

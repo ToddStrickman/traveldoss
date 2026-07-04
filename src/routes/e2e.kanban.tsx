@@ -25,7 +25,9 @@ export const Route = createFileRoute("/e2e/kanban")({
   beforeLoad: () => {
     if (!import.meta.env.DEV) throw notFound();
   },
-  validateSearch: (s: Record<string, unknown>) => ({
+  validateSearch: (
+    s: Record<string, unknown>,
+  ): { skin?: string; fixture: "sparse" | "unsectioned" | "full" } => ({
     skin: typeof s.skin === "string" ? s.skin : undefined,
     fixture:
       s.fixture === "sparse" || s.fixture === "unsectioned" ? s.fixture : "full",

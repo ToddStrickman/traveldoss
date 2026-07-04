@@ -72,8 +72,8 @@ function TemplatesSkeleton() {
 export const Route = createFileRoute("/templates")({
   component: TemplatesPage,
   pendingComponent: TemplatesSkeleton,
-  validateSearch: (search: Record<string, unknown>) => ({
-    pick: typeof search.pick === "string" ? (search.pick as string) : undefined,
+  validateSearch: (search: Record<string, unknown>): { pick?: string } => ({
+    pick: typeof search.pick === "string" ? search.pick : undefined,
   }),
   head: () => ({
     meta: [
