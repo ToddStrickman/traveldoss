@@ -12,13 +12,17 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TemplatesRouteImport } from './routes/templates'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as PlanRouteImport } from './routes/plan'
+import { Route as McpRouteImport } from './routes/mcp'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TSlugRouteImport } from './routes/t.$slug'
 import { Route as E2eKanbanRouteImport } from './routes/e2e.kanban'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
+import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
+import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as TemplatesIdPreviewRouteImport } from './routes/templates_.$id.preview'
+import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as ApiPublicHooksCleanupPendingDocExportsRouteImport } from './routes/api/public/hooks/cleanup-pending-doc-exports'
 
 const TemplatesRoute = TemplatesRouteImport.update({
@@ -34,6 +38,11 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
 const PlanRoute = PlanRouteImport.update({
   id: '/plan',
   path: '/plan',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const McpRoute = McpRouteImport.update({
+  id: '/mcp',
+  path: '/mcp',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -65,11 +74,29 @@ const AuthenticatedAppRoute = AuthenticatedAppRouteImport.update({
   path: '/app',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const Char91DotwellKnownChar93OauthProtectedResourceRoute =
+  Char91DotwellKnownChar93OauthProtectedResourceRouteImport.update({
+    id: '/.well-known/oauth-protected-resource',
+    path: '/.well-known/oauth-protected-resource',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const Char91DotmcpChar93ListToolsRoute =
+  Char91DotmcpChar93ListToolsRouteImport.update({
+    id: '/.mcp/list-tools',
+    path: '/.mcp/list-tools',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const TemplatesIdPreviewRoute = TemplatesIdPreviewRouteImport.update({
   id: '/templates_/$id/preview',
   path: '/templates/$id/preview',
   getParentRoute: () => rootRouteImport,
 } as any)
+const Char91DotmcpChar93InvokeToolToolRoute =
+  Char91DotmcpChar93InvokeToolToolRouteImport.update({
+    id: '/.mcp/invoke-tool/$tool',
+    path: '/.mcp/invoke-tool/$tool',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksCleanupPendingDocExportsRoute =
   ApiPublicHooksCleanupPendingDocExportsRouteImport.update({
     id: '/api/public/hooks/cleanup-pending-doc-exports',
@@ -80,24 +107,32 @@ const ApiPublicHooksCleanupPendingDocExportsRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/mcp': typeof McpRoute
   '/plan': typeof PlanRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/templates': typeof TemplatesRoute
+  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/app': typeof AuthenticatedAppRoute
   '/e2e/kanban': typeof E2eKanbanRoute
   '/t/$slug': typeof TSlugRoute
+  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/templates/$id/preview': typeof TemplatesIdPreviewRoute
   '/api/public/hooks/cleanup-pending-doc-exports': typeof ApiPublicHooksCleanupPendingDocExportsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/mcp': typeof McpRoute
   '/plan': typeof PlanRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/templates': typeof TemplatesRoute
+  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/app': typeof AuthenticatedAppRoute
   '/e2e/kanban': typeof E2eKanbanRoute
   '/t/$slug': typeof TSlugRoute
+  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/templates/$id/preview': typeof TemplatesIdPreviewRoute
   '/api/public/hooks/cleanup-pending-doc-exports': typeof ApiPublicHooksCleanupPendingDocExportsRoute
 }
@@ -106,12 +141,16 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
+  '/mcp': typeof McpRoute
   '/plan': typeof PlanRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/templates': typeof TemplatesRoute
+  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_authenticated/app': typeof AuthenticatedAppRoute
   '/e2e/kanban': typeof E2eKanbanRoute
   '/t/$slug': typeof TSlugRoute
+  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/templates_/$id/preview': typeof TemplatesIdPreviewRoute
   '/api/public/hooks/cleanup-pending-doc-exports': typeof ApiPublicHooksCleanupPendingDocExportsRoute
 }
@@ -120,24 +159,32 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/mcp'
     | '/plan'
     | '/sitemap.xml'
     | '/templates'
+    | '/.mcp/list-tools'
+    | '/.well-known/oauth-protected-resource'
     | '/app'
     | '/e2e/kanban'
     | '/t/$slug'
+    | '/.mcp/invoke-tool/$tool'
     | '/templates/$id/preview'
     | '/api/public/hooks/cleanup-pending-doc-exports'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/login'
+    | '/mcp'
     | '/plan'
     | '/sitemap.xml'
     | '/templates'
+    | '/.mcp/list-tools'
+    | '/.well-known/oauth-protected-resource'
     | '/app'
     | '/e2e/kanban'
     | '/t/$slug'
+    | '/.mcp/invoke-tool/$tool'
     | '/templates/$id/preview'
     | '/api/public/hooks/cleanup-pending-doc-exports'
   id:
@@ -145,12 +192,16 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/login'
+    | '/mcp'
     | '/plan'
     | '/sitemap.xml'
     | '/templates'
+    | '/.mcp/list-tools'
+    | '/.well-known/oauth-protected-resource'
     | '/_authenticated/app'
     | '/e2e/kanban'
     | '/t/$slug'
+    | '/.mcp/invoke-tool/$tool'
     | '/templates_/$id/preview'
     | '/api/public/hooks/cleanup-pending-doc-exports'
   fileRoutesById: FileRoutesById
@@ -159,11 +210,15 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
+  McpRoute: typeof McpRoute
   PlanRoute: typeof PlanRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TemplatesRoute: typeof TemplatesRoute
+  Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
+  Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   E2eKanbanRoute: typeof E2eKanbanRoute
   TSlugRoute: typeof TSlugRoute
+  Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   TemplatesIdPreviewRoute: typeof TemplatesIdPreviewRoute
   ApiPublicHooksCleanupPendingDocExportsRoute: typeof ApiPublicHooksCleanupPendingDocExportsRoute
 }
@@ -189,6 +244,13 @@ declare module '@tanstack/react-router' {
       path: '/plan'
       fullPath: '/plan'
       preLoaderRoute: typeof PlanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mcp': {
+      id: '/mcp'
+      path: '/mcp'
+      fullPath: '/mcp'
+      preLoaderRoute: typeof McpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -233,11 +295,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/.well-known/oauth-protected-resource': {
+      id: '/.well-known/oauth-protected-resource'
+      path: '/.well-known/oauth-protected-resource'
+      fullPath: '/.well-known/oauth-protected-resource'
+      preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.mcp/list-tools': {
+      id: '/.mcp/list-tools'
+      path: '/.mcp/list-tools'
+      fullPath: '/.mcp/list-tools'
+      preLoaderRoute: typeof Char91DotmcpChar93ListToolsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/templates_/$id/preview': {
       id: '/templates_/$id/preview'
       path: '/templates/$id/preview'
       fullPath: '/templates/$id/preview'
       preLoaderRoute: typeof TemplatesIdPreviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.mcp/invoke-tool/$tool': {
+      id: '/.mcp/invoke-tool/$tool'
+      path: '/.mcp/invoke-tool/$tool'
+      fullPath: '/.mcp/invoke-tool/$tool'
+      preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/hooks/cleanup-pending-doc-exports': {
@@ -266,11 +349,16 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
+  McpRoute: McpRoute,
   PlanRoute: PlanRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   TemplatesRoute: TemplatesRoute,
+  Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
+  Char91DotwellKnownChar93OauthProtectedResourceRoute:
+    Char91DotwellKnownChar93OauthProtectedResourceRoute,
   E2eKanbanRoute: E2eKanbanRoute,
   TSlugRoute: TSlugRoute,
+  Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   TemplatesIdPreviewRoute: TemplatesIdPreviewRoute,
   ApiPublicHooksCleanupPendingDocExportsRoute:
     ApiPublicHooksCleanupPendingDocExportsRoute,
