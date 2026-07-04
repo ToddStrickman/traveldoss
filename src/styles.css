@@ -428,3 +428,79 @@
     opacity: 0.55;
   }
 }
+
+/* ────────────────────────────────────────────────────────────────────
+ * Mobile foundation (T1 · .design/traveldoss-mobile)
+ * Touch ergonomics, safe areas, and coarse-pointer affordances for the
+ * visitor path. Desktop rendering is intentionally unaffected.
+ * ──────────────────────────────────────────────────────────────────── */
+
+:root {
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-t: env(safe-area-inset-top, 0px);
+}
+
+/* Bottom padding that respects the home-indicator area. */
+.pb-safe { padding-bottom: max(16px, var(--safe-b)); }
+.mb-safe { margin-bottom: max(16px, var(--safe-b)); }
+
+/* Guaranteed 44×44 hit area without disturbing visual size: the
+ * pseudo-element extends the touch target invisibly. */
+.tap { position: relative; }
+.tap::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
+}
+
+/* Horizontal scroll rows (filter chips, day pager rails). */
+.scroll-x {
+  display: flex;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.scroll-x::-webkit-scrollbar { display: none; }
+
+/* Fades the clipped edges of a horizontal scroller so continuation is
+ * legible without chrome. */
+.edge-fade-x {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 16px,
+    #000 calc(100% - 24px),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 16px,
+    #000 calc(100% - 24px),
+    transparent 100%
+  );
+}
+
+/* Long-press surfaces: suppress iOS callout/selection so lift gestures
+ * read as intentional. Apply narrowly, never globally. */
+.no-touch-callout {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Snap rail for the touch day pager. */
+.snap-x-mandatory {
+  scroll-snap-type: x mandatory;
+}
+.snap-center { scroll-snap-align: center; }
+
+@media (pointer: coarse) {
+  /* Body text floor: 16px prevents iOS focus zoom and squinting. */
+  .coarse\:text-base { font-size: 1rem; line-height: 1.5rem; }
+}
