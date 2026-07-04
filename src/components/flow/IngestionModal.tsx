@@ -95,6 +95,8 @@ export function IngestionModal({
   onOpenChange,
   template,
   onGenerate,
+  tripId,
+  tripCreatedAt,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
