@@ -1,9 +1,13 @@
 import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { ArrowLeft, Search, X } from "lucide-react";
 import { SKINS, type SkinModule } from "@/lib/skins/registry";
 import { TiltCard } from "@/components/motion/Tilt";
+import { pickTemplate } from "@/lib/templates.functions";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 function TemplatesSkeleton() {
   return (
@@ -223,7 +227,7 @@ function SkinCard({
                 className="h-3 w-3 animate-spin rounded-full border border-current border-t-transparent"
               />
             )}
-            {picking ? "Opening preview…" : "Preview this template"}
+            {picking ? "Minting your dossier…" : "Mint this dossier"}
           </span>
           <span className="text-ink/40 group-hover:text-seal">→</span>
         </button>
@@ -240,11 +244,14 @@ function TemplatesPage() {
   const navigate = useNavigate();
   const router = useRouter();
   const { pick: pickParam } = Route.useSearch();
+  const pickFn = useServerFn(pickTemplate);
 
-  // Warm the preview route's chunk on hover/focus so the click feels instant
-  // (cards aren't <Link>s, so they don't get intent-preload for free).
-  const prefetch = (id: string) => {
-    void router.preloadRoute({ to: "/templates/$id/preview", params: { id } }).catch(() => {});
+  // Warm the dossier editor chunk on hover/focus so the mint→edit hop feels
+  // instant. Cards aren't <Link>s, so they don't get intent-preload for free.
+  const prefetch = (_id: string) => {
+    void router
+      .preloadRoute({ to: "/t/$slug", params: { slug: "__warm__" } })
+      .catch(() => {});
   };
 
   const allTags = useMemo(
@@ -349,10 +356,31 @@ function TemplatesPage() {
     };
   }, []);
 
-  const handlePick = (id: string) => {
+  const handlePick = async (id: string) => {
+    if (picking) return;
     setPicking(id);
-    // If navigation never resolves (rare), don't leave the button stuck.
-    void navigate({ to: "/templates/$id/preview", params: { id } }).catch(() => setPicking(null));
+    try {
+      const { data } = await supabase.auth.getUser();
+      if (!data.user) {
+        window.sessionStorage.setItem("td_pending_mint_template", id);
+        toast.message("Sign in to mint your dossier", {
+          description: "We'll bring you right back to mint this template.",
+        });
+        await navigate({
+          to: "/login",
+          search: { redirect: `/templates?pick=${id}` },
+        });
+        return;
+      }
+      const r = await pickFn({ data: { templateId: id } });
+      await navigate({ to: "/t/$slug", params: { slug: r.slug }, search: { mode: "edit" } });
+    } catch (e) {
+      console.error(e);
+      toast.error("Couldn't mint your dossier", {
+        description: e instanceof Error ? e.message : String(e),
+      });
+      setPicking(null);
+    }
   };
 
   return (
