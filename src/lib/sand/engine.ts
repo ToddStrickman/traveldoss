@@ -1010,7 +1010,9 @@ void main() {
   float sparkler = step(0.94, fract(aSeed * 7.31));
   vSparkle = sparkler * uGlow;
   float pulse = 1.0 + vSparkle * 0.5 * (0.5 + 0.5 * sin(uTime * 9.0 + aSeed * 60.0));
-  gl_PointSize = aSize * pulse * uPixelRatio;
+  // The seal (the "." after Doss) uses slightly larger grains so it reads
+  // as a solid mark, not just more sand.
+  gl_PointSize = aSize * pulse * (1.0 + aAccent * 0.35) * uPixelRatio;
   gl_Position = projectionMatrix * mv;
   vSeed = aSeed; vKind = aKind; vAccent = aAccent; vEdge = aEdge; vReveal = aReveal;
   vWorld = position.xy;
@@ -1020,7 +1022,7 @@ void main() {
 const GRAIN_FRAG = /* glsl */ `
 uniform vec3 uTint;
 uniform vec2 uSunDir, uHalfView;
-uniform float uAmbient, uGlow;
+uniform float uAmbient, uGlow, uTime;
 varying float vSeed, vKind, vAccent, vEdge, vReveal, vSparkle;
 varying vec2 vWorld;
 
@@ -1048,7 +1050,13 @@ void main() {
   float shade = uAmbient + (1.0 - uAmbient) * (0.55 - 0.45 * lit);
 
   vec3 col = palette(fract(vSeed * 5.13));
-  if (vAccent > 0.5) col = mix(col, vec3(0.92, 0.80, 0.55), 0.8); // gold seal
+  if (vAccent > 0.5) {
+    // The seal: molten gold, clearly apart from the sandstone field. It
+    // resists the shadow term (stays luminous) and carries a slow shimmer.
+    float shimmer = 0.88 + 0.12 * sin(uTime * 1.6 + vSeed * 12.0);
+    col = vec3(1.0, 0.80, 0.38) * shimmer;
+    shade = mix(shade, 1.0, 0.65);
+  }
 
   float alpha = body;
 
