@@ -515,6 +515,8 @@ function DossierPage() {
         onOpenChange={setMintOpen}
         template={getSkin(templateId) ?? FALLBACK_SKIN}
         onGenerate={handleMint}
+        tripId={trip.id}
+        tripCreatedAt={(trip as { created_at?: string }).created_at ?? null}
       />
     </EditingProvider>
   );
