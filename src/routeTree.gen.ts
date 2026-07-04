@@ -23,6 +23,7 @@ import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } fr
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as TemplatesIdPreviewRouteImport } from './routes/templates_.$id.preview'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
+import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as ApiPublicHooksCleanupPendingDocExportsRouteImport } from './routes/api/public/hooks/cleanup-pending-doc-exports'
 
 const TemplatesRoute = TemplatesRouteImport.update({
@@ -97,6 +98,11 @@ const Char91DotmcpChar93InvokeToolToolRoute =
     path: '/.mcp/invoke-tool/$tool',
     getParentRoute: () => rootRouteImport,
   } as any)
+const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
+  id: '/.lovable/oauth/consent',
+  path: '/.lovable/oauth/consent',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicHooksCleanupPendingDocExportsRoute =
   ApiPublicHooksCleanupPendingDocExportsRouteImport.update({
     id: '/api/public/hooks/cleanup-pending-doc-exports',
@@ -116,6 +122,7 @@ export interface FileRoutesByFullPath {
   '/app': typeof AuthenticatedAppRoute
   '/e2e/kanban': typeof E2eKanbanRoute
   '/t/$slug': typeof TSlugRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/templates/$id/preview': typeof TemplatesIdPreviewRoute
   '/api/public/hooks/cleanup-pending-doc-exports': typeof ApiPublicHooksCleanupPendingDocExportsRoute
@@ -132,6 +139,7 @@ export interface FileRoutesByTo {
   '/app': typeof AuthenticatedAppRoute
   '/e2e/kanban': typeof E2eKanbanRoute
   '/t/$slug': typeof TSlugRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/templates/$id/preview': typeof TemplatesIdPreviewRoute
   '/api/public/hooks/cleanup-pending-doc-exports': typeof ApiPublicHooksCleanupPendingDocExportsRoute
@@ -150,6 +158,7 @@ export interface FileRoutesById {
   '/_authenticated/app': typeof AuthenticatedAppRoute
   '/e2e/kanban': typeof E2eKanbanRoute
   '/t/$slug': typeof TSlugRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/templates_/$id/preview': typeof TemplatesIdPreviewRoute
   '/api/public/hooks/cleanup-pending-doc-exports': typeof ApiPublicHooksCleanupPendingDocExportsRoute
@@ -168,6 +177,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/e2e/kanban'
     | '/t/$slug'
+    | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/templates/$id/preview'
     | '/api/public/hooks/cleanup-pending-doc-exports'
@@ -184,6 +194,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/e2e/kanban'
     | '/t/$slug'
+    | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/templates/$id/preview'
     | '/api/public/hooks/cleanup-pending-doc-exports'
@@ -201,6 +212,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app'
     | '/e2e/kanban'
     | '/t/$slug'
+    | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/templates_/$id/preview'
     | '/api/public/hooks/cleanup-pending-doc-exports'
@@ -218,6 +230,7 @@ export interface RootRouteChildren {
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   E2eKanbanRoute: typeof E2eKanbanRoute
   TSlugRoute: typeof TSlugRoute
+  DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   TemplatesIdPreviewRoute: typeof TemplatesIdPreviewRoute
   ApiPublicHooksCleanupPendingDocExportsRoute: typeof ApiPublicHooksCleanupPendingDocExportsRoute
@@ -323,6 +336,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/.lovable/oauth/consent': {
+      id: '/.lovable/oauth/consent'
+      path: '/.lovable/oauth/consent'
+      fullPath: '/.lovable/oauth/consent'
+      preLoaderRoute: typeof DotlovableOauthConsentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/cleanup-pending-doc-exports': {
       id: '/api/public/hooks/cleanup-pending-doc-exports'
       path: '/api/public/hooks/cleanup-pending-doc-exports'
@@ -358,6 +378,7 @@ const rootRouteChildren: RootRouteChildren = {
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   E2eKanbanRoute: E2eKanbanRoute,
   TSlugRoute: TSlugRoute,
+  DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   TemplatesIdPreviewRoute: TemplatesIdPreviewRoute,
   ApiPublicHooksCleanupPendingDocExportsRoute:
