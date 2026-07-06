@@ -1,9 +1,9 @@
 # Lovable Prompt Pack — the six directives as paste-ready bot prompts
 
 How to use:
-1. **First**, paste the Project Knowledge block below into Lovable → Settings →
-   Knowledge (merge with anything already there). It keeps every subsequent
-   prompt short and stops the bot from re-breaking hard-won invariants.
+1. The Project Knowledge block below is **already installed** in the Lovable
+   project (2026-07-06). It keeps every prompt short and stops the bot from
+   re-breaking hard-won invariants. Re-paste it only if knowledge gets cleared.
 2. Paste **one prompt at a time**, in the order listed. Wait for the build to
    go green and spot-check the preview before pasting the next.
 3. Each prompt tells the bot to read its directive file in `docs/directives/`
@@ -16,7 +16,7 @@ Recommended order: 2A → 2B → 1A → 1B → 3A → 3B → 5A → 5B → 4A �
 
 ---
 
-## Project Knowledge block (paste once into Lovable Knowledge)
+## Project Knowledge block (INSTALLED 2026-07-06 — kept here as the source of truth; re-paste only if Lovable knowledge is cleared)
 
 ```
 HOUSE RULES — apply to every change in this project:
@@ -24,24 +24,41 @@ HOUSE RULES — apply to every change in this project:
 1. Skins are content. NEVER edit the per-skin files (src/lib/skins/cassian.tsx,
    epictetus.tsx, vesper.tsx, etc.). All shared UI changes go in
    src/lib/skins/shared/ (views, skin.css) or route-level components.
+
 2. Accessibility is at Lighthouse 100 and CLS is 0 on /t/<slug> — do not
    regress either. New small text uses
    color-mix(in oklab, var(--tds-soft or --tds-accent) 78%, var(--tds-ink))
    so it passes contrast on all ten skins. New tap targets are >=24px (44px
    preferred; a .tap utility exists). Visible button text must be contained
-   in its accessible name (no aria-labels that differ from visible text).
+   in its accessible name — do not blanket-add aria-labels; aria-label is for
+   icon-only controls only. Content that appears asynchronously (images,
+   chips, banners) must have reserved space so layout never shifts.
+
 3. Mobile-first: base styles are the 375px composition, desktop layers behind
-   md:. Never introduce horizontal page scroll on mobile.
+   md:. Never introduce horizontal page scroll on mobile. New mobile
+   components ship as md:hidden siblings of an untouched desktop
+   implementation, or gate behind useIsMobile() (src/hooks/use-mobile.tsx) /
+   coarse-pointer media queries. Honor prefers-reduced-motion in every
+   animation.
+
 4. src/routeTree.gen.ts is generated — never hand-edit it.
+
 5. Before finishing any task: npx vitest run (all tests must pass) and
    tsc --noEmit (must be clean). Do not delete or weaken existing tests.
+
 6. Blocks data model lives in src/lib/skins/types.ts; trips persist in the
    Supabase trips table as content: { blocks, skin }. Server functions use
-   createServerFn + zod inputValidator + requireSupabaseAuth middleware.
+   createServerFn + zod inputValidator + requireSupabaseAuth middleware (see
+   src/lib/trips.functions.ts for the pattern).
+
 7. Engineering specs live in docs/directives/ — when a task references one,
-   read it fully before writing code.
+   read it fully before writing code. The paste-ready task prompts are in
+   docs/directives/LOVABLE_PROMPTS.md; the mobile roadmap slices are in the
+   "Mobile Update" plan.
+
 8. Make the smallest change that satisfies the task. Do not refactor,
-   rename, or reformat unrelated code.
+   rename, or reformat unrelated code. Do not add dependencies unless the
+   task explicitly authorizes one.
 ```
 
 ---
