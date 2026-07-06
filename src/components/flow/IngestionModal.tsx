@@ -77,7 +77,7 @@ function offerDebugReport(report: DebugReport | undefined, label: string) {
   });
 }
 
-type Tab = "paste" | "transcript" | "generate" | "blank";
+type Tab = "paste" | "transcript" | "generate";
 
 const TABS: {
   id: Tab;
@@ -89,7 +89,6 @@ const TABS: {
   { id: "paste", icon: ClipboardPaste, word: "Paste", accent: "Itinerary", sub: "ChatGPT, Claude, notes." },
   { id: "transcript", icon: Upload, word: "Upload", accent: "Transcript", sub: "Text or .vtt / .srt files." },
   { id: "generate", icon: Wand2, word: "Generate", accent: "Itinerary", sub: "Describe the trip — we'll draft it live." },
-  { id: "blank", icon: FilePlus2, word: "Start", accent: "Blank", sub: "Empty dossier — build it manually." },
 ];
 
 import { tripRef } from "@/lib/trip-ref";
@@ -245,15 +244,6 @@ export function IngestionModal({
   async function submit() {
     if (!template) return;
     if (!(await ensureAuthed())) return;
-    if (tab === "blank") {
-      onGenerate(
-        [{ kind: "day", n: 1, label: "Day 01" }],
-        "Starting a blank dossier…",
-        null,
-      );
-      handleOpenChange(false);
-      return;
-    }
     if (tab === "generate") {
       if (clarifyQs.length) submitClarifications();
       else await submitGenerate();
