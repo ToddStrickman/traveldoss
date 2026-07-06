@@ -708,6 +708,8 @@ export function IngestionModal({
                   : "Reading & enriching…"
                 : clarifyQs.length
                 ? "Continue"
+                : tab === "blank"
+                ? "Start Blank Dossier"
                 : "Compose Dossier"}
             </span>
             <span aria-hidden className="inline-flex h-7 w-7 items-center justify-center rounded-sm border border-seal/40 transition-elegant group-hover:border-paper/40">
