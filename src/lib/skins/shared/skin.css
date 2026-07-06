@@ -1286,3 +1286,123 @@
   color: color-mix(in oklab, var(--tds-soft) 80%, var(--tds-ink));
   opacity: 1;
 }
+
+/* ==========================================================================
+   Blank Day scaffold — shown when an editable dossier has no place/flight
+   content. Ghost tiles hint at what to add; clicking one materializes a real
+   day skeleton with that entry populated.
+   ========================================================================== */
+
+.tds-scaffold {
+  display: flex; flex-direction: column; gap: var(--tds-s3);
+  margin: var(--tds-s3) 0 var(--tds-s5);
+}
+.tds-scaffold-intro {
+  max-width: 52ch;
+  font-size: var(--tds-fs-meta);
+  line-height: 1.55;
+  color: color-mix(in oklab, var(--tds-ink) 55%, transparent);
+  margin: 0;
+}
+.tds-scaffold-day {
+  display: flex; flex-direction: column; gap: var(--tds-s2);
+  padding: var(--tds-s3) 0 0;
+  border-top: 1px solid color-mix(in oklab, var(--tds-ink) 12%, transparent);
+}
+.tds-scaffold-day-head {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--tds-s2);
+  margin-bottom: var(--tds-s2);
+}
+.tds-scaffold-day-label {
+  font-style: italic;
+  color: color-mix(in oklab, var(--tds-ink) 45%, transparent);
+}
+.tds-scaffold-part {
+  display: flex; flex-direction: column; gap: 8px;
+}
+.tds-scaffold-part-heading {
+  font-size: var(--tds-fs-meta);
+  text-transform: uppercase;
+  letter-spacing: 0.28em;
+  color: color-mix(in oklab, var(--tds-accent) 78%, var(--tds-ink));
+}
+.tds-scaffold-part-rows {
+  display: flex; flex-direction: column; gap: 8px;
+}
+
+/* Ghost tile — shared by place/flight/day slots */
+.tds-ghost {
+  appearance: none;
+  display: flex; align-items: center; gap: var(--tds-s2);
+  width: 100%; min-height: 56px;
+  padding: 12px 14px;
+  border: 1px dashed color-mix(in oklab, var(--tds-ink) 22%, transparent);
+  border-radius: 10px;
+  background: color-mix(in oklab, var(--tds-ink) 2%, transparent);
+  color: color-mix(in oklab, var(--tds-ink) 55%, transparent);
+  font-family: var(--tds-fontBody);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 180ms ease, background 180ms ease, color 180ms ease, transform 180ms ease;
+}
+.tds-ghost:hover {
+  border-color: color-mix(in oklab, var(--tds-accent) 60%, var(--tds-ink));
+  background: color-mix(in oklab, var(--tds-accent) 6%, transparent);
+  color: var(--tds-ink);
+}
+.tds-ghost:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--tds-accent) 70%, var(--tds-ink));
+  outline-offset: 2px;
+}
+.tds-ghost-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; flex: none;
+  border-radius: 8px;
+  border: 1px solid color-mix(in oklab, var(--tds-ink) 15%, transparent);
+  color: color-mix(in oklab, var(--tds-accent) 70%, var(--tds-ink));
+  font-size: 16px;
+}
+.tds-ghost-body {
+  display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0;
+}
+.tds-ghost-label {
+  font-size: var(--tds-fs-body);
+  line-height: 1.25;
+  color: color-mix(in oklab, var(--tds-ink) 72%, transparent);
+}
+.tds-ghost:hover .tds-ghost-label { color: var(--tds-ink); }
+.tds-ghost-hint {
+  font-size: var(--tds-fs-meta);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: color-mix(in oklab, var(--tds-ink) 40%, transparent);
+}
+.tds-ghost-plus {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; flex: none;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklab, var(--tds-ink) 15%, transparent);
+  color: color-mix(in oklab, var(--tds-ink) 50%, transparent);
+  transition: border-color 180ms ease, color 180ms ease, transform 180ms ease;
+}
+.tds-ghost:hover .tds-ghost-plus {
+  border-color: color-mix(in oklab, var(--tds-accent) 70%, var(--tds-ink));
+  color: color-mix(in oklab, var(--tds-accent) 70%, var(--tds-ink));
+  transform: rotate(90deg);
+}
+
+.tds-ghost-flight {
+  border-style: dashed;
+  border-width: 1px;
+}
+
+/* Subtle attention pulse on the first ghost; disabled under reduced-motion */
+@media (prefers-reduced-motion: no-preference) {
+  .tds-scaffold .tds-ghost-flight:first-of-type {
+    animation: tds-ghost-pulse 3.2s ease-in-out infinite;
+  }
+  @keyframes tds-ghost-pulse {
+    0%, 100% { border-color: color-mix(in oklab, var(--tds-ink) 22%, transparent); }
+    50%      { border-color: color-mix(in oklab, var(--tds-accent) 55%, var(--tds-ink)); }
+  }
+}

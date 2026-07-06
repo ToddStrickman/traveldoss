@@ -397,8 +397,8 @@ function DossierPage() {
           blocks: s.blocks.filter((_, i) => i !== index),
         }));
       },
-      onBlockAdd: (afterIndex: number, kind: Block["kind"]) => {
-        const fresh: Block =
+      onBlockAdd: (afterIndex: number, kind: Block["kind"], seed?: Partial<Block>) => {
+        const base: Block =
           kind === "day"
             ? { kind: "day", n: 1, label: "New day" }
             : kind === "place"
@@ -408,11 +408,15 @@ function DossierPage() {
             : kind === "note"
             ? { kind: "note", text: "" }
             : { kind: "paragraph", text: "" };
+        const fresh = { ...(base as object), ...(seed as object) } as Block;
         setSnap((s) => {
           const next = s.blocks.slice();
           next.splice(Math.max(0, afterIndex + 1), 0, fresh);
           return { ...s, blocks: next };
         });
+      },
+      onBlocksReplace: (next: Block[]) => {
+        setSnap((s) => ({ ...s, blocks: next }));
       },
       onReorder: (from: number, to: number) => {
         setSnap((s) => ({ ...s, blocks: arrayMove(s.blocks, from, to) }));

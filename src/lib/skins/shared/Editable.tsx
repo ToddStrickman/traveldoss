@@ -37,7 +37,14 @@ export type EditingCtx = {
   editing: boolean;
   onBlockChange: (index: number, patch: Partial<Block>) => void;
   onBlockRemove: (index: number) => void;
-  onBlockAdd: (afterIndex: number, kind: Block["kind"]) => void;
+  onBlockAdd: (
+    afterIndex: number,
+    kind: Block["kind"],
+    seed?: Partial<Block>,
+  ) => void;
+  /** Replace the full blocks array. Used by the blank scaffold to
+   *  materialize a real day skeleton from a ghost click. */
+  onBlocksReplace?: (next: Block[]) => void;
   onReorder: (from: number, to: number) => void;
   onTripChange: (field: "destination" | "subtitle", value: string) => void;
   /** Update top-level trip dates (free-form strings or ISO). */

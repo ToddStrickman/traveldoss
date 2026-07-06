@@ -12,12 +12,14 @@ import { ActivityDndContext, DraggableActivity, DroppableBucket } from "./dnd";
 import { ShadowItinerary, PlanBCue } from "../ShadowItinerary";
 import { MetaChip } from "@/components/studio/MetaChip";
 import { DayDateChip } from "../DayDateChip";
+import { BlankDayScaffold, isScaffoldTriggered } from "../BlankDayScaffold";
 
 /** Chronological vertical reading view.
  *  Outbound flight → Day 01 (morning/afternoon/evening) → … → Inbound flight. */
 export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[] }) {
   const it = buildItinerary(blocks);
   const { onBlockChange, editing, onMetaChange, onTripDatesChange } = useEditing();
+  const showScaffold = editing && isScaffoldTriggered(blocks);
   const dates = [trip.start_date, trip.end_date].filter(Boolean).join(" – ");
   const meta = trip.meta ?? {};
   const dateValue = { start: trip.start_date ?? "", end: trip.end_date ?? "" };
@@ -117,6 +119,10 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
         </div>
       </header>
 
+      {showScaffold ? (
+        <BlankDayScaffold blocks={blocks} />
+      ) : (
+        <>
       <FlightStrip outbound={it.flights.outbound} />
 
       {it.preface.length > 0 ? (
@@ -219,6 +225,8 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
       <FlightStrip inbound={it.flights.inbound} />
 
       <ShadowItinerary itinerary={it} />
+        </>
+      )}
     </div>
   );
 }

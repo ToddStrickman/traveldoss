@@ -3,6 +3,8 @@ import { buildItinerary, type PartOfDay } from "../itinerary";
 import { ActivityCard, FlightStrip, PartHeading, partOrder, dayDateLabel } from "./parts";
 import { ActivityDndContext, DraggableActivity, DroppableBucket } from "./dnd";
 import { ShadowItinerary, PlanBCue } from "../ShadowItinerary";
+import { BlankDayScaffold, isScaffoldTriggered } from "../BlankDayScaffold";
+import { useEditing } from "../Editable";
 
 type ActivityEntry = { activity: Extract<Block, { kind: "place" }>; index: number };
 
@@ -12,6 +14,8 @@ type ActivityEntry = { activity: Extract<Block, { kind: "place" }>; index: numbe
 export function HorizontalView({ trip, blocks }: { trip: TripView; blocks: Block[] }) {
   const it = buildItinerary(blocks);
   const dates = [trip.start_date, trip.end_date].filter(Boolean).join(" – ");
+  const { editing } = useEditing();
+  const showScaffold = editing && isScaffoldTriggered(blocks);
 
   return (
     <div className="tds-horizontal">
@@ -25,9 +29,15 @@ export function HorizontalView({ trip, blocks }: { trip: TripView; blocks: Block
           <span>{trip.destination}</span>
           {dates ? <span>{dates}</span> : null}
         </div>
-        <FlightStrip outbound={it.flights.outbound} inbound={it.flights.inbound} />
+        {showScaffold ? null : (
+          <FlightStrip outbound={it.flights.outbound} inbound={it.flights.inbound} />
+        )}
       </header>
 
+      {showScaffold ? (
+        <BlankDayScaffold blocks={blocks} />
+      ) : (
+        <>
       <ActivityDndContext blocks={blocks}>
         <div className="tds-board" role="list">
           {it.days.map((d) => (
@@ -64,6 +74,8 @@ export function HorizontalView({ trip, blocks }: { trip: TripView; blocks: Block
         </div>
       </ActivityDndContext>
       <ShadowItinerary itinerary={it} />
+        </>
+      )}
     </div>
   );
 }
