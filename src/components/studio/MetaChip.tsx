@@ -292,13 +292,54 @@ function DateRangeEditor({
   setRange: (updater: (r: { start: string; end: string }) => { start: string; end: string }) => void;
   fld: string;
 }) {
-  const [pickerOpen, setPickerOpen] = useState(false);
+  const [openPicker, setOpenPicker] = useState<null | "start" | "end">(null);
   const selected: DateRange | undefined = (() => {
     const from = parseLoose(range.start);
     const to = parseLoose(range.end);
     if (!from && !to) return undefined;
     return { from, to };
   })();
+
+  const calendar = (which: "start" | "end") => (
+    <Popover
+      open={openPicker === which}
+      onOpenChange={(o) => setOpenPicker(o ? which : null)}
+    >
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label={which === "start" ? "Pick start date from calendar" : "Pick end date from calendar"}
+          className="inline-flex shrink-0 items-center justify-center rounded-md border border-ink/15 bg-paper/60 px-2 text-ink-soft transition-elegant hover:border-seal/60 hover:text-seal"
+        >
+          <CalendarIcon className="h-3.5 w-3.5" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="end"
+        side="bottom"
+        className="w-auto border-ink/10 bg-paper p-0 text-ink"
+      >
+        <Calendar
+          mode="range"
+          numberOfMonths={1}
+          selected={selected}
+          onSelect={(r) => {
+            // Fill both fields as the range fills; on a partial pick don't
+            // wipe a previously-typed date the user still wants to keep.
+            setRange((prev) => ({
+              start: r?.from ? format(r.from, DATE_FMT) : prev.start,
+              end: r?.to ? format(r.to, DATE_FMT) : r?.from ? "" : prev.end,
+            }));
+            if (r?.from && r?.to) setOpenPicker(null);
+          }}
+          defaultMonth={selected?.from ?? selected?.to ?? new Date()}
+          initialFocus
+          className={cn("p-3 pointer-events-auto")}
+        />
+      </PopoverContent>
+    </Popover>
+  );
+
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-stretch gap-2">
@@ -309,47 +350,17 @@ function DateRangeEditor({
           value={range.start}
           onChange={(e) => setRange((r) => ({ ...r, start: e.target.value }))}
         />
-        <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
-          <PopoverTrigger asChild>
-            <button
-              type="button"
-              aria-label="Pick dates from calendar"
-              className="inline-flex shrink-0 items-center justify-center rounded-md border border-ink/15 bg-paper/60 px-2 text-ink-soft transition-elegant hover:border-seal/60 hover:text-seal"
-            >
-              <CalendarIcon className="h-3.5 w-3.5" />
-            </button>
-          </PopoverTrigger>
-          <PopoverContent
-            align="end"
-            side="bottom"
-            className="w-auto border-ink/10 bg-paper p-0 text-ink"
-          >
-            <Calendar
-              mode="range"
-              numberOfMonths={1}
-              selected={selected}
-              onSelect={(r) => {
-                // Fill both fields as soon as the range has them; on a partial
-                // pick (from only) don't wipe a previously-typed end date.
-                setRange((prev) => ({
-                  start: r?.from ? format(r.from, DATE_FMT) : prev.start,
-                  end: r?.to ? format(r.to, DATE_FMT) : r?.from ? "" : prev.end,
-                }));
-                if (r?.from && r?.to) setPickerOpen(false);
-              }}
-              defaultMonth={selected?.from ?? new Date()}
-              initialFocus
-              className={cn("p-3 pointer-events-auto")}
-            />
-          </PopoverContent>
-        </Popover>
+        {calendar("start")}
       </div>
-      <input
-        className={fld}
-        placeholder="End (e.g. Oct 18)"
-        value={range.end}
-        onChange={(e) => setRange((r) => ({ ...r, end: e.target.value }))}
-      />
+      <div className="flex items-stretch gap-2">
+        <input
+          className={cn(fld, "flex-1")}
+          placeholder="End (e.g. Oct 18)"
+          value={range.end}
+          onChange={(e) => setRange((r) => ({ ...r, end: e.target.value }))}
+        />
+        {calendar("end")}
+      </div>
       <p className="text-[10.5px] leading-snug text-ink/45">
         Type freely or pick from the calendar — either works.
       </p>
