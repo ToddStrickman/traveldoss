@@ -27,10 +27,13 @@ export function ViewPill({
   value,
   onChange,
   className,
+  variant = "floating",
 }: {
   value: SkinView;
   onChange: (v: SkinView) => void;
   className?: string;
+  /** floating = fixed bottom-right pill; inline = bare icon trigger for bars. */
+  variant?: "floating" | "inline";
 }) {
   const [open, setOpen] = React.useState(false);
   const active = OPTIONS.find((o) => o.value === value) ?? OPTIONS[0];
@@ -44,13 +47,21 @@ export function ViewPill({
         aria-haspopup="dialog"
         aria-label={`Layout: ${active.label}. Change layout`}
         className={cn(
-          "fixed right-4 z-50 inline-flex h-12 items-center gap-2 rounded-full border border-white/15 bg-paper/90 px-4 text-ink shadow-elev backdrop-blur-md transition-colors hover:border-seal hover:text-seal md:hidden",
+          variant === "floating"
+            ? "fixed right-4 z-50 inline-flex h-12 items-center gap-2 rounded-full border border-white/15 bg-paper/90 px-4 text-ink shadow-elev backdrop-blur-md transition-colors hover:border-seal hover:text-seal md:hidden"
+            : "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-ink/5 hover:text-seal sm:hidden",
           className,
         )}
-        style={{ bottom: "max(20px, env(safe-area-inset-bottom, 0px))" }}
+        style={
+          variant === "floating"
+            ? { bottom: "max(20px, env(safe-area-inset-bottom, 0px))" }
+            : undefined
+        }
       >
         <active.Icon className="h-4 w-4 text-seal" aria-hidden />
-        <span className="text-[10px] font-medium uppercase tracking-[0.3em]">{active.label}</span>
+        {variant === "floating" ? (
+          <span className="text-[10px] font-medium uppercase tracking-[0.3em]">{active.label}</span>
+        ) : null}
       </button>
 
       <TdSheet open={open} onOpenChange={setOpen} title="Layout">

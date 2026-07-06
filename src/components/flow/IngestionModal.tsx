@@ -405,7 +405,7 @@ export function IngestionModal({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-h-[92dvh] w-[calc(100vw-16px)] max-w-3xl overflow-y-auto border-white/10 bg-paper/95 p-0 text-ink shadow-[0_40px_120px_-30px_rgba(0,0,0,0.6)] sm:w-full sm:rounded-xl">
+      <DialogContent className="max-h-[92dvh] w-[calc(100vw-16px)] max-w-3xl overflow-y-auto border-white/10 bg-paper/95 p-0 text-ink shadow-[0_40px_120px_-30px_rgba(0,0,0,0.6)] sm:w-full sm:rounded-xl max-sm:bottom-0 max-sm:top-auto max-sm:left-0 max-sm:h-[100dvh] max-sm:max-h-[100dvh] max-sm:w-full max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-none max-sm:data-[state=open]:slide-in-from-bottom-10 max-sm:data-[state=open]:zoom-in-100">
         <DialogTitle className="sr-only">Bring your trip in</DialogTitle>
         {stage === "review" ? (
           <ReviewStage
@@ -603,8 +603,9 @@ export function IngestionModal({
           )}
         </div>
 
-        {/* Footer */}
-        <div className="mt-10 flex items-center justify-between gap-4 border-t border-ink/10 bg-paper/40 px-5 sm:px-8 md:px-10 py-5">
+        {/* Footer — sticky on mobile so Compose stays above the keyboard
+            and inside the thumb zone regardless of content height. */}
+        <div className="mt-10 flex items-center justify-between gap-4 border-t border-ink/10 bg-paper/40 px-5 sm:px-8 md:px-10 py-5 max-sm:sticky max-sm:bottom-0 max-sm:mt-6 max-sm:bg-paper/95 max-sm:backdrop-blur-md max-sm:pb-[max(16px,env(safe-area-inset-bottom))]">
           <div className="flex items-center gap-4">
             <button
               onClick={() => onOpenChange(false)}

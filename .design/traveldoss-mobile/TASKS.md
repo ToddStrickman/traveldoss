@@ -50,15 +50,15 @@ established in Tasks 1–3 and inherited by everything after.
 
 ## Sheets & Flows
 
-- [ ] **T7 · Place detail sheet**: Tap any place card → TdSheet with the place's full
+- [x] **T7 · Place detail sheet**: Tap any place card → TdSheet with the place's full
   note and tap-to-act rows — call (`tel:`), map (geo/Google Maps URL), website;
   address row copies on tap. Covers: place with all fields / minimal place / shadow-tier
   styling. _Depends: T2, T3. New: PlaceSheet.tsx._
-- [ ] **T8 · MintBar**: Safe-area-aware sticky bottom bar for sample/pre-mint dossiers:
+- [x] **T8 · MintBar**: Safe-area-aware sticky bottom bar for sample/pre-mint dossiers:
   `[view icon] [Mint this dossier →]` — replaces the crowded preview bar on mobile
   only; enforces the one-bar-per-mode budget from the IA (view pill hidden when
   MintBar present). _Depends: T1, T5. New: components/mobile/MintBar.tsx._
-- [ ] **T9 · Mint flow as sheet**: On mobile, IngestionModal renders as a full-height
+- [x] **T9 · Mint flow as sheet**: On mobile, IngestionModal renders as a full-height
   TdSheet step flow — source segmented control (Paste/Gmail/Manual) → paste step with
   textarea and **Compose Dossier** pinned above the keyboard (visualViewport-aware).
   Desktop dialog unchanged. Covers: keyboard open/close, validation error, loading

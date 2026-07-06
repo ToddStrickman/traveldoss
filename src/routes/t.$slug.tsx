@@ -531,6 +531,12 @@ function DossierPage() {
       {!canEdit && <ViewPill value={layout} onChange={changeLayout} />}
       {canEdit && (
         <StudioBar
+          emphasis={isSample ? "mint" : undefined}
+          leadingSlot={
+            isSample ? (
+              <ViewPill variant="inline" value={layout} onChange={changeLayout} />
+            ) : undefined
+          }
           templateId={templateId}
           saving={saving}
           savedAt={savedAt}

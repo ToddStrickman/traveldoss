@@ -1,4 +1,5 @@
 import { SKINS } from "@/lib/skins/registry";
+import { cn } from "@/lib/utils";
 import { Undo2, Redo2, History } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
@@ -22,6 +23,8 @@ export function StudioBar({
   refineStatus,
   refineHistory,
   onRestoreRefine,
+  emphasis,
+  leadingSlot,
 }: {
   templateId: string;
   saving: boolean;
@@ -36,16 +39,25 @@ export function StudioBar({
   refineStatus?: "idle" | "sharpening" | "error";
   refineHistory?: RefineHistoryEntry[];
   onRestoreRefine?: (id: string) => void;
+  /** "mint" = sample/pre-mint: on phones the bar collapses to
+   *  [leadingSlot] [Mint this dossier] — the IA's one-bar budget. */
+  emphasis?: "mint";
+  leadingSlot?: React.ReactNode;
 }) {
+  const mintFocus = emphasis === "mint";
   const hasRefineHistory = !!refineHistory && refineHistory.length > 0;
   return (
     <div
       data-print="hide"
-      className="fixed left-1/2 z-40 flex -translate-x-1/2 items-center gap-1 rounded-full border border-white/10 bg-paper/90 px-2 py-1.5 text-ink backdrop-blur-md sm:gap-3 sm:px-3 bottom-[max(16px,env(safe-area-inset-bottom))] max-w-[calc(100vw-16px)]"
+      className={cn(
+        "fixed left-1/2 z-40 flex -translate-x-1/2 items-center gap-1 rounded-full border border-white/10 bg-paper/90 px-2 py-1.5 text-ink backdrop-blur-md sm:gap-3 sm:px-3 bottom-[max(16px,env(safe-area-inset-bottom))] max-w-[calc(100vw-16px)]",
+        mintFocus && "max-sm:w-[calc(100vw-24px)] max-sm:justify-between max-sm:gap-2",
+      )}
     >
+      {leadingSlot}
       {(onUndo || onRedo) && (
         <>
-          <div className="flex items-center gap-0.5 sm:gap-1">
+          <div className={cn("flex items-center gap-0.5 sm:gap-1", mintFocus && "max-sm:hidden")}>
             <button
               type="button"
               onClick={onUndo}
@@ -121,7 +133,7 @@ export function StudioBar({
           <span className="hidden sm:inline-block h-4 w-px bg-white/10" />
         </>
       )}
-      <label className="flex shrink items-center gap-2 text-[10px] uppercase tracking-[0.3em] text-ink-soft min-w-0">
+      <label className={cn("flex shrink items-center gap-2 text-[10px] uppercase tracking-[0.3em] text-ink-soft min-w-0", mintFocus && "max-sm:hidden")}>
         <span className="hidden sm:inline">Dossier Template</span>
         <select
           value={templateId}
@@ -158,14 +170,19 @@ export function StudioBar({
           type="button"
           onClick={onMint}
           aria-label="Mint your trip"
-          className="td-mint-button td-mint-cta group relative inline-flex shrink-0 min-h-11 items-center gap-1.5 rounded-full bg-seal px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-paper transition-all duration-300 hover:-translate-y-0.5 hover:scale-[1.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal/60 focus-visible:ring-offset-2 focus-visible:ring-offset-paper sm:gap-2.5 sm:px-5 sm:py-2.5 sm:text-[11px] sm:tracking-[0.32em]"
+          className={cn(
+            "td-mint-button td-mint-cta group relative inline-flex shrink-0 min-h-11 items-center gap-1.5 rounded-full bg-seal px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-paper transition-all duration-300 hover:-translate-y-0.5 hover:scale-[1.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal/60 focus-visible:ring-offset-2 focus-visible:ring-offset-paper sm:gap-2.5 sm:px-5 sm:py-2.5 sm:text-[11px] sm:tracking-[0.32em]",
+            mintFocus && "max-sm:flex-1 max-sm:justify-center",
+          )}
         >
           <span
             aria-hidden
             className="td-mint-pulse inline-block h-2 w-2 rounded-full bg-paper shadow-[0_0_10px_rgba(255,255,255,0.9)]"
           />
           <span className="relative">
-            <span className="sm:hidden">{mintLabel ?? "Mint"}</span>
+            <span className="sm:hidden">
+              {mintFocus ? "Mint this dossier" : mintLabel ?? "Mint"}
+            </span>
             <span className="hidden sm:inline">
               {mintLabel === "Replace" ? "Replace itinerary" : "Mint your trip"}
             </span>

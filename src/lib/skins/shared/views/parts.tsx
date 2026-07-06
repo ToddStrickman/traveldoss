@@ -12,6 +12,7 @@ import {
 import type { Block } from "../../types";
 import { CategoryIcon, AirfareIcon, categoryLabel } from "../CategoryIcon";
 import { EditableText, useEditing } from "../Editable";
+import { PlaceSheet, usePointerCoarse } from "@/components/mobile/PlaceSheet";
 import type { FlightBlock, ActivityBlock, PartOfDay } from "../itinerary";
 import { PART_LABEL } from "../itinerary";
 
@@ -294,9 +295,28 @@ export function ActivityRow({
   activity: ActivityBlock;
   index: number;
 }) {
-  const { onBlockChange } = useEditing();
+  const { onBlockChange, editing } = useEditing();
+  // Read mode on touch: the row is a tap target opening the acting sheet
+  // (call / map / website / copy). Editing keeps inline text behavior.
+  const coarse = usePointerCoarse();
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const tappable =
+    coarse && !editing &&
+    !!(activity.address || activity.phone || activity.website || activity.note || activity.hours);
   return (
-    <div className="tds-act-row" data-block="activity">
+    <div
+      className="tds-act-row"
+      data-block="activity"
+      data-tappable={tappable || undefined}
+      onClick={tappable ? () => setSheetOpen(true) : undefined}
+      onKeyDown={tappable ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSheetOpen(true); } } : undefined}
+      role={tappable ? "button" : undefined}
+      tabIndex={tappable ? 0 : undefined}
+      aria-label={tappable ? `${activity.name} — details` : undefined}
+    >
+      {tappable ? (
+        <PlaceSheet activity={activity} open={sheetOpen} onOpenChange={setSheetOpen} />
+      ) : null}
       <div className="tds-act-time">{activity.time ?? ""}</div>
       <div className="tds-act-icon">
         <CategoryIcon category={activity.category} className="tds-cat-icon" />

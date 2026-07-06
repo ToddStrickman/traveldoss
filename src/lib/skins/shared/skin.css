@@ -1154,3 +1154,10 @@
   .tds-table-scroll .tds-table-day { min-width: 640px; }
   .tds-table-scroll .tds-table-day td { min-width: 200px; }
 }
+
+/* Tappable place rows (read mode, touch): quiet affordance + press state. */
+.tds-act-row[data-tappable] { cursor: pointer; }
+@media (pointer: coarse) {
+  .tds-act-row[data-tappable]:active { background: var(--tds-pop); }
+  .tds-act-row[data-tappable] { border-radius: 6px; margin: 0 -6px; padding-left: 6px; padding-right: 6px; }
+}

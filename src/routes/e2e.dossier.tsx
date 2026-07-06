@@ -15,6 +15,8 @@ import type { SkinView } from "@/lib/skins/types";
 import { DEMO_BLOCKS, DEMO_TRIP } from "@/lib/skins/demo";
 import { DossierMastheadBar } from "@/components/mobile/DossierMastheadBar";
 import { ViewPill } from "@/components/mobile/ViewSheet";
+import { StudioBar } from "@/components/studio/StudioBar";
+import { IngestionModal } from "@/components/flow/IngestionModal";
 
 export const Route = createFileRoute("/e2e/dossier")({
   beforeLoad: () => {
@@ -34,6 +36,11 @@ function DossierHarness() {
   const search = Route.useSearch();
   const skin = getSkin(search.skin ?? "") ?? FALLBACK_SKIN;
   const [layout, setLayout] = useState<SkinView>(search.view);
+  const [mintOpen, setMintOpen] = useState(false);
+  // ?bar=mint exercises the sample-mode bottom bar + mint sheet without a DB.
+  const sampleBar =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("bar") === "mint";
 
   return (
     <>
@@ -45,7 +52,26 @@ function DossierHarness() {
         style={{ height: "calc(56px + env(safe-area-inset-top, 0px))" }}
       />
       <skin.Render trip={DEMO_TRIP} blocks={DEMO_BLOCKS} view={layout} />
-      <ViewPill value={layout} onChange={setLayout} />
+      {sampleBar ? (
+        <StudioBar
+          emphasis="mint"
+          leadingSlot={<ViewPill variant="inline" value={layout} onChange={setLayout} />}
+          templateId={skin.meta.id}
+          saving={false}
+          savedAt={null}
+          onTemplateChange={() => {}}
+          onMint={() => setMintOpen(true)}
+          mintLabel="Mint"
+        />
+      ) : (
+        <ViewPill value={layout} onChange={setLayout} />
+      )}
+      <IngestionModal
+        open={mintOpen}
+        onOpenChange={setMintOpen}
+        template={skin}
+        onGenerate={() => setMintOpen(false)}
+      />
     </>
   );
 }
