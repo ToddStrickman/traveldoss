@@ -178,8 +178,19 @@ function DossierPage() {
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    const tripOwner = (trip as { user_id?: string }).user_id;
+    // Fast path: read the locally cached session synchronously so
+    // canEdit flips to true on the very first client render for the
+    // owner — otherwise scaffold plus-signs stay dead until the
+    // async getUser round-trip resolves and the user's early clicks
+    // silently drop.
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session?.user && tripOwner && tripOwner === data.session.user.id) {
+        setIsOwner(true);
+      }
+    });
+    // Authoritative confirmation.
     supabase.auth.getUser().then(({ data }) => {
-      const tripOwner = (trip as { user_id?: string }).user_id;
       if (data.user && tripOwner && tripOwner === data.user.id) setIsOwner(true);
       else setIsOwner(false);
     });
@@ -495,9 +506,6 @@ function DossierPage() {
 
   const skin = getSkin(templateId) ?? FALLBACK_SKIN;
 
-  const isSample = destination === "Sample Trip" && !justMinted;
-  const isMinted = !isSample;
-
   const view: TripView = {
     destination,
     subtitle,
@@ -549,22 +557,6 @@ function DossierPage() {
         style={{ height: "calc(56px + env(safe-area-inset-top, 0px))" }}
       />
       <skin.Render trip={view} blocks={blocks} view={layout} />
-      {isSample && (
-        <div
-          data-print="hide"
-          className="fixed right-3 top-[4.5rem] z-50 flex max-w-[280px] flex-col items-end gap-1 md:right-4 md:top-4"
-          role="status"
-          aria-label="Sample preview — mint your trip to begin"
-        >
-          <div className="inline-flex items-center gap-2 rounded-full border border-seal/50 bg-paper/90 px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.35em] text-seal backdrop-blur-md">
-            <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-seal" aria-hidden />
-            Preview
-          </div>
-          <p className="rounded-md bg-paper/80 px-2 py-1 text-right text-[10px] leading-snug text-ink-soft backdrop-blur-md">
-            This is a sample. Mint your trip to start the real dossier and unlock exports.
-          </p>
-        </div>
-      )}
       <div className="mx-auto max-w-3xl px-6 pb-24" data-print="hide">
         <TripDocPreviews tripId={trip.id} />
         {canEdit && <GmailImportPanel tripId={trip.id} />}
@@ -585,51 +577,22 @@ function DossierPage() {
       {!canEdit && <ViewPill value={layout} onChange={changeLayout} />}
       {canEdit && (
         <>
-          {/* Desktop-only floating controls next to the back pill. Mobile
-              lives inside DossierMastheadBar. */}
-          {isMinted && (
-            <>
-              <LockPill locked={locked} onToggle={toggleLock} />
-              <TemplateMenu
-                templateId={templateId}
-                onTemplateChange={onTemplateChange}
-                onRegenerate={() => {
-                  const hasUserContent =
-                    blocks.length > 0 && destination !== "Sample Trip";
-                  if (hasUserContent) {
-                    const ok = window.confirm(
-                      "Regenerate this dossier from a new source? Your current blocks will be overwritten. (Undo with ⌘Z afterwards.)",
-                    );
-                    if (!ok) return;
-                  }
-                  setMintOpen(true);
-                }}
-              />
-            </>
-          )}
+          <LockPill locked={locked} onToggle={toggleLock} />
+          <TemplateMenu
+            templateId={templateId}
+            onTemplateChange={onTemplateChange}
+            onRegenerate={() => {
+              if (blocks.length > 0) {
+                const ok = window.confirm(
+                  "Regenerate this dossier from a new source? Your current blocks will be overwritten. (Undo with ⌘Z afterwards.)",
+                );
+                if (!ok) return;
+              }
+              setMintOpen(true);
+            }}
+          />
           <AnimatePresence>
-            {isSample ? (
-              <StudioBar
-                key="studio-sample"
-                emphasis="mint"
-                leadingSlot={
-                  <ViewPill variant="inline" value={layout} onChange={changeLayout} />
-                }
-                templateId={templateId}
-                saving={saving}
-                savedAt={savedAt}
-                onTemplateChange={onTemplateChange}
-                onMint={() => setMintOpen(true)}
-                mintLabel="Mint"
-                onUndo={undo}
-                onRedo={redo}
-                canUndo={canUndo}
-                canRedo={canRedo}
-                refineStatus={refiner.status}
-                refineHistory={refineHistory}
-                onRestoreRefine={restoreRefine}
-              />
-            ) : isEditing ? (
+            {isEditing ? (
               <StudioBar
                 key="studio-minimal"
                 variant="minimal"
@@ -649,7 +612,7 @@ function DossierPage() {
           </AnimatePresence>
         </>
       )}
-      {isMinted && blocks.length > 0 && (
+      {blocks.length > 0 && (
         <ExportMenu slug={trip.slug} trip={view} blocks={blocks} isOwner={isOwner} />
       )}
       <PrintScheduleGrid trip={view} blocks={blocks} />

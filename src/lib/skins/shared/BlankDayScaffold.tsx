@@ -207,16 +207,9 @@ export function BlankDayScaffold({ blocks }: { blocks: Block[] }) {
   );
 }
 
-/**
- * Show the blank scaffold when the dossier is genuinely empty
- * (no place/flight yet) OR when it's still a pre-mint "Sample Trip"
- * seeded with demo blocks — in both cases the owner needs the
- * clickable cues, not sample content masquerading as their plan.
- */
-export function isScaffoldTriggered(
-  blocks: Block[],
-  opts?: { destination?: string },
-): boolean {
-  if (opts?.destination === "Sample Trip") return true;
+/** Blank scaffold appears whenever the dossier has no place or flight
+ *  content yet. New dossiers are seeded empty by `pickTemplate`, so this
+ *  fires on first load. It disappears the moment the first entry lands. */
+export function isScaffoldTriggered(blocks: Block[]): boolean {
   return !blocks.some((b) => b.kind === "place" || b.kind === "flight");
 }

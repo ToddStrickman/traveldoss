@@ -15,7 +15,7 @@ export function HorizontalView({ trip, blocks }: { trip: TripView; blocks: Block
   const it = buildItinerary(blocks);
   const dates = [trip.start_date, trip.end_date].filter(Boolean).join(" – ");
   const { editing } = useEditing();
-  const showScaffold = editing && isScaffoldTriggered(blocks, { destination: trip.destination });
+  const showScaffold = editing && isScaffoldTriggered(blocks);
 
   return (
     <div className="tds-horizontal">
