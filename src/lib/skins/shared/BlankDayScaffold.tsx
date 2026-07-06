@@ -19,7 +19,7 @@ type GhostPlace = {
  * as soon as the first real place or flight exists.
  */
 export function BlankDayScaffold({ blocks }: { blocks: Block[] }) {
-  const { onBlocksReplace } = useEditing();
+  const { onBlocksReplace, editing } = useEditing();
 
   /** Build a full day skeleton: [outbound?, day, morning, afternoon, evening, place?, inbound?] */
   function materialize(opts: {
@@ -86,9 +86,15 @@ export function BlankDayScaffold({ blocks }: { blocks: Block[] }) {
   return (
     <section
       className="tds-scaffold"
+      data-editing={editing ? "true" : "false"}
       aria-label="Blank dossier — click a slot to start filling it in"
       data-print="hide"
     >
+      {!editing ? (
+        <p className="tds-scaffold-locked-hint" role="status">
+          Editing is locked. Tap the lock in the top bar (or press ⌘/Ctrl+E) to start filling in your dossier.
+        </p>
+      ) : null}
       <div className="tds-scaffold-intro-block">
         <p className="tds-scaffold-eyebrow">Start here</p>
         <h2 className="tds-scaffold-headline">
