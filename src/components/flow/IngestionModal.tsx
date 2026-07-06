@@ -91,6 +91,7 @@ const TABS: {
 ];
 
 import { tripRef } from "@/lib/trip-ref";
+import { ElevateTagline } from "@/components/brand/ElevateTagline";
 
 export function IngestionModal({
   open,
@@ -469,12 +470,7 @@ export function IngestionModal({
               <div className="td-eyebrow text-ink/40">Ref.</div>
               <div className="mt-1.5 font-mono text-[11px] tracking-[0.28em] text-ink/70">{ref}</div>
               <div className="td-rule mx-auto my-3 w-20" />
-              <div
-                className="mt-1.5 text-[15px] italic leading-snug text-ink/75"
-                style={{ fontFamily: "var(--font-display)" }}
-              >
-                Elevate your itinerary
-              </div>
+              <ElevateTagline className="mt-1.5 text-[15px] text-ink/75" as="div" />
             </div>
           </div>
         </div>

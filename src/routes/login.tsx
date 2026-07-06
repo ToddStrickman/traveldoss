@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { ElevateTagline } from "@/components/brand/ElevateTagline";
 
 export const Route = createFileRoute("/login")({
   // Optional key so plain <Link to="/login"> typechecks everywhere; the
@@ -142,12 +143,7 @@ function LoginPage() {
           </p>
           <div className="mt-12 flex items-center gap-3 text-ink/60">
             <span className="h-px w-10 bg-ink/15" />
-            <span
-              className="text-base italic tracking-normal"
-              style={{ fontFamily: "var(--font-display)" }}
-            >
-              Elevate your itinerary
-            </span>
+            <ElevateTagline className="text-base" />
           </div>
         </aside>
 
