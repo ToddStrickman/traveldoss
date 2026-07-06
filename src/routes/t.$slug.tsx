@@ -19,7 +19,6 @@ import { GmailImportPanel } from "@/components/flow/GmailImportPanel";
 import { TripDocPreviews } from "@/components/flow/TripDocPreviews";
 import { DebugReportsPanel } from "@/components/studio/DebugReportsPanel";
 import { DossierMastheadBar } from "@/components/mobile/DossierMastheadBar";
-import { ViewPill } from "@/components/mobile/ViewSheet";
 import { LockPill } from "@/components/studio/LockPill";
 import { TemplateMenu } from "@/components/studio/TemplateMenu";
 import { useIsMobile } from "@/hooks/use-mobile";
