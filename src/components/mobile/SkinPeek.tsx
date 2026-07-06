@@ -127,7 +127,7 @@ export function SkinPeek({
           {skins.map((skin) => (
             <div
               key={skin.meta.id}
-              className="h-full w-full flex-[0_0_100%] overflow-y-auto overscroll-contain"
+              className="cv-slide h-full w-full flex-[0_0_100%] overflow-y-auto overscroll-contain"
               style={{ background: skin.tokens.bg }}
             >
               {skin.tokens.fontUrl && (

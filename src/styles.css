@@ -514,3 +514,10 @@
     animation-duration: 0.01ms !important;
   }
 }
+
+/* Peek rack slides: off-screen skins skip layout/paint entirely. The
+ * active slide is in-viewport so it always renders. */
+.cv-slide {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 100%;
+}

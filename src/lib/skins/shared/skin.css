@@ -1191,3 +1191,19 @@
     max-width: 100%;
   }
 }
+
+/* ── Polish pass (.design/traveldoss-mobile DESIGN_REVIEW Should-fix #1) ──
+   Tablet band: the stacked label/value flight fields stretched the eye
+   across ~700px. Cap the block so label→value stays a comfortable span. */
+@media (min-width: 641px) and (max-width: 860px) {
+  .tds-flightstrip-fields { max-width: 520px; }
+}
+
+/* Day-jump anchoring: sections must clear the fixed mobile masthead bar
+   (56px + safe-area). Was only on .tds-part — day headers hid under it. */
+@media (max-width: 767px) {
+  .tds-day-section,
+  section[data-block="day"] {
+    scroll-margin-top: calc(64px + env(safe-area-inset-top, 0px));
+  }
+}

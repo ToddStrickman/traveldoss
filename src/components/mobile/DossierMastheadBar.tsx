@@ -90,6 +90,19 @@ export function DossierMastheadBar({
     if (!(target instanceof HTMLElement)) return;
     const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     target.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+    // Two-pass correction: sections above the target use content-visibility
+    // size estimates until they render, so the first scroll can land slightly
+    // off on long trips. Re-anchor once layout has settled.
+    window.setTimeout(() => {
+      // Expected resting offset = the section's scroll-margin-top (clears
+      // the fixed bar). Re-anchor only if content-visibility estimates
+      // left us meaningfully off.
+      const expected = parseFloat(getComputedStyle(target).scrollMarginTop) || 0;
+      const rect = target.getBoundingClientRect();
+      if (Math.abs(rect.top - expected) > 8) {
+        target.scrollIntoView({ behavior: "auto", block: "start" });
+      }
+    }, reduce ? 80 : 480);
   };
 
   return (

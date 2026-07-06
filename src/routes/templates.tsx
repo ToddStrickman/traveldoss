@@ -531,7 +531,7 @@ function TemplatesPage() {
           </div>
 
           {/* Result count */}
-          <p className="text-[10px] uppercase tracking-[0.4em] text-ink/40">
+          <p className="text-[10px] uppercase tracking-[0.4em] text-ink/60">
             {filteredSkins.length} dossier template{filteredSkins.length !== 1 ? "s" : ""}
             {activeTag ? ` · ${activeTag}` : ""}
             {query ? ` · “${query.trim()}”` : ""}
