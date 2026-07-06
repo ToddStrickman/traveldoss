@@ -3,7 +3,6 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { getSkin } from "@/lib/skins/registry";
-import { DEMO_BLOCKS } from "@/lib/skins/demo";
 
 function randomSuffix(len = 6) {
   const alphabet = "abcdefghjkmnpqrstuvwxyz23456789";
@@ -41,7 +40,7 @@ export const pickTemplate = createServerFn({ method: "POST" })
       .from("trips")
       .insert({
         user_id: userId,
-        destination: "Sample Trip",
+        destination: "Untitled Trip",
         subtitle: skin.meta.personality,
         tone: skin.meta.codename,
         template_id: skin.meta.id,
@@ -50,7 +49,10 @@ export const pickTemplate = createServerFn({ method: "POST" })
         visibility: "unlisted",
         status: "draft",
         expires_at: expiresAt,
-        content: { blocks: DEMO_BLOCKS, skin: skin.meta.id },
+        // Ship the dossier empty so the BlankDayScaffold takes over from
+        // the first render — every visitor to /t/<slug> already owns
+        // their dossier; no second "mint" step required.
+        content: { blocks: [], skin: skin.meta.id },
       })
       .select("id, slug")
       .single();
