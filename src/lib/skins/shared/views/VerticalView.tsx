@@ -20,7 +20,6 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
   const it = buildItinerary(blocks);
   const { onBlockChange, editing, onMetaChange, onTripDatesChange } = useEditing();
   const showScaffold = editing && isScaffoldTriggered(blocks);
-  const dates = [trip.start_date, trip.end_date].filter(Boolean).join(" – ");
   const meta = trip.meta ?? {};
   const dateValue = { start: trip.start_date ?? "", end: trip.end_date ?? "" };
   const INTERESTS = [
