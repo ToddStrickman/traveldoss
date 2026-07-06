@@ -317,25 +317,55 @@ function DateRangeEditor({
       <PopoverContent
         align="end"
         side="bottom"
-        className="w-auto border-ink/10 bg-paper p-0 text-ink"
+        sideOffset={8}
+        collisionPadding={12}
+        className="w-[min(20rem,calc(100vw-1.5rem))] max-h-[min(80vh,32rem)] overflow-y-auto overscroll-contain border-ink/10 bg-paper p-0 text-ink"
       >
-        <Calendar
-          mode="range"
-          numberOfMonths={1}
-          selected={selected}
-          onSelect={(r) => {
-            // Fill both fields as the range fills; on a partial pick don't
-            // wipe a previously-typed date the user still wants to keep.
-            setRange((prev) => ({
-              start: r?.from ? format(r.from, DATE_FMT) : prev.start,
-              end: r?.to ? format(r.to, DATE_FMT) : r?.from ? "" : prev.end,
-            }));
-            if (r?.from && r?.to) setOpenPicker(null);
-          }}
-          defaultMonth={selected?.from ?? selected?.to ?? new Date()}
-          initialFocus
-          className={cn("p-3 pointer-events-auto")}
-        />
+        <div className="flex flex-col">
+          <Calendar
+            mode="range"
+            numberOfMonths={1}
+            selected={selected}
+            onSelect={(r) => {
+              // Fill both fields as the range fills; on a partial pick don't
+              // wipe a previously-typed date the user still wants to keep.
+              setRange((prev) => ({
+                start: r?.from ? format(r.from, DATE_FMT) : prev.start,
+                end: r?.to ? format(r.to, DATE_FMT) : r?.from ? "" : prev.end,
+              }));
+            }}
+            defaultMonth={selected?.from ?? selected?.to ?? new Date()}
+            initialFocus
+            className={cn("p-3 pointer-events-auto")}
+          />
+          <div className="sticky bottom-0 flex items-center justify-between gap-2 border-t border-ink/10 bg-paper/95 px-3 py-2 backdrop-blur">
+            <span className="td-eyebrow text-[10px] text-ink/55">
+              {selected?.from && selected?.to
+                ? `${format(selected.from, DATE_FMT)} – ${format(selected.to, DATE_FMT)}`
+                : selected?.from
+                  ? `${format(selected.from, DATE_FMT)} – …`
+                  : "Select a range"}
+            </span>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setRange(() => ({ start: "", end: "" }));
+                }}
+                className="td-eyebrow text-[10px] text-ink/45 hover:text-ink"
+              >
+                Clear
+              </button>
+              <button
+                type="button"
+                onClick={() => setOpenPicker(null)}
+                className="inline-flex min-h-[32px] items-center gap-1 rounded-md border border-seal/40 bg-seal/15 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-seal transition-elegant hover:bg-seal hover:text-paper"
+              >
+                <Check className="h-3 w-3" /> Apply
+              </button>
+            </div>
+          </div>
+        </div>
       </PopoverContent>
     </Popover>
   );
