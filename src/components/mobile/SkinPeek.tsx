@@ -145,15 +145,29 @@ export function SkinPeek({
 
       {/* Rack dots + pinned mint */}
       <div className="border-t border-white/10 bg-paper/95 px-4 pt-3 backdrop-blur-md pb-safe">
-        <div className="mb-3 flex items-center justify-center gap-1.5" aria-hidden>
+        <div
+          className="mb-3 flex items-center justify-center gap-0.5"
+          role="tablist"
+          aria-label="Template previews"
+        >
           {skins.map((s, i) => (
-            <span
+            <button
               key={s.meta.id}
-              className={cn(
-                "h-1 rounded-full transition-all duration-300",
-                i === index ? "w-5 bg-seal" : "w-1 bg-ink/20",
-              )}
-            />
+              type="button"
+              role="tab"
+              aria-selected={i === index}
+              aria-label={`Preview ${s.meta.codename}`}
+              onClick={() => emblaApi?.scrollTo(i)}
+              className="tap inline-flex h-11 min-w-6 items-center justify-center focus-visible:outline-none"
+            >
+              <span
+                aria-hidden
+                className={cn(
+                  "h-1 rounded-full transition-all duration-300",
+                  i === index ? "w-5 bg-seal" : "w-1 bg-ink/20",
+                )}
+              />
+            </button>
           ))}
         </div>
         <button
