@@ -1255,3 +1255,11 @@
 .tds-slot-carousel-meta {
   color: color-mix(in oklab, var(--tds-soft) 75%, var(--tds-ink));
 }
+
+/* Lighthouse round 3: the compare toggle and carousel arrows — last of
+   the micro-text accent cluster. Ink-mix the whole control family. */
+.tds-slot-carousel-compare,
+.tds-slot-carousel-btn,
+.tds-slot-carousel-count {
+  color: color-mix(in oklab, var(--tds-accent) 78%, var(--tds-ink));
+}
