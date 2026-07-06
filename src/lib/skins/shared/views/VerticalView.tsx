@@ -42,10 +42,6 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
           <span className="tds-dot">.</span>
         </h1>
         {trip.subtitle ? <p className="tds-dek">{trip.subtitle}</p> : null}
-        <div className="tds-byline">
-          <span>{trip.destination}</span>
-          {dates ? <span>{dates}</span> : null}
-        </div>
         <div className="tds-meta-rail" data-print="hide">
           <MetaChip
             label="Dates"
