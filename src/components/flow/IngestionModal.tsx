@@ -91,6 +91,7 @@ const TABS: {
 ];
 
 import { tripRef } from "@/lib/trip-ref";
+import { ElevateTagline } from "@/components/brand/ElevateTagline";
 
 export function IngestionModal({
   open,
