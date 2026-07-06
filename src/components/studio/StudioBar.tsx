@@ -2,6 +2,7 @@ import { SKINS } from "@/lib/skins/registry";
 import { cn } from "@/lib/utils";
 import { Undo2, Redo2, History } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { motion, useReducedMotion } from "motion/react";
 
 export type RefineHistoryEntry = {
   id: string;
@@ -25,6 +26,7 @@ export function StudioBar({
   onRestoreRefine,
   emphasis,
   leadingSlot,
+  variant = "full",
 }: {
   templateId: string;
   saving: boolean;
@@ -43,12 +45,22 @@ export function StudioBar({
    *  [leadingSlot] [Mint this dossier] — the IA's one-bar budget. */
   emphasis?: "mint";
   leadingSlot?: React.ReactNode;
+  /** "minimal" = real, minted dossier — drops the template select, the
+   *  mint CTA, and the refine status label so the bar is just history
+   *  controls + saved status, reclaiming most of the bottom real estate. */
+  variant?: "full" | "minimal";
 }) {
   const mintFocus = emphasis === "mint";
   const hasRefineHistory = !!refineHistory && refineHistory.length > 0;
+  const minimal = variant === "minimal";
+  const reduce = useReducedMotion();
   return (
-    <div
+    <motion.div
       data-print="hide"
+      initial={{ opacity: 0, y: reduce ? 0 : 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: reduce ? 0 : 24 }}
+      transition={{ duration: 0.22, ease: "easeOut" }}
       className={cn(
         "fixed left-1/2 z-40 flex -translate-x-1/2 items-center gap-1 rounded-full border border-white/10 bg-paper/90 px-2 py-1.5 text-ink backdrop-blur-md sm:gap-3 sm:px-3 bottom-[max(16px,env(safe-area-inset-bottom))] max-w-[calc(100vw-16px)]",
         mintFocus && "max-sm:w-[calc(100vw-24px)] max-sm:justify-between max-sm:gap-2",
@@ -133,6 +145,7 @@ export function StudioBar({
           <span className="hidden sm:inline-block h-4 w-px bg-white/10" />
         </>
       )}
+      {!minimal && (
       <label className={cn("flex shrink items-center gap-2 text-[10px] uppercase tracking-[0.3em] text-ink-soft min-w-0", mintFocus && "max-sm:hidden")}>
         <span className="hidden sm:inline">Dossier Template</span>
         <select
@@ -148,7 +161,8 @@ export function StudioBar({
           ))}
         </select>
       </label>
-      <span className="hidden sm:inline-block h-4 w-px bg-white/10" />
+      )}
+      {!minimal && <span className="hidden sm:inline-block h-4 w-px bg-white/10" />}
       {refineStatus && refineStatus !== "idle" && (
         <span
           className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.3em] text-ink-soft"
@@ -165,7 +179,7 @@ export function StudioBar({
           </span>
         </span>
       )}
-      {onMint ? (
+      {onMint && !minimal ? (
         <button
           type="button"
           onClick={onMint}
@@ -183,7 +197,7 @@ export function StudioBar({
               {mintFocus ? "Mint this dossier" : mintLabel ?? "Mint"}
             </span>
             <span className="hidden sm:inline">
-              {mintLabel === "Replace" ? "Replace itinerary" : "Mint your trip"}
+              {mintFocus ? "Mint your trip" : mintLabel ?? "Mint your trip"}
             </span>
           </span>
           <span
@@ -204,6 +218,6 @@ export function StudioBar({
           <span className="inline-block h-1.5 w-1.5 rounded-full bg-seal align-middle" />
         </span>
       )}
-    </div>
+    </motion.div>
   );
 }
