@@ -589,7 +589,10 @@ function TemplatesPage() {
           skins={filteredSkins.length > 0 ? filteredSkins : SKINS}
           startId={peekId}
           onClose={() => setPeekId(null)}
-          onMint={handlePick}
+          onMint={(id) => {
+            setPeekId(null);
+            handlePick(id);
+          }}
           mintingId={picking}
         />
       ) : null}
