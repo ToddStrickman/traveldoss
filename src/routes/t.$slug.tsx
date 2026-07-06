@@ -537,7 +537,6 @@ function DossierPage() {
       )}
       {/* Mobile top chrome: one bar replaces the floating back pill, the
           top view pills, and gives the day-jump entry point. */}
-      <DossierMastheadBar title={destination} blocks={blocks} />
       <DossierMastheadBar
         title={destination}
         blocks={blocks}
