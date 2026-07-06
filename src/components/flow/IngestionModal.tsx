@@ -28,6 +28,7 @@ import {
   ClipboardPaste,
   Upload,
   Wand2,
+  FilePlus2,
 } from "lucide-react";
 import {
   Tooltip,
@@ -76,7 +77,7 @@ function offerDebugReport(report: DebugReport | undefined, label: string) {
   });
 }
 
-type Tab = "paste" | "transcript" | "generate";
+type Tab = "paste" | "transcript" | "generate" | "blank";
 
 const TABS: {
   id: Tab;
@@ -88,6 +89,7 @@ const TABS: {
   { id: "paste", icon: ClipboardPaste, word: "Paste", accent: "Itinerary", sub: "ChatGPT, Claude, notes." },
   { id: "transcript", icon: Upload, word: "Upload", accent: "Transcript", sub: "Text or .vtt / .srt files." },
   { id: "generate", icon: Wand2, word: "Generate", accent: "Itinerary", sub: "Describe the trip — we'll draft it live." },
+  { id: "blank", icon: FilePlus2, word: "Start", accent: "Blank", sub: "Empty dossier — build it manually." },
 ];
 
 import { tripRef } from "@/lib/trip-ref";
