@@ -5,6 +5,12 @@
    CSS custom properties set per-skin from SkinTokens (see SkinFrame).
    ========================================================================== */
 
+@property --tds-edit-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
 .tds {
   background: var(--tds-bg);
   color: var(--tds-ink);
@@ -626,6 +632,42 @@
   .tds-foot { padding: 18px 16px 32px; }
   .tds-flight-row { grid-template-columns: 1fr; gap: 2px; padding: 6px 0; }
   .tds-flight-k { font-size: 10px; letter-spacing: .25em; text-transform: uppercase; }
+}
+
+/* ---- Ethereal rotating border around the editor canvas on mobile. ---- */
+@media (max-width: 767px) {
+  .tds[data-editing="true"] {
+    position: relative;
+    isolation: isolate;
+    border-radius: 12px;
+  }
+  .tds[data-editing="true"]::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1.5px;
+    background: conic-gradient(
+      from var(--tds-edit-angle, 0deg),
+      color-mix(in oklab, var(--tds-accent) 0%, transparent) 0deg,
+      color-mix(in oklab, var(--tds-accent) 22%, transparent) 60deg,
+      color-mix(in oklab, var(--tds-accent) 0%, transparent) 140deg,
+      color-mix(in oklab, var(--tds-accent) 0%, transparent) 360deg
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    animation: tds-edit-sweep 10s linear infinite;
+    pointer-events: none;
+  }
+}
+@keyframes tds-edit-sweep {
+  to { --tds-edit-angle: 360deg; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tds[data-editing="true"]::before { animation: none; }
 }
 
 /* ==========================================================================
