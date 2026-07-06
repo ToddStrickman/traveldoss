@@ -633,11 +633,39 @@ export function IngestionModal({
               Ref. <span className="font-mono normal-case tracking-[0.25em] text-ink/55">{ref}</span>
             </span>
           </div>
-          <button
-            onClick={submit}
-            disabled={!template || parsing}
-            className="group inline-flex items-center gap-4 rounded-md border border-seal/40 bg-seal/15 py-3 pl-5 pr-3 text-[11px] font-medium uppercase tracking-[0.4em] text-seal transition-elegant hover:border-seal hover:bg-seal hover:text-paper disabled:opacity-40"
-          >
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                onGenerate([], "Starting a blank dossier…", null);
+                handleOpenChange(false);
+              }}
+              disabled={!template || parsing}
+              className="group hidden sm:inline-flex items-center gap-2 rounded-md border border-ink/15 bg-transparent py-3 px-4 text-[11px] font-medium uppercase tracking-[0.3em] text-ink/70 transition-elegant hover:border-ink/40 hover:text-ink disabled:opacity-40"
+              title="Skip this step and edit the dossier from a blank page"
+            >
+              <span>Begin from a blank page</span>
+              <span aria-hidden className="italic tracking-normal text-ink/45" style={{ fontFamily: "var(--font-display)" }}>
+                ·
+              </span>
+            </button>
+            {/* Mobile: quiet text link so the primary Compose CTA stays dominant. */}
+            <button
+              type="button"
+              onClick={() => {
+                onGenerate([], "Starting a blank dossier…", null);
+                handleOpenChange(false);
+              }}
+              disabled={!template || parsing}
+              className="sm:hidden td-eyebrow text-ink/55 underline decoration-ink/20 underline-offset-4 transition-elegant hover:text-ink disabled:opacity-40"
+            >
+              Start blank
+            </button>
+            <button
+              onClick={submit}
+              disabled={!template || parsing}
+              className="group inline-flex items-center gap-4 rounded-md border border-seal/40 bg-seal/15 py-3 pl-5 pr-3 text-[11px] font-medium uppercase tracking-[0.4em] text-seal transition-elegant hover:border-seal hover:bg-seal hover:text-paper disabled:opacity-40"
+            >
             <span>
               {parsing
                 ? tab === "generate"
@@ -650,7 +678,8 @@ export function IngestionModal({
             <span aria-hidden className="inline-flex h-7 w-7 items-center justify-center rounded-sm border border-seal/40 transition-elegant group-hover:border-paper/40">
               →
             </span>
-          </button>
+            </button>
+          </div>
         </div>
           </>
         )}
