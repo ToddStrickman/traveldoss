@@ -178,8 +178,19 @@ function DossierPage() {
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    const tripOwner = (trip as { user_id?: string }).user_id;
+    // Fast path: read the locally cached session synchronously so
+    // canEdit flips to true on the very first client render for the
+    // owner — otherwise scaffold plus-signs stay dead until the
+    // async getUser round-trip resolves and the user's early clicks
+    // silently drop.
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session?.user && tripOwner && tripOwner === data.session.user.id) {
+        setIsOwner(true);
+      }
+    });
+    // Authoritative confirmation.
     supabase.auth.getUser().then(({ data }) => {
-      const tripOwner = (trip as { user_id?: string }).user_id;
       if (data.user && tripOwner && tripOwner === data.user.id) setIsOwner(true);
       else setIsOwner(false);
     });
