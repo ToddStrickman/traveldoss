@@ -8,6 +8,7 @@ type GhostPlace = {
   partOfDay: "morning" | "afternoon" | "evening";
   label: string;
   hint: string;
+  guide: string;
 };
 
 /**
@@ -52,12 +53,24 @@ export function BlankDayScaffold({ blocks }: { blocks: Block[] }) {
   }
 
   const ghosts: GhostPlace[] = [
-    { category: "accommodation", partOfDay: "morning", label: "Where you're staying", hint: "Hotel · check-in time" },
-    { category: "transit", partOfDay: "morning", label: "Rental car or transfer", hint: "Vendor · pickup" },
-    { category: "culture", partOfDay: "afternoon", label: "Museum, gallery, or landmark", hint: "Ticket · hours" },
-    { category: "walk", partOfDay: "afternoon", label: "Neighborhood walk or hike", hint: "Trailhead · distance" },
-    { category: "restaurant", partOfDay: "evening", label: "Dinner reservation", hint: "Time · dress code" },
-    { category: "event", partOfDay: "evening", label: "Concert, theater, or nightlife", hint: "Doors · seat" },
+    { category: "accommodation", partOfDay: "morning", label: "Where you're staying",
+      hint: "Hotel · check-in time",
+      guide: "Click to add your hotel or rental — name, address, and check-in time." },
+    { category: "transit", partOfDay: "morning", label: "Rental car or transfer",
+      hint: "Vendor · pickup",
+      guide: "Click to log a rental car, taxi, ferry, or private transfer." },
+    { category: "culture", partOfDay: "afternoon", label: "Museum, gallery, or landmark",
+      hint: "Ticket · hours",
+      guide: "Click to add a museum, exhibit, or cultural stop with ticket details." },
+    { category: "walk", partOfDay: "afternoon", label: "Neighborhood walk or hike",
+      hint: "Trailhead · distance",
+      guide: "Click to plan a walk or hike — trailhead, distance, difficulty." },
+    { category: "restaurant", partOfDay: "evening", label: "Dinner reservation",
+      hint: "Time · dress code",
+      guide: "Click to book a dinner — restaurant, time, party size, dress code." },
+    { category: "event", partOfDay: "evening", label: "Concert, theater, or nightlife",
+      hint: "Doors · seat",
+      guide: "Click to add a show, concert, or nightlife stop — venue, doors, seat." },
   ];
 
   const addPlaceGhost = (g: GhostPlace) => materialize({ place: g });
@@ -76,23 +89,42 @@ export function BlankDayScaffold({ blocks }: { blocks: Block[] }) {
       aria-label="Blank dossier — click a slot to start filling it in"
       data-print="hide"
     >
-      <p className="tds-scaffold-intro">
-        This is your blank canvas. Tap any slot to add real details — flights,
-        stays, meals, walks. The scaffold disappears the moment your first
-        entry lands.
-      </p>
+      <div className="tds-scaffold-intro-block">
+        <p className="tds-scaffold-eyebrow">Start here</p>
+        <h2 className="tds-scaffold-headline">
+          Your dossier is empty. Fill it in, one slot at a time.
+        </h2>
+        <p className="tds-scaffold-intro">
+          Each dashed tile below is a real slot in your itinerary. Click any
+          one to open its editor — the scaffold disappears the moment your
+          first entry lands, and everything you add stays in your dossier.
+        </p>
+        <ol className="tds-scaffold-steps">
+          <li><span className="tds-scaffold-step-n">1</span> Log your flights — outbound above, return below.</li>
+          <li><span className="tds-scaffold-step-n">2</span> Anchor Day 01 with where you're staying.</li>
+          <li><span className="tds-scaffold-step-n">3</span> Add what you're doing morning, afternoon, and evening.</li>
+        </ol>
+      </div>
 
       <button
         type="button"
-        className="tds-ghost tds-ghost-flight"
+        className="tds-ghost tds-ghost-flight tap"
         onClick={() => addFlightGhost("outbound")}
       >
+        <span className="tds-ghost-step" aria-hidden>1</span>
         <span className="tds-ghost-icon" aria-hidden>
           <Plane size={16} />
         </span>
         <span className="tds-ghost-body">
           <span className="tds-ghost-label">Add outbound flight</span>
           <span className="tds-ghost-hint">Airline · confirmation · seat</span>
+          <span className="tds-ghost-guide">
+            Click to log the flight that gets you there — airline, flight
+            number, confirmation, seat, and gate.
+          </span>
+        </span>
+        <span className="tds-ghost-plus" aria-hidden>
+          <Plus size={14} />
         </span>
       </button>
 
@@ -104,9 +136,19 @@ export function BlankDayScaffold({ blocks }: { blocks: Block[] }) {
           </div>
         </header>
 
-        {(["morning", "afternoon", "evening"] as const).map((part) => (
+        {(["morning", "afternoon", "evening"] as const).map((part, partIdx) => (
           <div key={part} className="tds-scaffold-part">
-            <div className="tds-scaffold-part-heading">{part}</div>
+            <div className="tds-scaffold-part-heading">
+              <span className="tds-scaffold-part-n">{partIdx + 2}</span>
+              <span>{part}</span>
+              <span className="tds-scaffold-part-caption">
+                {part === "morning"
+                  ? "How the day opens"
+                  : part === "afternoon"
+                    ? "The middle stretch"
+                    : "How the day closes"}
+              </span>
+            </div>
             <div className="tds-scaffold-part-rows">
               {grouped[part].map((g) => (
                 <button
@@ -121,6 +163,7 @@ export function BlankDayScaffold({ blocks }: { blocks: Block[] }) {
                   <span className="tds-ghost-body">
                     <span className="tds-ghost-label">{g.label}</span>
                     <span className="tds-ghost-hint">{g.hint}</span>
+                    <span className="tds-ghost-guide">{g.guide}</span>
                   </span>
                   <span className="tds-ghost-plus" aria-hidden>
                     <Plus size={14} />
@@ -134,15 +177,23 @@ export function BlankDayScaffold({ blocks }: { blocks: Block[] }) {
 
       <button
         type="button"
-        className="tds-ghost tds-ghost-flight"
+        className="tds-ghost tds-ghost-flight tap"
         onClick={() => addFlightGhost("inbound")}
       >
+        <span className="tds-ghost-step" aria-hidden>5</span>
         <span className="tds-ghost-icon" aria-hidden>
           <Plane size={16} style={{ transform: "scaleX(-1)" }} />
         </span>
         <span className="tds-ghost-body">
           <span className="tds-ghost-label">Add inbound flight</span>
           <span className="tds-ghost-hint">Return leg · seat · baggage</span>
+          <span className="tds-ghost-guide">
+            Click to log the return leg — carrier, time, seat, and any
+            baggage confirmations you'll want at the gate.
+          </span>
+        </span>
+        <span className="tds-ghost-plus" aria-hidden>
+          <Plus size={14} />
         </span>
       </button>
 
