@@ -1,3 +1,4 @@
+import type { ElementType } from "react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -11,7 +12,7 @@ type ElevateTaglineProps = {
   /** Extra classes appended to the base typography (colour, size overrides, etc.). */
   className?: string;
   /** Render as a different element (default: <span>). */
-  as?: keyof JSX.IntrinsicElements;
+  as?: ElementType;
 };
 
 /**
