@@ -5,6 +5,12 @@
    CSS custom properties set per-skin from SkinTokens (see SkinFrame).
    ========================================================================== */
 
+@property --tds-edit-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
 .tds {
   background: var(--tds-bg);
   color: var(--tds-ink);
