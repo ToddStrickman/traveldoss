@@ -16,8 +16,10 @@ import { Link } from "@tanstack/react-router";
 import { CalendarDays } from "lucide-react";
 import { TdSheet } from "@/components/mobile/TdSheet";
 import type { Block } from "@/lib/skins/types";
+import type { SkinView } from "@/lib/skins/types";
 import { cn } from "@/lib/utils";
 import { LockPill } from "@/components/studio/LockPill";
+import { ViewPill } from "@/components/mobile/ViewSheet";
 
 interface DayEntry {
   n: number;
@@ -51,12 +53,22 @@ export function DossierMastheadBar({
   canEdit = false,
   locked = false,
   onToggleLock,
+  tokens,
+  layout,
+  onLayoutChange,
 }: {
   title: string;
   blocks: Block[];
   canEdit?: boolean;
   locked?: boolean;
   onToggleLock?: () => void;
+  /** Active skin tokens — used so the bar picks up the skin's paper/ink
+   *  instead of the global dark-navy defaults (breaks contrast on light skins). */
+  tokens?: { bg: string; ink: string; rule: string };
+  /** Current layout + setter. When provided, the bar renders an inline
+   *  view switcher so mobile has the same VERTICAL/HORIZONTAL/GRID access as desktop. */
+  layout?: SkinView;
+  onLayoutChange?: (v: SkinView) => void;
 }) {
   const days = React.useMemo(() => collectDays(blocks), [blocks]);
   const [past, setPast] = React.useState(false);
@@ -121,13 +133,27 @@ export function DossierMastheadBar({
 
       <header
         data-print="hide"
-        className="fixed inset-x-0 top-0 z-50 flex h-14 items-center gap-2 border-b border-white/10 bg-paper/90 px-2 backdrop-blur-md md:hidden"
-        style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
+        className="fixed inset-x-0 top-0 z-50 flex h-14 items-center gap-2 border-b px-2 backdrop-blur-md md:hidden"
+        style={{
+          paddingTop: "env(safe-area-inset-top, 0px)",
+          background: tokens
+            ? `color-mix(in oklab, ${tokens.bg} 94%, transparent)`
+            : undefined,
+          color: tokens?.ink,
+          borderColor: tokens
+            ? `color-mix(in oklab, ${tokens.rule} 40%, transparent)`
+            : undefined,
+        }}
       >
         <Link
           to="/"
           aria-label="Back to TravelDoss"
-          className="tap inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink-soft transition-colors hover:text-seal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal"
+          className="tap inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors hover:text-seal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal"
+          style={
+            tokens
+              ? { color: `color-mix(in oklab, ${tokens.ink} 82%, transparent)` }
+              : undefined
+          }
         >
           <span aria-hidden className="text-base">←</span>
         </Link>
@@ -135,20 +161,28 @@ export function DossierMastheadBar({
         <div
           aria-hidden={!past}
           className={cn(
-            "min-w-0 flex-1 truncate text-center text-sm text-ink transition-opacity duration-300 motion-reduce:transition-none",
+            "min-w-0 flex-1 truncate text-center text-sm transition-opacity duration-300 motion-reduce:transition-none",
             past ? "opacity-100" : "opacity-0",
           )}
-          style={{ fontFamily: "var(--font-display)" }}
+          style={{ fontFamily: "var(--font-display)", color: tokens?.ink }}
         >
           {title}
         </div>
 
         <div className="flex shrink-0 items-center gap-1">
+          {layout && onLayoutChange ? (
+            <ViewPill value={layout} onChange={onLayoutChange} variant="inline" />
+          ) : null}
           {days.length >= 2 ? (
             <button
               type="button"
               onClick={() => setOpen(true)}
-              className="tap inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full px-3 text-[10px] font-medium uppercase tracking-[0.3em] text-ink-soft transition-colors hover:text-seal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal"
+              className="tap inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full px-3 text-[10px] font-medium uppercase tracking-[0.3em] transition-colors hover:text-seal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal"
+              style={
+                tokens
+                  ? { color: `color-mix(in oklab, ${tokens.ink} 70%, transparent)` }
+                  : undefined
+              }
               aria-haspopup="dialog"
               aria-label="Jump to day"
             >
@@ -159,7 +193,9 @@ export function DossierMastheadBar({
           {canEdit && onToggleLock ? (
             <LockPill locked={locked} onToggle={onToggleLock} variant="inline" />
           ) : null}
-          {!canEdit && days.length < 2 ? <div className="h-11 w-11 shrink-0" aria-hidden /> : null}
+          {!canEdit && days.length < 2 && !layout ? (
+            <div className="h-11 w-11 shrink-0" aria-hidden />
+          ) : null}
         </div>
       </header>
 
