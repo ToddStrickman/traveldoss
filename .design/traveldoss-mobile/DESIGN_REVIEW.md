@@ -128,3 +128,35 @@ polish-grade.
 | Typography | Pass — 16px+ body on mobile, display serif clamped, tabular numerals on data |
 | Dark mode | N/A by design — single navy theme; skins own their palettes |
 | Mobile-first | Pass — mobile base + `md:` desktop layers; no horizontal page scroll at 375 |
+
+## Polish Addendum — 2026-07-06
+
+Post-review polish pass, driven by live Lighthouse audits against
+`https://traveldoss.com/t/cassian-87cq2u` (mobile emulation).
+
+**Shipped (commits `cdb558c` → `24247f1`):**
+
+- All review follow-ups: tablet flight-field cap (520px at 641–860px), day-jump
+  anchor correction (lands exactly 64px under the fixed bar), carousel dots at
+  24px+ targets, coarse-pointer drag suppression.
+- WCAG 2.5.3 Label-in-Name ×3: StudioBar mint button, ActivityRow, PlanBCue —
+  visible text now contained in every accessible name (`label-content-name-mismatch`
+  passes live).
+- Contrast closure across four rounds, all via
+  `color-mix(in oklab, var(--tds-X) N%, var(--tds-ink))` so the fix self-adapts to
+  every skin's polarity: dek/byline, day numbers/part labels/flightstrip labels,
+  carousel pill/meta/compare/arrows/count, act times, card chips, Plan B cue,
+  shadow eyebrow + day numbers, footer, and the open-slot placeholder (its `.7`
+  opacity was flattening `--tds-soft` to 2.41:1 — now full-opacity at a computed
+  4.98). Mix ratios verified mathematically in oklab against Cassian's cream
+  (worst case) before shipping.
+- Font preconnects deduped; viewport meta carries `interactive-widget=resizes-content`.
+
+**Live scores (mobile):** accessibility 93 → 96 with the final contrast round
+deployed and expected to close the last failing audit; performance 64–71 across
+runs with TBT ≤15ms and CLS 0 — the residual gap is the ~2s Lovable SSR response
+plus platform bundle overhead, not addressable from the frontend.
+
+**Known non-fixables:** Lovable server response time and unused platform JS
+(infra-side); physical-device keyboard behavior in the mint sheet still merits a
+one-time check on real iOS hardware.
