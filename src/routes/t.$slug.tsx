@@ -250,9 +250,16 @@ function DossierPage() {
       };
       setSnap((s) => {
         const next: Snapshot = { ...s, blocks: nextBlocks };
-        if (nextDestination && nextDestination !== s.destination) {
-          next.destination = nextDestination;
-          patch.destination = nextDestination;
+        // Move the trip out of the "Sample Trip" state on mint so a refresh
+        // doesn't reset the dossier back to sample/preview mode. Prefer the
+        // AI-parsed destination; otherwise use a neutral placeholder the
+        // owner can rename inline.
+        const resolved =
+          (nextDestination && nextDestination.trim()) ||
+          (s.destination !== "Sample Trip" ? s.destination : "Untitled Trip");
+        if (resolved !== s.destination) {
+          next.destination = resolved;
+          patch.destination = resolved;
         }
         return next;
       });

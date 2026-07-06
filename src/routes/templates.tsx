@@ -301,6 +301,22 @@ function TemplatesPage() {
     if (!pickParam) return;
     if (!SKINS.some((s) => s.meta.id === pickParam)) return;
     autoPickedRef.current = true;
+    // Guard against re-minting when the user hits Back from the freshly
+    // minted dossier: sessionStorage persists across the remount, so we
+    // route them back to the trip they already created instead of
+    // silently creating an orphan duplicate.
+    const mintedKey = `td_picked_slug:${pickParam}`;
+    const existingSlug = window.sessionStorage.getItem(mintedKey);
+    if (existingSlug) {
+      // Clear the pick param so a further Back doesn't loop this branch.
+      void navigate({
+        to: "/t/$slug",
+        params: { slug: existingSlug },
+        search: { mode: "edit" },
+        replace: true,
+      });
+      return;
+    }
     if (mobileRead) {
       setPeekId(pickParam);
     } else {
@@ -399,6 +415,7 @@ function TemplatesPage() {
         return;
       }
       const r = await pickFn({ data: { templateId: id } });
+      window.sessionStorage.setItem(`td_picked_slug:${id}`, r.slug);
       await navigate({ to: "/t/$slug", params: { slug: r.slug }, search: { mode: "edit" } });
     } catch (e) {
       console.error(e);
