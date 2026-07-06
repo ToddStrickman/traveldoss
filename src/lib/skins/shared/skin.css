@@ -281,6 +281,34 @@
 @media (prefers-reduced-motion: reduce) {
   .td-chip-pulse { animation: none; }
 }
+
+/* Blank scaffold locked-mode hint. Rendered when the whole canvas is
+ * locked (editing off) so the owner knows why the ghost tiles look
+ * dim and don't respond. */
+.tds-scaffold-locked-hint {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border: 1px dashed color-mix(in oklab, var(--tds-accent) 45%, transparent);
+  border-radius: 999px;
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--tds-ink) 72%, transparent);
+  text-align: center;
+}
+.tds-scaffold[data-editing="false"] .tds-ghost {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+/* Placeholder underline hint on editable text when the canvas is in
+ * edit mode. Only fires on the empty state (tds-edit-empty) so filled
+ * fields stay clean. */
+.tds-edit.tds-edit-empty[data-editing="true"] {
+  text-decoration: underline dashed
+    color-mix(in oklab, var(--tds-accent) 55%, transparent);
+  text-underline-offset: 4px;
+}
 .tds-act-card {
   background: var(--tds-bg);
   border: 1px solid var(--tds-rule);
