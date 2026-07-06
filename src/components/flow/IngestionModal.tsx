@@ -135,7 +135,7 @@ export function IngestionModal({
   const ref = tripRef(tripId ?? undefined, tripCreatedAt ?? undefined);
   const [stage, setStage] = useState<"source" | "review">("source");
   const [reviewBlocks, setReviewBlocks] = useState<Block[]>([]);
-  const [reviewLabel, setReviewLabel] = useState("Reading your itinerary…");
+  const [reviewLabel, setReviewLabel] = useState("Reading your dossier…");
   const [reviewDestination, setReviewDestination] = useState<string | null>(null);
   const [parsing, setParsing] = useState(false);
   const parseAi = useServerFn(parseItineraryAi);
@@ -152,7 +152,7 @@ export function IngestionModal({
     if (data.user) return true;
     toast.message("Sign in to compose your dossier", {
       description:
-        "Signing in lets us tailor the itinerary to you, attach real contact details, and put your name on the trip for checkout.",
+        "Signing in lets us tailor the dossier to you, attach real contact details, and put your name on the trip for checkout.",
     });
     const back = `${location.pathname}${location.searchStr}${
       location.searchStr.includes("mint=1") ? "" : (location.searchStr ? "&" : "?") + "mint=1"
@@ -290,7 +290,7 @@ export function IngestionModal({
       toast.error("We couldn't read structure out of that. Try Day 1, Day 2…");
       return;
     }
-    const label = tab === "transcript" ? "Reading your transcript…" : "Reading your itinerary…";
+    const label = tab === "transcript" ? "Reading your transcript…" : "Reading your dossier…";
     onGenerate(blocks, label, destination);
     handleOpenChange(false);
   }
@@ -330,7 +330,7 @@ export function IngestionModal({
         setClarifyAs(gen.questions.map(() => ""));
         setGenPhase("idle");
         toast.message("A few quick questions", {
-          description: "Answer these so we can tailor the itinerary.",
+          description: "Answer these so we can tailor the dossier.",
         });
         return;
       }
@@ -353,7 +353,7 @@ export function IngestionModal({
       setClarifyAs([]);
       onGenerate(
         parsed.blocks,
-        "Drafting your itinerary…",
+        "Drafting your dossier…",
         parsed.destination ?? genDestination.trim() ?? null,
       );
       handleOpenChange(false);
@@ -362,7 +362,7 @@ export function IngestionModal({
       toast.error(
         err instanceof Error
           ? err.message
-          : "Couldn't generate that itinerary. Try again in a moment.",
+          : "Couldn't generate that dossier. Try again in a moment.",
       );
     } finally {
       setParsing(false);
@@ -598,7 +598,7 @@ export function IngestionModal({
                   }
                   placeholder={
                     tab === "paste"
-                      ? "Paste an itinerary — Day 1: arrive, check into hotel, dinner at…"
+                      ? "Paste a dossier — Day 1: arrive, check into hotel, dinner at…"
                       : tab === "transcript"
                       ? "Paste or drop a transcript here — .txt, .vtt, .srt"
                       : 'Describe the trip — "Five days in Lisbon for two, seafood-heavy, balanced pace."'
@@ -1528,7 +1528,7 @@ export function GenerationProgress({
 }) {
   const steps: { id: GenPhaseLocal; label: string; hint: string }[] = [
     { id: "research", label: "Researching the destination", hint: "Pulling live notes on neighborhoods, hours, and openings." },
-    { id: "draft", label: "Drafting your itinerary", hint: "Composing each day with named venues and editorial reasoning." },
+    { id: "draft", label: "Drafting your dossier", hint: "Composing each day with named venues and editorial reasoning." },
     { id: "enrich", label: "Verifying venues", hint: "Cross-checking every stop against Google Places for current details." },
     { id: "done", label: "Ready to review", hint: "Handing off to the review stage." },
   ];

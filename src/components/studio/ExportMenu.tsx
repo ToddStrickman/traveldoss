@@ -114,7 +114,7 @@ export function ExportMenu({
         description:
           err instanceof Error
             ? err.message
-            : "Something went wrong while reading your itinerary. Try again, or check that flight times and stay dates are filled in.",
+            : "Something went wrong while reading your dossier. Try again, or check that flight times and stay dates are filled in.",
       });
       return;
     }
