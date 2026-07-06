@@ -20,7 +20,6 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
   const it = buildItinerary(blocks);
   const { onBlockChange, editing, onMetaChange, onTripDatesChange } = useEditing();
   const showScaffold = editing && isScaffoldTriggered(blocks);
-  const dates = [trip.start_date, trip.end_date].filter(Boolean).join(" – ");
   const meta = trip.meta ?? {};
   const dateValue = { start: trip.start_date ?? "", end: trip.end_date ?? "" };
   const INTERESTS = [
@@ -42,10 +41,6 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
           <span className="tds-dot">.</span>
         </h1>
         {trip.subtitle ? <p className="tds-dek">{trip.subtitle}</p> : null}
-        <div className="tds-byline">
-          <span>{trip.destination}</span>
-          {dates ? <span>{dates}</span> : null}
-        </div>
         <div className="tds-meta-rail" data-print="hide">
           <MetaChip
             label="Dates"
