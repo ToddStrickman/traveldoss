@@ -550,6 +550,9 @@ function DossierPage() {
         canEdit={canEdit}
         locked={locked}
         onToggleLock={toggleLock}
+        tokens={skin.tokens}
+        layout={layout}
+        onLayoutChange={changeLayout}
       />
       <div
         aria-hidden
@@ -572,9 +575,8 @@ function DossierPage() {
         <span className="hidden sm:inline">TravelDoss</span>
       </Link>
       <ViewSwitch value={layout} onChange={changeLayout} tokens={skin.tokens} />
-      {/* Mobile: view switching moves into the thumb zone. Public read mode
-          only — edit modes keep the bottom for StudioBar (one bar per mode). */}
-      {!canEdit && <ViewPill value={layout} onChange={changeLayout} />}
+      {/* Mobile view switching now lives inline in the DossierMastheadBar
+          (matches desktop's top-center pills) — no separate floating pill. */}
       {canEdit && (
         <>
           <LockPill locked={locked} onToggle={toggleLock} />
