@@ -64,11 +64,38 @@ function display(v: Value, editor: MetaChipKind): string {
   if (editor.kind === "dateRange" && v && typeof v === "object" && !Array.isArray(v)) {
     const s = v.start?.trim();
     const e = v.end?.trim();
-    if (s && e) return `${s} – ${e}`;
-    return s || e || "";
+    const fs = formatPrettyDate(s);
+    const fe = formatPrettyDate(e);
+    if (fs && fe) return `${fs} – ${fe}`;
+    return fs || fe || "";
   }
   if (typeof v === "string") return v;
   return "";
+}
+
+/** ISO-ish date → "June 12ᵗʰ, 2026" using unicode superscript ordinals. */
+const MONTHS = [
+  "January","February","March","April","May","June",
+  "July","August","September","October","November","December",
+];
+function ordinalSup(day: number): string {
+  const mod100 = day % 100;
+  const mod10 = day % 10;
+  if (mod100 >= 11 && mod100 <= 13) return "ᵗʰ";
+  if (mod10 === 1) return "ˢᵗ";
+  if (mod10 === 2) return "ⁿᵈ";
+  if (mod10 === 3) return "ʳᵈ";
+  return "ᵗʰ";
+}
+function formatPrettyDate(input?: string): string {
+  if (!input) return "";
+  const m = input.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return input; // leave free-text values untouched
+  const year = Number(m[1]);
+  const monthIdx = Number(m[2]) - 1;
+  const day = Number(m[3]);
+  if (monthIdx < 0 || monthIdx > 11 || day < 1 || day > 31) return input;
+  return `${MONTHS[monthIdx]} ${day}${ordinalSup(day)}, ${year}`;
 }
 
 export function MetaChip(props: MetaChipProps) {
