@@ -17,7 +17,6 @@ import { moveActivity } from "@/lib/skins/shared/itinerary";
 import { IngestionModal } from "@/components/flow/IngestionModal";
 import { GmailImportPanel } from "@/components/flow/GmailImportPanel";
 import { TripDocPreviews } from "@/components/flow/TripDocPreviews";
-import { DebugReportsPanel } from "@/components/studio/DebugReportsPanel";
 import { DossierMastheadBar } from "@/components/mobile/DossierMastheadBar";
 import { LockPill } from "@/components/studio/LockPill";
 import { TemplateMenu } from "@/components/studio/TemplateMenu";
@@ -585,7 +584,6 @@ function DossierPage() {
       <div className="mx-auto max-w-3xl px-6 pb-24" data-print="hide">
         <TripDocPreviews tripId={trip.id} />
         {canEdit && <GmailImportPanel tripId={trip.id} />}
-        {canEdit && import.meta.env.DEV && <DebugReportsPanel tripId={trip.id} />}
       </div>
       <Link
         to="/"
