@@ -55,9 +55,9 @@ export function StudioBar({
       )}
     >
       {leadingSlot}
-      {(onUndo || onRedo) && (
+      {(onUndo || onRedo) && !mintFocus && (
         <>
-          <div className={cn("flex items-center gap-0.5 sm:gap-1", mintFocus && "max-sm:hidden")}>
+          <div className="flex items-center gap-0.5 sm:gap-1">
             <button
               type="button"
               onClick={onUndo}
