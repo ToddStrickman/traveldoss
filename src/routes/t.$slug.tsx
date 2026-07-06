@@ -20,6 +20,11 @@ import { TripDocPreviews } from "@/components/flow/TripDocPreviews";
 import { DebugReportsPanel } from "@/components/studio/DebugReportsPanel";
 import { DossierMastheadBar } from "@/components/mobile/DossierMastheadBar";
 import { ViewPill } from "@/components/mobile/ViewSheet";
+import { LockPill } from "@/components/studio/LockPill";
+import { TemplateMenu } from "@/components/studio/TemplateMenu";
+import { UnlockBanner } from "@/components/studio/UnlockBanner";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 import { useHistory, useUndoRedoShortcuts } from "@/hooks/use-history";
 import { useItineraryRefiner } from "@/hooks/use-itinerary-refiner";
@@ -206,6 +211,39 @@ function DossierPage() {
   const phase = getTemporalPhase(trip.start_date, trip.end_date);
   const canEdit = isOwner && phase !== "archive" && !expired;
 
+  // Global Lock/Unlock — mobile locks by default so a stray finger can't
+  // grab a card; desktop unlocks so clicking straight into a field just
+  // works. Persisted per-trip for the session so a refresh keeps intent.
+  const isMobile = useIsMobile();
+  const lockKey = `td:lock:${trip.slug}`;
+  const [locked, setLocked] = useState<boolean>(true);
+  const lockInitRef = useRef(false);
+  useEffect(() => {
+    if (lockInitRef.current) return;
+    lockInitRef.current = true;
+    let stored: string | null = null;
+    try {
+      stored = sessionStorage.getItem(lockKey);
+    } catch {
+      /* ignore */
+    }
+    if (stored === "0") setLocked(false);
+    else if (stored === "1") setLocked(true);
+    else setLocked(isMobile);
+  }, [isMobile, lockKey]);
+  const toggleLock = useCallback(() => {
+    setLocked((prev) => {
+      const next = !prev;
+      try {
+        sessionStorage.setItem(lockKey, next ? "1" : "0");
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  }, [lockKey]);
+  const isEditing = canEdit && !locked;
+
   const queueSave = useCallback((patch: {
     blocks?: Block[];
     templateId?: string;
@@ -376,7 +414,7 @@ function DossierPage() {
 
   const editingCtx = useMemo(
     () => ({
-      editing: canEdit,
+      editing: isEditing,
       onBlockChange: (index: number, patch: Partial<Block>) => {
         const field = Object.keys(patch)[0] ?? "_";
         setSnap(
@@ -451,7 +489,7 @@ function DossierPage() {
         );
       },
     }),
-    [canEdit, setSnap],
+    [isEditing, setSnap],
   );
 
   if (expired) return <ExpiredDossier slug={trip.slug} destination={trip.destination} />;
@@ -500,6 +538,13 @@ function DossierPage() {
       {/* Mobile top chrome: one bar replaces the floating back pill, the
           top view pills, and gives the day-jump entry point. */}
       <DossierMastheadBar title={destination} blocks={blocks} />
+      <DossierMastheadBar
+        title={destination}
+        blocks={blocks}
+        canEdit={canEdit}
+        locked={locked}
+        onToggleLock={toggleLock}
+      />
       <div
         aria-hidden
         className="md:hidden"
