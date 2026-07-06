@@ -11,12 +11,12 @@ established in Tasks 1–3 and inherited by everything after.
 
 ## Foundation
 
-- [ ] **T1 · Mobile foundation utilities**: Add to `src/styles.css`: safe-area helpers
+- [x] **T1 · Mobile foundation utilities**: Add to `src/styles.css`: safe-area helpers
   (`.pb-safe`, `--safe-b: env(safe-area-inset-bottom)`), `.tap` (min 44×44px hit area),
   coarse-pointer variants, `.edge-fade-x` for scrollable chip rows, and a
   `.no-touch-callout` utility. Zero visual change on desktop; verify by diffing
   desktop screenshots before/after. _Modifies: styles.css only._
-- [ ] **T2 · TdSheet primitive**: Wrap the installed-but-unused vaul `drawer.tsx` into a
+- [x] **T2 · TdSheet primitive**: Wrap the installed-but-unused vaul `drawer.tsx` into a
   branded `TdSheet` (navy `--surface` panel, grabber, hairline top rule, focus trap,
   swipe-dismiss + visible close, `prefers-reduced-motion` → fade). Done = a demo
   trigger opens/dismisses it cleanly on mobile preview with keyboard + screen-reader
@@ -24,24 +24,24 @@ established in Tasks 1–3 and inherited by everything after.
 
 ## Core UI — the dossier (highest visibility, highest risk first)
 
-- [ ] **T3 · VerticalView mobile recomposition**: Card-chunked days with oversized day
+- [x] **T3 · VerticalView mobile recomposition**: Card-chunked days with oversized day
   numerals, boarding-pass flight card (replaces label-stack table), place cards with
   2-line note clamp. Base styles = mobile composition; existing desktop layout
   preserved behind `md:`. Must render correctly in at least 3 skins (Epictetus,
   Cassian, Vesper) since skins consume these shared views. _Modifies:
   src/lib/skins/shared/views/VerticalView.tsx + skin.css._
-- [ ] **T4 · Collapsing masthead + day-jump sheet**: On `/t/<slug>` mobile, the skin
+- [x] **T4 · Collapsing masthead + day-jump sheet**: On `/t/<slug>` mobile, the skin
   masthead collapses on scroll into a slim sticky bar (trip title + **Days** button).
   Days opens a TdSheet table of contents; current trip date auto-highlighted; tap
   jumps (instant under reduced motion). Done = scroll collapse with zero layout shift
   and working jump on a 20-day fixture. _Depends: T2. New: components/mobile/DossierMasthead.tsx,
   DayJumpSheet.tsx; modifies t.$slug.tsx._
-- [ ] **T5 · View pill + `?view=` param**: Floating bottom-right pill (public mode only,
+- [x] **T5 · View pill + `?view=` param**: Floating bottom-right pill (public mode only,
   above safe area) opens a TdSheet with Vertical/Horizontal/Grid segmented control;
   selection writes the new validated `?view=` search param on `/t/<slug>` (default
   vertical, additive, shareable). Desktop keeps its existing tabs untouched.
   _Depends: T2. Modifies: t.$slug.tsx route search schema; new ViewSheet.tsx._
-- [ ] **T6 · HorizontalView touch day-pager**: On coarse pointers, the kanban becomes a
+- [x] **T6 · HorizontalView touch day-pager**: On coarse pointers, the kanban becomes a
   horizontally swipeable day pager (one day per viewport, snap) with vertical bucket
   lists; long-press lifts a card for reorder via the existing `moveActivity` reducer;
   drop targets glow `--seal`. Desktop mouse kanban byte-identical. Done = existing

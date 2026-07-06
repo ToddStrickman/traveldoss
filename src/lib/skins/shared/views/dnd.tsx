@@ -1,7 +1,8 @@
 import { useMemo, type ReactNode } from "react";
 import {
   DndContext,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   closestCenter,
   useDraggable,
   useDroppable,
@@ -40,7 +41,12 @@ export function ActivityDndContext({
   children: ReactNode;
 }) {
   const { editing, onMoveActivity } = useEditing();
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+  // Mouse: small distance so clicks stay clicks. Touch: long-press to lift —
+  // a finger dragging the board must scroll/swipe it, never grab a card.
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
+  );
 
   const cardLocation = useMemo(() => {
     const it = buildItinerary(blocks);

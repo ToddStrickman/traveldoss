@@ -18,6 +18,8 @@ import { IngestionModal } from "@/components/flow/IngestionModal";
 import { GmailImportPanel } from "@/components/flow/GmailImportPanel";
 import { TripDocPreviews } from "@/components/flow/TripDocPreviews";
 import { DebugReportsPanel } from "@/components/studio/DebugReportsPanel";
+import { DossierMastheadBar } from "@/components/mobile/DossierMastheadBar";
+import { ViewPill } from "@/components/mobile/ViewSheet";
 import { toast } from "sonner";
 import { useHistory, useUndoRedoShortcuts } from "@/hooks/use-history";
 import { useItineraryRefiner } from "@/hooks/use-itinerary-refiner";
@@ -39,6 +41,8 @@ export const Route = createFileRoute("/t/$slug")({
   validateSearch: z.object({
     mode: z.enum(["edit", "view"]).optional(),
     mint: z.union([z.literal("1"), z.literal(1), z.boolean()]).optional(),
+    // Additive + shareable: layout survives reload and cross-device handoff.
+    view: z.enum(["vertical", "horizontal", "grid"]).optional(),
   }),
   loader: async ({ params }) => {
     const { trip, expired } = await getDossierBySlug({ data: { slug: params.slug } });
@@ -121,7 +125,21 @@ function DossierPage() {
   const { trip, expired } = Route.useLoaderData();
   const navigate = useNavigate();
   const search = Route.useSearch();
-  const [layout, setLayout] = useState<SkinView>("vertical");
+  const [layout, setLayoutState] = useState<SkinView>(search.view ?? "vertical");
+  // Reflect layout into ?view= so the choice is shareable; replace history so
+  // back doesn't step through layout toggles.
+  const setLayout = useCallback(
+    (next: SkinView) => {
+      setLayoutState(next);
+      void navigate({
+        to: ".",
+        search: (prev: Record<string, unknown>) => ({ ...prev, view: next === "vertical" ? undefined : next }),
+        replace: true,
+        resetScroll: false,
+      });
+    },
+    [navigate],
+  );
   const initial = (trip.content ?? {}) as {
     blocks?: Block[];
     skin?: string;
@@ -442,20 +460,45 @@ function DossierPage() {
     meta,
   };
 
+  // Layout switching with a canvas-level transition where supported
+  // (Kinetic Minimalism); shared by the desktop pills and the mobile sheet.
+  const changeLayout = (next: SkinView) => {
+    const apply = () => setLayout(next);
+    const doc = document as Document & {
+      startViewTransition?: (cb: () => void) => unknown;
+    };
+    const reduce =
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (doc.startViewTransition && !reduce) {
+      doc.startViewTransition(apply);
+    } else {
+      apply();
+    }
+  };
+
   return (
     <EditingProvider value={editingCtx}>
       {skin.tokens.fontUrl && <link rel="stylesheet" href={skin.tokens.fontUrl} />}
       {phase === "active" && <CompanionToday blocks={blocks} />}
       {phase === "archive" && (
-        <div className="sticky top-0 z-30 border-b border-ink/15 bg-paper/85 px-6 py-3 text-center text-[10px] uppercase tracking-[0.4em] text-ink-soft backdrop-blur-md">
+        <div className="sticky top-14 z-30 border-b border-ink/15 bg-paper/85 px-6 py-3 text-center text-[10px] uppercase tracking-[0.4em] text-ink-soft backdrop-blur-md md:top-0">
           {phaseCopy("archive").label} · {phaseCopy("archive").tagline}
         </div>
       )}
+      {/* Mobile top chrome: one bar replaces the floating back pill, the
+          top view pills, and gives the day-jump entry point. */}
+      <DossierMastheadBar title={destination} blocks={blocks} />
+      <div
+        aria-hidden
+        className="md:hidden"
+        style={{ height: "calc(56px + env(safe-area-inset-top, 0px))" }}
+      />
       <skin.Render trip={view} blocks={blocks} view={layout} />
       {isSample && (
         <div
           data-print="hide"
-          className="fixed right-3 top-3 z-50 flex max-w-[280px] flex-col items-end gap-1 sm:right-4 sm:top-4"
+          className="fixed right-3 top-[4.5rem] z-50 flex max-w-[280px] flex-col items-end gap-1 md:right-4 md:top-4"
           role="status"
           aria-label="Sample preview — mint your trip to begin"
         >
@@ -476,31 +519,16 @@ function DossierPage() {
       <Link
         to="/"
         data-print="hide"
-        className="fixed left-3 top-3 z-50 inline-flex min-h-11 items-center gap-2 rounded-full border border-white/15 bg-paper/85 px-3 py-2 text-[10px] font-medium uppercase tracking-[0.35em] text-ink backdrop-blur-md transition-colors hover:border-seal hover:text-seal sm:left-4 sm:top-4 sm:px-3.5"
+        className="fixed left-3 top-3 z-50 hidden min-h-11 items-center gap-2 rounded-full border border-white/15 bg-paper/85 px-3 py-2 text-[10px] font-medium uppercase tracking-[0.35em] text-ink backdrop-blur-md transition-colors hover:border-seal hover:text-seal md:inline-flex md:left-4 md:top-4 md:px-3.5"
         aria-label="Back to TravelDoss"
       >
         <span aria-hidden>←</span>
         <span className="hidden sm:inline">TravelDoss</span>
       </Link>
-      <ViewSwitch
-        value={layout}
-        onChange={(next) => {
-          const apply = () => setLayout(next);
-          // Kinetic Minimalism: smooth canvas-level transition where supported.
-          const doc = document as Document & {
-            startViewTransition?: (cb: () => void) => unknown;
-          };
-          const reduce =
-            typeof window !== "undefined" &&
-            window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-          if (doc.startViewTransition && !reduce) {
-            doc.startViewTransition(apply);
-          } else {
-            apply();
-          }
-        }}
-        tokens={skin.tokens}
-      />
+      <ViewSwitch value={layout} onChange={changeLayout} tokens={skin.tokens} />
+      {/* Mobile: view switching moves into the thumb zone. Public read mode
+          only — edit modes keep the bottom for StudioBar (one bar per mode). */}
+      {!canEdit && <ViewPill value={layout} onChange={changeLayout} />}
       {canEdit && (
         <StudioBar
           templateId={templateId}
@@ -565,7 +593,7 @@ function ViewSwitch({
       role="radiogroup"
       aria-label="Layout"
       data-print="hide"
-      className="fixed left-1/2 top-3 z-50 flex -translate-x-1/2 gap-1 rounded-full p-1 backdrop-blur-sm sm:top-4"
+      className="fixed left-1/2 top-3 z-50 hidden -translate-x-1/2 gap-1 rounded-full p-1 backdrop-blur-sm sm:top-4 md:flex"
       style={{ background: `${tokens.bg}d9`, border: `1px solid ${tokens.rule}` }}
     >
       {opts.map((o) => {

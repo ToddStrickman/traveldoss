@@ -18,6 +18,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TSlugRouteImport } from './routes/t.$slug'
 import { Route as E2eKanbanRouteImport } from './routes/e2e.kanban'
+import { Route as E2eDossierRouteImport } from './routes/e2e.dossier'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
@@ -69,6 +70,11 @@ const E2eKanbanRoute = E2eKanbanRouteImport.update({
   path: '/e2e/kanban',
   getParentRoute: () => rootRouteImport,
 } as any)
+const E2eDossierRoute = E2eDossierRouteImport.update({
+  id: '/e2e/dossier',
+  path: '/e2e/dossier',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedAppRoute = AuthenticatedAppRouteImport.update({
   id: '/app',
   path: '/app',
@@ -114,6 +120,7 @@ export interface FileRoutesByFullPath {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/app': typeof AuthenticatedAppRoute
+  '/e2e/dossier': typeof E2eDossierRoute
   '/e2e/kanban': typeof E2eKanbanRoute
   '/t/$slug': typeof TSlugRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -130,6 +137,7 @@ export interface FileRoutesByTo {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/app': typeof AuthenticatedAppRoute
+  '/e2e/dossier': typeof E2eDossierRoute
   '/e2e/kanban': typeof E2eKanbanRoute
   '/t/$slug': typeof TSlugRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -148,6 +156,7 @@ export interface FileRoutesById {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_authenticated/app': typeof AuthenticatedAppRoute
+  '/e2e/dossier': typeof E2eDossierRoute
   '/e2e/kanban': typeof E2eKanbanRoute
   '/t/$slug': typeof TSlugRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -166,6 +175,7 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/app'
+    | '/e2e/dossier'
     | '/e2e/kanban'
     | '/t/$slug'
     | '/.lovable/oauth/consent'
@@ -182,6 +192,7 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/app'
+    | '/e2e/dossier'
     | '/e2e/kanban'
     | '/t/$slug'
     | '/.lovable/oauth/consent'
@@ -199,6 +210,7 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/_authenticated/app'
+    | '/e2e/dossier'
     | '/e2e/kanban'
     | '/t/$slug'
     | '/.lovable/oauth/consent'
@@ -216,6 +228,7 @@ export interface RootRouteChildren {
   TemplatesRoute: typeof TemplatesRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  E2eDossierRoute: typeof E2eDossierRoute
   E2eKanbanRoute: typeof E2eKanbanRoute
   TSlugRoute: typeof TSlugRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
@@ -288,6 +301,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof E2eKanbanRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/e2e/dossier': {
+      id: '/e2e/dossier'
+      path: '/e2e/dossier'
+      fullPath: '/e2e/dossier'
+      preLoaderRoute: typeof E2eDossierRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/app': {
       id: '/_authenticated/app'
       path: '/app'
@@ -356,6 +376,7 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
+  E2eDossierRoute: E2eDossierRoute,
   E2eKanbanRoute: E2eKanbanRoute,
   TSlugRoute: TSlugRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,

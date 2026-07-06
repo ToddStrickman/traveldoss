@@ -32,6 +32,7 @@ export function GridView({ trip, blocks }: { trip: TripView; blocks: Block[] }) 
       {flights.length > 0 ? (
         <section className="tds-grid-section">
           <h2 className="tds-grid-h2">Flights</h2>
+          <div className="tds-table-scroll">
           <table className="tds-table tds-table-flights">
             <thead>
               <tr>
@@ -58,6 +59,7 @@ export function GridView({ trip, blocks }: { trip: TripView; blocks: Block[] }) 
               ))}
             </tbody>
           </table>
+          </div>
         </section>
       ) : null}
 
@@ -84,6 +86,7 @@ export function GridView({ trip, blocks }: { trip: TripView; blocks: Block[] }) 
             <PlanBCue count={d.shadows.length} />
           </h2>
           {d.day.notes ? <p className="tds-grid-day-notes">{d.day.notes}</p> : null}
+          <div className="tds-table-scroll">
           <table className="tds-table tds-table-day">
             <thead>
               <tr>
@@ -120,6 +123,7 @@ export function GridView({ trip, blocks }: { trip: TripView; blocks: Block[] }) 
               </tr>
             </tbody>
           </table>
+          </div>
           {d.unassigned.length > 0 ? (
             <div className="tds-grid-essentials">
               {d.unassigned.map(({ activity, index }) => (

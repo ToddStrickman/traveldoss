@@ -1061,3 +1061,96 @@
   color: color-mix(in oklab, var(--tds-inkSoft) 60%, transparent);
   font-style: italic;
 }
+
+/* =============================================================
+   MOBILE RECOMPOSITION (T3 · .design/traveldoss-mobile)
+   Visitor-path reading ergonomics. Skins style via tokens; these
+   rules only rearrange shared-view structure under 640px/coarse.
+   ============================================================= */
+@media (max-width: 640px) {
+  /* Meta rail: one calm swipeable row instead of a five-chip pile. */
+  .tds-meta-rail {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    margin-left: -4px;
+    padding: 2px 4px;
+    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 12px, #000 calc(100% - 20px), transparent 100%);
+            mask-image: linear-gradient(to right, transparent 0, #000 12px, #000 calc(100% - 20px), transparent 100%);
+  }
+  .tds-meta-rail::-webkit-scrollbar { display: none; }
+  .tds-meta-rail > * { flex: 0 0 auto; }
+
+  /* Day sections read as chapters: more air, a stronger opening rule,
+     and a label at true editorial scale. */
+  .tds-day-section { margin-top: calc(var(--tds-s5) * 0.9); }
+  .tds-day-section .tds-day-head {
+    padding-top: 14px;
+    border-top: 2px solid var(--tds-ink);
+  }
+  .tds-day-no { font-size: 11px; }
+  .tds-day-label { font-size: clamp(22px, 6.4vw, 28px); line-height: 1.15; }
+
+  /* Flight strip: boarding-pass card, not a bordered data table. */
+  .tds-flightstrip-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 14px;
+  }
+  .tds-flightstrip-field {
+    border-left: 0;
+    padding-left: 0;
+  }
+  .tds-flightstrip-field dd {
+    font-variant-numeric: tabular-nums;
+    font-size: 15px;
+  }
+  .tds-flightstrip-route { letter-spacing: -0.01em; }
+
+  /* Activity rows: calmer gutter, comfortable tap rhythm. */
+  .tds-act-row { grid-template-columns: 44px 18px 1fr; row-gap: 2px; }
+  .tds-part { scroll-margin-top: 72px; }
+
+  /* Open slots become full-width quiet rows (not floating pills). */
+  .tds-open-slot { align-self: stretch; justify-content: center; border-radius: 8px; }
+}
+
+/* Mobile slot-alternatives chrome: the keyboard hint is meaningless on
+   touch and the full control row wraps into clutter — compact it. */
+@media (max-width: 640px), (pointer: coarse) {
+  .tds-slot-carousel-hint { display: none; }
+  .tds-slot-carousel-meta { row-gap: 6px; }
+}
+
+/* Long-press drag (T6): suppress text-selection/callout on grabbable cards
+   so the lift gesture reads as intentional; `manipulation` keeps scroll and
+   kills double-tap zoom latency. */
+@media (pointer: coarse) {
+  .tds-act-card[data-editing="true"],
+  .tds-act-row[data-editing="true"] {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: manipulation;
+  }
+}
+
+/* Grid view on phones: tables pan inside their own rail instead of
+   crushing columns — board physics, not broken layout. */
+.tds-table-scroll { min-width: 0; }
+@media (max-width: 760px) {
+  .tds-table-scroll {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 10px, #000 calc(100% - 22px), transparent 100%);
+            mask-image: linear-gradient(to right, transparent 0, #000 10px, #000 calc(100% - 22px), transparent 100%);
+  }
+  .tds-table-scroll::-webkit-scrollbar { display: none; }
+  .tds-table-scroll .tds-table-flights { min-width: 560px; }
+  .tds-table-scroll .tds-table-day { min-width: 640px; }
+  .tds-table-scroll .tds-table-day td { min-width: 200px; }
+}
