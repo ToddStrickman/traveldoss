@@ -1263,3 +1263,26 @@
 .tds-slot-carousel-count {
   color: color-mix(in oklab, var(--tds-accent) 78%, var(--tds-ink));
 }
+
+/* Lighthouse round 4 — full-page contrast closure. Every remaining small-text
+   offender, ink-mixed at ratios computed per-skin (Cassian cream: soft 5.10,
+   accent 5.45; shadow panel 5.16). Mixing toward ink raises contrast on every
+   skin regardless of polarity, so this is safe across the registry. */
+.tds-act-time,
+.tds-act-card-cat,
+.tds-foot {
+  color: color-mix(in oklab, var(--tds-soft) 78%, var(--tds-ink));
+}
+.tds-planb-cue,
+.tds-shadow-eyebrow,
+.tds-act-card-time,
+.tds-shadow-day-no {
+  color: color-mix(in oklab, var(--tds-accent) 78%, var(--tds-ink));
+}
+/* The open-slot placeholder failed at 2.41 because of its .7 opacity on an
+   already-soft color. Full opacity + a slightly gentler mix keeps it the
+   quietest voice on the page while passing at 4.98. */
+.tds-open-slot {
+  color: color-mix(in oklab, var(--tds-soft) 80%, var(--tds-ink));
+  opacity: 1;
+}
