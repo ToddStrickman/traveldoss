@@ -1,0 +1,161 @@
+/**
+ * SkinPeek — the mobile newsstand. Tapping a gallery tile opens the skin
+ * full-screen at its real mobile rendering; swiping left/right browses
+ * neighboring skins like magazines on a rack. Mint stays pinned in the
+ * thumb zone.
+ *
+ * Vertical pan scrolls the open skin; horizontal drag (embla axis lock)
+ * moves between skins. Desktop never sees this — tiles mint directly.
+ */
+import * as React from "react";
+import useEmblaCarousel from "embla-carousel-react";
+import { X } from "lucide-react";
+import type { SkinModule } from "@/lib/skins/registry";
+import { cn } from "@/lib/utils";
+
+export function SkinPeek({
+  skins,
+  startId,
+  onClose,
+  onMint,
+  mintingId,
+}: {
+  skins: SkinModule[];
+  startId: string;
+  onClose: () => void;
+  onMint: (id: string) => void;
+  mintingId: string | null;
+}) {
+  const startIndex = Math.max(
+    0,
+    skins.findIndex((s) => s.meta.id === startId),
+  );
+  const [emblaRef, emblaApi] = useEmblaCarousel({ startIndex, align: "start" });
+  const [index, setIndex] = React.useState(startIndex);
+  const closeRef = React.useRef<HTMLButtonElement>(null);
+
+  React.useEffect(() => {
+    if (!emblaApi) return;
+    const onSelect = () => setIndex(emblaApi.selectedScrollSnap());
+    emblaApi.on("select", onSelect);
+    if (import.meta.env.DEV) {
+      (window as unknown as { __peekApi?: unknown }).__peekApi = emblaApi;
+    }
+    return () => {
+      emblaApi.off("select", onSelect);
+    };
+  }, [emblaApi]);
+
+  // Scroll lock + escape + initial focus while the peek is up.
+  React.useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    closeRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      if (e.key === "ArrowRight") emblaApi?.scrollNext();
+      if (e.key === "ArrowLeft") emblaApi?.scrollPrev();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [onClose, emblaApi]);
+
+  const active = skins[index] ?? skins[0];
+  const minting = mintingId === active.meta.id;
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Template preview: ${active.meta.codename}`}
+      className="fixed inset-0 z-[60] flex flex-col bg-paper text-ink"
+    >
+      {/* Top bar: close + live codename/hook for the visible skin */}
+      <div
+        className="flex items-center gap-3 border-b border-white/10 px-2 py-2"
+        style={{ paddingTop: "max(8px, env(safe-area-inset-top, 0px))" }}
+      >
+        <button
+          ref={closeRef}
+          type="button"
+          onClick={onClose}
+          aria-label="Close preview"
+          className="tap inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink-soft transition-colors hover:text-seal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal"
+        >
+          <X className="h-5 w-5" />
+        </button>
+        <div className="min-w-0 flex-1 text-center">
+          <div
+            className="truncate text-lg leading-tight"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
+            {active.meta.codename}
+          </div>
+          <div className="truncate text-[11px] italic text-ink-soft">
+            "{active.meta.personality}"
+          </div>
+        </div>
+        <div className="h-11 w-11 shrink-0" aria-hidden />
+      </div>
+
+      {/* The rack: horizontal embla, each slide scrolls vertically */}
+      <div ref={emblaRef} className="min-h-0 flex-1 overflow-hidden">
+        <div className="flex h-full">
+          {skins.map((skin) => (
+            <div
+              key={skin.meta.id}
+              className="h-full w-full flex-[0_0_100%] overflow-y-auto overscroll-contain"
+              style={{ background: skin.tokens.bg }}
+            >
+              {skin.tokens.fontUrl && (
+                <link rel="stylesheet" href={skin.tokens.fontUrl} />
+              )}
+              <skin.Render
+                trip={skin.previewFixture.trip}
+                blocks={skin.previewFixture.blocks}
+              />
+              <div className="h-24" aria-hidden />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Rack dots + pinned mint */}
+      <div className="border-t border-white/10 bg-paper/95 px-4 pt-3 backdrop-blur-md pb-safe">
+        <div className="mb-3 flex items-center justify-center gap-1.5" aria-hidden>
+          {skins.map((s, i) => (
+            <span
+              key={s.meta.id}
+              className={cn(
+                "h-1 rounded-full transition-all duration-300",
+                i === index ? "w-5 bg-seal" : "w-1 bg-ink/20",
+              )}
+            />
+          ))}
+        </div>
+        <button
+          type="button"
+          disabled={minting}
+          onClick={() => onMint(active.meta.id)}
+          className="td-mint-button inline-flex min-h-12 w-full items-center justify-center gap-2.5 rounded-full bg-seal px-5 text-[11px] font-semibold uppercase tracking-[0.32em] text-paper transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal/60 focus-visible:ring-offset-2 focus-visible:ring-offset-paper disabled:cursor-wait disabled:opacity-60"
+        >
+          {minting ? (
+            <span
+              aria-hidden
+              className="h-3 w-3 animate-spin rounded-full border border-current border-t-transparent"
+            />
+          ) : (
+            <span
+              aria-hidden
+              className="td-mint-pulse inline-block h-2 w-2 rounded-full bg-paper shadow-[0_0_10px_rgba(255,255,255,0.9)]"
+            />
+          )}
+          {minting ? "Minting your dossier…" : `Mint ${active.meta.codename}`}
+        </button>
+      </div>
+    </div>
+  );
+}

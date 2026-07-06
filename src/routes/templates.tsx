@@ -5,6 +5,8 @@ import { motion } from "motion/react";
 import { ArrowLeft, Search, X } from "lucide-react";
 import { SKINS, type SkinModule } from "@/lib/skins/registry";
 import { TiltCard } from "@/components/motion/Tilt";
+import { SkinPeek } from "@/components/mobile/SkinPeek";
+import { usePointerCoarse } from "@/components/mobile/PlaceSheet";
 import { pickTemplate } from "@/lib/templates.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -115,18 +117,15 @@ function SkinPreview({ skin }: { skin: SkinModule }) {
   const { Render, previewFixture, tokens } = skin;
   return (
     <div
-      className="relative h-[420px] w-full overflow-hidden border"
+      className="td-skin-tile relative h-[420px] w-full overflow-hidden border"
       style={{ borderColor: "rgba(255,255,255,0.08)", background: tokens.bg }}
     >
-      {/* Scale the real skin render to fit the tile so users see actual design */}
+      {/* Scale the real skin render to fit the tile so users see actual
+          design. Container-query scaled: desktops shrink the 1400px page;
+          phones render the skin's own mobile layout near-legible. */}
       <div
-        className="absolute left-0 top-0 origin-top-left"
-        style={{
-          width: "1400px",
-          transform: "scale(0.32)",
-          transformOrigin: "top left",
-          pointerEvents: "none",
-        }}
+        className="td-skin-tile-inner absolute left-0 top-0 origin-top-left"
+        style={{ pointerEvents: "none" }}
       >
         {skin.tokens.fontUrl && (
           <link rel="stylesheet" href={skin.tokens.fontUrl} />
@@ -148,14 +147,18 @@ function SkinPreview({ skin }: { skin: SkinModule }) {
 function SkinCard({
   skin,
   onPick,
+  onOpen,
   onPrefetch,
   picking,
 }: {
   skin: SkinModule;
   onPick: (id: string) => void;
+  /** When set (mobile), tapping the card opens the peek instead of minting. */
+  onOpen?: (id: string) => void;
   onPrefetch: (id: string) => void;
   picking: boolean;
 }) {
+  const activate = onOpen ?? onPick;
   return (
     <TiltCard intensity={5} className="h-full">
     <article
@@ -164,14 +167,14 @@ function SkinCard({
       tabIndex={picking ? -1 : 0}
       aria-disabled={picking}
       aria-busy={picking}
-      onClick={() => !picking && onPick(skin.meta.id)}
+      onClick={() => !picking && activate(skin.meta.id)}
       onMouseEnter={() => onPrefetch(skin.meta.id)}
       onFocus={() => onPrefetch(skin.meta.id)}
       onKeyDown={(e) => {
         if (picking) return;
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
-          onPick(skin.meta.id);
+          activate(skin.meta.id);
         }
       }}
       className="group flex h-full cursor-pointer flex-col border border-ink/10 bg-paper transition-colors duration-500 hover:border-seal/50 focus:outline-none focus-visible:border-seal focus-visible:ring-2 focus-visible:ring-seal/40"
@@ -239,6 +242,8 @@ function SkinCard({
 
 function TemplatesPage() {
   const [picking, setPicking] = useState<string | null>(null);
+  const [peekId, setPeekId] = useState<string | null>(null);
+  const mobileRead = usePointerCoarse();
   const [query, setQuery] = useState("");
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -274,7 +279,11 @@ function TemplatesPage() {
     if (!pickParam) return;
     if (!SKINS.some((s) => s.meta.id === pickParam)) return;
     autoPickedRef.current = true;
-    handlePick(pickParam);
+    if (mobileRead) {
+      setPeekId(pickParam);
+    } else {
+      handlePick(pickParam);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pickParam]);
 
@@ -451,15 +460,15 @@ function TemplatesPage() {
             )}
           </div>
 
-          {/* Tag chips */}
-          <div className="flex flex-wrap items-center gap-2">
+          {/* Tag chips — single swipeable row on phones, wrapping on desktop */}
+          <div className="scroll-x edge-fade-x -mx-1 items-center gap-2 px-1 pb-1 md:mx-0 md:flex md:flex-wrap md:overflow-visible md:px-0 md:pb-0 md:[mask-image:none] md:[-webkit-mask-image:none]">
             {allTags.map((tag) => {
               const active = activeTag === tag;
               return (
                 <button
                   key={tag}
                   onClick={() => setActiveTag(active ? null : tag)}
-                  className={`rounded-full border px-3.5 py-1.5 text-[10px] font-medium uppercase tracking-[0.25em] transition-colors duration-300 ${
+                  className={`shrink-0 rounded-full border px-3.5 py-2 text-[10px] font-medium uppercase tracking-[0.25em] transition-colors duration-300 ${
                     active
                       ? "border-seal bg-seal/10 text-seal"
                       : "border-ink/10 text-ink/50 hover:border-ink/30 hover:text-ink"
@@ -475,7 +484,7 @@ function TemplatesPage() {
                   setQuery("");
                   setActiveTag(null);
                 }}
-                className="ml-2 text-[10px] font-medium uppercase tracking-[0.25em] text-ink/40 underline-offset-4 transition-colors hover:text-seal"
+                className="ml-2 shrink-0 text-[10px] font-medium uppercase tracking-[0.25em] text-ink/40 underline-offset-4 transition-colors hover:text-seal"
               >
                 Clear
               </button>
@@ -496,6 +505,7 @@ function TemplatesPage() {
               key={skin.meta.id}
               skin={skin}
               onPick={handlePick}
+              onOpen={mobileRead ? setPeekId : undefined}
               onPrefetch={prefetch}
               picking={picking === skin.meta.id}
             />
@@ -518,6 +528,15 @@ function TemplatesPage() {
           )}
         </div>
       </main>
+      {peekId ? (
+        <SkinPeek
+          skins={filteredSkins.length > 0 ? filteredSkins : SKINS}
+          startId={peekId}
+          onClose={() => setPeekId(null)}
+          onMint={handlePick}
+          mintingId={picking}
+        />
+      ) : null}
     </div>
   );
 }

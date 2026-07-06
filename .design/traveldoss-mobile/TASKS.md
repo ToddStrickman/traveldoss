@@ -66,15 +66,15 @@ established in Tasks 1–3 and inherited by everything after.
 
 ## Gallery & Landing
 
-- [ ] **T10 · Newsstand tiles**: Gallery tiles on mobile show a legible cropped hero
+- [x] **T10 · Newsstand tiles**: Gallery tiles on mobile show a legible cropped hero
   region of each skin preview (not the full scaled page); codename + personality hook
   never truncate; filter chips become one scrollable edge-faded row. _Depends: T1.
   Modifies: TemplateGallery.tsx / templates.tsx._
-- [ ] **T11 · Skin peek swiper**: Tapping a tile opens a full-screen peek — swipe
+- [x] **T11 · Skin peek swiper**: Tapping a tile opens a full-screen peek — swipe
   horizontally between skins (embla-carousel, already installed), MintBar pinned
   bottom, close returns to scroll position. `?pick=` deep-links open the peek directly.
   Covers: reduced-motion (no parallax), 10-skin list. _Depends: T8, T10. New: SkinPeek.tsx._
-- [ ] **T12 · Landing tidy**: One-line construction banner at mobile, quick-chips as a
+- [x] **T12 · Landing tidy**: One-line construction banner at mobile, quick-chips as a
   single quiet row, Login pill tap target ≥44px. Sand hero untouched. _Modifies:
   index.tsx only; smallest slice, safe filler between reviews._
 

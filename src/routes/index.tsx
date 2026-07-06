@@ -158,9 +158,9 @@ function Landing() {
       <Ribbon />
 
       {/* Under Construction banner */}
-      <div className="relative z-20 flex items-center justify-center gap-2 bg-seal/10 px-4 py-2 text-center text-[11px] font-medium uppercase tracking-[0.3em] text-seal backdrop-blur-sm border-b border-seal/10">
-        <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-seal" />
-        Under Construction — Things may change.
+      <div className="relative z-20 flex items-center justify-center gap-2 bg-seal/10 px-4 py-2 text-center text-[10px] font-medium uppercase tracking-[0.2em] text-seal backdrop-blur-sm border-b border-seal/10 sm:text-[11px] sm:tracking-[0.3em]">
+        <span className="inline-block h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-seal" />
+        <span className="truncate">Under Construction — Things may change.</span>
       </div>
 
       {/* Center stage */}
@@ -168,7 +168,7 @@ function Landing() {
         <Parallax depth={-6}>
         <Link
           to="/login"
-          className="td-shimmer mb-4 inline-flex items-center gap-2 rounded-full border border-ink/20 bg-paper/40 px-4 py-1.5 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/70 backdrop-blur-sm transition-colors hover:border-seal hover:text-seal"
+          className="td-shimmer tap mb-4 inline-flex min-h-11 items-center gap-2 rounded-full border border-ink/20 bg-paper/40 px-4 py-1.5 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/70 backdrop-blur-sm transition-colors hover:border-seal hover:text-seal"
         >
           Login
         </Link>
@@ -236,7 +236,7 @@ function Landing() {
         </div>
 
         {/* Mobile-only quick chips */}
-        <div className="mt-10 flex flex-wrap items-center justify-center gap-3 md:hidden">
+        <div className="scroll-x edge-fade-x mt-10 items-center gap-3 px-1 md:hidden">
           {[
             { to: "/app" as const, label: "Browse Places" },
             { to: "/templates" as const, label: "Dossier Templates" },
@@ -245,7 +245,7 @@ function Landing() {
             <Link
               key={c.label}
               to={c.to}
-              className="border border-ink/15 px-4 py-2 text-[10px] font-medium uppercase tracking-[0.3em] text-ink/70 transition-colors hover:border-seal hover:text-seal"
+              className="shrink-0 border border-ink/15 px-4 py-3 text-[10px] font-medium uppercase tracking-[0.3em] text-ink/70 transition-colors hover:border-seal hover:text-seal"
             >
               {c.label}
             </Link>
