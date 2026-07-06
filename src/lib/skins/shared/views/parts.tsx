@@ -312,7 +312,6 @@ export function ActivityRow({
       onKeyDown={tappable ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSheetOpen(true); } } : undefined}
       role={tappable ? "button" : undefined}
       tabIndex={tappable ? 0 : undefined}
-      aria-label={tappable ? `${activity.name} — details` : undefined}
     >
       {tappable ? (
         <PlaceSheet activity={activity} open={sheetOpen} onOpenChange={setSheetOpen} />

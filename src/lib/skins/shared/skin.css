@@ -1207,3 +1207,42 @@
     scroll-margin-top: calc(64px + env(safe-area-inset-top, 0px));
   }
 }
+
+/* ── Lighthouse a11y closures (live audit 2026-07-06) ──────────────────
+   1. Small-text contrast: soft/accent inks mixed toward the skin's ink so
+      dek, byline, and micro-labels clear 4.5:1 on every skin's paper —
+      hue preserved, direction automatically correct on dark skins too. */
+.tds-dek { color: color-mix(in oklab, var(--tds-soft) 78%, var(--tds-ink)); }
+.tds-byline { color: color-mix(in oklab, var(--tds-soft) 78%, var(--tds-ink)); }
+.tds-day-no,
+.tds-part-label,
+.tds-flightstrip-label {
+  color: color-mix(in oklab, var(--tds-accent) 80%, var(--tds-ink));
+}
+
+/* 2. Alternative-dots (role=tab) were 7px targets. The 7px visual moves
+      to a pseudo-element; the button itself becomes a 24px WCAG target. */
+.tds-slot-carousel-dot {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent !important;
+  border: 0;
+}
+.tds-slot-carousel-dot::after {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  border: 1px solid var(--tds-accent);
+  background: transparent;
+  transition: background .15s ease, transform .15s ease;
+}
+.tds-slot-carousel-dot.is-active::after {
+  background: var(--tds-accent);
+  transform: scale(1.15);
+}
