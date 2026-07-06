@@ -107,7 +107,7 @@ export function DossierMastheadBar({
         <Link
           to="/"
           aria-label="Back to TravelDoss"
-          className="tap inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink-soft transition-colors hover:text-seal"
+          className="tap inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink-soft transition-colors hover:text-seal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal"
         >
           <span aria-hidden className="text-base">←</span>
         </Link>
@@ -115,7 +115,7 @@ export function DossierMastheadBar({
         <div
           aria-hidden={!past}
           className={cn(
-            "min-w-0 flex-1 truncate text-center text-sm text-ink transition-opacity duration-300",
+            "min-w-0 flex-1 truncate text-center text-sm text-ink transition-opacity duration-300 motion-reduce:transition-none",
             past ? "opacity-100" : "opacity-0",
           )}
           style={{ fontFamily: "var(--font-display)" }}
@@ -127,7 +127,7 @@ export function DossierMastheadBar({
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="tap inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full px-3 text-[10px] font-medium uppercase tracking-[0.3em] text-ink-soft transition-colors hover:text-seal"
+            className="tap inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full px-3 text-[10px] font-medium uppercase tracking-[0.3em] text-ink-soft transition-colors hover:text-seal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal"
             aria-haspopup="dialog"
           >
             <CalendarDays className="h-4 w-4" aria-hidden />
@@ -155,7 +155,7 @@ export function DossierMastheadBar({
                     onClick={() => jump(d)}
                     className={cn(
                       "flex w-full items-baseline gap-4 border-b border-white/5 py-4 text-left transition-colors last:border-b-0",
-                      "hover:text-seal focus-visible:outline-none focus-visible:text-seal",
+                      "hover:text-seal focus-visible:outline-none focus-visible:text-seal focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-seal/60",
                       isToday ? "text-seal" : "text-ink",
                     )}
                     aria-current={isToday ? "date" : undefined}

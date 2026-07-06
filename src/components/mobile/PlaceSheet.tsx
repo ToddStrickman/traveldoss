@@ -122,7 +122,7 @@ export function PlaceSheet({
           <button
             type="button"
             onClick={copyAddress}
-            className="flex min-h-14 w-full items-center gap-4 border-b border-white/5 py-3 text-left text-ink transition-colors last:border-b-0 hover:text-seal focus-visible:text-seal focus-visible:outline-none"
+            className="flex min-h-14 w-full items-center gap-4 border-b border-white/5 py-3 text-left text-ink transition-colors last:border-b-0 hover:text-seal focus-visible:text-seal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-seal/60"
           >
             <span className="text-seal">
               {copied ? <Check className="h-5 w-5" aria-hidden /> : <Copy className="h-5 w-5" aria-hidden />}
@@ -155,7 +155,7 @@ function ActionRow({
     <a
       href={href}
       {...(external ? { target: "_blank", rel: "noreferrer" } : {})}
-      className="flex min-h-14 w-full items-center gap-4 border-b border-white/5 py-3 text-ink transition-colors last:border-b-0 hover:text-seal focus-visible:text-seal focus-visible:outline-none"
+      className="flex min-h-14 w-full items-center gap-4 border-b border-white/5 py-3 text-ink transition-colors last:border-b-0 hover:text-seal focus-visible:text-seal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-seal/60"
     >
       <span className="text-seal">{icon}</span>
       <span className="min-w-0 flex-1">

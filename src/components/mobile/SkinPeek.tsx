@@ -33,6 +33,7 @@ export function SkinPeek({
   const [emblaRef, emblaApi] = useEmblaCarousel({ startIndex, align: "start" });
   const [index, setIndex] = React.useState(startIndex);
   const closeRef = React.useRef<HTMLButtonElement>(null);
+  const rootRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     if (!emblaApi) return;
@@ -55,6 +56,24 @@ export function SkinPeek({
       if (e.key === "Escape") onClose();
       if (e.key === "ArrowRight") emblaApi?.scrollNext();
       if (e.key === "ArrowLeft") emblaApi?.scrollPrev();
+      if (e.key === "Tab") {
+        // Minimal trap: keep focus cycling inside the dialog.
+        const root = rootRef.current;
+        if (!root) return;
+        const focusables = root.querySelectorAll<HTMLElement>(
+          'button, a[href], [tabindex]:not([tabindex="-1"])',
+        );
+        if (focusables.length === 0) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => {
@@ -68,6 +87,7 @@ export function SkinPeek({
 
   return (
     <div
+      ref={rootRef}
       role="dialog"
       aria-modal="true"
       aria-label={`Template preview: ${active.meta.codename}`}

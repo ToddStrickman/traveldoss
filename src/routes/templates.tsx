@@ -115,17 +115,39 @@ export const Route = createFileRoute("/templates")({
 
 function SkinPreview({ skin }: { skin: SkinModule }) {
   const { Render, previewFixture, tokens } = skin;
+  // Measured scale: desktops shrink the 1400px page to the tile; phones
+  // render the skin's own 390px mobile layout near-legible. (CSS cqw math
+  // can't produce a unitless scale factor cross-browser yet.)
+  const tileRef = useRef<HTMLDivElement>(null);
+  const [fit, setFit] = useState({ basis: 1400, scale: 0.32 });
+  useEffect(() => {
+    const el = tileRef.current;
+    if (!el) return;
+    const measure = () => {
+      const w = el.clientWidth;
+      if (w <= 0) return;
+      const basis = window.matchMedia("(max-width: 767px)").matches ? 390 : 1400;
+      setFit({ basis, scale: w / basis });
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   return (
     <div
-      className="td-skin-tile relative h-[420px] w-full overflow-hidden border"
+      ref={tileRef}
+      className="relative h-[420px] w-full overflow-hidden border"
       style={{ borderColor: "rgba(255,255,255,0.08)", background: tokens.bg }}
     >
-      {/* Scale the real skin render to fit the tile so users see actual
-          design. Container-query scaled: desktops shrink the 1400px page;
-          phones render the skin's own mobile layout near-legible. */}
       <div
-        className="td-skin-tile-inner absolute left-0 top-0 origin-top-left"
-        style={{ pointerEvents: "none" }}
+        className="absolute left-0 top-0 origin-top-left"
+        style={{
+          width: `${fit.basis}px`,
+          transform: `scale(${fit.scale})`,
+          transformOrigin: "top left",
+          pointerEvents: "none",
+        }}
       >
         {skin.tokens.fontUrl && (
           <link rel="stylesheet" href={skin.tokens.fontUrl} />
@@ -468,7 +490,7 @@ function TemplatesPage() {
                 <button
                   key={tag}
                   onClick={() => setActiveTag(active ? null : tag)}
-                  className={`shrink-0 rounded-full border px-3.5 py-2 text-[10px] font-medium uppercase tracking-[0.25em] transition-colors duration-300 ${
+                  className={`tap shrink-0 rounded-full border px-3.5 py-2 text-[10px] font-medium uppercase tracking-[0.25em] transition-colors duration-300 ${
                     active
                       ? "border-seal bg-seal/10 text-seal"
                       : "border-ink/10 text-ink/50 hover:border-ink/30 hover:text-ink"

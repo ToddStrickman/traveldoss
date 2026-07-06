@@ -80,18 +80,18 @@ established in Tasks 1–3 and inherited by everything after.
 
 ## Responsive & Polish
 
-- [ ] **T13 · Accessibility pass**: Verify seal-on-navy contrast for small text (≥AA),
+- [x] **T13 · Accessibility pass**: Verify seal-on-navy contrast for small text (≥AA),
   focus rings on all new controls, sheet `aria-modal`/labels, 44px audit across the
   visitor path, full reduced-motion sweep (masthead, pager, sheets, peek). Fix
   everything found. Breakpoints: 375, 390, 430.
-- [ ] **T14 · Performance pass**: Lazy-render below-fold day cards; verify masthead
+- [x] **T14 · Performance pass**: Lazy-render below-fold day cards; verify masthead
   collapse causes no CLS; confirm sheets animate at 60fps under 4× CPU throttle;
   check bundle impact of embla/vaul usage (route-level code splitting already exists).
   Done = Lighthouse mobile ≥90 perf on `/t/<slug>` fixture, no new layout shift.
 
 ## Review
 
-- [ ] **T15 · Design review**: Run /design-review against the brief with screenshots at
+- [ ] **T15 (pending — run /design-review) · Design review**: Run /design-review against the brief with screenshots at
   375/390/768/1280 across landing, gallery, peek, dossier (3 views), mint flow.
 
 ### Build rules for every task

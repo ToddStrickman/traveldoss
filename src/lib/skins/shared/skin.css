@@ -1161,3 +1161,17 @@
   .tds-act-row[data-tappable]:active { background: var(--tds-pop); }
   .tds-act-row[data-tappable] { border-radius: 6px; margin: 0 -6px; padding-left: 6px; padding-right: 6px; }
 }
+
+/* Performance (T14): below-fold day sections skip layout/paint until they
+   approach the viewport. Mobile only — desktop columns stay eager. */
+@media (max-width: 767px) {
+  .tds-day-section {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 720px;
+  }
+}
+
+/* Touch targets for the slot-alternatives arrows. */
+@media (pointer: coarse) {
+  .tds-slot-carousel-btn { min-width: 40px; min-height: 40px; }
+}

@@ -505,18 +505,12 @@
   .coarse\:text-base { font-size: 1rem; line-height: 1.5rem; }
 }
 
-/* Skin gallery tiles (T10): container-query scaling. Desktop shrinks the
- * full 1400px page; phones render the skin's mobile layout near-legible —
- * you preview the experience you'll actually get on this device. */
-.td-skin-tile { container-type: inline-size; }
-.td-skin-tile-inner {
-  width: 1400px;
-  transform: scale(calc(100cqw / 1400));
-  transform-origin: top left;
-}
-@media (max-width: 767px) {
-  .td-skin-tile-inner {
-    width: 390px;
-    transform: scale(calc(100cqw / 390));
+
+/* Reduced motion: sheets and dialogs jump-cut instead of sliding. */
+@media (prefers-reduced-motion: reduce) {
+  [data-vaul-drawer],
+  [data-vaul-overlay] {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
   }
 }

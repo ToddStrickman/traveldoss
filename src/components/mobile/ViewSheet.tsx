@@ -48,8 +48,8 @@ export function ViewPill({
         aria-label={`Layout: ${active.label}. Change layout`}
         className={cn(
           variant === "floating"
-            ? "fixed right-4 z-50 inline-flex h-12 items-center gap-2 rounded-full border border-white/15 bg-paper/90 px-4 text-ink shadow-elev backdrop-blur-md transition-colors hover:border-seal hover:text-seal md:hidden"
-            : "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-ink/5 hover:text-seal sm:hidden",
+            ? "fixed right-4 z-50 inline-flex h-12 items-center gap-2 rounded-full border border-white/15 bg-paper/90 px-4 text-ink shadow-elev backdrop-blur-md transition-colors hover:border-seal hover:text-seal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal md:hidden"
+            : "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-ink/5 hover:text-seal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal sm:hidden",
           className,
         )}
         style={
@@ -79,7 +79,7 @@ export function ViewPill({
                 }}
                 className={cn(
                   "flex w-full items-center gap-4 border-b border-white/5 py-4 text-left transition-colors last:border-b-0",
-                  "hover:text-seal focus-visible:outline-none focus-visible:text-seal",
+                  "hover:text-seal focus-visible:outline-none focus-visible:text-seal focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-seal/60",
                   on ? "text-seal" : "text-ink",
                 )}
               >
