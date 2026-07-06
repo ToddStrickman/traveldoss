@@ -152,10 +152,11 @@ Post-review polish pass, driven by live Lighthouse audits against
   (worst case) before shipping.
 - Font preconnects deduped; viewport meta carries `interactive-widget=resizes-content`.
 
-**Live scores (mobile):** accessibility 93 → 96 with the final contrast round
-deployed and expected to close the last failing audit; performance 64–71 across
-runs with TBT ≤15ms and CLS 0 — the residual gap is the ~2s Lovable SSR response
-plus platform bundle overhead, not addressable from the frontend.
+**Live scores (mobile), certified 2026-07-06:** accessibility **100** (from 93 at
+review time; zero failing audits). Performance 64–83 across runs with TBT ≤15ms
+and CLS 0 — the run-to-run spread tracks Lovable's SSR response time (~0.6–2s),
+which together with platform bundle overhead is the residual gap and is not
+addressable from the frontend.
 
 **Known non-fixables:** Lovable server response time and unused platform JS
 (infra-side); physical-device keyboard behavior in the mint sheet still merits a
