@@ -14,7 +14,7 @@ export function GridView({ trip, blocks }: { trip: TripView; blocks: Block[] }) 
   const it = buildItinerary(blocks);
   const dates = [trip.start_date, trip.end_date].filter(Boolean).join(" – ");
   const { editing } = useEditing();
-  const showScaffold = editing && isScaffoldTriggered(blocks);
+  const showScaffold = editing && isScaffoldTriggered(blocks, { destination: trip.destination });
   const flights: Array<{ leg: string; f: NonNullable<typeof it.flights.outbound> }> = [];
   if (it.flights.outbound) flights.push({ leg: "Outbound", f: it.flights.outbound });
   if (it.flights.inbound) flights.push({ leg: "Inbound", f: it.flights.inbound });
