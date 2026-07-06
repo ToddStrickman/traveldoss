@@ -538,7 +538,7 @@ export function IngestionModal({
               <div
                 role="tablist"
                 aria-label="Composer mode"
-                className="grid grid-cols-1 gap-0 overflow-hidden rounded-md border border-ink/10 bg-paper/30 sm:grid-cols-3"
+                className="grid grid-cols-1 gap-0 overflow-hidden rounded-md border border-ink/10 bg-paper/30 sm:grid-cols-2 lg:grid-cols-4"
               >
                 {TABS.map((opt, i) => {
                   const on = tab === opt.id;
@@ -550,7 +550,7 @@ export function IngestionModal({
                       aria-selected={on}
                       onClick={() => setTab(opt.id)}
                       className={`group relative flex flex-col items-start gap-2 px-5 py-5 text-left transition-elegant ${
-                        i > 0 ? "border-t border-ink/10 sm:border-t-0 sm:border-l" : ""
+                        i > 0 ? "border-t border-ink/10 sm:border-t sm:border-l-0 lg:border-t-0 lg:border-l" : ""
                       } ${on ? "bg-paper/60" : "hover:bg-paper/40"}`}
                     >
                       <Icon
@@ -578,6 +578,7 @@ export function IngestionModal({
                   );
                 })}
               </div>
+              {tab !== "blank" && (
               <div className="flex items-center justify-end">
                 <button
                   type="button"
@@ -596,35 +597,50 @@ export function IngestionModal({
                   onChange={onFile}
                 />
               </div>
+              )}
 
-              {/* Single textarea */}
-              <div
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={onDrop}
-              >
-                <textarea
-                  value={tab === "generate" ? genPrompt : text}
-                  onChange={(e) =>
-                    tab === "generate" ? setGenPrompt(e.target.value) : setText(e.target.value)
-                  }
-                  placeholder={
-                    tab === "paste"
-                      ? "Paste a dossier — Day 1: arrive, check into hotel, dinner at…"
-                      : tab === "transcript"
-                      ? "Paste or drop a transcript here — .txt, .vtt, .srt"
-                      : 'Describe the trip — "Five days in Lisbon for two, seafood-heavy, balanced pace."'
-                  }
-                  rows={8}
-                  className={`w-full rounded-md border border-ink/15 bg-paper/60 px-4 py-3.5 leading-[1.6] text-ink outline-none transition-elegant placeholder:text-ink/35 focus:border-seal focus:bg-paper ${
-                    tab === "generate" ? "text-[13.5px]" : "font-mono text-[12.5px]"
-                  }`}
-                />
-              </div>
+              {/* Single textarea — hidden for the blank starter */}
+              {tab !== "blank" ? (
+                <div onDragOver={(e) => e.preventDefault()} onDrop={onDrop}>
+                  <textarea
+                    value={tab === "generate" ? genPrompt : text}
+                    onChange={(e) =>
+                      tab === "generate" ? setGenPrompt(e.target.value) : setText(e.target.value)
+                    }
+                    placeholder={
+                      tab === "paste"
+                        ? "Paste a dossier — Day 1: arrive, check into hotel, dinner at…"
+                        : tab === "transcript"
+                        ? "Paste or drop a transcript here — .txt, .vtt, .srt"
+                        : 'Describe the trip — "Five days in Lisbon for two, seafood-heavy, balanced pace."'
+                    }
+                    rows={8}
+                    className={`w-full rounded-md border border-ink/15 bg-paper/60 px-4 py-3.5 leading-[1.6] text-ink outline-none transition-elegant placeholder:text-ink/35 focus:border-seal focus:bg-paper ${
+                      tab === "generate" ? "text-[13.5px]" : "font-mono text-[12.5px]"
+                    }`}
+                  />
+                </div>
+              ) : (
+                <div className="rounded-md border border-dashed border-ink/20 bg-paper/40 px-5 py-8 text-center">
+                  <FilePlus2 className="mx-auto h-6 w-6 text-seal" strokeWidth={1.5} aria-hidden />
+                  <p
+                    className="mt-3 text-[15px] leading-[1.5] text-ink"
+                    style={{ fontFamily: "var(--font-display)" }}
+                  >
+                    Begin from a <span className="italic text-ink/75">blank page</span>.
+                  </p>
+                  <p className="mx-auto mt-2 max-w-sm text-[12.5px] leading-[1.55] text-ink-soft">
+                    We'll drop you straight into the editor with an empty Day 01. Add days, places, and flights as you go.
+                  </p>
+                </div>
+              )}
 
-              <p className="text-[11.5px] leading-[1.55] text-ink-soft">
-                One field, three ways in. We'll only ask for dates, travelers, pace, budget, or
-                interests if the dossier can't infer them — directly on the draft, where they belong.
-              </p>
+              {tab !== "blank" && (
+                <p className="text-[11.5px] leading-[1.55] text-ink-soft">
+                  One field, three ways in. We'll only ask for dates, travelers, pace, budget, or
+                  interests if the dossier can't infer them — directly on the draft, where they belong.
+                </p>
+              )}
             </div>
           )}
         </div>
