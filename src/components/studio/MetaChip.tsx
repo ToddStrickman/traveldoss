@@ -329,9 +329,11 @@ function DateRangeEditor({
               numberOfMonths={1}
               selected={selected}
               onSelect={(r) => {
-                setRange(() => ({
-                  start: r?.from ? format(r.from, DATE_FMT) : "",
-                  end: r?.to ? format(r.to, DATE_FMT) : "",
+                // Fill both fields as soon as the range has them; on a partial
+                // pick (from only) don't wipe a previously-typed end date.
+                setRange((prev) => ({
+                  start: r?.from ? format(r.from, DATE_FMT) : prev.start,
+                  end: r?.to ? format(r.to, DATE_FMT) : r?.from ? "" : prev.end,
                 }));
                 if (r?.from && r?.to) setPickerOpen(false);
               }}
