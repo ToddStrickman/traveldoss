@@ -1406,3 +1406,86 @@
     50%      { border-color: color-mix(in oklab, var(--tds-accent) 55%, var(--tds-ink)); }
   }
 }
+
+/* Scaffold intro & step-by-step guidance */
+.tds-scaffold-intro-block {
+  display: flex; flex-direction: column; gap: 8px;
+  padding: var(--tds-s2) 0 var(--tds-s3);
+  border-bottom: 1px solid color-mix(in oklab, var(--tds-ink) 10%, transparent);
+}
+.tds-scaffold-eyebrow {
+  margin: 0;
+  font-size: var(--tds-fs-meta);
+  text-transform: uppercase;
+  letter-spacing: 0.32em;
+  color: color-mix(in oklab, var(--tds-accent) 78%, var(--tds-ink));
+}
+.tds-scaffold-headline {
+  margin: 0;
+  font-family: var(--tds-fontDisplay);
+  font-size: var(--tds-fs-h3);
+  line-height: 1.15;
+  color: var(--tds-ink);
+}
+.tds-scaffold-steps {
+  list-style: none; margin: 6px 0 0; padding: 0;
+  display: flex; flex-direction: column; gap: 6px;
+  font-size: var(--tds-fs-meta);
+  color: color-mix(in oklab, var(--tds-ink) 62%, transparent);
+}
+.tds-scaffold-steps li {
+  display: flex; align-items: center; gap: 10px;
+}
+.tds-scaffold-step-n {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; flex: none;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklab, var(--tds-accent) 55%, var(--tds-ink));
+  color: color-mix(in oklab, var(--tds-accent) 78%, var(--tds-ink));
+  font-size: 10px; font-weight: 600;
+  font-family: var(--tds-fontDisplay);
+}
+.tds-scaffold-part-heading {
+  display: flex; align-items: center; gap: 10px;
+}
+.tds-scaffold-part-n {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; flex: none;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklab, var(--tds-ink) 20%, transparent);
+  color: color-mix(in oklab, var(--tds-ink) 55%, transparent);
+  font-size: 10px; font-weight: 600;
+  font-family: var(--tds-fontDisplay);
+}
+.tds-scaffold-part-caption {
+  font-family: var(--tds-fontBody);
+  font-size: var(--tds-fs-meta);
+  text-transform: none;
+  letter-spacing: 0.02em;
+  color: color-mix(in oklab, var(--tds-ink) 45%, transparent);
+  font-style: italic;
+}
+
+/* Per-ghost step badge (flights) and per-ghost guide text */
+.tds-ghost { position: relative; }
+.tds-ghost-step {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; flex: none;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklab, var(--tds-accent) 55%, var(--tds-ink));
+  color: color-mix(in oklab, var(--tds-accent) 78%, var(--tds-ink));
+  font-size: 11px; font-weight: 700;
+  font-family: var(--tds-fontDisplay);
+}
+.tds-ghost-guide {
+  display: block;
+  margin-top: 4px;
+  font-size: var(--tds-fs-meta);
+  line-height: 1.45;
+  letter-spacing: 0;
+  text-transform: none;
+  color: color-mix(in oklab, var(--tds-ink) 50%, transparent);
+}
+.tds-ghost:hover .tds-ghost-guide {
+  color: color-mix(in oklab, var(--tds-ink) 72%, transparent);
+}
