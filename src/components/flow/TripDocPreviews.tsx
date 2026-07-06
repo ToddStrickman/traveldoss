@@ -1,6 +1,8 @@
+import * as React from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { listTripDocPreviews } from "@/lib/gmail-import.functions";
+import { supabase } from "@/integrations/supabase/client";
 import { ExternalLink } from "lucide-react";
 
 /**
@@ -9,10 +11,27 @@ import { ExternalLink } from "lucide-react";
  */
 export function TripDocPreviews({ tripId }: { tripId: string }) {
   const fetchPreviews = useServerFn(listTripDocPreviews);
+  // Only call the auth-guarded server fn when a Supabase session is present;
+  // otherwise attachSupabaseAuth has no bearer to attach and the fn 401s.
+  const [hasSession, setHasSession] = React.useState(false);
+  React.useEffect(() => {
+    let cancelled = false;
+    supabase.auth.getSession().then(({ data }) => {
+      if (!cancelled) setHasSession(!!data.session);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+      setHasSession(!!session);
+    });
+    return () => {
+      cancelled = true;
+      sub.subscription.unsubscribe();
+    };
+  }, []);
   const { data } = useQuery({
     queryKey: ["trip-doc-previews", tripId],
     queryFn: () => fetchPreviews({ data: { tripId } }),
     staleTime: 30_000,
+    enabled: hasSession,
   });
 
   const previews = data?.previews ?? [];
