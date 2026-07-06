@@ -95,7 +95,7 @@ export function BlankDayScaffold({ blocks }: { blocks: Block[] }) {
           Your dossier is empty. Fill it in, one slot at a time.
         </h2>
         <p className="tds-scaffold-intro">
-          Each dashed tile below is a real slot in your itinerary. Click any
+          Each dashed tile below is a real slot in your dossier. Click any
           one to open its editor — the scaffold disappears the moment your
           first entry lands, and everything you add stays in your dossier.
         </p>
