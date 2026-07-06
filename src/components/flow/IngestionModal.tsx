@@ -180,6 +180,14 @@ export function IngestionModal({
   const [clarifyQs, setClarifyQs] = useState<string[]>([]);
   const [clarifyAs, setClarifyAs] = useState<string[]>([]);
 
+  // Compose Dossier is only enabled once the active tab has usable content —
+  // pasted/uploaded text, or a generate prompt/destination. Blank starts have
+  // their own button so Compose never fires without content.
+  const hasContent =
+    tab === "generate"
+      ? genPrompt.trim().length >= 6 || genDestination.trim().length > 0
+      : text.trim().length >= 8;
+
   // Saved drafts (local-first, syncs when signed in) + a11y toggle.
   const saved = useSavedTripRequests();
   const { reducedMotion, setReducedMotion } = useGeneratorA11y();
