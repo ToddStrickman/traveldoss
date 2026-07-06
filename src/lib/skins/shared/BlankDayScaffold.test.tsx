@@ -76,6 +76,7 @@ describe("BlankDayScaffold", () => {
       );
       expect(sectionIdx).toBeGreaterThanOrEqual(0);
       expect(next[sectionIdx + 1]).toMatchObject({ kind: "place", category: c.category });
+      cleanup();
     }
   });
 });
