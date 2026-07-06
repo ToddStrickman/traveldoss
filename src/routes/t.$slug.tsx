@@ -556,8 +556,31 @@ function DossierPage() {
       <div
         aria-hidden
         className="md:hidden"
-        style={{ height: "calc(56px + env(safe-area-inset-top, 0px))" }}
+        style={{
+          height: `calc(56px + ${isEditing ? "36px + " : ""}env(safe-area-inset-top, 0px))`,
+        }}
       />
+      {isEditing ? (
+        <div
+          data-print="hide"
+          role="status"
+          aria-live="polite"
+          className="fixed inset-x-0 z-40 flex h-9 items-center justify-between gap-2 border-b border-seal/30 bg-seal px-3 text-[10px] font-semibold uppercase tracking-[0.3em] text-paper shadow-[0_2px_10px_-4px_rgba(0,0,0,0.35)] md:hidden"
+          style={{ top: "calc(56px + env(safe-area-inset-top, 0px))" }}
+        >
+          <span className="inline-flex items-center gap-2">
+            <span aria-hidden className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-paper" />
+            Editing · auto-saves
+          </span>
+          <button
+            type="button"
+            onClick={toggleLock}
+            className="tap inline-flex h-7 items-center rounded-full bg-paper/15 px-3 text-[10px] font-semibold uppercase tracking-[0.3em] text-paper transition-colors hover:bg-paper/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-paper/60"
+          >
+            Done
+          </button>
+        </div>
+      ) : null}
       <skin.Render trip={view} blocks={blocks} view={layout} />
       <div className="mx-auto max-w-3xl px-6 pb-24" data-print="hide">
         <TripDocPreviews tripId={trip.id} />
@@ -614,7 +637,9 @@ function DossierPage() {
         </>
       )}
       {blocks.length > 0 && (
-        <ExportMenu slug={trip.slug} trip={view} blocks={blocks} isOwner={isOwner} />
+        <div className={isEditing ? "max-md:hidden" : undefined}>
+          <ExportMenu slug={trip.slug} trip={view} blocks={blocks} isOwner={isOwner} />
+        </div>
       )}
       <PrintScheduleGrid trip={view} blocks={blocks} />
       <IngestionModal
