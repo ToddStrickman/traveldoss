@@ -7,7 +7,10 @@ import { SKINS, type SkinModule } from "@/lib/skins/registry";
 import { TiltCard } from "@/components/motion/Tilt";
 import { SkinPeek } from "@/components/mobile/SkinPeek";
 import { usePointerCoarse } from "@/components/mobile/PlaceSheet";
-import { pickTemplate } from "@/lib/templates.functions";
+import { IngestionModal } from "@/components/flow/IngestionModal";
+import { GenerationLoader } from "@/components/GenerationLoader";
+import { createTripFromIngestion } from "@/lib/trips.functions";
+import type { Block } from "@/lib/skins/types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -270,7 +273,18 @@ function TemplatesPage() {
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const navigate = useNavigate();
   const { pick: pickParam } = Route.useSearch();
-  const pickFn = useServerFn(pickTemplate);
+  const create = useServerFn(createTripFromIngestion);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalSkin, setModalSkin] = useState<SkinModule | null>(null);
+  const [genSteps, setGenSteps] = useState<string[] | null>(null);
+  const [pendingSlug, setPendingSlug] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!pendingSlug) return;
+    navigate({ to: "/t/$slug", params: { slug: pendingSlug }, search: { mode: "edit" } });
+    setGenSteps(null);
+    setPendingSlug(null);
+  }, [pendingSlug, navigate]);
 
   // No route preload here: the destination /t/$slug depends on the freshly
   // minted slug, and there's no template-side chunk to warm anymore.
@@ -301,22 +315,6 @@ function TemplatesPage() {
     if (!pickParam) return;
     if (!SKINS.some((s) => s.meta.id === pickParam)) return;
     autoPickedRef.current = true;
-    // Guard against re-minting when the user hits Back from the freshly
-    // minted dossier: sessionStorage persists across the remount, so we
-    // route them back to the trip they already created instead of
-    // silently creating an orphan duplicate.
-    const mintedKey = `td_picked_slug:${pickParam}`;
-    const existingSlug = window.sessionStorage.getItem(mintedKey);
-    if (existingSlug) {
-      // Clear the pick param so a further Back doesn't loop this branch.
-      void navigate({
-        to: "/t/$slug",
-        params: { slug: existingSlug },
-        search: { mode: "edit" },
-        replace: true,
-      });
-      return;
-    }
     if (mobileRead) {
       setPeekId(pickParam);
     } else {
@@ -400,28 +398,47 @@ function TemplatesPage() {
 
   const handlePick = async (id: string) => {
     if (picking) return;
-    setPicking(id);
+    const skin = SKINS.find((s) => s.meta.id === id);
+    if (!skin) return;
+    setModalSkin(skin);
+    setModalOpen(true);
+  };
+
+  async function handleGenerate(
+    blocks: Block[],
+    firstStep: string,
+    destination: string | null,
+  ) {
+    if (!modalSkin) return;
+    const { data: u } = await supabase.auth.getUser();
+    if (!u.user) {
+      toast.message("Sign in to compose your dossier", {
+        description: "We'll bring you right back to mint this template.",
+      });
+      await navigate({
+        to: "/login",
+        search: { redirect: `/templates?pick=${modalSkin.meta.id}` },
+      });
+      return;
+    }
+    setModalOpen(false);
+    setPicking(modalSkin.meta.id);
+    setGenSteps([firstStep, "Crafting your dossier…", "Designing the pages…"]);
     try {
-      const { data } = await supabase.auth.getUser();
-      if (!data.user) {
-        window.sessionStorage.setItem("td_pending_mint_template", id);
-        toast.message("Sign in to mint your dossier", {
-          description: "We'll bring you right back to mint this template.",
-        });
-        await navigate({
-          to: "/login",
-          search: { redirect: `/templates?pick=${id}` },
-        });
-        return;
-      }
-      const r = await pickFn({ data: { templateId: id } });
-      window.sessionStorage.setItem(`td_picked_slug:${id}`, r.slug);
-      await navigate({ to: "/t/$slug", params: { slug: r.slug }, search: { mode: "edit" } });
+      const r = await create({
+        data: {
+          templateId: modalSkin.meta.id,
+          blocks,
+          ...(destination ? { destination } : {}),
+        },
+      });
+      setPendingSlug(r.slug);
     } catch (e) {
       console.error(e);
-      toast.error("Couldn't mint your dossier", {
+      toast.error("Couldn't create your dossier", {
         description: e instanceof Error ? e.message : String(e),
       });
+      setGenSteps(null);
       setPicking(null);
     }
   };
@@ -576,6 +593,28 @@ function TemplatesPage() {
           mintingId={picking}
         />
       ) : null}
+
+      <IngestionModal
+        open={modalOpen}
+        onOpenChange={(v) => {
+          setModalOpen(v);
+          if (!v) setModalSkin(null);
+        }}
+        template={modalSkin}
+        onGenerate={handleGenerate}
+      />
+
+      <GenerationLoader
+        open={genSteps !== null}
+        steps={genSteps ?? []}
+        onDone={() => {
+          if (pendingSlug) {
+            navigate({ to: "/t/$slug", params: { slug: pendingSlug }, search: { mode: "edit" } });
+            setGenSteps(null);
+            setPendingSlug(null);
+          }
+        }}
+      />
     </div>
   );
 }
