@@ -469,12 +469,11 @@ export function IngestionModal({
               <div className="td-eyebrow text-ink/40">Ref.</div>
               <div className="mt-1.5 font-mono text-[11px] tracking-[0.28em] text-ink/70">{ref}</div>
               <div className="td-rule mx-auto my-3 w-20" />
-              <div className="td-eyebrow text-ink/40">Composed in</div>
               <div
-                className="mt-1.5 text-[13px] italic leading-snug text-ink/75"
+                className="mt-1.5 text-[15px] italic leading-snug text-ink/75"
                 style={{ fontFamily: "var(--font-display)" }}
               >
-                London &amp; New York
+                Elevate your itinerary
               </div>
             </div>
           </div>

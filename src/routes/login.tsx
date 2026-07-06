@@ -140,9 +140,14 @@ function LoginPage() {
               ? "Every dossier holds mapped routes, day-by-day plans, and reservations — quiet, owned, and yours."
               : "Each trip becomes a quietly composed dossier with mapped routes, day-by-day plans, and a private URL to share."}
           </p>
-          <div className="mt-12 flex items-center gap-3 td-eyebrow text-ink/35">
+          <div className="mt-12 flex items-center gap-3 text-ink/60">
             <span className="h-px w-10 bg-ink/15" />
-            Composed in London &amp; New York
+            <span
+              className="text-base italic tracking-normal"
+              style={{ fontFamily: "var(--font-display)" }}
+            >
+              Elevate your itinerary
+            </span>
           </div>
         </aside>
 
