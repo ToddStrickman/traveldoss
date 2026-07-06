@@ -22,7 +22,6 @@ import { DossierMastheadBar } from "@/components/mobile/DossierMastheadBar";
 import { ViewPill } from "@/components/mobile/ViewSheet";
 import { LockPill } from "@/components/studio/LockPill";
 import { TemplateMenu } from "@/components/studio/TemplateMenu";
-import { UnlockBanner } from "@/components/studio/UnlockBanner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AnimatePresence } from "motion/react";
 import { toast } from "sonner";
