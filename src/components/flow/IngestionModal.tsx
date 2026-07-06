@@ -637,7 +637,11 @@ export function IngestionModal({
             <button
               type="button"
               onClick={() => {
-                onGenerate([], "Starting a blank dossier…", null);
+                onGenerate(
+                  [{ kind: "day", n: 1, label: "Day 01" }],
+                  "Starting a blank dossier…",
+                  null,
+                );
                 handleOpenChange(false);
               }}
               disabled={!template || parsing}
@@ -653,7 +657,11 @@ export function IngestionModal({
             <button
               type="button"
               onClick={() => {
-                onGenerate([], "Starting a blank dossier…", null);
+                onGenerate(
+                  [{ kind: "day", n: 1, label: "Day 01" }],
+                  "Starting a blank dossier…",
+                  null,
+                );
                 handleOpenChange(false);
               }}
               disabled={!template || parsing}

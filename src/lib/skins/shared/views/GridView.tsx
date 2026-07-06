@@ -4,6 +4,8 @@ import { ActivityCell, dayDateLabel } from "./parts";
 import { ActivityDndContext, DraggableActivity, DroppableBucket } from "./dnd";
 import type { PartOfDay } from "../itinerary";
 import { ShadowItinerary, PlanBCue } from "../ShadowItinerary";
+import { BlankDayScaffold, isScaffoldTriggered } from "../BlankDayScaffold";
+import { useEditing } from "../Editable";
 
 /** Operational table view. Flights at the very top in a 2-row table.
  *  Each day renders a 3-column table (Morning · Afternoon · Evening) where
@@ -11,6 +13,8 @@ import { ShadowItinerary, PlanBCue } from "../ShadowItinerary";
 export function GridView({ trip, blocks }: { trip: TripView; blocks: Block[] }) {
   const it = buildItinerary(blocks);
   const dates = [trip.start_date, trip.end_date].filter(Boolean).join(" – ");
+  const { editing } = useEditing();
+  const showScaffold = editing && isScaffoldTriggered(blocks);
   const flights: Array<{ leg: string; f: NonNullable<typeof it.flights.outbound> }> = [];
   if (it.flights.outbound) flights.push({ leg: "Outbound", f: it.flights.outbound });
   if (it.flights.inbound) flights.push({ leg: "Inbound", f: it.flights.inbound });
@@ -29,6 +33,10 @@ export function GridView({ trip, blocks }: { trip: TripView; blocks: Block[] }) 
         </div>
       </header>
 
+      {showScaffold ? (
+        <BlankDayScaffold blocks={blocks} />
+      ) : (
+        <>
       {flights.length > 0 ? (
         <section className="tds-grid-section">
           <h2 className="tds-grid-h2">Flights</h2>
@@ -137,6 +145,8 @@ export function GridView({ trip, blocks }: { trip: TripView; blocks: Block[] }) 
       ))}
       </ActivityDndContext>
       <ShadowItinerary itinerary={it} />
+        </>
+      )}
     </div>
   );
 }
