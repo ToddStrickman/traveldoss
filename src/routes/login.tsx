@@ -142,12 +142,7 @@ function LoginPage() {
           </p>
           <div className="mt-12 flex items-center gap-3 text-ink/60">
             <span className="h-px w-10 bg-ink/15" />
-            <span
-              className="text-base italic tracking-normal"
-              style={{ fontFamily: "var(--font-display)" }}
-            >
-              Elevate your itinerary
-            </span>
+            <ElevateTagline className="text-base" />
           </div>
         </aside>
 
