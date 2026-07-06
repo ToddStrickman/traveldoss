@@ -245,6 +245,15 @@ export function IngestionModal({
   async function submit() {
     if (!template) return;
     if (!(await ensureAuthed())) return;
+    if (tab === "blank") {
+      onGenerate(
+        [{ kind: "day", n: 1, label: "Day 01" }],
+        "Starting a blank dossier…",
+        null,
+      );
+      handleOpenChange(false);
+      return;
+    }
     if (tab === "generate") {
       if (clarifyQs.length) submitClarifications();
       else await submitGenerate();
