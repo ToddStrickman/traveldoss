@@ -585,41 +585,70 @@ function DossierPage() {
           only — edit modes keep the bottom for StudioBar (one bar per mode). */}
       {!canEdit && <ViewPill value={layout} onChange={changeLayout} />}
       {canEdit && (
-        <StudioBar
-          emphasis={isSample ? "mint" : undefined}
-          leadingSlot={
-            isSample ? (
-              <ViewPill variant="inline" value={layout} onChange={changeLayout} />
-            ) : undefined
-          }
-          templateId={templateId}
-          saving={saving}
-          savedAt={savedAt}
-          onTemplateChange={onTemplateChange}
-          onMint={() => {
-            const hasUserContent =
-              blocks.length > 0 && destination !== "Sample Trip";
-            if (hasUserContent) {
-              const ok = window.confirm(
-                "Replace this dossier's itinerary? Your current blocks will be overwritten. (Undo with ⌘Z afterwards.)",
-              );
-              if (!ok) return;
-            }
-            setMintOpen(true);
-          }}
-          mintLabel={
-            blocks.length > 0 && destination !== "Sample Trip"
-              ? "Replace"
-              : "Mint"
-          }
-          onUndo={undo}
-          onRedo={redo}
-          canUndo={canUndo}
-          canRedo={canRedo}
-          refineStatus={refiner.status}
-          refineHistory={refineHistory}
-          onRestoreRefine={restoreRefine}
-        />
+        <>
+          {/* Desktop-only floating controls next to the back pill. Mobile
+              lives inside DossierMastheadBar. */}
+          {isMinted && (
+            <>
+              <LockPill locked={locked} onToggle={toggleLock} />
+              <TemplateMenu
+                templateId={templateId}
+                onTemplateChange={onTemplateChange}
+                onRegenerate={() => {
+                  const hasUserContent =
+                    blocks.length > 0 && destination !== "Sample Trip";
+                  if (hasUserContent) {
+                    const ok = window.confirm(
+                      "Regenerate this dossier from a new source? Your current blocks will be overwritten. (Undo with ⌘Z afterwards.)",
+                    );
+                    if (!ok) return;
+                  }
+                  setMintOpen(true);
+                }}
+              />
+            </>
+          )}
+          <AnimatePresence>
+            {isSample ? (
+              <StudioBar
+                key="studio-sample"
+                emphasis="mint"
+                leadingSlot={
+                  <ViewPill variant="inline" value={layout} onChange={changeLayout} />
+                }
+                templateId={templateId}
+                saving={saving}
+                savedAt={savedAt}
+                onTemplateChange={onTemplateChange}
+                onMint={() => setMintOpen(true)}
+                mintLabel="Mint"
+                onUndo={undo}
+                onRedo={redo}
+                canUndo={canUndo}
+                canRedo={canRedo}
+                refineStatus={refiner.status}
+                refineHistory={refineHistory}
+                onRestoreRefine={restoreRefine}
+              />
+            ) : isEditing ? (
+              <StudioBar
+                key="studio-minimal"
+                variant="minimal"
+                templateId={templateId}
+                saving={saving}
+                savedAt={savedAt}
+                onTemplateChange={onTemplateChange}
+                onUndo={undo}
+                onRedo={redo}
+                canUndo={canUndo}
+                canRedo={canRedo}
+                refineStatus={refiner.status}
+                refineHistory={refineHistory}
+                onRestoreRefine={restoreRefine}
+              />
+            ) : null}
+          </AnimatePresence>
+        </>
       )}
       {isMinted && blocks.length > 0 && (
         <ExportMenu slug={trip.slug} trip={view} blocks={blocks} isOwner={isOwner} />
