@@ -17,6 +17,7 @@ import { CalendarDays } from "lucide-react";
 import { TdSheet } from "@/components/mobile/TdSheet";
 import type { Block } from "@/lib/skins/types";
 import { cn } from "@/lib/utils";
+import { LockPill } from "@/components/studio/LockPill";
 
 interface DayEntry {
   n: number;
@@ -47,9 +48,15 @@ function dayStamp(date?: string): number | null {
 export function DossierMastheadBar({
   title,
   blocks,
+  canEdit = false,
+  locked = false,
+  onToggleLock,
 }: {
   title: string;
   blocks: Block[];
+  canEdit?: boolean;
+  locked?: boolean;
+  onToggleLock?: () => void;
 }) {
   const days = React.useMemo(() => collectDays(blocks), [blocks]);
   const [past, setPast] = React.useState(false);
@@ -136,19 +143,24 @@ export function DossierMastheadBar({
           {title}
         </div>
 
-        {days.length >= 2 ? (
-          <button
-            type="button"
-            onClick={() => setOpen(true)}
-            className="tap inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full px-3 text-[10px] font-medium uppercase tracking-[0.3em] text-ink-soft transition-colors hover:text-seal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal"
-            aria-haspopup="dialog"
-          >
-            <CalendarDays className="h-4 w-4" aria-hidden />
-            Days
-          </button>
-        ) : (
-          <div className="h-11 w-11 shrink-0" aria-hidden />
-        )}
+        <div className="flex shrink-0 items-center gap-1">
+          {days.length >= 2 ? (
+            <button
+              type="button"
+              onClick={() => setOpen(true)}
+              className="tap inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full px-3 text-[10px] font-medium uppercase tracking-[0.3em] text-ink-soft transition-colors hover:text-seal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal"
+              aria-haspopup="dialog"
+              aria-label="Jump to day"
+            >
+              <CalendarDays className="h-4 w-4" aria-hidden />
+              <span className="hidden xs:inline">Days</span>
+            </button>
+          ) : null}
+          {canEdit && onToggleLock ? (
+            <LockPill locked={locked} onToggle={onToggleLock} variant="inline" />
+          ) : null}
+          {!canEdit && days.length < 2 ? <div className="h-11 w-11 shrink-0" aria-hidden /> : null}
+        </div>
       </header>
 
       <TdSheet

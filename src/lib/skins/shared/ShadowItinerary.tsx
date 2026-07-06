@@ -13,12 +13,12 @@ export function ShadowItinerary({ itinerary }: { itinerary: Itinerary }) {
     <section
       id="tds-shadow-itinerary"
       className="tds-shadow"
-      aria-label="Shadow itinerary — backup plans"
+      aria-label="Shadow dossier — backup plans"
       data-print="hide-empty"
     >
       <header className="tds-shadow-head">
         <span className="tds-shadow-eyebrow">Plan B</span>
-        <h2 className="tds-shadow-title">Shadow itinerary</h2>
+        <h2 className="tds-shadow-title">Shadow dossier</h2>
         <p className="tds-shadow-dek">
           Backup options for any day, ready to swap in.
         </p>

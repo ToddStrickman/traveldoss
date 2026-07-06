@@ -145,6 +145,7 @@ export const EditableText = forwardRef<HTMLElement, EditableTextProps>(function 
       role="textbox"
       aria-label={ariaLabel ?? placeholder}
       data-placeholder={placeholder}
+      data-editing="true"
       className={`tds-edit${value ? "" : " tds-edit-empty"}${className ? ` ${className}` : ""}`}
       style={style}
       onBlur={commit}

@@ -32,7 +32,7 @@ describe("GenerationProgress", () => {
     expect(getByText("temples, food, nature")).toBeDefined();
 
     expect(getByText("Researching the destination")).toBeDefined();
-    expect(getByText("Drafting your itinerary")).toBeDefined();
+    expect(getByText("Drafting your dossier")).toBeDefined();
     expect(getByText("Verifying venues")).toBeDefined();
     expect(getByText("Ready to review")).toBeDefined();
 
