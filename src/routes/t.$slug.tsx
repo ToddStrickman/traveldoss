@@ -637,7 +637,9 @@ function DossierPage() {
         </>
       )}
       {blocks.length > 0 && (
-        <ExportMenu slug={trip.slug} trip={view} blocks={blocks} isOwner={isOwner} />
+        <div className={isEditing ? "max-md:hidden" : undefined}>
+          <ExportMenu slug={trip.slug} trip={view} blocks={blocks} isOwner={isOwner} />
+        </div>
       )}
       <PrintScheduleGrid trip={view} blocks={blocks} />
       <IngestionModal
