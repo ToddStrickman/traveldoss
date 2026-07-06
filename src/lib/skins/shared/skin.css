@@ -1246,3 +1246,12 @@
   background: var(--tds-accent);
   transform: scale(1.15);
 }
+
+/* Lighthouse round 2: the alternatives pill and carousel meta text run
+   accent/soft at micro sizes on tinted pills — same ink-mix treatment. */
+.tds-slot-carousel-pill {
+  color: color-mix(in oklab, var(--tds-accent) 78%, var(--tds-ink));
+}
+.tds-slot-carousel-meta {
+  color: color-mix(in oklab, var(--tds-soft) 75%, var(--tds-ink));
+}

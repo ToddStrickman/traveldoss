@@ -53,7 +53,7 @@ export function PlanBCue({ count }: { count: number }) {
     <a
       href="#tds-shadow-itinerary"
       className="tds-planb-cue"
-      aria-label={`${count} backup option${count === 1 ? "" : "s"} for this day`}
+      aria-label={`Plan B available — ${count} backup option${count === 1 ? "" : "s"} for this day`}
     >
       Plan B available ↓
     </a>
