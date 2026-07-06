@@ -1,5 +1,5 @@
-import { describe, it, expect, mock } from "bun:test";
-import { render, fireEvent } from "@testing-library/react";
+import { afterEach, describe, it, expect, mock } from "bun:test";
+import { render, fireEvent, cleanup } from "@testing-library/react";
 import { BlankDayScaffold, isScaffoldTriggered } from "./BlankDayScaffold";
 import { EditingProvider, type EditingCtx } from "./Editable";
 import type { Block } from "../types";
@@ -25,6 +25,7 @@ function renderScaffold(blocks: Block[] = []) {
 }
 
 describe("BlankDayScaffold", () => {
+  afterEach(() => cleanup());
   it("isScaffoldTriggered flips off once a place or flight exists", () => {
     expect(isScaffoldTriggered([])).toBe(true);
     expect(isScaffoldTriggered([{ kind: "day", n: 1, label: "Day 01" }])).toBe(true);
