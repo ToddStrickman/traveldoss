@@ -560,7 +560,7 @@ function DossierPage() {
       />
       <skin.Render trip={view} blocks={blocks} view={layout} />
       <div className="mx-auto max-w-3xl px-6 pb-24" data-print="hide">
-        <TripDocPreviews tripId={trip.id} />
+        {canEdit && <TripDocPreviews tripId={trip.id} />}
         {canEdit && <GmailImportPanel tripId={trip.id} />}
         {canEdit && import.meta.env.DEV && <DebugReportsPanel tripId={trip.id} />}
       </div>
