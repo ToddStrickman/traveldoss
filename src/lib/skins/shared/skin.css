@@ -1175,3 +1175,19 @@
 @media (pointer: coarse) {
   .tds-slot-carousel-btn { min-width: 40px; min-height: 40px; }
 }
+
+/* ── Horizontal view on phones (design-review fix) ─────────────────────
+   The legacy "canvas is the scroller" flex rules (VIEW: Horizontal above)
+   cascade after the top-of-file reset and win, turning the whole view into
+   one 800px pan surface: the flight strip stretches to board width and its
+   values land off-screen. On phones the board must be the only scroller.
+   Desktop keeps the legacy behavior untouched. */
+@media (max-width: 640px) {
+  .tds[data-view="horizontal"] .tds-canvas {
+    display: block;
+    overflow: visible;
+    scroll-snap-type: none;
+    gap: 0;
+    max-width: 100%;
+  }
+}

@@ -91,7 +91,7 @@ established in Tasks 1–3 and inherited by everything after.
 
 ## Review
 
-- [ ] **T15 (pending — run /design-review) · Design review**: Run /design-review against the brief with screenshots at
+- [x] **T15 · Design review**: Run /design-review against the brief with screenshots at
   375/390/768/1280 across landing, gallery, peek, dossier (3 views), mint flow.
 
 ### Build rules for every task

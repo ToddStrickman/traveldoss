@@ -78,6 +78,7 @@ const DEFAULT_FILTER: Required<GyroFilterConfig> = {
 
 export function MobileBubbles({ filter }: { filter?: GyroFilterConfig } = {}) {
   const [mounted, setMounted] = useState(false);
+  const [onReadingRoute, setOnReadingRoute] = useState(false);
   const [coarse, setCoarse] = useState(false);
   const [hidden, setHidden] = useState(false);
   const [reduced, setReduced] = useState(false);
@@ -97,16 +98,33 @@ export function MobileBubbles({ filter }: { filter?: GyroFilterConfig } = {}) {
     setCoarse(isTouchish);
     setReduced(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
     setDebugMode(new URLSearchParams(window.location.search).get("debug") === "bubbles");
+    // Atmosphere belongs to the funnel, not the artifact: keep bubbles off
+    // dossier reading surfaces (and their dev harnesses) where they float
+    // over paid editorial content. (.design/traveldoss-mobile review)
+    const checkRoute = () => {
+      const path = window.location.pathname;
+      setOnReadingRoute(path.startsWith("/t/") || path.startsWith("/e2e/"));
+    };
+    checkRoute();
+    window.addEventListener("popstate", checkRoute);
+    const iv = setInterval(checkRoute, 1000); // SPA navigations
     setMounted(true);
-    if (!isTouchish) return;
+    const cleanupRoute = () => {
+      window.removeEventListener("popstate", checkRoute);
+      clearInterval(iv);
+    };
+    if (!isTouchish) return cleanupRoute;
     const onVis = () => setHidden(document.visibilityState === "hidden");
     document.addEventListener("visibilitychange", onVis);
     onVis();
-    return () => document.removeEventListener("visibilitychange", onVis);
+    return () => {
+      cleanupRoute();
+      document.removeEventListener("visibilitychange", onVis);
+    };
   }, []);
 
   useEffect(() => {
-    if (!mounted || !coarse || reduced || hidden) return;
+    if (!mounted || !coarse || reduced || hidden || onReadingRoute) return;
 
     const OrientationCtor = window.DeviceOrientationEvent as OrientationPermissionEvent | undefined;
     let needsGesturePermission =
@@ -321,13 +339,13 @@ export function MobileBubbles({ filter }: { filter?: GyroFilterConfig } = {}) {
       }
       elsRef.current = [];
     };
-  }, [mounted, coarse, reduced, hidden]);
+  }, [mounted, coarse, reduced, hidden, onReadingRoute]);
 
   // Render nothing on the server and on the very first client paint so
   // hydration cannot mismatch. After mount, only render on touch devices
   // and only via a portal attached to document.body — keeps the overlay
   // out of the hydrated React tree entirely.
-  if (!mounted || !coarse || hidden) return null;
+  if (!mounted || !coarse || hidden || onReadingRoute) return null;
 
   return createPortal(
     <div

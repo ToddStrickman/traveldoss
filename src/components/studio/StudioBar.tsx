@@ -169,7 +169,6 @@ export function StudioBar({
         <button
           type="button"
           onClick={onMint}
-          aria-label="Mint your trip"
           className={cn(
             "td-mint-button td-mint-cta group relative inline-flex shrink-0 min-h-11 items-center gap-1.5 rounded-full bg-seal px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-paper transition-all duration-300 hover:-translate-y-0.5 hover:scale-[1.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal/60 focus-visible:ring-offset-2 focus-visible:ring-offset-paper sm:gap-2.5 sm:px-5 sm:py-2.5 sm:text-[11px] sm:tracking-[0.32em]",
             mintFocus && "max-sm:flex-1 max-sm:justify-center",
