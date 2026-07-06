@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { ElevateTagline } from "@/components/brand/ElevateTagline";
 
 export const Route = createFileRoute("/login")({
   // Optional key so plain <Link to="/login"> typechecks everywhere; the
