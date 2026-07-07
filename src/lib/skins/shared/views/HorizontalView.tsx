@@ -14,6 +14,7 @@ import {
   AddDayButton,
   useAddActivity,
   useAddDay,
+  useMoveDay,
 } from "./editing-kit";
 
 type ActivityEntry = { activity: Extract<Block, { kind: "place" }>; index: number };
@@ -28,6 +29,7 @@ export function HorizontalView({ trip, blocks }: { trip: TripView; blocks: Block
   const showScaffold = editing && isScaffoldTriggered(blocks);
   const addActivity = useAddActivity(blocks);
   const addDay = useAddDay(blocks);
+  const moveDay = useMoveDay(blocks);
 
   // Mobile pager: which day column is centered right now.
   const scrollerRef = useRef<HTMLDivElement | null>(null);
@@ -82,12 +84,15 @@ export function HorizontalView({ trip, blocks }: { trip: TripView; blocks: Block
 
       <ActivityDndContext blocks={blocks}>
         <div className="tds-board" role="list" ref={scrollerRef}>
-          {it.days.map((d) => (
+          {it.days.map((d, dPos) => (
             <section key={d.dayIndex} className="tds-board-col" role="listitem" data-block="day">
               <EditableDayHeader
                 d={d}
                 className="tds-board-col-head"
                 showCollapse={false}
+                onMoveDay={(dir) => moveDay(d.dayIndex, dir)}
+                canMoveUp={dPos > 0}
+                canMoveDown={dPos < it.days.length - 1}
               />
               <PlanBCue count={d.shadows.length} />
               {partOrder.map((part) => (
