@@ -750,6 +750,76 @@ button.tds-add-day:focus-visible .tds-add-day-plus {
 .tds-foot-sep { opacity: .55; margin: 0 .35em; }
 .tds-foot-trip { font-style: italic; }
 
+/* =============================================================
+   COLLAPSE TOGGLE — mobile-only per-day / per-part show/hide.
+   Two strokes form a chevron (\/) that morphs into a single
+   horizontal line (–) when collapsed. Fun, cheap, obvious.
+   ============================================================= */
+.tds-collapse-btn { display: none; }
+@media (max-width: 767px) {
+  .tds-collapse-btn {
+    display: inline-flex;
+    align-items: center; justify-content: center;
+    width: 32px; height: 32px;
+    padding: 0; margin-left: auto;
+    background: transparent;
+    border: 1px solid var(--tds-rule);
+    border-radius: 999px;
+    color: var(--tds-accent);
+    cursor: pointer;
+    flex: 0 0 auto;
+  }
+  .tds-collapse-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px color-mix(in oklab, var(--tds-accent) 55%, transparent);
+  }
+  .tds-collapse-btn--part { width: 26px; height: 26px; }
+
+  .tds-collapse-glyph {
+    position: relative;
+    width: 14px; height: 10px;
+    display: inline-block;
+  }
+  .tds-collapse-stroke {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 9px; height: 1.75px;
+    background: currentColor;
+    border-radius: 2px;
+    transform-origin: 50% 50%;
+    transition:
+      transform .35s cubic-bezier(.7, -0.2, .3, 1.4),
+      width .35s ease,
+      background-color .35s ease;
+  }
+  /* Expanded: two strokes tilted into a chevron pointing down (\/) */
+  .tds-collapse-stroke--l {
+    transform: translate(-75%, -50%) rotate(35deg);
+  }
+  .tds-collapse-stroke--r {
+    transform: translate(-25%, -50%) rotate(-35deg);
+  }
+  /* Collapsed: both strokes rotate flat and overlap into one line (–) */
+  .tds-collapse-btn[data-collapsed] .tds-collapse-stroke--l,
+  .tds-collapse-btn[data-collapsed] .tds-collapse-stroke--r {
+    transform: translate(-50%, -50%) rotate(0deg);
+    width: 12px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tds-collapse-stroke { transition: none; }
+  }
+
+  /* When a part or day is collapsed, hide its body but keep the header
+   * and its toggle in place for a quick re-expand. */
+  .tds-part--collapsed > .tds-part-body { display: none; }
+  .tds-day-section[data-collapsed] > .tds-day-body { display: none; }
+
+  .tds-part-header-row {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .tds-part-header-row > .tds-part-head { flex: 1 1 auto; }
+}
+
 /* ---- flights summary ---- */
 .tds-flights { margin-top: var(--tds-s5); }
 .tds-flights-grid { display: grid; grid-template-columns: 1fr; gap: var(--tds-s3); margin-top: var(--tds-s3); }
