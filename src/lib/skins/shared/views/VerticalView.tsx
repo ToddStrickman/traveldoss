@@ -15,6 +15,7 @@ import { MetaChip } from "@/components/studio/MetaChip";
 import { DayDateChip } from "../DayDateChip";
 import { BlankDayScaffold, isScaffoldTriggered } from "../BlankDayScaffold";
 import { Plus } from "lucide-react";
+import { useState } from "react";
 import type { PartOfDay } from "../itinerary";
 
 /** Chronological vertical reading view.
@@ -39,10 +40,19 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
   const placeholderFor = (part: "morning" | "afternoon" | "evening"): string =>
     part === "morning" ? "Open Morning" : part === "afternoon" ? "Open Afternoon" : "Open Evening";
 
+  /** Tracks which empty slot has the inline editor open. */
+  const [openEditor, setOpenEditor] = useState<{ dayIndex: number; part: PartOfDay } | null>(null);
+
   /** Insert a new place block into (dayIndex, part), creating the section
    *  header first when it doesn't exist yet. Reuses onBlockAdd so history /
-   *  autosave / view-transition all fire the same way as any other edit. */
-  const addActivity = (dayIndex: number, part: PartOfDay) => {
+   *  autosave / view-transition all fire the same way as any other edit.
+   *  `seed` carries user-entered fields from the inline editor. */
+  const addActivity = (
+    dayIndex: number,
+    part: PartOfDay,
+    seed: Partial<Extract<Block, { kind: "place" }>> = {},
+  ) => {
+    const placeSeed = { name: "", category: "other" as const, ...seed };
     // Range covering just this day (up to next day block or end of list).
     let dayEnd = blocks.length;
     for (let i = dayIndex + 1; i < blocks.length; i++) {
@@ -55,7 +65,15 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
       if (b.kind === "section" && b.partOfDay === part) { sectionIdx = i; break; }
     }
     if (sectionIdx !== -1) {
-      onBlockAdd(sectionIdx, "place", { name: "", category: "other" });
+      // Insert after the last existing place in this section so new entries
+      // append to the bucket rather than jumping to the top.
+      let insertAfter = sectionIdx;
+      for (let i = sectionIdx + 1; i < dayEnd; i++) {
+        const b = blocks[i];
+        if (b.kind === "section") break;
+        if (b.kind === "place") insertAfter = i;
+      }
+      onBlockAdd(insertAfter, "place", placeSeed);
       return;
     }
     // No section yet — build day slice with the missing section + place in one shot.
@@ -64,7 +82,7 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
       // Fallback: append a section + place at day end. Bucketing still works
       // because part-of-day is derived left-to-right from the prior section.
       onBlockAdd(dayEnd - 1, "section", { title: part[0].toUpperCase() + part.slice(1), partOfDay: part });
-      onBlockAdd(dayEnd, "place", { name: "", category: "other" });
+      onBlockAdd(dayEnd, "place", placeSeed);
       return;
     }
     // Find the correct insertion point so morning < afternoon < evening.
@@ -78,7 +96,7 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
     const next: Block[] = blocks.slice();
     next.splice(insertAt, 0,
       { kind: "section", title: part[0].toUpperCase() + part.slice(1), partOfDay: part },
-      { kind: "place", name: "", category: "other" },
+      { kind: "place", ...placeSeed },
     );
     onBlocksReplace(next);
   };
@@ -269,15 +287,27 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
                     ))}
                     {list.length === 0 ? (
                       editing ? (
-                        <button
-                          type="button"
-                          className="tds-open-slot tds-open-slot-btn tap"
-                          onClick={() => addActivity(d.dayIndex, part)}
-                          aria-label={`Add ${part} activity to Day ${d.day.n}`}
-                        >
-                          <span className="tds-open-slot-plus" aria-hidden><Plus size={12} /></span>
-                          <span>Add {part} activity</span>
-                        </button>
+                        openEditor && openEditor.dayIndex === d.dayIndex && openEditor.part === part ? (
+                          <InlineActivityEditor
+                            part={part}
+                            dayN={d.day.n}
+                            onCancel={() => setOpenEditor(null)}
+                            onSave={(seed) => {
+                              addActivity(d.dayIndex, part, seed);
+                              setOpenEditor(null);
+                            }}
+                          />
+                        ) : (
+                          <button
+                            type="button"
+                            className="tds-open-slot tds-open-slot-btn tap"
+                            onClick={() => setOpenEditor({ dayIndex: d.dayIndex, part })}
+                            aria-label={`Add ${part} activity to Day ${d.day.n}`}
+                          >
+                            <span className="tds-open-slot-plus" aria-hidden><Plus size={12} /></span>
+                            <span>Add {part} activity</span>
+                          </button>
+                        )
                       ) : (
                         <div className="tds-open-slot" aria-label={`${placeholderFor(part)} — drag or add an activity`}>
                           <span className="tds-open-slot-dot" aria-hidden />
@@ -286,15 +316,27 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
                       )
                     ) : null}
                     {editing && list.length > 0 ? (
-                      <button
-                        type="button"
-                        className="tds-open-slot tds-open-slot-btn tds-open-slot-inline tap"
-                        onClick={() => addActivity(d.dayIndex, part)}
-                        aria-label={`Add another ${part} activity to Day ${d.day.n}`}
-                      >
-                        <span className="tds-open-slot-plus" aria-hidden><Plus size={12} /></span>
-                        <span>Add another</span>
-                      </button>
+                      openEditor && openEditor.dayIndex === d.dayIndex && openEditor.part === part ? (
+                        <InlineActivityEditor
+                          part={part}
+                          dayN={d.day.n}
+                          onCancel={() => setOpenEditor(null)}
+                          onSave={(seed) => {
+                            addActivity(d.dayIndex, part, seed);
+                            setOpenEditor(null);
+                          }}
+                        />
+                      ) : (
+                        <button
+                          type="button"
+                          className="tds-open-slot tds-open-slot-btn tds-open-slot-inline tap"
+                          onClick={() => setOpenEditor({ dayIndex: d.dayIndex, part })}
+                          aria-label={`Add another ${part} activity to Day ${d.day.n}`}
+                        >
+                          <span className="tds-open-slot-plus" aria-hidden><Plus size={12} /></span>
+                          <span>Add another</span>
+                        </button>
+                      )
                     ) : null}
                   </div>
                 )}
@@ -335,5 +377,117 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
         </>
       )}
     </div>
+  );
+}
+
+type PlaceBlock = Extract<Block, { kind: "place" }>;
+type PlaceSeed = Partial<PlaceBlock>;
+
+const CATEGORY_OPTIONS: Array<{ value: NonNullable<PlaceBlock["category"]>; label: string }> = [
+  { value: "restaurant", label: "Restaurant" },
+  { value: "culture", label: "Culture" },
+  { value: "walk", label: "Walk / hike" },
+  { value: "event", label: "Event" },
+  { value: "accommodation", label: "Stay" },
+  { value: "transit", label: "Transit" },
+  { value: "other", label: "Other" },
+];
+
+/**
+ * Inline mini-form that replaces the "Add {part} activity" button when
+ * clicked. Captures the essentials (name, time, category, note) so a
+ * fresh place block lands populated in the correct day/part instead of
+ * as an empty stub the user then has to edit field-by-field.
+ */
+function InlineActivityEditor({
+  part,
+  dayN,
+  onSave,
+  onCancel,
+}: {
+  part: PartOfDay;
+  dayN: number;
+  onSave: (seed: PlaceSeed) => void;
+  onCancel: () => void;
+}) {
+  const [name, setName] = useState("");
+  const [time, setTime] = useState("");
+  const [category, setCategory] = useState<NonNullable<PlaceBlock["category"]>>("other");
+  const [note, setNote] = useState("");
+
+  const submit = () => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const seed: PlaceSeed = { name: trimmed, category };
+    if (time.trim()) seed.time = time.trim();
+    if (note.trim()) seed.note = note.trim();
+    onSave(seed);
+  };
+
+  return (
+    <form
+      className="tds-inline-editor"
+      data-print="hide"
+      onSubmit={(e) => { e.preventDefault(); submit(); }}
+      aria-label={`Add ${part} activity to Day ${dayN}`}
+    >
+      <div className="tds-inline-editor-row">
+        <input
+          className="tds-inline-editor-input tds-inline-editor-name"
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder={`${part[0].toUpperCase() + part.slice(1)} activity`}
+          autoFocus
+          onKeyDown={(e) => { if (e.key === "Escape") { e.preventDefault(); onCancel(); } }}
+        />
+        <input
+          className="tds-inline-editor-input tds-inline-editor-time"
+          type="text"
+          value={time}
+          onChange={(e) => setTime(e.target.value)}
+          placeholder="Time"
+          aria-label="Time"
+          onKeyDown={(e) => { if (e.key === "Escape") { e.preventDefault(); onCancel(); } }}
+        />
+        <select
+          className="tds-inline-editor-input tds-inline-editor-cat"
+          value={category}
+          onChange={(e) => setCategory(e.target.value as NonNullable<PlaceBlock["category"]>)}
+          aria-label="Category"
+        >
+          {CATEGORY_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
+      </div>
+      <textarea
+        className="tds-inline-editor-input tds-inline-editor-note"
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        placeholder="Notes (optional)"
+        rows={2}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") { e.preventDefault(); onCancel(); }
+          if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); submit(); }
+        }}
+      />
+      <div className="tds-inline-editor-actions">
+        <button
+          type="button"
+          className="tds-inline-editor-btn tds-inline-editor-cancel tap"
+          onClick={onCancel}
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          className="tds-inline-editor-btn tds-inline-editor-save tap"
+          disabled={!name.trim()}
+        >
+          Save activity
+        </button>
+      </div>
+    </form>
   );
 }
