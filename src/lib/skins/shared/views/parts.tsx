@@ -206,6 +206,38 @@ export function ActivityName({ name }: { name: string }) {
   );
 }
 
+/**
+ * Inline photo row — images living with their day/stop (reference: rounded
+ * cards in a row directly under the heading). Desktop: up to 3 side by side;
+ * mobile: horizontal snap scroll. Broken images drop out silently.
+ */
+export function ActivityImages({ images }: { images?: import("../../types").GalleryImage[] }) {
+  const [failed, setFailed] = useState<Set<string>>(new Set());
+  if (!images || images.length === 0) return null;
+  const usable = images.filter((im) => im.src && !failed.has(im.src)).slice(0, 3);
+  if (usable.length === 0) return null;
+  return (
+    <div className="tds-act-images" data-count={usable.length}>
+      {usable.map((im) => (
+        <figure key={im.src} className="tds-act-image">
+          <img
+            src={im.src}
+            alt={im.alt}
+            loading="lazy"
+            draggable={false}
+            style={
+              im.focalPoint
+                ? { objectPosition: `${im.focalPoint.x * 100}% ${im.focalPoint.y * 100}%` }
+                : undefined
+            }
+            onError={() => setFailed((prev) => new Set(prev).add(im.src))}
+          />
+        </figure>
+      ))}
+    </div>
+  );
+}
+
 type DetailRow = {
   key: string;
   label: string;
@@ -435,6 +467,7 @@ export function ActivityRow({
             <ActivityName name={activity.name} />
           )}
         </div>
+        <ActivityImages images={activity.images} />
         <ActivityChips activity={activity} max={3} />
         {activity.note ? (
           <div className="tds-act-meta tds-act-note">

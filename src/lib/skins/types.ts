@@ -23,6 +23,8 @@ export type Block =
       linkTitles?: Record<string, string>;
       /** Calendar date for this day if known (free-form: "Oct 14", "10/14/25", ISO). */
       date?: string;
+      /** Inline photo row rendered under the day header in the Vertical view. */
+      images?: GalleryImage[];
     }
   | {
       kind: "place";
@@ -44,6 +46,8 @@ export type Block =
        *  the Live Map never geocodes at view time. */
       lat?: number;
       lng?: number;
+      /** Inline photo row rendered with the stop in the Vertical view. */
+      images?: GalleryImage[];
       /** Resolved titles for raw URLs appearing inside `note` (url → title). */
       linkTitles?: Record<string, string>;
       /** Booking / confirmation reference (e.g. "Conf #L-882, party of 2"). */
@@ -133,6 +137,11 @@ export type Block =
       gate?: string;
       note?: string;
     }
+  | {
+      kind: "gallery";
+      title?: string; // e.g. "The Trip in Pictures"
+      images: GalleryImage[];
+    }
   | { kind: "quote"; text: string; attribution?: string }
   | {
       kind: "note";
@@ -140,6 +149,21 @@ export type Block =
       /** Resolved titles for raw URLs appearing inside `text` (url → title). */
       linkTitles?: Record<string, string>;
     };
+
+/** One card in the coverflow gallery. Provider/license fields are populated
+ *  only for images sourced via the Photo Finder and drive the attribution
+ *  affordance (CC BY and similar require visible credit; CC0/PDM do not). */
+export type GalleryImage = {
+  src: string;
+  alt: string;
+  caption?: string;
+  focalPoint?: { x: number; y: number }; // 0..1, default 0.5/0.5
+  provider?: "openverse" | "wikimedia" | "pexels" | "pixabay";
+  license?: string;
+  licenseUrl?: string;
+  creator?: string;
+  sourcePageUrl?: string;
+};
 
 export type TripView = {
   destination: string;
