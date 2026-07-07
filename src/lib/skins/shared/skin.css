@@ -345,6 +345,68 @@ button.tds-add-day:focus-visible {
   color: var(--tds-paper, var(--tds-bg));
 }
 
+/* ----- Inline activity editor (opens from an empty slot button) ------ */
+.tds-inline-editor {
+  display: flex; flex-direction: column; gap: 8px;
+  width: 100%; max-width: 560px;
+  padding: 12px;
+  border: 1px solid color-mix(in oklab, var(--tds-accent) 45%, var(--tds-rule));
+  border-radius: 12px;
+  background: color-mix(in oklab, var(--tds-accent) 5%, var(--tds-bg));
+  margin-top: 8px;
+}
+.tds-inline-editor-row {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+}
+@media (max-width: 640px) {
+  .tds-inline-editor-row { grid-template-columns: 1fr; }
+}
+.tds-inline-editor-input {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  font: inherit;
+  color: var(--tds-ink);
+  background: var(--tds-bg);
+  border: 1px solid var(--tds-rule);
+  border-radius: 8px;
+  outline: none;
+}
+.tds-inline-editor-input:focus-visible {
+  border-color: var(--tds-accent);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--tds-accent) 40%, transparent);
+}
+.tds-inline-editor-note { min-height: 60px; resize: vertical; font-family: inherit; }
+.tds-inline-editor-actions {
+  display: flex; justify-content: flex-end; gap: 8px;
+}
+.tds-inline-editor-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 8px 14px; min-height: 40px;
+  border-radius: 999px; font-size: 12px; letter-spacing: .2em; text-transform: uppercase;
+  cursor: pointer; border: 1px solid var(--tds-rule);
+  background: transparent; color: var(--tds-ink);
+  transition: background-color .18s ease, border-color .18s ease, opacity .18s ease;
+}
+.tds-inline-editor-cancel:hover,
+.tds-inline-editor-cancel:focus-visible {
+  background: color-mix(in oklab, var(--tds-ink) 6%, transparent);
+  outline: none;
+}
+.tds-inline-editor-save {
+  background: var(--tds-accent);
+  color: var(--tds-paper, var(--tds-bg));
+  border-color: var(--tds-accent);
+}
+.tds-inline-editor-save:disabled { opacity: .5; cursor: not-allowed; }
+.tds-inline-editor-save:not(:disabled):hover,
+.tds-inline-editor-save:not(:disabled):focus-visible {
+  filter: brightness(1.08);
+  outline: none;
+}
+
 /* ----- Pulsing call-to-action ring for empty meta chips -------------- */
 @keyframes td-chip-pulse {
   0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--tds-accent) 35%, transparent); }
