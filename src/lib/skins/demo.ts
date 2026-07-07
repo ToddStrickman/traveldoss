@@ -158,6 +158,10 @@ export const DEMO_BLOCKS: Block[] = [
     kind: "day",
     n: 1,
     label: "Arrival & Aperitivo",
+    images: [
+      { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/Arco_Triunfal_da_Rua_Augusta%2C_Plaza_del_Comercio%2C_Lisboa%2C_Portugal%2C_2012-05-12%2C_DD_02.JPG/960px-Arco_Triunfal_da_Rua_Augusta%2C_Plaza_del_Comercio%2C_Lisboa%2C_Portugal%2C_2012-05-12%2C_DD_02.JPG", alt: "Rua Augusta Arch over Praça do Comércio", provider: "wikimedia", license: "CC BY-SA 3.0", licenseUrl: "https://creativecommons.org/licenses/by-sa/3.0/", creator: "Diego Delso", sourcePageUrl: "https://commons.wikimedia.org/wiki/File:Arco_Triunfal_da_Rua_Augusta,_Plaza_del_Comercio,_Lisboa,_Portugal,_2012-05-12,_DD_02.JPG" },
+      { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/06/Lisbon_tram_in_Baixa_Chiado.jpg/960px-Lisbon_tram_in_Baixa_Chiado.jpg", alt: "A yellow Lisbon tram climbing through Baixa-Chiado", provider: "wikimedia", license: "CC BY 2.0", licenseUrl: "https://creativecommons.org/licenses/by/2.0/", creator: "Daniel Sparing", sourcePageUrl: "https://commons.wikimedia.org/wiki/File:Lisbon_tram_in_Baixa_Chiado.jpg" },
+    ],
     notes: "Land, drop bags, ease into the city. Sunset at the miradouro.",
   },
   { kind: "section", title: "Morning", partOfDay: "morning" },
@@ -262,6 +266,9 @@ export const DEMO_BLOCKS: Block[] = [
     name: "Museu Nacional do Azulejo",
     lat: 38.7247,
     lng: -9.1136,
+    images: [
+      { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Azulejo_Lisboa_Portugal.jpg/960px-Azulejo_Lisboa_Portugal.jpg", alt: "Blue-and-white azulejo tilework", provider: "wikimedia", license: "CC BY-SA 4.0", licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0/", creator: "LightWord", sourcePageUrl: "https://commons.wikimedia.org/wiki/File:Azulejo_Lisboa_Portugal.jpg" },
+    ],
     category: "culture",
     time: "10:00",
     address: "R. Madre de Deus 4",
@@ -292,6 +299,9 @@ export const DEMO_BLOCKS: Block[] = [
     name: "Castelo de São Jorge",
     lat: 38.7139,
     lng: -9.1335,
+    images: [
+      { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/Castelo_de_S%C3%A3o_Jorge%2C_Lisboa_03.jpg/960px-Castelo_de_S%C3%A3o_Jorge%2C_Lisboa_03.jpg", alt: "Ramparts of Castelo de São Jorge", provider: "wikimedia", license: "CC BY-SA 4.0", licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0/", creator: "Simon Burchell", sourcePageUrl: "https://commons.wikimedia.org/wiki/File:Castelo_de_S%C3%A3o_Jorge,_Lisboa_03.jpg" },
+    ],
     category: "culture",
     time: "16:00",
     address: "R. de Santa Cruz do Castelo",
@@ -303,6 +313,10 @@ export const DEMO_BLOCKS: Block[] = [
   {
     kind: "place",
     name: "Walk · Alfama miradouro loop",
+    images: [
+      { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bc/Alfama_%283903814530%29.jpg/960px-Alfama_%283903814530%29.jpg", alt: "Terracotta rooftops of Alfama toward the Tagus", provider: "wikimedia", license: "CC BY 2.0", licenseUrl: "https://creativecommons.org/licenses/by/2.0/", creator: "Bernt Rostad", sourcePageUrl: "https://commons.wikimedia.org/wiki/File:Alfama_(3903814530).jpg" },
+      { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/Lisbon_tram_speeding_in_Alfama.jpg/960px-Lisbon_tram_speeding_in_Alfama.jpg", alt: "Tram threading the narrow streets of Alfama", provider: "wikimedia", license: "CC BY 2.0", licenseUrl: "https://creativecommons.org/licenses/by/2.0/", creator: "Daniel Sparing", sourcePageUrl: "https://commons.wikimedia.org/wiki/File:Lisbon_tram_speeding_in_Alfama.jpg" },
+    ],
     category: "walk",
     time: "18:00",
     trailhead: "Largo das Portas do Sol",
@@ -345,6 +359,9 @@ export const DEMO_BLOCKS: Block[] = [
   {
     kind: "place",
     name: "Pastéis · Manteigaria",
+    images: [
+      { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f8/Pastel_De_Nata.jpg/960px-Pastel_De_Nata.jpg", alt: "Pastel de nata with a blistered top", provider: "wikimedia", license: "CC BY-SA 4.0", licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0/", creator: "TheDumpy", sourcePageUrl: "https://commons.wikimedia.org/wiki/File:Pastel_De_Nata.jpg" },
+    ],
     category: "restaurant",
     time: "09:00",
     address: "R. do Loreto 2",

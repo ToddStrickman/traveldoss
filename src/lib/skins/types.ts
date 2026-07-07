@@ -23,6 +23,8 @@ export type Block =
       linkTitles?: Record<string, string>;
       /** Calendar date for this day if known (free-form: "Oct 14", "10/14/25", ISO). */
       date?: string;
+      /** Inline photo row rendered under the day header in the Vertical view. */
+      images?: GalleryImage[];
     }
   | {
       kind: "place";
@@ -44,6 +46,8 @@ export type Block =
        *  the Live Map never geocodes at view time. */
       lat?: number;
       lng?: number;
+      /** Inline photo row rendered with the stop in the Vertical view. */
+      images?: GalleryImage[];
       /** Resolved titles for raw URLs appearing inside `note` (url → title). */
       linkTitles?: Record<string, string>;
       /** Booking / confirmation reference (e.g. "Conf #L-882, party of 2"). */

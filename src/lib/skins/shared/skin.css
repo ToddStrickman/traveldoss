@@ -2289,3 +2289,26 @@ button.tds-add-day[data-burst] .tds-add-day-plus {
   font: 500 10px/1.4 var(--tds-fontBody); letter-spacing: 0.12em;
   text-transform: uppercase; color: rgba(255, 255, 255, 0.4);
 }
+
+/* Inline photo rows — images with their day/stop (Vertical view). */
+.tds-act-images {
+  display: grid; gap: 10px; margin: 10px 0 6px;
+  grid-template-columns: repeat(var(--tds-img-count, 3), minmax(0, 1fr));
+}
+.tds-act-images[data-count="1"] { --tds-img-count: 1; max-width: 420px; }
+.tds-act-images[data-count="2"] { --tds-img-count: 2; max-width: 640px; }
+.tds-act-images[data-count="3"] { --tds-img-count: 3; }
+.tds-act-image {
+  margin: 0; border-radius: 14px; overflow: hidden;
+  aspect-ratio: 16 / 11; background: color-mix(in srgb, var(--tds-ink) 7%, var(--tds-bg));
+}
+.tds-act-image img { width: 100%; height: 100%; object-fit: cover; display: block; }
+@media (max-width: 767px) {
+  .tds-act-images {
+    display: flex; overflow-x: auto; scroll-snap-type: x mandatory;
+    gap: 8px; margin-inline: 0; max-width: none;
+    -ms-overflow-style: none; scrollbar-width: none;
+  }
+  .tds-act-images::-webkit-scrollbar { display: none; }
+  .tds-act-image { flex: 0 0 62vw; scroll-snap-align: start; }
+}

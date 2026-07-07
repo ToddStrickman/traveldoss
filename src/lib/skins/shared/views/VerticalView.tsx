@@ -2,6 +2,7 @@ import type { Block, TripView } from "../../types";
 import { buildItinerary } from "../itinerary";
 import { useEditing } from "../Editable";
 import {
+  ActivityImages,
   ActivityRow,
   FlightStrip,
   partOrder,
@@ -92,6 +93,7 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
             onDeleteDay={() => deleteDay(d.dayIndex)}
           />
           <PlanBCue count={d.shadows.length} />
+          {!dayCollapsed ? <ActivityImages images={d.day.images} /> : null}
 
           <div className="tds-day-body">
           {partOrder.map((part) => {

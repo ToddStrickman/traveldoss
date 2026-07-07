@@ -57,6 +57,13 @@ export function collectGalleryImages(trip: TripView, blocks: Block[]): { title?:
   if (images.length === 0 && trip.hero_image_url) {
     images.push({ src: trip.hero_image_url, alt: `${trip.destination} hero image` });
   }
+  // PRD 2.2 fallback aggregation: day + place images join the pool so the
+  // coverflow always reflects everything pictured in the itinerary.
+  for (const b of blocks) {
+    if ((b.kind === "place" || b.kind === "day") && b.images?.length) {
+      images.push(...b.images);
+    }
+  }
   const seen = new Set<string>();
   const deduped = images.filter((im) => {
     if (!im.src || seen.has(im.src)) return false;
