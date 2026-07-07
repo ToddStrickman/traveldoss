@@ -752,8 +752,9 @@ button.tds-add-day:focus-visible .tds-add-day-plus {
 
 /* =============================================================
    COLLAPSE TOGGLE — mobile-only per-day / per-part show/hide.
-   Two strokes form a chevron (\/) that morphs into a single
-   horizontal line (–) when collapsed. Fun, cheap, obvious.
+   Monoline "maître d'" cloche: a hand lifts a silver dome off a
+   plate; when open, thin ribbons of steam waft up. All strokes
+   inherit currentColor / var(--tds-accent) so it lands on every skin.
    ============================================================= */
 .tds-collapse-btn { display: none; }
 @media (max-width: 767px) {
@@ -765,7 +766,7 @@ button.tds-add-day:focus-visible .tds-add-day-plus {
     background: transparent;
     border: 1px solid var(--tds-rule);
     border-radius: 999px;
-    color: var(--tds-accent);
+    color: var(--tds-ink);
     cursor: pointer;
     flex: 0 0 auto;
   }
@@ -775,38 +776,88 @@ button.tds-add-day:focus-visible .tds-add-day-plus {
   }
   .tds-collapse-btn--part { width: 26px; height: 26px; }
 
-  .tds-collapse-glyph {
-    position: relative;
-    width: 14px; height: 10px;
-    display: inline-block;
+  /* ---- Cloche SVG ---- */
+  .tds-cloche {
+    width: 20px; height: 20px;
+    overflow: visible;
+    stroke: currentColor;
+    fill: none;
   }
-  .tds-collapse-stroke {
-    position: absolute;
-    top: 50%; left: 50%;
-    width: 9px; height: 1.75px;
-    background: currentColor;
-    border-radius: 2px;
-    transform-origin: 50% 50%;
-    transition:
-      transform .35s cubic-bezier(.7, -0.2, .3, 1.4),
-      width .35s ease,
-      background-color .35s ease;
+  .tds-collapse-btn--part .tds-cloche { width: 16px; height: 16px; }
+
+  .tds-cloche-plate {
+    stroke-width: 1.2;
+    stroke-linecap: round;
   }
-  /* Expanded: two strokes tilted into a chevron pointing down (\/) */
-  .tds-collapse-stroke--l {
-    transform: translate(-75%, -50%) rotate(35deg);
+  .tds-cloche-plate--soft { stroke-width: .5; opacity: .3; }
+
+  .tds-cloche-arc {
+    stroke-width: 1.2;
+    stroke-linecap: round;
   }
-  .tds-collapse-stroke--r {
-    transform: translate(-25%, -50%) rotate(-35deg);
+  .tds-cloche-knob {
+    stroke: var(--tds-accent);
+    stroke-width: 1.2;
   }
-  /* Collapsed: both strokes rotate flat and overlap into one line (–) */
-  .tds-collapse-btn[data-collapsed] .tds-collapse-stroke--l,
-  .tds-collapse-btn[data-collapsed] .tds-collapse-stroke--r {
-    transform: translate(-50%, -50%) rotate(0deg);
-    width: 12px;
+  .tds-cloche-hand {
+    stroke-width: .75;
+    stroke-linecap: round;
+    opacity: .8;
   }
+  .tds-cloche-hand--stem { stroke-width: 1; }
+
+  /* Dome + hand: lift as one group when OPEN (default). */
+  .tds-cloche-dome {
+    transform: translateY(-6px);
+    transition: transform .5s cubic-bezier(.34, 1.56, .64, 1);
+    transform-origin: 16px 16px;
+    transform-box: fill-box;
+  }
+  /* Collapsed: dome rests on the plate, hand visible above holding the knob */
+  .tds-collapse-btn[data-collapsed] .tds-cloche-dome {
+    transform: translateY(0);
+  }
+
+  /* Steam: only when OPEN. Waft loop is subtle & staggered. */
+  .tds-cloche-steam > path {
+    stroke: var(--tds-accent);
+    stroke-width: .75;
+    stroke-linecap: round;
+    opacity: 0;
+  }
+  .tds-collapse-btn:not([data-collapsed]) .tds-cloche-steam > path {
+    animation: tds-cloche-waft 2.4s ease-in-out infinite;
+    transform-origin: 50% 60%;
+    transform-box: fill-box;
+  }
+  .tds-collapse-btn:not([data-collapsed]) .tds-cloche-steam > path:nth-child(2) {
+    animation-delay: .5s;
+  }
+  .tds-collapse-btn:not([data-collapsed]) .tds-cloche-steam > path:nth-child(3) {
+    animation-delay: 1s;
+  }
+  @keyframes tds-cloche-waft {
+    0%   { transform: translateY(2px);  opacity: 0; }
+    35%  { opacity: .7; }
+    100% { transform: translateY(-4px); opacity: 0; }
+  }
+
+  /* Closed-state anticipation: the hand breathes gently over the knob. */
+  .tds-collapse-btn[data-collapsed] .tds-cloche-hand {
+    animation: tds-cloche-breathe 3.6s ease-in-out infinite;
+  }
+  @keyframes tds-cloche-breathe {
+    0%, 100% { transform: translateY(0);    opacity: .8; }
+    50%      { transform: translateY(-.6px); opacity: 1; }
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    .tds-collapse-stroke { transition: none; }
+    .tds-cloche-dome { transition: none; }
+    .tds-collapse-btn:not([data-collapsed]) .tds-cloche-steam > path,
+    .tds-collapse-btn[data-collapsed] .tds-cloche-hand {
+      animation: none;
+    }
+    .tds-collapse-btn:not([data-collapsed]) .tds-cloche-steam > path { opacity: .5; }
   }
 
   /* When a part or day is collapsed, hide its body but keep the header

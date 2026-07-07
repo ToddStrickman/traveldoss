@@ -475,10 +475,30 @@ function CollapseToggle({
       aria-label={`${collapsed ? "Expand" : "Collapse"} ${label}`}
       title={`${collapsed ? "Expand" : "Collapse"} ${label}`}
     >
-      <span className="tds-collapse-glyph" aria-hidden>
-        <span className="tds-collapse-stroke tds-collapse-stroke--l" />
-        <span className="tds-collapse-stroke tds-collapse-stroke--r" />
-      </span>
+      <svg
+        className="tds-cloche"
+        viewBox="0 0 32 32"
+        fill="none"
+        aria-hidden
+        focusable="false"
+      >
+        {/* Steam ribbons — only visible when open (data-collapsed absent) */}
+        <g className="tds-cloche-steam">
+          <path d="M12 18 Q13 16 12 14" />
+          <path d="M16 19 Q17 17 16 15" />
+          <path d="M20 18 Q21 16 20 14" />
+        </g>
+        {/* Plate */}
+        <path className="tds-cloche-plate" d="M6 24 L26 24" />
+        <path className="tds-cloche-plate tds-cloche-plate--soft" d="M4 25 L28 25" />
+        {/* Dome + hand lift as one group */}
+        <g className="tds-cloche-dome">
+          <circle className="tds-cloche-knob" cx="16" cy="11" r="1.5" />
+          <path className="tds-cloche-arc" d="M8 23 C8 15 12 12 16 12 C20 12 24 15 24 23" />
+          <path className="tds-cloche-hand tds-cloche-hand--stem" d="M16 3 L16 10" />
+          <path className="tds-cloche-hand" d="M14.5 5.5 L16 4.5 L17.5 5.5" />
+        </g>
+      </svg>
     </button>
   );
 }
