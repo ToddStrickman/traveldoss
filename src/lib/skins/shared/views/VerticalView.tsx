@@ -14,7 +14,7 @@ import { ShadowItinerary, PlanBCue } from "../ShadowItinerary";
 import { MetaChip } from "@/components/studio/MetaChip";
 import { DayDateChip } from "../DayDateChip";
 import { BlankDayScaffold, isScaffoldTriggered } from "../BlankDayScaffold";
-import { Plus } from "lucide-react";
+import { Plus, Sun } from "lucide-react";
 import { useState } from "react";
 import type { PartOfDay } from "../itinerary";
 
@@ -268,16 +268,41 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
               >
                 <PartHeading part={part} />
                 {list.length > 1 ? (
-                  <SlotAlternativesCarousel
-                    count={list.length}
-                    slotKey={`${d.dayIndex}:${part}`}
-                  >
-                    {list.map(({ activity, index }) => (
-                      <DraggableActivity key={index} index={index}>
-                        <ActivityRow activity={activity} index={index} />
-                      </DraggableActivity>
-                    ))}
-                  </SlotAlternativesCarousel>
+                  <>
+                    <SlotAlternativesCarousel
+                      count={list.length}
+                      slotKey={`${d.dayIndex}:${part}`}
+                    >
+                      {list.map(({ activity, index }) => (
+                        <DraggableActivity key={index} index={index}>
+                          <ActivityRow activity={activity} index={index} />
+                        </DraggableActivity>
+                      ))}
+                    </SlotAlternativesCarousel>
+                    {editing ? (
+                      openEditor && openEditor.dayIndex === d.dayIndex && openEditor.part === part ? (
+                        <InlineActivityEditor
+                          part={part}
+                          dayN={d.day.n}
+                          onCancel={() => setOpenEditor(null)}
+                          onSave={(seed) => {
+                            addActivity(d.dayIndex, part, seed);
+                            setOpenEditor(null);
+                          }}
+                        />
+                      ) : (
+                        <button
+                          type="button"
+                          className="tds-open-slot tds-open-slot-btn tds-open-slot-inline tap"
+                          onClick={() => setOpenEditor({ dayIndex: d.dayIndex, part })}
+                          aria-label={`Add another ${part} activity to Day ${d.day.n}`}
+                        >
+                          <span className="tds-open-slot-plus" aria-hidden><Plus size={12} /></span>
+                          <span>Add another</span>
+                        </button>
+                      )
+                    ) : null}
+                  </>
                 ) : (
                   <div className="tds-part-rows">
                     {list.map(({ activity, index }) => (
@@ -365,7 +390,7 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
             onClick={addDay}
             aria-label="Add another day"
           >
-            <span className="tds-add-day-plus" aria-hidden><Plus size={14} /></span>
+            <span className="tds-add-day-plus" aria-hidden><Sun size={14} /></span>
             <span>Add another day</span>
           </button>
         </div>

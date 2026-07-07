@@ -49,7 +49,13 @@ export function SkinFrame({ trip, blocks, tokens, view = "vertical" }: SkinFrame
         )}
       </div>
 
-      <footer className="tds-foot">Prepared with TravelDoss · /t/{trip.slug}</footer>
+      <footer className="tds-foot" aria-label="Trip signature">
+        <span className="tds-foot-sig">
+          {trip.meta?.travelers ? <span className="tds-foot-who">{trip.meta.travelers}</span> : null}
+          {trip.meta?.travelers ? <span className="tds-foot-sep" aria-hidden> · </span> : null}
+          <span className="tds-foot-trip">{trip.destination}</span>
+        </span>
+      </footer>
     </div>
     </SlotSelectionProvider>
   );

@@ -362,6 +362,16 @@ button.tds-add-day:focus-visible {
   width: 22px; height: 22px; border-radius: 999px;
   background: var(--tds-accent);
   color: var(--tds-paper, var(--tds-bg));
+  transition: transform .6s ease;
+}
+button.tds-add-day:hover .tds-add-day-plus,
+button.tds-add-day:focus-visible .tds-add-day-plus {
+  transform: rotate(60deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .tds-add-day-plus { transition: none; }
+  button.tds-add-day:hover .tds-add-day-plus,
+  button.tds-add-day:focus-visible .tds-add-day-plus { transform: none; }
 }
 
 /* ----- Inline activity editor (opens from an empty slot button) ------ */
@@ -722,7 +732,23 @@ button.tds-add-day:focus-visible {
 
 .tds-note { margin: var(--tds-s3) 0; font-size: 13px; color: var(--tds-soft); padding: 12px 16px; border-left: 2px solid var(--tds-accent); background: color-mix(in srgb, var(--tds-accent) 8%, transparent); }
 
-.tds-foot { max-width: 1080px; margin: 0 auto; padding: var(--tds-s3) var(--tds-s4) var(--tds-s5); border-top: 2px double var(--tds-ink); text-align: center; font-size: 10px; letter-spacing: .4em; text-transform: uppercase; color: var(--tds-soft); }
+.tds-foot {
+  max-width: 1080px; margin: 0 auto;
+  padding: var(--tds-s3) var(--tds-s4) var(--tds-s5);
+  border-top: 1px solid var(--tds-rule);
+  text-align: center;
+  color: var(--tds-soft);
+}
+.tds-foot-sig {
+  font-family: var(--tds-fontDisplay);
+  font-style: italic;
+  font-size: 15px;
+  letter-spacing: .02em;
+  opacity: .75;
+}
+.tds-foot-who { font-weight: 500; }
+.tds-foot-sep { opacity: .55; margin: 0 .35em; }
+.tds-foot-trip { font-style: italic; }
 
 /* ---- flights summary ---- */
 .tds-flights { margin-top: var(--tds-s5); }
