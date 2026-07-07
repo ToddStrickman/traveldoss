@@ -14,7 +14,7 @@ import { ShadowItinerary, PlanBCue } from "../ShadowItinerary";
 import { MetaChip } from "@/components/studio/MetaChip";
 import { DayDateChip } from "../DayDateChip";
 import { BlankDayScaffold, isScaffoldTriggered } from "../BlankDayScaffold";
-import { Plus } from "lucide-react";
+import { Plus, Sun } from "lucide-react";
 import { useState } from "react";
 import type { PartOfDay } from "../itinerary";
 
@@ -390,7 +390,7 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
             onClick={addDay}
             aria-label="Add another day"
           >
-            <span className="tds-add-day-plus" aria-hidden><Plus size={14} /></span>
+            <span className="tds-add-day-plus" aria-hidden><Sun size={14} /></span>
             <span>Add another day</span>
           </button>
         </div>
