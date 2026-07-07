@@ -105,7 +105,12 @@ export function IngestionModal({
   open: boolean;
   onOpenChange: (v: boolean) => void;
   template: SkinModule | null;
-  onGenerate: (blocks: Block[], sourceLabel: string, destination: string | null) => void;
+  onGenerate: (
+    blocks: Block[],
+    sourceLabel: string,
+    destination: string | null,
+    dates?: { startDate: string | null; endDate: string | null },
+  ) => void;
   /** Stable reference derived from the trip id + created_at. */
   tripId?: string | null;
   tripCreatedAt?: string | null;
@@ -364,6 +369,8 @@ export function IngestionModal({
         parsed.blocks,
         "Drafting your dossier…",
         parsed.destination ?? genDestination.trim() ?? null,
+        (gen as { resolvedDates?: { startDate: string | null; endDate: string | null } })
+          .resolvedDates,
       );
       handleOpenChange(false);
     } catch (err) {

@@ -34,6 +34,9 @@ export const createTripFromIngestion = createServerFn({ method: "POST" })
         templateId: z.string().min(1).max(64),
         blocks: z.array(z.any()).min(1).max(2000),
         destination: z.string().min(1).max(120).optional(),
+        /** ISO yyyy-mm-dd from the generator's deterministic date resolution. */
+        startDate: z.string().max(40).optional(),
+        endDate: z.string().max(40).optional(),
       })
       .parse(input),
   )
@@ -57,6 +60,8 @@ export const createTripFromIngestion = createServerFn({ method: "POST" })
         visibility: "unlisted",
         status: "draft",
         expires_at: expiresAt,
+        ...(data.startDate ? { start_date: data.startDate } : {}),
+        ...(data.endDate ? { end_date: data.endDate } : {}),
         content: { blocks: data.blocks, skin: skin.meta.id },
       })
       .select("id, slug")

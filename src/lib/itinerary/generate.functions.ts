@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { generateText, Output } from "ai";
 import { z, ZodError, type ZodIssue } from "zod";
 import type { DebugAttempt, DebugReport } from "@/lib/itinerary/debug-report";
+import { resolveTripDates, type ResolvedDates } from "@/lib/itinerary/trip-brief";
 
 /**
  * AI itinerary generator.
@@ -158,6 +159,12 @@ MODE B — DRAFT (default)
   Make reasonable inferences for every detail except destination. Produce a complete draft itinerary even when most fields are missing — never refuse, never hedge. If duration is unstated, assume 5 days. If travelers are unstated, assume 2 adults. If pace/budget are unstated, assume balanced + moderate.
   Use your training knowledge of real venues (restaurants, hotels, museums, neighborhoods, hours). Real names only, no placeholders. Vendor facts (addresses, phones, websites, current hours) will be verified live by a downstream enrichment step, so prioritize correct identification of well-known venues.
 
+DATES — trust the resolved calendar, never re-derive it:
+  The brief includes "Today's date" and, when the traveler gave any date hints, a pre-resolved travel window with an exact day-by-day calendar. That resolution is authoritative — do NOT question it, do NOT ask about dates, do NOT shift years. Generate EXACTLY one "## Day N" section per calendar day listed, and put each day's calendar label in the heading parentheses. Season-match your picks to those dates (a late-November trip gets truffle season and enotecas, not beach afternoons).
+
+QUALITY BAR — write like a top-tier travel editor (Vogue / Condé Nast Traveller):
+  Anchor each day in a neighborhood so it walks logically. Mix icons with insider picks. Name the dish or bottle worth ordering ("tortellini in brodo at …", "a glass of Lambrusco at …"). One line of reasoning per stop, zero filler.
+
 OUTPUT FORMAT for the itinerary string (Mode B):
   Markdown, in this exact shape:
 
@@ -194,20 +201,39 @@ export const generateItineraryAi = createServerFn({ method: "POST" })
     const { createLovableAiGatewayProvider } = await import("@/lib/ai-gateway.server");
     const gateway = createLovableAiGatewayProvider(key);
 
-    const brief = buildBrief(data);
+    // ── Deterministic date resolution ───────────────────────────────
+    // Calendar math happens in code, not the model: year-less dates like
+    // "November 21st" resolve to the next future occurrence, ranges are
+    // reconciled with stated durations, and each day gets a calendar label
+    // the model must stamp onto its Day headings.
+    const resolved = resolveTripDates({
+      prompt: data.prompt,
+      startDate: data.startDate,
+      duration: data.duration,
+    });
+
+    // ── Destination for research ────────────────────────────────────
+    // The structured field wins; when it's blank (the common case — people
+    // put everything in the prompt), a fast extraction pass pulls it from
+    // the prose so live research isn't silently skipped.
+    let researchTarget = data.destination?.trim() ?? "";
+    if (!researchTarget && data.useLiveResearch) {
+      researchTarget = (await extractDestination(gateway, data.prompt)) ?? "";
+    }
+
+    const brief = buildBrief(data, resolved);
 
     // ── Live research (optional) ────────────────────────────────────
-    // Only worth the call when we have a destination to anchor it.
     let researchNotes = "";
     let citations: { n: number; title: string; url: string }[] = [];
-    if (data.useLiveResearch && data.destination?.trim()) {
+    if (data.useLiveResearch && researchTarget) {
       try {
         const { researchDestination } = await import("./research.functions");
         const r = await researchDestination({
           data: {
-            destination: data.destination.trim(),
-            startDate: data.startDate,
-            duration: data.duration,
+            destination: researchTarget,
+            startDate: humanWindow(resolved) ?? data.startDate,
+            duration: `${resolved.durationDays} days`,
             interests: data.interests,
           },
         });
@@ -265,7 +291,17 @@ export const generateItineraryAi = createServerFn({ method: "POST" })
               .map((c) => `[${c.n}] ${c.title} — ${c.url}`)
               .join("\n")}\n`
           : out.itinerary;
-        const base = { kind: "draft" as const, draft, citations };
+        const base = {
+          kind: "draft" as const,
+          draft,
+          citations,
+          // Deterministic window for the caller to stamp onto the trip record.
+          resolvedDates: {
+            startDate: resolved.startDate ?? null,
+            endDate: resolved.endDate ?? null,
+            durationDays: resolved.durationDays,
+          },
+        };
         return attempts.length
           ? {
               ...base,
@@ -316,8 +352,46 @@ function buildDebugReport(
   };
 }
 
-function buildBrief(data: z.infer<typeof InputSchema>): string {
+/** "2026-11-21 → 2026-11-27" as a human search-friendly window ("November 2026"). */
+function humanWindow(resolved: ResolvedDates): string | undefined {
+  if (!resolved.startDate) return undefined;
+  const d = new Date(`${resolved.startDate}T00:00:00Z`);
+  const month = d.toLocaleString("en-US", { month: "long", timeZone: "UTC" });
+  return `${month} ${d.getUTCFullYear()}`;
+}
+
+/**
+ * Fast structured pre-pass: pull the destination out of a freeform prompt so
+ * live research runs even when the structured field was left blank.
+ * Best-effort — returns null on any failure and the generator proceeds.
+ */
+async function extractDestination(
+  gateway: ReturnType<typeof import("@/lib/ai-gateway.server").createLovableAiGatewayProvider>,
+  prompt: string,
+): Promise<string | null> {
+  try {
+    const result = await generateText({
+      model: gateway("google/gemini-2.5-flash"),
+      system:
+        'Extract the primary travel destination (city, region, or country) from the trip brief. Return {"destination": string|null}. Use the traveler\'s own words ("Emilia-Romagna", "San Sebastián"). null ONLY if no destination is stated or clearly implied.',
+      prompt,
+      experimental_output: Output.object({
+        schema: z.object({ destination: z.string().nullable() }),
+      }),
+      maxOutputTokens: 100,
+    });
+    const d = result.experimental_output.destination?.trim();
+    return d && d.length >= 2 && d.length <= 120 ? d : null;
+  } catch (err) {
+    console.error("[generate] destination extraction failed", err);
+    return null;
+  }
+}
+
+function buildBrief(data: z.infer<typeof InputSchema>, resolved: ResolvedDates): string {
   const lines: string[] = [];
+  lines.push(`Today's date: ${new Date().toISOString().slice(0, 10)}`);
+  lines.push("");
   lines.push("Trip brief from the traveler:");
   lines.push("");
   lines.push(`"${data.prompt.trim()}"`);
@@ -335,6 +409,25 @@ function buildBrief(data: z.infer<typeof InputSchema>): string {
     for (const f of fields) lines.push(`• ${f}`);
     lines.push("");
   }
+  // Pre-resolved calendar (code-derived, authoritative — see DATES rules).
+  lines.push("Resolved travel calendar:");
+  if (resolved.startDate) {
+    lines.push(
+      `• Window: ${resolved.startDate} → ${resolved.endDate ?? resolved.startDate} (${resolved.durationDays} day${resolved.durationDays === 1 ? "" : "s"})`,
+    );
+    lines.push(
+      `• Day-by-day: ${resolved.perDay.map((lbl, i) => `Day ${i + 1} = ${lbl}`).join("; ")}`,
+    );
+    lines.push(
+      `• Heading format: "## Day ${1} — <Label> (${resolved.perDay[0]})" … one section per day above, in order.`,
+    );
+  } else {
+    lines.push(
+      `• No calendar dates given — plan ${resolved.durationDays} days as "## Day N — <Label>" (no date parentheses).`,
+    );
+  }
+  if (resolved.note) lines.push(`• Assumptions already made for you: ${resolved.note}`);
+  lines.push("");
   if (data.clarifications?.length) {
     lines.push("Follow-up answers from the traveler:");
     for (const { question, answer } of data.clarifications) {
