@@ -89,6 +89,16 @@ describe("mobile edit-mode parity", () => {
         expect(empty.length).toBeGreaterThan(0);
         expect(inline.length).toBeGreaterThan(0);
       });
+
+      it("renders day-reorder chevrons for each day when editing", () => {
+        const { container } = renderView(View);
+        // One .tds-day-reorder group per day; two buttons inside each.
+        const groups = container.querySelectorAll(".tds-day-reorder");
+        expect(groups.length).toBeGreaterThan(0);
+        for (const g of groups) {
+          expect(g.querySelectorAll(".tds-day-reorder-btn").length).toBe(2);
+        }
+      });
     });
   }
 });
