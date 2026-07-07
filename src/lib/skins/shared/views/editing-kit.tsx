@@ -182,6 +182,9 @@ export function EditableDayHeader({
   showNotes = true,
   showCollapse = true,
   className = "tds-day-head",
+  onMoveDay,
+  canMoveUp = false,
+  canMoveDown = false,
 }: {
   d: { day: { n: number; label: string; date?: string; notes?: string; linkTitles?: Record<string, string> }; dayIndex: number };
   onToggleCollapsed?: () => void;
@@ -189,6 +192,9 @@ export function EditableDayHeader({
   showNotes?: boolean;
   showCollapse?: boolean;
   className?: string;
+  onMoveDay?: (direction: -1 | 1) => void;
+  canMoveUp?: boolean;
+  canMoveDown?: boolean;
 }) {
   const { onBlockChange, editing } = useEditing();
   return (
@@ -208,6 +214,14 @@ export function EditableDayHeader({
           editable={editing}
           onChange={(v) => onBlockChange(d.dayIndex, { date: v } as Partial<Block>)}
         />
+        {editing && onMoveDay ? (
+          <DayReorderControls
+            onMove={onMoveDay}
+            canMoveUp={canMoveUp}
+            canMoveDown={canMoveDown}
+            dayN={d.day.n}
+          />
+        ) : null}
         {showCollapse && onToggleCollapsed ? (
           <CollapseToggle
             collapsed={!!collapsed}
