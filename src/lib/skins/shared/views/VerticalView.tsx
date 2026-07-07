@@ -21,6 +21,7 @@ import {
   useAddActivity,
   useAddDay,
   useMoveDay,
+  useDeleteDay,
 } from "./editing-kit";
 
 /** Chronological vertical reading view.
@@ -46,6 +47,7 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
   const addActivity = useAddActivity(blocks);
   const addDay = useAddDay(blocks);
   const moveDay = useMoveDay(blocks);
+  const deleteDay = useDeleteDay(blocks);
   const dayCount = it.days.length;
   return (
     <div className="tds-vertical">
@@ -83,6 +85,7 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
             onMoveDay={(dir) => moveDay(d.dayIndex, dir)}
             canMoveUp={dPos > 0}
             canMoveDown={dPos < dayCount - 1}
+            onDeleteDay={() => deleteDay(d.dayIndex)}
           />
           <PlanBCue count={d.shadows.length} />
 

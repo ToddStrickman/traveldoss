@@ -17,6 +17,7 @@ import {
   useAddDay,
   CollapseToggle,
   useMoveDay,
+  useDeleteDay,
 } from "./editing-kit";
 
 const PART_ICON: Record<PartOfDay, typeof Sunrise> = {
@@ -41,6 +42,7 @@ export function GridView({ trip, blocks }: { trip: TripView; blocks: Block[] }) 
   const addActivity = useAddActivity(blocks);
   const addDay = useAddDay(blocks);
   const moveDay = useMoveDay(blocks);
+  const deleteDay = useDeleteDay(blocks);
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
   const togglePart = useCallback((key: string) => {
     setCollapsed((prev) => {
@@ -116,6 +118,7 @@ export function GridView({ trip, blocks }: { trip: TripView; blocks: Block[] }) 
             onMoveDay={(dir) => moveDay(d.dayIndex, dir)}
             canMoveUp={dPos > 0}
             canMoveDown={dPos < it.days.length - 1}
+            onDeleteDay={() => deleteDay(d.dayIndex)}
           />
           <PlanBCue count={d.shadows.length} />
 

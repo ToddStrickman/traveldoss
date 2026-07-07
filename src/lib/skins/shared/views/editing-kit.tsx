@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { Plus, Sun, ChevronUp, ChevronDown } from "lucide-react";
+import { Plus, Sun, ChevronUp, ChevronDown, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import type { Block, TripView, TripMeta } from "../../types";
 import type { PartOfDay } from "../itinerary";
@@ -185,6 +185,7 @@ export function EditableDayHeader({
   onMoveDay,
   canMoveUp = false,
   canMoveDown = false,
+  onDeleteDay,
 }: {
   d: { day: { n: number; label: string; date?: string; notes?: string; linkTitles?: Record<string, string> }; dayIndex: number };
   onToggleCollapsed?: () => void;
@@ -195,6 +196,7 @@ export function EditableDayHeader({
   onMoveDay?: (direction: -1 | 1) => void;
   canMoveUp?: boolean;
   canMoveDown?: boolean;
+  onDeleteDay?: () => void;
 }) {
   const { onBlockChange, editing } = useEditing();
   return (
@@ -220,6 +222,7 @@ export function EditableDayHeader({
             canMoveUp={canMoveUp}
             canMoveDown={canMoveDown}
             dayN={d.day.n}
+            onDelete={onDeleteDay}
           />
         ) : null}
         {showCollapse && onToggleCollapsed ? (
@@ -373,6 +376,34 @@ export function useMoveDay(blocks: Block[]) {
   }, [blocks, onBlocksReplace]);
 }
 
+/** Delete a day and its entire run (day marker + sections + places up to
+ *  the next day marker or the inbound flight). No-op if the day isn't
+ *  found. Fires a toast so the user has a clear undo-anchor moment. */
+export function useDeleteDay(blocks: Block[]) {
+  const { onBlocksReplace } = useEditing();
+  return useCallback((dayIndex: number) => {
+    if (!onBlocksReplace) return;
+    const target = blocks[dayIndex];
+    if (!target || target.kind !== "day") return;
+    let end = blocks.length;
+    for (let i = dayIndex + 1; i < blocks.length; i++) {
+      const b = blocks[i];
+      if (b.kind === "day") { end = i; break; }
+      if (b.kind === "flight" && b.direction === "inbound") { end = i; break; }
+    }
+    const removed = blocks.slice(dayIndex, end);
+    const next = [...blocks.slice(0, dayIndex), ...blocks.slice(end)];
+    onBlocksReplace(next);
+    const activityCount = removed.filter((b) => b.kind === "place").length;
+    toast.success(`Day ${target.n} removed`, {
+      description: activityCount > 0
+        ? `${activityCount} ${activityCount === 1 ? "activity" : "activities"} cleared with the day.`
+        : "That empty day is off the itinerary.",
+      duration: 2600,
+    });
+  }, [blocks, onBlocksReplace]);
+}
+
 /** Mobile-only up/down arrows shown in the day header to reorder days.
  *  Kept off desktop via CSS (`.tds-day-reorder` — see skin.css). */
 export function DayReorderControls({
@@ -380,11 +411,13 @@ export function DayReorderControls({
   canMoveUp,
   canMoveDown,
   dayN,
+  onDelete,
 }: {
   onMove: (direction: -1 | 1) => void;
   canMoveUp: boolean;
   canMoveDown: boolean;
   dayN: number;
+  onDelete?: () => void;
 }) {
   return (
     <div className="tds-day-reorder" data-print="hide" role="group" aria-label={`Reorder Day ${dayN}`}>
@@ -406,6 +439,19 @@ export function DayReorderControls({
       >
         <ChevronDown size={14} aria-hidden />
       </button>
+      {onDelete ? (
+        <button
+          type="button"
+          className="tds-day-reorder-btn tds-day-delete-btn tap"
+          onClick={() => {
+            if (typeof window !== "undefined" && !window.confirm(`Delete Day ${dayN}? Activities on this day will be removed.`)) return;
+            onDelete();
+          }}
+          aria-label={`Delete Day ${dayN}`}
+        >
+          <Trash2 size={14} aria-hidden />
+        </button>
+      ) : null}
     </div>
   );
 }

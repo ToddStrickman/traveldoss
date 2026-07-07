@@ -15,6 +15,7 @@ import {
   useAddActivity,
   useAddDay,
   useMoveDay,
+  useDeleteDay,
 } from "./editing-kit";
 
 type ActivityEntry = { activity: Extract<Block, { kind: "place" }>; index: number };
@@ -30,6 +31,7 @@ export function HorizontalView({ trip, blocks }: { trip: TripView; blocks: Block
   const addActivity = useAddActivity(blocks);
   const addDay = useAddDay(blocks);
   const moveDay = useMoveDay(blocks);
+  const deleteDay = useDeleteDay(blocks);
 
   // Mobile pager: which day column is centered right now.
   const scrollerRef = useRef<HTMLDivElement | null>(null);
@@ -93,6 +95,7 @@ export function HorizontalView({ trip, blocks }: { trip: TripView; blocks: Block
                 onMoveDay={(dir) => moveDay(d.dayIndex, dir)}
                 canMoveUp={dPos > 0}
                 canMoveDown={dPos < it.days.length - 1}
+                onDeleteDay={() => deleteDay(d.dayIndex)}
               />
               <PlanBCue count={d.shadows.length} />
               {partOrder.map((part) => (

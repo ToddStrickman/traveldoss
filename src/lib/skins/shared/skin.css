@@ -416,6 +416,19 @@ button.tds-add-day[data-burst] .tds-add-day-plus {
 }
 .tds-day-reorder-btn:active:not(:disabled) { transform: scale(.94); }
 .tds-day-reorder-btn:disabled { opacity: .35; cursor: not-allowed; }
+/* Destructive tint for the delete-day button; still uses accent for
+   focus ring so it blends across every skin. */
+.tds-day-delete-btn {
+  margin-inline-start: 4px;
+  border-color: color-mix(in oklab, #c0392b 45%, var(--tds-rule));
+  color: color-mix(in oklab, #c0392b 70%, var(--tds-ink));
+  background: color-mix(in oklab, #c0392b 6%, transparent);
+}
+.tds-day-delete-btn:hover:not(:disabled),
+.tds-day-delete-btn:focus-visible:not(:disabled) {
+  background: color-mix(in oklab, #c0392b 16%, transparent);
+  border-color: color-mix(in oklab, #c0392b 70%, var(--tds-rule));
+}
 /* Desktop: hide — day reorder is a mobile affordance. Drag remains the
    desktop story for activities; days stay stable on wide screens. */
 @media (min-width: 768px) {
