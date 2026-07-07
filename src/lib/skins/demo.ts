@@ -42,6 +42,75 @@ export const DEMO_BLOCKS: Block[] = [
     note: "Direct overnight from JFK. Aisle seat.",
   },
 
+  // ---- Photo gallery (coverflow) — real Wikimedia Commons images with
+  //      true licenses, so the attribution affordance is exercised. ----
+  {
+    kind: "gallery",
+    title: "The Trip in Pictures",
+    images: [
+      {
+        src: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/06/Lisbon_tram_in_Baixa_Chiado.jpg/960px-Lisbon_tram_in_Baixa_Chiado.jpg",
+        alt: "A yellow Lisbon tram climbing through Baixa-Chiado",
+        caption: "the trams",
+        provider: "wikimedia",
+        license: "CC BY 2.0",
+        licenseUrl: "https://creativecommons.org/licenses/by/2.0/",
+        creator: "Daniel Sparing",
+        sourcePageUrl: "https://commons.wikimedia.org/wiki/File:Lisbon_tram_in_Baixa_Chiado.jpg",
+      },
+      {
+        src: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/Lisbon_tram_speeding_in_Alfama.jpg/960px-Lisbon_tram_speeding_in_Alfama.jpg",
+        alt: "Tram threading the narrow streets of Alfama",
+        caption: "alfama",
+        provider: "wikimedia",
+        license: "CC BY 2.0",
+        licenseUrl: "https://creativecommons.org/licenses/by/2.0/",
+        creator: "Daniel Sparing",
+        sourcePageUrl: "https://commons.wikimedia.org/wiki/File:Lisbon_tram_speeding_in_Alfama.jpg",
+      },
+      {
+        src: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bc/Alfama_%283903814530%29.jpg/960px-Alfama_%283903814530%29.jpg",
+        alt: "Terracotta rooftops of Alfama toward the Tagus",
+        caption: "rooftops",
+        provider: "wikimedia",
+        license: "CC BY 2.0",
+        licenseUrl: "https://creativecommons.org/licenses/by/2.0/",
+        creator: "Bernt Rostad",
+        sourcePageUrl: "https://commons.wikimedia.org/wiki/File:Alfama_(3903814530).jpg",
+      },
+      {
+        src: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Lisbon_Torre_de_Bel%C3%A9m_BW_2018-10-03_16-35-17.jpg/960px-Lisbon_Torre_de_Bel%C3%A9m_BW_2018-10-03_16-35-17.jpg",
+        alt: "Torre de Belém on the river at golden hour",
+        caption: "belém",
+        provider: "wikimedia",
+        license: "CC BY-SA 4.0",
+        licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0/",
+        creator: "Berthold Werner",
+        sourcePageUrl: "https://commons.wikimedia.org/wiki/File:Lisbon_Torre_de_Bel%C3%A9m_BW_2018-10-03_16-35-17.jpg",
+      },
+      {
+        src: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Azulejo_Lisboa_Portugal.jpg/960px-Azulejo_Lisboa_Portugal.jpg",
+        alt: "Blue-and-white azulejo tilework",
+        caption: "azulejo",
+        provider: "wikimedia",
+        license: "CC BY-SA 4.0",
+        licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0/",
+        creator: "LightWord",
+        sourcePageUrl: "https://commons.wikimedia.org/wiki/File:Azulejo_Lisboa_Portugal.jpg",
+      },
+      {
+        src: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/Arco_Triunfal_da_Rua_Augusta%2C_Plaza_del_Comercio%2C_Lisboa%2C_Portugal%2C_2012-05-12%2C_DD_02.JPG/960px-Arco_Triunfal_da_Rua_Augusta%2C_Plaza_del_Comercio%2C_Lisboa%2C_Portugal%2C_2012-05-12%2C_DD_02.JPG",
+        alt: "Rua Augusta Arch over Praça do Comércio",
+        caption: "the square",
+        provider: "wikimedia",
+        license: "CC BY-SA 3.0",
+        licenseUrl: "https://creativecommons.org/licenses/by-sa/3.0/",
+        creator: "Diego Delso",
+        sourcePageUrl: "https://commons.wikimedia.org/wiki/File:Arco_Triunfal_da_Rua_Augusta,_Plaza_del_Comercio,_Lisboa,_Portugal,_2012-05-12,_DD_02.JPG",
+      },
+    ],
+  },
+
   // ---- Trip essentials (preface) ----
   {
     kind: "place",

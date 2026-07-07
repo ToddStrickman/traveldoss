@@ -7,6 +7,7 @@ import { GridView } from "./views/GridView";
 import { useEditing } from "./Editable";
 import { SlotSelectionProvider, useInertRender } from "./views/parts";
 import { DossierMapButton } from "@/components/map/DossierMap";
+import { GalleryOverlayButton } from "./gallery/CoverflowGallery";
 
 export type SkinFrameProps = {
   trip: TripView;
@@ -62,6 +63,10 @@ export function SkinFrame({ trip, blocks, tokens, view = "vertical" }: SkinFrame
 
       {/* The Live Map — every template, one pin button (landing promise). */}
       {!inert ? <DossierMapButton trip={trip} blocks={blocks} tokens={tokens} /> : null}
+
+      {/* Rainbow gallery icon — compact entry point where the gallery isn't
+          inline (Horizontal Board + Grid). Vertical embeds it instead. */}
+      {!inert && view !== "vertical" ? <GalleryOverlayButton trip={trip} blocks={blocks} /> : null}
     </div>
     </SlotSelectionProvider>
   );
