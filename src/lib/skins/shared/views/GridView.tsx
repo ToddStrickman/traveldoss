@@ -16,6 +16,7 @@ import {
   useAddActivity,
   useAddDay,
   CollapseToggle,
+  useMoveDay,
 } from "./editing-kit";
 
 const PART_ICON: Record<PartOfDay, typeof Sunrise> = {
@@ -39,6 +40,7 @@ export function GridView({ trip, blocks }: { trip: TripView; blocks: Block[] }) 
   const showScaffold = editing && isScaffoldTriggered(blocks);
   const addActivity = useAddActivity(blocks);
   const addDay = useAddDay(blocks);
+  const moveDay = useMoveDay(blocks);
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
   const togglePart = useCallback((key: string) => {
     setCollapsed((prev) => {
