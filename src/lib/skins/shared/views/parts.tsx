@@ -179,6 +179,33 @@ function GlyphTag() {
   );
 }
 
+/**
+ * Split "Dinner · Belcanto" into a kind word and the object it describes.
+ * The kind renders as a small soft kicker (distinct from the venue name) and
+ * REPLACES the generic category label — killing the "WALK / Walk ·" redundancy.
+ * Only the app's own " · " convention is split; hyphens/colons in real names
+ * are left alone. Prefixes longer than two words are treated as names.
+ */
+export function splitActivityName(name: string): { kind?: string; rest: string } {
+  const m = name.match(/^([A-Za-z][A-Za-z' ]{0,24}?)\s*·\s*(.+)$/);
+  if (!m) return { rest: name };
+  const kind = m[1].trim();
+  if (kind.split(/\s+/).length > 2) return { rest: name };
+  return { kind, rest: m[2].trim() };
+}
+
+/** Inline styled activity name: soft kind kicker + display-type object. */
+export function ActivityName({ name }: { name: string }) {
+  const { kind, rest } = splitActivityName(name);
+  if (!kind) return <>{name}</>;
+  return (
+    <>
+      <span className="tds-act-kind">{kind}</span>
+      {rest}
+    </>
+  );
+}
+
 type DetailRow = {
   key: string;
   label: string;
@@ -274,8 +301,12 @@ export function ActivityChips({ activity, max = 3 }: { activity: ActivityBlock; 
  * field as an icon-labeled key/value pair with phone / link / map affordances.
  */
 export function ActivityDetails({ activity }: { activity: ActivityBlock }) {
-  const inert = useInertRender();
   const rows = buildDetailRows(activity);
+  return <DetailRowsList rows={rows} />;
+}
+
+function DetailRowsList({ rows }: { rows: DetailRow[] }) {
+  const inert = useInertRender();
   if (rows.length === 0) return null;
   return (
     <dl className="tds-act-details" aria-label="Details">
@@ -393,12 +424,16 @@ export function ActivityRow({
       </div>
       <div className="tds-act-body">
         <div className="tds-act-title">
-          <EditableText
-            as="span"
-            value={activity.name}
-            placeholder="Activity"
-            onChange={(v) => onBlockChange(index, { name: v } as Partial<Block>)}
-          />
+          {editing ? (
+            <EditableText
+              as="span"
+              value={activity.name}
+              placeholder="Activity"
+              onChange={(v) => onBlockChange(index, { name: v } as Partial<Block>)}
+            />
+          ) : (
+            <ActivityName name={activity.name} />
+          )}
         </div>
         <ActivityChips activity={activity} max={3} />
         {activity.note ? (
@@ -435,7 +470,7 @@ export function ActivityRow({
 
 /** Compact kanban-card variant of an activity for the horizontal board. */
 export function ActivityCard({ activity, index }: { activity: ActivityBlock; index: number }) {
-  const { onBlockChange } = useEditing();
+  const { onBlockChange, editing } = useEditing();
   return (
     <div className="tds-act-card" data-block="activity-card" data-block-index={index}>
       <div className="tds-act-card-head">
@@ -444,12 +479,16 @@ export function ActivityCard({ activity, index }: { activity: ActivityBlock; ind
         <span className="tds-act-card-cat">{categoryLabel(activity.category)}</span>
       </div>
       <div className="tds-act-card-title">
-        <EditableText
-          as="span"
-          value={activity.name}
-          placeholder="Activity"
-          onChange={(v) => onBlockChange(index, { name: v } as Partial<Block>)}
-        />
+        {editing ? (
+          <EditableText
+            as="span"
+            value={activity.name}
+            placeholder="Activity"
+            onChange={(v) => onBlockChange(index, { name: v } as Partial<Block>)}
+          />
+        ) : (
+          <ActivityName name={activity.name} />
+        )}
       </div>
       <ActivityChips activity={activity} max={2} />
       {activity.note ? (
@@ -461,21 +500,49 @@ export function ActivityCard({ activity, index }: { activity: ActivityBlock; ind
   );
 }
 
-/** Dense grid cell variant — exposes every field for operational reference. */
+/** Grid cell — calm by default: kind kicker, name, address, note. Every
+ *  other field folds into a "+ N details" disclosure (progressive
+ *  disclosure keeps the day matrix scannable without losing anything). */
 export function ActivityCell({ activity, index }: { activity: ActivityBlock; index?: number }) {
+  const inert = useInertRender();
+  const { kind, rest } = splitActivityName(activity.name);
+  const rows = buildDetailRows(activity);
+  const address = rows.find((r) => r.key === "address");
+  const more = rows.filter((r) => r.key !== "address");
   return (
     <div className="tds-act-cell" data-block-index={index}>
       <div className="tds-act-cell-head">
         <CategoryIcon category={activity.category} className="tds-cat-icon" />
-        <span className="tds-act-cell-cat">{categoryLabel(activity.category)}</span>
+        {/* The name's own kind word wins; the generic category label is
+            redundant with it ("Walk ·" vs WALK) and steps aside. */}
+        <span className="tds-act-cell-cat">{kind ?? categoryLabel(activity.category)}</span>
         {activity.time ? <span className="tds-act-cell-time">{activity.time}</span> : null}
       </div>
-      <div className="tds-act-cell-name">{activity.name}</div>
-      <ActivityDetails activity={activity} />
+      <div className="tds-act-cell-name">{rest}</div>
+      {address ? (
+        <div className="tds-act-cell-line tds-act-cell-muted">
+          {address.href && !inert ? (
+            <a href={address.href} target="_blank" rel="noreferrer">
+              {address.value}
+            </a>
+          ) : (
+            address.value
+          )}
+        </div>
+      ) : null}
       {activity.note ? (
         <div className="tds-act-cell-note">
           <LinkifiedText text={activity.note} linkTitles={activity.linkTitles} />
         </div>
+      ) : null}
+      {more.length > 0 ? (
+        <details className="tds-act-more">
+          <summary>
+            <span className="tds-more-closed">+ {more.length} detail{more.length === 1 ? "" : "s"}</span>
+            <span className="tds-more-open">− details</span>
+          </summary>
+          <DetailRowsList rows={more} />
+        </details>
       ) : null}
     </div>
   );

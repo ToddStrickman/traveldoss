@@ -654,6 +654,40 @@ button.tds-add-day[data-burst] .tds-add-day-plus {
 .tds-act-cell-muted { color: var(--tds-soft); }
 .tds-act-cell-note { font-size: 12px; color: var(--tds-ink); opacity: .8; font-style: italic; margin-top: 4px; }
 
+/* Kind kicker — the "Dinner" in "Dinner · Belcanto": quiet, letterspaced,
+   clearly not part of the venue name. */
+.tds-act-kind {
+  font-family: var(--tds-fontBody);
+  font-size: 0.62em;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--tds-soft);
+  margin-right: 8px;
+  vertical-align: 0.18em;
+  white-space: nowrap;
+}
+
+/* "+ N details" progressive disclosure inside a grid cell. */
+.tds-act-more { margin-top: 7px; }
+.tds-act-more > summary {
+  cursor: pointer;
+  list-style: none;
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--tds-soft);
+  border-bottom: 1px dotted var(--tds-rule);
+  padding-bottom: 1px;
+}
+.tds-act-more > summary::-webkit-details-marker { display: none; }
+.tds-act-more > summary:hover { color: var(--tds-accent); border-bottom-color: var(--tds-accent); }
+.tds-act-more[open] > summary { color: var(--tds-accent); margin-bottom: 4px; }
+.tds-act-more:not([open]) .tds-more-open { display: none; }
+.tds-act-more[open] .tds-more-closed { display: none; }
+
 /* ----- Standardized activity chips & details ---------------------
    Used across vertical row, kanban card, and grid cell so every
    trip-component category looks identical across templates. */
