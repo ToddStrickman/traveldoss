@@ -15,6 +15,7 @@ import { MetaChip } from "@/components/studio/MetaChip";
 import { DayDateChip } from "../DayDateChip";
 import { BlankDayScaffold, isScaffoldTriggered } from "../BlankDayScaffold";
 import { Plus } from "lucide-react";
+import { useState } from "react";
 import type { PartOfDay } from "../itinerary";
 
 /** Chronological vertical reading view.
@@ -39,10 +40,19 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
   const placeholderFor = (part: "morning" | "afternoon" | "evening"): string =>
     part === "morning" ? "Open Morning" : part === "afternoon" ? "Open Afternoon" : "Open Evening";
 
+  /** Tracks which empty slot has the inline editor open. */
+  const [openEditor, setOpenEditor] = useState<{ dayIndex: number; part: PartOfDay } | null>(null);
+
   /** Insert a new place block into (dayIndex, part), creating the section
    *  header first when it doesn't exist yet. Reuses onBlockAdd so history /
-   *  autosave / view-transition all fire the same way as any other edit. */
-  const addActivity = (dayIndex: number, part: PartOfDay) => {
+   *  autosave / view-transition all fire the same way as any other edit.
+   *  `seed` carries user-entered fields from the inline editor. */
+  const addActivity = (
+    dayIndex: number,
+    part: PartOfDay,
+    seed: Partial<Extract<Block, { kind: "place" }>> = {},
+  ) => {
+    const placeSeed = { name: "", category: "other" as const, ...seed };
     // Range covering just this day (up to next day block or end of list).
     let dayEnd = blocks.length;
     for (let i = dayIndex + 1; i < blocks.length; i++) {
@@ -55,7 +65,15 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
       if (b.kind === "section" && b.partOfDay === part) { sectionIdx = i; break; }
     }
     if (sectionIdx !== -1) {
-      onBlockAdd(sectionIdx, "place", { name: "", category: "other" });
+      // Insert after the last existing place in this section so new entries
+      // append to the bucket rather than jumping to the top.
+      let insertAfter = sectionIdx;
+      for (let i = sectionIdx + 1; i < dayEnd; i++) {
+        const b = blocks[i];
+        if (b.kind === "section") break;
+        if (b.kind === "place") insertAfter = i;
+      }
+      onBlockAdd(insertAfter, "place", placeSeed);
       return;
     }
     // No section yet — build day slice with the missing section + place in one shot.
@@ -64,7 +82,7 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
       // Fallback: append a section + place at day end. Bucketing still works
       // because part-of-day is derived left-to-right from the prior section.
       onBlockAdd(dayEnd - 1, "section", { title: part[0].toUpperCase() + part.slice(1), partOfDay: part });
-      onBlockAdd(dayEnd, "place", { name: "", category: "other" });
+      onBlockAdd(dayEnd, "place", placeSeed);
       return;
     }
     // Find the correct insertion point so morning < afternoon < evening.
@@ -78,7 +96,7 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
     const next: Block[] = blocks.slice();
     next.splice(insertAt, 0,
       { kind: "section", title: part[0].toUpperCase() + part.slice(1), partOfDay: part },
-      { kind: "place", name: "", category: "other" },
+      { kind: "place", ...placeSeed },
     );
     onBlocksReplace(next);
   };
