@@ -96,7 +96,45 @@ describe("mobile edit-mode parity", () => {
         const groups = container.querySelectorAll(".tds-day-reorder");
         expect(groups.length).toBeGreaterThan(0);
         for (const g of groups) {
-          expect(g.querySelectorAll(".tds-day-reorder-btn").length).toBe(2);
+          // Up + down chevrons + delete = 3 buttons per day.
+          expect(g.querySelectorAll(".tds-day-reorder-btn").length).toBe(3);
+          expect(g.querySelectorAll(".tds-day-delete-btn").length).toBe(1);
+        }
+      });
+
+      it("delete-day button removes the day (and its activities) via onBlocksReplace", () => {
+        const onBlocksReplace = mock((_next: Block[]) => {});
+        const ctx: EditingCtx = {
+          editing: true,
+          onBlockChange: mock(() => {}),
+          onBlockRemove: mock(() => {}),
+          onBlockAdd: mock(() => {}),
+          onBlocksReplace,
+          onReorder: mock(() => {}),
+          onTripChange: mock(() => {}),
+          onMoveActivity: mock(() => {}),
+          onMetaChange: mock(() => {}),
+          onTripDatesChange: mock(() => {}),
+        } as EditingCtx;
+        // Stub window.confirm — jsdom/happy-dom returns false by default.
+        const originalConfirm = window.confirm;
+        window.confirm = () => true;
+        try {
+          const { container } = render(
+            <EditingProvider value={ctx}>
+              <View trip={DEMO_TRIP} blocks={DEMO_BLOCKS} />
+            </EditingProvider>,
+          );
+          const delBtn = container.querySelector(".tds-day-delete-btn") as HTMLButtonElement | null;
+          expect(delBtn).not.toBeNull();
+          fireEvent.click(delBtn!);
+          expect(onBlocksReplace).toHaveBeenCalledTimes(1);
+          const next = (onBlocksReplace as unknown as { mock: { calls: Block[][][] } }).mock.calls[0][0];
+          // DEMO_BLOCKS has 3 days; deleting the first leaves 2.
+          const remainingDays = next.filter((b) => b.kind === "day").length;
+          expect(remainingDays).toBe(2);
+        } finally {
+          window.confirm = originalConfirm;
         }
       });
 
