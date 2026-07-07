@@ -314,6 +314,7 @@ export function useAddDay(blocks: Block[]) {
 export function useMoveDay(blocks: Block[]) {
   const { onBlocksReplace } = useEditing();
   return useCallback((dayIndex: number, direction: -1 | 1) => {
+    if (!onBlocksReplace) return;
     if (blocks[dayIndex]?.kind !== "day") return;
     // Collect all day-run boundaries.
     const boundaries: number[] = [];
