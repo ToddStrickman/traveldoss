@@ -20,6 +20,7 @@ import {
   AddDayButton,
   useAddActivity,
   useAddDay,
+  useMoveDay,
 } from "./editing-kit";
 
 /** Chronological vertical reading view.
@@ -44,6 +45,8 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
 
   const addActivity = useAddActivity(blocks);
   const addDay = useAddDay(blocks);
+  const moveDay = useMoveDay(blocks);
+  const dayCount = it.days.length;
   return (
     <div className="tds-vertical">
       <EditableHero trip={trip} />
@@ -63,7 +66,7 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
       ) : null}
 
       <ActivityDndContext blocks={blocks}>
-      {it.days.map((d) => {
+      {it.days.map((d, dPos) => {
         const dayKey = `d:${d.dayIndex}`;
         const dayCollapsed = collapsed.has(dayKey);
         return (
@@ -77,6 +80,9 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
             d={d}
             collapsed={dayCollapsed}
             onToggleCollapsed={() => toggleCollapsed(dayKey)}
+            onMoveDay={(dir) => moveDay(d.dayIndex, dir)}
+            canMoveUp={dPos > 0}
+            canMoveDown={dPos < dayCount - 1}
           />
           <PlanBCue count={d.shadows.length} />
 

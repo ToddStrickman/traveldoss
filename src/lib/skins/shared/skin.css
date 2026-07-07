@@ -391,6 +391,37 @@ button.tds-add-day[data-burst] .tds-add-day-plus {
   button.tds-add-day[data-burst] .tds-add-day-plus { animation: none; }
 }
 
+/* ----- Mobile-only day reorder chevrons (rendered in day header) ------ */
+.tds-day-reorder {
+  display: inline-flex; gap: 4px; margin-inline-start: auto;
+  align-items: center;
+}
+.tds-day-reorder-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; min-width: 32px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklab, var(--tds-accent) 35%, var(--tds-rule));
+  background: color-mix(in oklab, var(--tds-accent) 6%, transparent);
+  color: var(--tds-ink);
+  cursor: pointer;
+  transition: background-color .18s ease, transform .18s ease, opacity .18s ease;
+}
+.tds-day-reorder-btn:hover:not(:disabled),
+.tds-day-reorder-btn:focus-visible:not(:disabled) {
+  background: color-mix(in oklab, var(--tds-accent) 16%, transparent);
+  outline: none;
+}
+.tds-day-reorder-btn:focus-visible {
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--tds-accent) 55%, transparent);
+}
+.tds-day-reorder-btn:active:not(:disabled) { transform: scale(.94); }
+.tds-day-reorder-btn:disabled { opacity: .35; cursor: not-allowed; }
+/* Desktop: hide — day reorder is a mobile affordance. Drag remains the
+   desktop story for activities; days stay stable on wide screens. */
+@media (min-width: 768px) {
+  .tds-day-reorder { display: none; }
+}
+
 /* ----- Inline activity editor (opens from an empty slot button) ------ */
 .tds-inline-editor {
   display: flex; flex-direction: column; gap: 8px;
