@@ -5,7 +5,8 @@ import { VerticalView } from "./views/VerticalView";
 import { HorizontalView } from "./views/HorizontalView";
 import { GridView } from "./views/GridView";
 import { useEditing } from "./Editable";
-import { SlotSelectionProvider } from "./views/parts";
+import { SlotSelectionProvider, useInertRender } from "./views/parts";
+import { DossierMapButton } from "@/components/map/DossierMap";
 
 export type SkinFrameProps = {
   trip: TripView;
@@ -22,6 +23,8 @@ export type SkinFrameProps = {
  */
 export function SkinFrame({ trip, blocks, tokens, view = "vertical" }: SkinFrameProps) {
   const { editing } = useEditing();
+  // Thumbnails (gallery tiles, landing rail) render inert — no floating chrome.
+  const inert = useInertRender();
 
   const vars = {
     "--tds-bg": tokens.bg,
@@ -56,6 +59,9 @@ export function SkinFrame({ trip, blocks, tokens, view = "vertical" }: SkinFrame
           <span className="tds-foot-trip">{trip.destination}</span>
         </span>
       </footer>
+
+      {/* The Live Map — every template, one pin button (landing promise). */}
+      {!inert ? <DossierMapButton trip={trip} blocks={blocks} tokens={tokens} /> : null}
     </div>
     </SlotSelectionProvider>
   );

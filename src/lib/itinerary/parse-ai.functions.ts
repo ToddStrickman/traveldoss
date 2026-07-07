@@ -572,7 +572,7 @@ async function enrichPlacesViaWebSearch(
     (b): b is PlaceBlock =>
       b.kind === "place" &&
       !!b.name &&
-      (!b.address || !b.phone || !b.website),
+      (!b.address || !b.phone || !b.website || b.lat == null),
   );
   if (targets.length === 0) return;
 
@@ -607,7 +607,7 @@ async function fillFromGooglePlaces(
           "Content-Type": "application/json",
           "X-Goog-Api-Key": apiKey,
           "X-Goog-FieldMask":
-            "places.displayName,places.formattedAddress,places.internationalPhoneNumber,places.websiteUri,places.regularOpeningHours",
+            "places.displayName,places.formattedAddress,places.internationalPhoneNumber,places.websiteUri,places.regularOpeningHours,places.location",
         },
         body: JSON.stringify({ textQuery: query, pageSize: 1 }),
       },
@@ -619,6 +619,7 @@ async function fillFromGooglePlaces(
         internationalPhoneNumber?: string;
         websiteUri?: string;
         regularOpeningHours?: { weekdayDescriptions?: string[] };
+        location?: { latitude?: number; longitude?: number };
       }>;
     };
     const hit = json.places?.[0];
@@ -639,6 +640,15 @@ async function fillFromGooglePlaces(
     }
     if (!place.hours && hit.regularOpeningHours?.weekdayDescriptions?.length) {
       place.hours = hit.regularOpeningHours.weekdayDescriptions.join("; ");
+      changed = true;
+    }
+    if (
+      place.lat == null &&
+      typeof hit.location?.latitude === "number" &&
+      typeof hit.location?.longitude === "number"
+    ) {
+      place.lat = hit.location.latitude;
+      place.lng = hit.location.longitude;
       changed = true;
     }
     if (changed) {

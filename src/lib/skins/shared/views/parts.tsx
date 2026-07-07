@@ -377,6 +377,7 @@ export function ActivityRow({
     <div
       className="tds-act-row"
       data-block="activity"
+      data-block-index={index}
       data-tappable={tappable || undefined}
       onClick={tappable ? () => setSheetOpen(true) : undefined}
       onKeyDown={tappable ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSheetOpen(true); } } : undefined}
@@ -436,7 +437,7 @@ export function ActivityRow({
 export function ActivityCard({ activity, index }: { activity: ActivityBlock; index: number }) {
   const { onBlockChange } = useEditing();
   return (
-    <div className="tds-act-card" data-block="activity-card">
+    <div className="tds-act-card" data-block="activity-card" data-block-index={index}>
       <div className="tds-act-card-head">
         <CategoryIcon category={activity.category} className="tds-cat-icon" />
         {activity.time ? <span className="tds-act-card-time">{activity.time}</span> : null}
@@ -461,9 +462,9 @@ export function ActivityCard({ activity, index }: { activity: ActivityBlock; ind
 }
 
 /** Dense grid cell variant — exposes every field for operational reference. */
-export function ActivityCell({ activity }: { activity: ActivityBlock }) {
+export function ActivityCell({ activity, index }: { activity: ActivityBlock; index?: number }) {
   return (
-    <div className="tds-act-cell">
+    <div className="tds-act-cell" data-block-index={index}>
       <div className="tds-act-cell-head">
         <CategoryIcon category={activity.category} className="tds-cat-icon" />
         <span className="tds-act-cell-cat">{categoryLabel(activity.category)}</span>
