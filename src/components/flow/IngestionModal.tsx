@@ -653,7 +653,7 @@ export function IngestionModal({
                 onGenerate(
                   [{ kind: "day", n: 1, label: "Day 01" }],
                   "Starting a blank dossier…",
-                  null,
+                  "Blank Trip",
                 );
                 handleOpenChange(false);
               }}
@@ -671,7 +671,7 @@ export function IngestionModal({
                 onGenerate(
                   [{ kind: "day", n: 1, label: "Day 01" }],
                   "Starting a blank dossier…",
-                  null,
+                  "Blank Trip",
                 );
                 handleOpenChange(false);
               }}
