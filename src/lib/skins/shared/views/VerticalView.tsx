@@ -287,15 +287,27 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
                     ))}
                     {list.length === 0 ? (
                       editing ? (
-                        <button
-                          type="button"
-                          className="tds-open-slot tds-open-slot-btn tap"
-                          onClick={() => addActivity(d.dayIndex, part)}
-                          aria-label={`Add ${part} activity to Day ${d.day.n}`}
-                        >
-                          <span className="tds-open-slot-plus" aria-hidden><Plus size={12} /></span>
-                          <span>Add {part} activity</span>
-                        </button>
+                        openEditor && openEditor.dayIndex === d.dayIndex && openEditor.part === part ? (
+                          <InlineActivityEditor
+                            part={part}
+                            dayN={d.day.n}
+                            onCancel={() => setOpenEditor(null)}
+                            onSave={(seed) => {
+                              addActivity(d.dayIndex, part, seed);
+                              setOpenEditor(null);
+                            }}
+                          />
+                        ) : (
+                          <button
+                            type="button"
+                            className="tds-open-slot tds-open-slot-btn tap"
+                            onClick={() => setOpenEditor({ dayIndex: d.dayIndex, part })}
+                            aria-label={`Add ${part} activity to Day ${d.day.n}`}
+                          >
+                            <span className="tds-open-slot-plus" aria-hidden><Plus size={12} /></span>
+                            <span>Add {part} activity</span>
+                          </button>
+                        )
                       ) : (
                         <div className="tds-open-slot" aria-label={`${placeholderFor(part)} — drag or add an activity`}>
                           <span className="tds-open-slot-dot" aria-hidden />
@@ -304,15 +316,27 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
                       )
                     ) : null}
                     {editing && list.length > 0 ? (
-                      <button
-                        type="button"
-                        className="tds-open-slot tds-open-slot-btn tds-open-slot-inline tap"
-                        onClick={() => addActivity(d.dayIndex, part)}
-                        aria-label={`Add another ${part} activity to Day ${d.day.n}`}
-                      >
-                        <span className="tds-open-slot-plus" aria-hidden><Plus size={12} /></span>
-                        <span>Add another</span>
-                      </button>
+                      openEditor && openEditor.dayIndex === d.dayIndex && openEditor.part === part ? (
+                        <InlineActivityEditor
+                          part={part}
+                          dayN={d.day.n}
+                          onCancel={() => setOpenEditor(null)}
+                          onSave={(seed) => {
+                            addActivity(d.dayIndex, part, seed);
+                            setOpenEditor(null);
+                          }}
+                        />
+                      ) : (
+                        <button
+                          type="button"
+                          className="tds-open-slot tds-open-slot-btn tds-open-slot-inline tap"
+                          onClick={() => setOpenEditor({ dayIndex: d.dayIndex, part })}
+                          aria-label={`Add another ${part} activity to Day ${d.day.n}`}
+                        >
+                          <span className="tds-open-slot-plus" aria-hidden><Plus size={12} /></span>
+                          <span>Add another</span>
+                        </button>
+                      )
                     ) : null}
                   </div>
                 )}
