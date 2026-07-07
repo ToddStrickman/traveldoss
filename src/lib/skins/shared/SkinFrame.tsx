@@ -64,9 +64,9 @@ export function SkinFrame({ trip, blocks, tokens, view = "vertical" }: SkinFrame
       {/* The Live Map — every template, one pin button (landing promise). */}
       {!inert ? <DossierMapButton trip={trip} blocks={blocks} tokens={tokens} /> : null}
 
-      {/* Rainbow gallery icon — compact entry point where the gallery isn't
-          inline (Horizontal Board + Grid). Vertical embeds it instead. */}
-      {!inert && view !== "vertical" ? <GalleryOverlayButton trip={trip} blocks={blocks} /> : null}
+      {/* Rainbow gallery icon — the dossier's photos are opt-in via the
+          fullscreen overlay in every view; nothing bulky inline. */}
+      {!inert ? <GalleryOverlayButton trip={trip} blocks={blocks} /> : null}
     </div>
     </SlotSelectionProvider>
   );

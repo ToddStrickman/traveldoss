@@ -419,46 +419,6 @@ export function CoverflowGallery({
   );
 }
 
-/** Inline mount: renders the trip's gallery right after the hero in the
- *  Vertical view. Tapping the center card opens the overlay (mobile has no
- *  hover, so the card itself is an entry point). */
-export function InlineGallery({ trip, blocks }: { trip: TripView; blocks: Block[] }) {
-  const inert = useInertRender();
-  const [overlayAt, setOverlayAt] = useState<number | null>(null);
-  const { title, images } = useMemo(() => collectGalleryImages(trip, blocks), [trip, blocks]);
-  const usable = !inert && images.length >= MIN_IMAGES;
-  // Deep-link (PRD 5.3): ?gallery=N opens directly on that photo.
-  useEffect(() => {
-    if (!usable) return;
-    const fromUrl = readGalleryParam();
-    if (fromUrl != null) setOverlayAt(Math.min(fromUrl, images.length - 1));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [usable]);
-  if (!usable) return null;
-  const openAt = (i: number) => {
-    setOverlayAt(i);
-    writeGalleryParam(i);
-  };
-  const close = () => {
-    setOverlayAt(null);
-    writeGalleryParam(null);
-  };
-  return (
-    <>
-      <CoverflowGallery images={images} title={title} mode="inline" onOpenOverlay={openAt} />
-      {overlayAt != null ? (
-        <CoverflowGallery
-          images={images}
-          title={title}
-          mode="overlay"
-          initialIndex={overlayAt}
-          onClose={close}
-        />
-      ) : null}
-    </>
-  );
-}
-
 /** Rainbow-ring gallery icon (PRD 5.1) — the compact entry point used in
  *  Horizontal Board and Grid views. Glyph stays currentColor so the ring is
  *  the rainbow signal on light and dark templates alike. */

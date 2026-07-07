@@ -11,7 +11,6 @@ import {
 import { ActivityDndContext, DraggableActivity, DroppableBucket } from "./dnd";
 import { ShadowItinerary, PlanBCue } from "../ShadowItinerary";
 import { BlankDayScaffold, isScaffoldTriggered } from "../BlankDayScaffold";
-import { InlineGallery } from "../gallery/CoverflowGallery";
 import { useCallback, useState } from "react";
 import type { PartOfDay } from "../itinerary";
 import {
@@ -54,9 +53,6 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
   return (
     <div className="tds-vertical">
       <EditableHero trip={trip} />
-
-      {/* Coverflow photo gallery — inline in the Vertical view only. */}
-      <InlineGallery trip={trip} blocks={blocks} />
 
       {showScaffold ? (
         <BlankDayScaffold blocks={blocks} />
