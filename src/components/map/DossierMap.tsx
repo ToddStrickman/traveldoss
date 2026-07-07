@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MapPin, X } from "lucide-react";
 import type { Block, SkinTokens, TripView } from "@/lib/skins/types";
 import { buildItinerary } from "@/lib/skins/shared/itinerary";
+import { useEditing } from "@/lib/skins/shared/Editable";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { loadGoogleMaps } from "@/lib/maps/google-maps-loader";
 
 /**
@@ -46,9 +48,12 @@ function collectVisibleIndexes(): Set<number> {
   for (const el of nodes) {
     const idx = Number(el.dataset.blockIndex);
     if (Number.isNaN(idx)) continue;
+    // Structural visibility only (display/visibility/collapsed ancestors).
+    // content-visibility:auto skipping is a scroll-perf optimization, not
+    // user truncation — off-screen days still belong on the map.
     const visible =
       typeof el.checkVisibility === "function"
-        ? el.checkVisibility({ contentVisibilityAuto: true } as never)
+        ? el.checkVisibility()
         : el.offsetParent !== null;
     if (visible) out.add(idx);
   }
@@ -77,6 +82,8 @@ export function DossierMapButton({
   tokens: SkinTokens;
 }) {
   const [open, setOpen] = useState(false);
+  const { editing } = useEditing();
+  const isMobile = useIsMobile();
   const hasAnyCoords = useMemo(
     () => blocks.some((b) => b.kind === "place" && b.lat != null && b.lng != null),
     [blocks],
@@ -85,6 +92,9 @@ export function DossierMapButton({
   if (!import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_BROWSER_KEY || !hasAnyCoords) {
     return null;
   }
+  // Editing on a phone is already dense (studio bar, drag handles, sheets) —
+  // the map yields the space. Desktop keeps the button in every mode.
+  if (editing && isMobile) return null;
   return (
     <>
       <button
