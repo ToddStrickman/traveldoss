@@ -122,11 +122,11 @@ export function BlankDayScaffold({ blocks }: { blocks: Block[] }) {
           <Plane size={16} />
         </span>
         <span className="tds-ghost-body">
-          <span className="tds-ghost-label">Add outbound flight</span>
-          <span className="tds-ghost-hint">Airline · confirmation · seat</span>
+          <span className="tds-ghost-label">Add outbound travel</span>
+          <span className="tds-ghost-hint">Flight, train, ferry, or drive · confirmation · seat</span>
           <span className="tds-ghost-guide">
-            Click to log the flight that gets you there — airline, flight
-            number, confirmation, seat, and gate.
+            Click to log how you're getting there — flight, train, ferry,
+            bus, or drive. Include carrier, number, confirmation, and seat.
           </span>
         </span>
         <span className="tds-ghost-plus" aria-hidden>
@@ -191,11 +191,11 @@ export function BlankDayScaffold({ blocks }: { blocks: Block[] }) {
           <Plane size={16} style={{ transform: "scaleX(-1)" }} />
         </span>
         <span className="tds-ghost-body">
-          <span className="tds-ghost-label">Add inbound flight</span>
-          <span className="tds-ghost-hint">Return leg · seat · baggage</span>
+          <span className="tds-ghost-label">Add return travel</span>
+          <span className="tds-ghost-hint">Return leg · any mode · seat · baggage</span>
           <span className="tds-ghost-guide">
-            Click to log the return leg — carrier, time, seat, and any
-            baggage confirmations you'll want at the gate.
+            Click to log the return leg — flight, train, ferry, or drive.
+            Carrier, time, seat, and any baggage confirmations.
           </span>
         </span>
         <span className="tds-ghost-plus" aria-hidden>
