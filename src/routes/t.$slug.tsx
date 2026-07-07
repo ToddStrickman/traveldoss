@@ -225,10 +225,12 @@ function DossierPage() {
   const isMobile = useIsMobile();
   const lockKey = `td:lock:${trip.slug}`;
   const [locked, setLocked] = useState<boolean>(true);
-  const lockInitRef = useRef(false);
+  const lockUserTouchedRef = useRef(false);
   useEffect(() => {
-    if (lockInitRef.current) return;
-    lockInitRef.current = true;
+    // Honor an explicit user toggle for the rest of the session; otherwise
+    // re-derive from viewport so the first render (where useIsMobile() has
+    // not yet resolved to true) doesn't leave mobile unlocked.
+    if (lockUserTouchedRef.current) return;
     let stored: string | null = null;
     try {
       stored = sessionStorage.getItem(lockKey);
@@ -240,6 +242,7 @@ function DossierPage() {
     else setLocked(isMobile);
   }, [isMobile, lockKey]);
   const toggleLock = useCallback(() => {
+    lockUserTouchedRef.current = true;
     setLocked((prev) => {
       const next = !prev;
       try {
