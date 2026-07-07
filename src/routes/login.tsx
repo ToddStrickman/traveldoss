@@ -71,6 +71,17 @@ function LoginPage() {
   };
 
   const onGoogle = async () => {
+    // Google sign-in rides Lovable Cloud's /~oauth edge routes, which only
+    // exist on the hosted platform. On a local clone that navigation dead-ends
+    // at a 404 page — steer to the email flow (plain Supabase, works anywhere).
+    const host = window.location.hostname;
+    if (host === "localhost" || host === "127.0.0.1" || host.endsWith(".local")) {
+      toast.message("Google sign-in needs the hosted site", {
+        description:
+          "Lovable's OAuth routes aren't available on localhost. Use email sign-in below — it works locally.",
+      });
+      return;
+    }
     setLoading(true);
     try {
       const result = await lovable.auth.signInWithOAuth("google", {
