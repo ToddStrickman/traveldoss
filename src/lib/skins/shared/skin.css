@@ -278,6 +278,73 @@
   background: var(--tds-accent); opacity: .6;
 }
 
+/* Editing mode: the empty-slot placeholder is a real button that seeds a
+ * fresh activity into (day, part-of-day). The dashed pill flips from
+ * whisper-quiet to clearly interactive without shouting past the content. */
+button.tds-open-slot-btn {
+  cursor: pointer;
+  color: var(--tds-ink);
+  opacity: 1;
+  background: color-mix(in oklab, var(--tds-accent) 6%, transparent);
+  border-color: color-mix(in oklab, var(--tds-accent) 45%, var(--tds-rule));
+  transition: background-color .18s ease, border-color .18s ease, transform .18s ease;
+}
+button.tds-open-slot-btn:hover,
+button.tds-open-slot-btn:focus-visible {
+  background: color-mix(in oklab, var(--tds-accent) 14%, transparent);
+  border-color: var(--tds-accent);
+  outline: none;
+}
+button.tds-open-slot-btn:focus-visible {
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--tds-accent) 60%, transparent);
+}
+.tds-open-slot-plus {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 16px; height: 16px; border-radius: 999px;
+  background: var(--tds-accent);
+  color: var(--tds-paper, var(--tds-bg));
+}
+/* When the bucket already has activities, the "Add another" button reads
+ * as a secondary affordance — same shape, lower emphasis. */
+.tds-open-slot-inline {
+  margin-top: 8px;
+  background: transparent !important;
+  border-style: dashed !important;
+  border-color: color-mix(in oklab, var(--tds-accent) 30%, var(--tds-rule)) !important;
+}
+
+/* ----- Add another day (bottom of the vertical view when editing) ---- */
+.tds-add-day-row {
+  display: flex; justify-content: center;
+  margin: var(--tds-s4) 0 var(--tds-s3);
+}
+button.tds-add-day {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 12px 20px;
+  border: 1px dashed color-mix(in oklab, var(--tds-accent) 45%, var(--tds-rule));
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--tds-accent) 6%, transparent);
+  color: var(--tds-ink);
+  font-size: 12px; letter-spacing: .28em; text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color .18s ease, border-color .18s ease, transform .18s ease;
+}
+button.tds-add-day:hover,
+button.tds-add-day:focus-visible {
+  background: color-mix(in oklab, var(--tds-accent) 14%, transparent);
+  border-color: var(--tds-accent);
+  outline: none;
+}
+button.tds-add-day:focus-visible {
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--tds-accent) 60%, transparent);
+}
+.tds-add-day-plus {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: 999px;
+  background: var(--tds-accent);
+  color: var(--tds-paper, var(--tds-bg));
+}
+
 /* ----- Pulsing call-to-action ring for empty meta chips -------------- */
 @keyframes td-chip-pulse {
   0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--tds-accent) 35%, transparent); }
