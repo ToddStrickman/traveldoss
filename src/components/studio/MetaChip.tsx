@@ -108,9 +108,16 @@ export function MetaChip(props: MetaChipProps) {
   if (!editable) {
     if (empty) return null;
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full border border-ink/15 bg-paper/60 px-3 py-1 text-[11px] tracking-[0.04em] text-ink-soft">
-        <span className="td-eyebrow text-ink/40">{label}</span>
-        <span className="text-ink">{text}</span>
+      <span
+        className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] tracking-[0.04em]"
+        style={{
+          borderColor: "color-mix(in oklab, var(--tds-ink) 18%, transparent)",
+          background: "color-mix(in oklab, var(--tds-ink) 4%, var(--tds-bg))",
+          color: "color-mix(in oklab, var(--tds-soft) 40%, var(--tds-ink))",
+        }}
+      >
+        <span className="td-eyebrow" style={{ color: "color-mix(in oklab, var(--tds-soft) 55%, var(--tds-ink))" }}>{label}</span>
+        <span style={{ color: "var(--tds-ink)" }}>{text}</span>
       </span>
     );
   }
@@ -123,22 +130,33 @@ export function MetaChip(props: MetaChipProps) {
           aria-label={hint ?? `Edit ${label}`}
           data-empty={empty ? "true" : "false"}
           className={`group inline-flex items-center gap-1.5 rounded-full border px-3 py-1 tracking-[0.04em] transition-elegant ${
-            empty
-              ? "td-chip-pulse border-dashed border-seal/60 bg-seal/10 text-ink hover:bg-seal/15 text-[11.5px]"
-              : "border-ink/15 bg-paper/60 text-ink-soft hover:border-seal/50 hover:text-ink text-[11px]"
+            empty ? "td-chip-pulse border-dashed text-[11.5px]" : "text-[11px]"
           }`}
+          style={
+            empty
+              ? {
+                  borderColor: "color-mix(in oklab, var(--tds-accent) 60%, transparent)",
+                  background: "color-mix(in oklab, var(--tds-accent) 12%, var(--tds-bg))",
+                  color: "var(--tds-ink)",
+                }
+              : {
+                  borderColor: "color-mix(in oklab, var(--tds-ink) 18%, transparent)",
+                  background: "color-mix(in oklab, var(--tds-ink) 4%, var(--tds-bg))",
+                  color: "color-mix(in oklab, var(--tds-soft) 40%, var(--tds-ink))",
+                }
+          }
         >
           {empty ? (
             <>
-              <Plus className="h-3 w-3 text-seal" strokeWidth={2.25} />
-              <span className="td-eyebrow font-medium text-ink/85">
+              <Plus className="h-3 w-3" strokeWidth={2.25} style={{ color: "var(--tds-accent)" }} />
+              <span className="td-eyebrow font-medium" style={{ color: "var(--tds-ink)" }}>
                 {emptyLabel ?? `Add ${label.toLowerCase()}`}
               </span>
             </>
           ) : (
             <>
-              <span className="td-eyebrow text-ink/40">{label}</span>
-              <span className="text-ink">{text}</span>
+              <span className="td-eyebrow" style={{ color: "color-mix(in oklab, var(--tds-soft) 55%, var(--tds-ink))" }}>{label}</span>
+              <span style={{ color: "var(--tds-ink)" }}>{text}</span>
             </>
           )}
         </button>
