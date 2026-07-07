@@ -5,6 +5,15 @@ import { VerticalView } from "../src/lib/skins/shared/views/VerticalView";
 import { HorizontalView } from "../src/lib/skins/shared/views/HorizontalView";
 import { GridView } from "../src/lib/skins/shared/views/GridView";
 import { DEMO_TRIP, DEMO_BLOCKS } from "../src/lib/skins/demo";
+import type { Block } from "../src/lib/skins/types";
+
+/** One day with morning filled and afternoon/evening empty — guarantees BOTH
+ *  the empty-slot editor and the "add another" affordance render. */
+const SPARSE_BLOCKS: Block[] = [
+  { kind: "day", n: 1, label: "Day 01" },
+  { kind: "section", part: "morning" },
+  { kind: "place", name: "Cafe A Brasileira", category: "other" },
+];
 
 /**
  * Mobile edit-mode parity: EditableHero, EditableDayHeader, AddDayButton
@@ -28,15 +37,18 @@ function makeCtx(): EditingCtx {
   } as EditingCtx;
 }
 
-function renderView(View: React.ComponentType<{ trip: typeof DEMO_TRIP; blocks: typeof DEMO_BLOCKS }>) {
+function renderView(
+  View: React.ComponentType<{ trip: typeof DEMO_TRIP; blocks: Block[] }>,
+  blocks: Block[] = DEMO_BLOCKS,
+) {
   return render(
     <EditingProvider value={makeCtx()}>
-      <View trip={DEMO_TRIP} blocks={DEMO_BLOCKS} />
+      <View trip={DEMO_TRIP} blocks={blocks} />
     </EditingProvider>,
   );
 }
 
-const views: Array<[string, React.ComponentType<{ trip: typeof DEMO_TRIP; blocks: typeof DEMO_BLOCKS }>]> = [
+const views: Array<[string, React.ComponentType<{ trip: typeof DEMO_TRIP; blocks: Block[] }>]> = [
   ["VerticalView", VerticalView],
   ["HorizontalView", HorizontalView],
   ["GridView", GridView],
@@ -68,7 +80,7 @@ describe("mobile edit-mode parity", () => {
       });
 
       it("renders BOTH an empty-slot editor and an 'add another' affordance", () => {
-        const { container } = renderView(View);
+        const { container } = renderView(View, SPARSE_BLOCKS);
         // AddActivitySlot adds `tds-open-slot-inline` for filled buckets
         // (add-another) and omits it for empty buckets (open-slot editor).
         const slots = Array.from(container.querySelectorAll(".tds-open-slot"));
