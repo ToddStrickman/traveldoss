@@ -15,7 +15,7 @@ import { MetaChip } from "@/components/studio/MetaChip";
 import { DayDateChip } from "../DayDateChip";
 import { BlankDayScaffold, isScaffoldTriggered } from "../BlankDayScaffold";
 import { Plus, Sun } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import type { PartOfDay } from "../itinerary";
 
 /** Chronological vertical reading view.
@@ -42,6 +42,17 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
 
   /** Tracks which empty slot has the inline editor open. */
   const [openEditor, setOpenEditor] = useState<{ dayIndex: number; part: PartOfDay } | null>(null);
+
+  /** Mobile-only collapse state. Keyed by dayIndex (whole day) or
+   *  `${dayIndex}:${part}` (part-of-day). Presence = collapsed. */
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
+  const toggleCollapsed = useCallback((key: string) => {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  }, []);
 
   /** Insert a new place block into (dayIndex, part), creating the section
    *  header first when it doesn't exist yet. Reuses onBlockAdd so history /
@@ -218,8 +229,16 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
       ) : null}
 
       <ActivityDndContext blocks={blocks}>
-      {it.days.map((d) => (
-        <section key={d.dayIndex} className="tds-day-section" data-block="day">
+      {it.days.map((d) => {
+        const dayKey = `d:${d.dayIndex}`;
+        const dayCollapsed = collapsed.has(dayKey);
+        return (
+        <section
+          key={d.dayIndex}
+          className="tds-day-section"
+          data-block="day"
+          data-collapsed={dayCollapsed || undefined}
+        >
           <header className="tds-day-head">
             <div className="tds-day-headline">
               <div className="tds-day-no">Day {String(d.day.n).padStart(2, "0")}</div>
@@ -235,6 +254,12 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
                 value={d.day.date ?? ""}
                 editable={editing}
                 onChange={(v) => onBlockChange(d.dayIndex, { date: v } as Partial<Block>)}
+              />
+              <CollapseToggle
+                collapsed={dayCollapsed}
+                onToggle={() => toggleCollapsed(dayKey)}
+                label={`Day ${d.day.n}`}
+                variant="day"
               />
             </div>
             <PlanBCue count={d.shadows.length} />
@@ -255,8 +280,11 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
             ) : null}
           </header>
 
+          <div className="tds-day-body">
           {partOrder.map((part) => {
             const list = d[part];
+            const partKey = `p:${d.dayIndex}:${part}`;
+            const partCollapsed = collapsed.has(partKey);
             // Always render the slot so the dossier reads complete even when
             // empty — a soft "Open …" placeholder fills the gap.
             return (
@@ -264,9 +292,18 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
                 key={part}
                 dayIndex={d.dayIndex}
                 part={part}
-                className="tds-part"
+                className={`tds-part${partCollapsed ? " tds-part--collapsed" : ""}`}
               >
-                <PartHeading part={part} />
+                <div className="tds-part-header-row">
+                  <PartHeading part={part} />
+                  <CollapseToggle
+                    collapsed={partCollapsed}
+                    onToggle={() => toggleCollapsed(partKey)}
+                    label={`${part[0].toUpperCase() + part.slice(1)} on Day ${d.day.n}`}
+                    variant="part"
+                  />
+                </div>
+                <div className="tds-part-body">
                 {list.length > 1 ? (
                   <>
                     <SlotAlternativesCarousel
@@ -365,6 +402,7 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
                     ) : null}
                   </div>
                 )}
+                </div>
               </DroppableBucket>
             );
           })}
@@ -378,8 +416,10 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
               ))}
             </div>
           ) : null}
+          </div>
         </section>
-      ))}
+        );
+      })}
       </ActivityDndContext>
 
       {editing ? (
@@ -407,6 +447,41 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
 
 type PlaceBlock = Extract<Block, { kind: "place" }>;
 type PlaceSeed = Partial<PlaceBlock>;
+
+/**
+ * Mobile-only collapse toggle. A chevron that morphs into a single
+ * horizontal line when the section is collapsed — the "arrow becomes
+ * a line" affordance. Hidden on md+ via CSS.
+ */
+function CollapseToggle({
+  collapsed,
+  onToggle,
+  label,
+  variant,
+}: {
+  collapsed: boolean;
+  onToggle: () => void;
+  label: string;
+  variant: "day" | "part";
+}) {
+  return (
+    <button
+      type="button"
+      className={`tds-collapse-btn tds-collapse-btn--${variant} tap`}
+      data-print="hide"
+      data-collapsed={collapsed || undefined}
+      onClick={onToggle}
+      aria-expanded={!collapsed}
+      aria-label={`${collapsed ? "Expand" : "Collapse"} ${label}`}
+      title={`${collapsed ? "Expand" : "Collapse"} ${label}`}
+    >
+      <span className="tds-collapse-glyph" aria-hidden>
+        <span className="tds-collapse-stroke tds-collapse-stroke--l" />
+        <span className="tds-collapse-stroke tds-collapse-stroke--r" />
+      </span>
+    </button>
+  );
+}
 
 const CATEGORY_OPTIONS: Array<{ value: NonNullable<PlaceBlock["category"]>; label: string }> = [
   { value: "restaurant", label: "Restaurant" },
