@@ -1409,7 +1409,7 @@
   border: 1px dashed color-mix(in oklab, var(--tds-ink) 22%, transparent);
   border-radius: 10px;
   background: color-mix(in oklab, var(--tds-ink) 2%, transparent);
-  color: color-mix(in oklab, var(--tds-ink) 55%, transparent);
+  color: var(--tds-ink);
   font-family: var(--tds-fontBody);
   text-align: left;
   cursor: pointer;
@@ -1438,21 +1438,21 @@
 .tds-ghost-label {
   font-size: var(--tds-fs-body);
   line-height: 1.25;
-  color: color-mix(in oklab, var(--tds-ink) 72%, transparent);
+  color: var(--tds-ink);
 }
 .tds-ghost:hover .tds-ghost-label { color: var(--tds-ink); }
 .tds-ghost-hint {
   font-size: var(--tds-fs-meta);
   text-transform: uppercase;
   letter-spacing: 0.18em;
-  color: color-mix(in oklab, var(--tds-ink) 40%, transparent);
+  color: color-mix(in oklab, var(--tds-soft, var(--tds-accent)) 78%, var(--tds-ink));
 }
 .tds-ghost-plus {
   display: inline-flex; align-items: center; justify-content: center;
   width: 24px; height: 24px; flex: none;
   border-radius: 999px;
-  border: 1px solid color-mix(in oklab, var(--tds-ink) 15%, transparent);
-  color: color-mix(in oklab, var(--tds-ink) 50%, transparent);
+  border: 1px solid color-mix(in oklab, var(--tds-ink) 30%, var(--tds-paper));
+  color: var(--tds-ink);
   transition: border-color 180ms ease, color 180ms ease, transform 180ms ease;
 }
 .tds-ghost:hover .tds-ghost-plus {
