@@ -72,10 +72,18 @@ function Landing() {
     const pendingBlocks = window.sessionStorage.getItem("td_pending_blocks");
     const pendingStep = window.sessionStorage.getItem("td_pending_step") ?? "Reading your itinerary…";
     const pendingDestination = window.sessionStorage.getItem("td_pending_destination");
+    const pendingDatesRaw = window.sessionStorage.getItem("td_pending_dates");
     window.sessionStorage.removeItem("td_pending_template");
     window.sessionStorage.removeItem("td_pending_blocks");
     window.sessionStorage.removeItem("td_pending_step");
     window.sessionStorage.removeItem("td_pending_destination");
+    window.sessionStorage.removeItem("td_pending_dates");
+    let pendingDates: { startDate: string | null; endDate: string | null } | null = null;
+    try {
+      pendingDates = pendingDatesRaw ? JSON.parse(pendingDatesRaw) : null;
+    } catch {
+      pendingDates = null;
+    }
 
     if (!pendingBlocks) {
       setPicked(skin);
@@ -97,6 +105,8 @@ function Landing() {
             templateId: skin.meta.id,
             blocks: JSON.parse(pendingBlocks) as Block[],
             ...(pendingDestination ? { destination: pendingDestination } : {}),
+            ...(pendingDates?.startDate ? { startDate: pendingDates.startDate } : {}),
+            ...(pendingDates?.endDate ? { endDate: pendingDates.endDate } : {}),
           },
         });
         setPendingSlug(r.slug);
@@ -114,7 +124,12 @@ function Landing() {
     setModalOpen(true);
   }
 
-  async function handleGenerate(blocks: Block[], firstStep: string, destination: string | null) {
+  async function handleGenerate(
+    blocks: Block[],
+    firstStep: string,
+    destination: string | null,
+    dates?: { startDate: string | null; endDate: string | null },
+  ) {
     if (!picked) return;
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) {
@@ -122,6 +137,7 @@ function Landing() {
       window.sessionStorage.setItem("td_pending_blocks", JSON.stringify(blocks));
       window.sessionStorage.setItem("td_pending_step", firstStep);
       if (destination) window.sessionStorage.setItem("td_pending_destination", destination);
+      if (dates) window.sessionStorage.setItem("td_pending_dates", JSON.stringify(dates));
       toast.message("Sign in to compose your dossier", { description: "Your studio, your journeys — quiet and owned." });
       navigate({ to: "/login", search: { redirect: "/" } });
       return;
@@ -134,6 +150,8 @@ function Landing() {
           templateId: picked.meta.id,
           blocks,
           ...(destination ? { destination } : {}),
+          ...(dates?.startDate ? { startDate: dates.startDate } : {}),
+          ...(dates?.endDate ? { endDate: dates.endDate } : {}),
         },
       });
       setPendingSlug(r.slug);

@@ -162,6 +162,16 @@ export function parseDropIn(text: string, _source: IngestSource = "text"): Block
         rest = rest.slice(leadDate[0].length).trim();
       }
     }
+    // Trailing parenthesized date on the heading line — the AI generator's
+    // canonical form: "Day 1 — Arrival & Aperitivo (Sat, Nov 21)".
+    if (!dayDate) {
+      const firstLine = rest.split(/\n/, 1)[0];
+      const tail = firstLine.match(/\(([^)]+)\)\s*[:.]?\s*$/);
+      if (tail && tail.index !== undefined && looksLikeDate(tail[1])) {
+        dayDate = tail[1].trim();
+        rest = (firstLine.slice(0, tail.index).trimEnd() + rest.slice(firstLine.length)).trim();
+      }
+    }
     const clauses = rest
       .split(/[.;\n]+|,(?=\s)/)
       .map((c) => c.replace(/^[-*•]\s*/, "").trim())

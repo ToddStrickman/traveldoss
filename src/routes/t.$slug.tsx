@@ -289,6 +289,7 @@ function DossierPage() {
       nextBlocks: Block[],
       _sourceLabel: string,
       nextDestination: string | null,
+      dates?: { startDate: string | null; endDate: string | null },
     ) => {
       const patch: Parameters<typeof queueSave>[0] = {
         blocks: nextBlocks,
@@ -306,6 +307,14 @@ function DossierPage() {
         if (resolved !== s.destination) {
           next.destination = resolved;
           patch.destination = resolved;
+        }
+        if (dates?.startDate) {
+          next.startDate = dates.startDate;
+          patch.startDate = dates.startDate;
+        }
+        if (dates?.endDate) {
+          next.endDate = dates.endDate;
+          patch.endDate = dates.endDate;
         }
         return next;
       });

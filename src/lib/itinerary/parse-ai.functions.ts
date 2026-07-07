@@ -40,7 +40,7 @@ const BlockSchema = z.object({
           .describe("Short title for a day, e.g. 'Arrival in Rome'"),
         dayDate: nullableString()
           .describe(
-            "Calendar date for the day if the input mentions one ('Oct 14', '10/14/25', '2025-10-14'). Null if not stated — DO NOT invent a date.",
+            "Calendar date for the day if the input mentions one ('Oct 14', '10/14/25', '2025-10-14', or a heading parenthetical like 'Day 1 — Arrival (Sat, Nov 21)' → 'Sat, Nov 21'). Null if not stated — DO NOT invent a date.",
           ),
         // place fields
         name: nullableString().describe("Name of the place/vendor"),
