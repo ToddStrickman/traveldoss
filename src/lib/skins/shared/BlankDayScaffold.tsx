@@ -106,7 +106,7 @@ export function BlankDayScaffold({ blocks }: { blocks: Block[] }) {
           first entry lands, and everything you add stays in your dossier.
         </p>
         <ol className="tds-scaffold-steps">
-          <li><span className="tds-scaffold-step-n">1</span> Log your flights — outbound above, return below.</li>
+          <li><span className="tds-scaffold-step-n">1</span> Log your travel — outbound above, return below (flight, train, ferry, or drive).</li>
           <li><span className="tds-scaffold-step-n">2</span> Anchor Day 01 with where you're staying.</li>
           <li><span className="tds-scaffold-step-n">3</span> Add what you're doing morning, afternoon, and evening.</li>
         </ol>
