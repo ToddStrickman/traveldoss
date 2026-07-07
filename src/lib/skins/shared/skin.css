@@ -362,6 +362,16 @@ button.tds-add-day:focus-visible {
   width: 22px; height: 22px; border-radius: 999px;
   background: var(--tds-accent);
   color: var(--tds-paper, var(--tds-bg));
+  transition: transform .6s ease;
+}
+button.tds-add-day:hover .tds-add-day-plus,
+button.tds-add-day:focus-visible .tds-add-day-plus {
+  transform: rotate(60deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .tds-add-day-plus { transition: none; }
+  button.tds-add-day:hover .tds-add-day-plus,
+  button.tds-add-day:focus-visible .tds-add-day-plus { transform: none; }
 }
 
 /* ----- Inline activity editor (opens from an empty slot button) ------ */
