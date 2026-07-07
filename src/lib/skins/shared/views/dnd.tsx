@@ -121,6 +121,7 @@ export function DraggableActivity({
       style={style}
       data-editing={editing ? "true" : undefined}
       data-dragging={isDragging ? "true" : undefined}
+      data-block-index={index}
       {...(editing ? listeners : {})}
       {...(editing ? attributes : {})}
     >

@@ -76,7 +76,7 @@ export function GridView({ trip, blocks }: { trip: TripView; blocks: Block[] }) 
           <h2 className="tds-grid-h2">Essentials</h2>
           <div className="tds-grid-essentials">
             {it.preface.map(({ activity, index }) => (
-              <ActivityCell key={index} activity={activity} />
+              <ActivityCell key={index} activity={activity} index={index} />
             ))}
           </div>
         </section>

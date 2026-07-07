@@ -46,6 +46,8 @@ export const DEMO_BLOCKS: Block[] = [
   {
     kind: "place",
     name: "Memmo Príncipe Real",
+    lat: 38.716,
+    lng: -9.1476,
     category: "accommodation",
     address: "Rua D. Pedro V 56, 1250-094 Lisboa",
     phone: "+351 21 901 6800",
@@ -66,6 +68,8 @@ export const DEMO_BLOCKS: Block[] = [
   {
     kind: "place",
     name: "Casa Boma · Lapa Studio",
+    lat: 38.7089,
+    lng: -9.162,
     category: "accommodation",
     address: "R. do Quelhas 6, 1200-781 Lisboa",
     phone: "+351 21 396 2200",
@@ -103,6 +107,8 @@ export const DEMO_BLOCKS: Block[] = [
   {
     kind: "place",
     name: "Hello, Kristof",
+    lat: 38.7095,
+    lng: -9.1524,
     category: "restaurant",
     time: "10:30",
     address: "R. do Poço dos Negros 103",
@@ -118,6 +124,8 @@ export const DEMO_BLOCKS: Block[] = [
   {
     kind: "place",
     name: "Lunch · Time Out Market",
+    lat: 38.7069,
+    lng: -9.146,
     category: "restaurant",
     time: "13:00",
     address: "Av. 24 de Julho 49",
@@ -144,6 +152,8 @@ export const DEMO_BLOCKS: Block[] = [
   {
     kind: "place",
     name: "Aperitivo · Pensão Amor",
+    lat: 38.7073,
+    lng: -9.1437,
     category: "restaurant",
     time: "19:00",
     address: "R. do Alecrim 19",
@@ -154,6 +164,8 @@ export const DEMO_BLOCKS: Block[] = [
   {
     kind: "place",
     name: "Dinner · Belcanto",
+    lat: 38.7097,
+    lng: -9.1421,
     category: "restaurant",
     time: "21:00",
     address: "Largo de São Carlos 10",
@@ -179,6 +191,8 @@ export const DEMO_BLOCKS: Block[] = [
   {
     kind: "place",
     name: "Museu Nacional do Azulejo",
+    lat: 38.7247,
+    lng: -9.1136,
     category: "culture",
     time: "10:00",
     address: "R. Madre de Deus 4",
@@ -194,6 +208,8 @@ export const DEMO_BLOCKS: Block[] = [
   {
     kind: "place",
     name: "Lunch · A Cevicheria",
+    lat: 38.7157,
+    lng: -9.1481,
     category: "restaurant",
     time: "13:30",
     address: "R. Dom Pedro V 129",
@@ -205,6 +221,8 @@ export const DEMO_BLOCKS: Block[] = [
   {
     kind: "place",
     name: "Castelo de São Jorge",
+    lat: 38.7139,
+    lng: -9.1335,
     category: "culture",
     time: "16:00",
     address: "R. de Santa Cruz do Castelo",
@@ -229,6 +247,8 @@ export const DEMO_BLOCKS: Block[] = [
   {
     kind: "place",
     name: "Fado at Mesa de Frades",
+    lat: 38.7128,
+    lng: -9.1256,
     category: "event",
     time: "21:30",
     address: "R. dos Remédios 139",

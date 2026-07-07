@@ -40,6 +40,10 @@ export type Block =
       websiteTitle?: string;
       hours?: string;
       mapsUrl?: string;
+      /** WGS84 coordinates, persisted at enrichment time (Google Places) so
+       *  the Live Map never geocodes at view time. */
+      lat?: number;
+      lng?: number;
       /** Resolved titles for raw URLs appearing inside `note` (url → title). */
       linkTitles?: Record<string, string>;
       /** Booking / confirmation reference (e.g. "Conf #L-882, party of 2"). */
