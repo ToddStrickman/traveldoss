@@ -8,12 +8,19 @@ export type Block =
       /** When set, this section is a part-of-day rail inside the current day. */
       partOfDay?: "morning" | "afternoon" | "evening";
     }
-  | { kind: "paragraph"; text: string }
+  | {
+      kind: "paragraph";
+      text: string;
+      /** Resolved titles for raw URLs appearing inside `text` (url → title). */
+      linkTitles?: Record<string, string>;
+    }
   | {
       kind: "day";
       n: number;
       label: string;
       notes?: string;
+      /** Resolved titles for raw URLs appearing inside `notes` (url → title). */
+      linkTitles?: Record<string, string>;
       /** Calendar date for this day if known (free-form: "Oct 14", "10/14/25", ISO). */
       date?: string;
     }
@@ -27,8 +34,14 @@ export type Block =
       /** Operational metadata shared by every category. */
       phone?: string;
       website?: string;
+      /** Human title for `website`, resolved server-side at save/ingest
+       *  (og:site_name → <title>, cleaned). Display falls back to the place
+       *  name, then a prettified domain — never the raw URL. */
+      websiteTitle?: string;
       hours?: string;
       mapsUrl?: string;
+      /** Resolved titles for raw URLs appearing inside `note` (url → title). */
+      linkTitles?: Record<string, string>;
       /** Booking / confirmation reference (e.g. "Conf #L-882, party of 2"). */
       reservation?: string;
       /**
@@ -66,6 +79,7 @@ export type Block =
       venue?: string;              // venue name (when different from `name`)
       doorOpen?: string;           // doors open time
       ticketLink?: string;         // ticket / wallet URL
+      ticketLinkTitle?: string;    // resolved human title for ticketLink
       seat?: string;               // section / row / seat
       venueRules?: string;         // bag policy / venue rules
       // ── Accommodation ────────────────────────────────────────────
@@ -116,7 +130,12 @@ export type Block =
       note?: string;
     }
   | { kind: "quote"; text: string; attribution?: string }
-  | { kind: "note"; text: string };
+  | {
+      kind: "note";
+      text: string;
+      /** Resolved titles for raw URLs appearing inside `text` (url → title). */
+      linkTitles?: Record<string, string>;
+    };
 
 export type TripView = {
   destination: string;
@@ -171,8 +190,8 @@ export type SkinView = "vertical" | "horizontal" | "grid";
 export type SkinRenderProps = {
   trip: TripView;
   blocks: Block[];
-  /** Optional layout mode. Token-driven skins honor it; hand-built skins
-   *  (epictetus, orsino) ignore it and stay single-layout. Defaults to vertical. */
+  /** Optional layout mode. All registry skins render through SkinFrame and
+   *  honor it (vertical · horizontal · grid). Defaults to vertical. */
   view?: SkinView;
 };
 

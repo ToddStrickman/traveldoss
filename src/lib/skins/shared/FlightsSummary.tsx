@@ -1,5 +1,6 @@
 import type { Block } from "../types";
 import { AirfareIcon } from "./CategoryIcon";
+import { LinkifiedText } from "./views/parts";
 
 type Flight = Extract<Block, { kind: "flight" }>;
 
@@ -33,7 +34,11 @@ export function FlightInline({ flight }: { flight: Flight }) {
         {flight.departTime ? ` · dep ${flight.departTime}` : ""}
         {flight.arriveTime ? ` · arr ${flight.arriveTime}` : ""}
       </div>
-      {flight.note ? <div className="tds-place-note">{flight.note}</div> : null}
+      {flight.note ? (
+        <div className="tds-place-note">
+          <LinkifiedText text={flight.note} />
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -151,7 +156,11 @@ function FlightCard({ flight: f }: { flight: Flight }) {
         <SmartRow label="Price" value={f.price} />
       </div>
 
-      {f.note ? <div className="tds-flight-note">{f.note}</div> : null}
+      {f.note ? (
+        <div className="tds-flight-note">
+          <LinkifiedText text={f.note} />
+        </div>
+      ) : null}
     </article>
   );
 }
