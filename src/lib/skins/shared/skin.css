@@ -373,6 +373,23 @@ button.tds-add-day:focus-visible .tds-add-day-plus {
   button.tds-add-day:hover .tds-add-day-plus,
   button.tds-add-day:focus-visible .tds-add-day-plus { transform: none; }
 }
+/* Success burst — plays for ~600ms after the day is added. */
+@keyframes tds-add-day-burst {
+  0%   { transform: rotate(0deg) scale(1); }
+  30%  { transform: rotate(180deg) scale(1.25); }
+  60%  { transform: rotate(320deg) scale(0.95); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+@keyframes tds-add-day-ring {
+  0%   { box-shadow: 0 0 0 0 color-mix(in oklab, var(--tds-accent) 55%, transparent); }
+  100% { box-shadow: 0 0 0 14px color-mix(in oklab, var(--tds-accent) 0%, transparent); }
+}
+button.tds-add-day[data-burst] .tds-add-day-plus {
+  animation: tds-add-day-burst .6s cubic-bezier(.34,1.56,.64,1) 1, tds-add-day-ring .6s ease-out 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  button.tds-add-day[data-burst] .tds-add-day-plus { animation: none; }
+}
 
 /* ----- Inline activity editor (opens from an empty slot button) ------ */
 .tds-inline-editor {

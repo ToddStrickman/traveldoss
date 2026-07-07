@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import { Plus, Sun } from "lucide-react";
+import { toast } from "sonner";
 import type { Block, TripView, TripMeta } from "../../types";
 import type { PartOfDay } from "../itinerary";
 import { EditableText, useEditing } from "../Editable";
@@ -308,9 +309,26 @@ export function useAddDay(blocks: Block[]) {
 }
 
 export function AddDayButton({ onAdd, label = "Add another day" }: { onAdd: () => void; label?: string }) {
+  const [burst, setBurst] = useState(false);
+  const handleClick = useCallback(() => {
+    onAdd();
+    setBurst(true);
+    // Sun-burst animation runs for 600ms; keep DOM attr in sync.
+    window.setTimeout(() => setBurst(false), 650);
+    toast.success("Day added", {
+      description: "A fresh sunrise on your itinerary.",
+      duration: 2200,
+    });
+  }, [onAdd]);
   return (
     <div className="tds-add-day-row" data-print="hide">
-      <button type="button" className="tds-add-day tap" onClick={onAdd} aria-label={label}>
+      <button
+        type="button"
+        className="tds-add-day tap"
+        onClick={handleClick}
+        aria-label={label}
+        data-burst={burst || undefined}
+      >
         <span className="tds-add-day-plus" aria-hidden><Sun size={14} /></span>
         <span>{label}</span>
       </button>
