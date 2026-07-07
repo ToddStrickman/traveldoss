@@ -4,6 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { getSkin } from "@/lib/skins/registry";
 import { enrichBlocksWithLinkTitles } from "@/lib/itinerary/link-titles.server";
+import { enrichBlocksWithCoords } from "@/lib/itinerary/geo.server";
 import type { Block } from "@/lib/skins/types";
 
 function randomSuffix(len = 6) {
@@ -65,9 +66,13 @@ export const createTripFromIngestion = createServerFn({ method: "POST" })
         ...(data.startDate ? { start_date: data.startDate } : {}),
         ...(data.endDate ? { end_date: data.endDate } : {}),
         content: {
-          // Raw URLs in the ingested content become titled links (best-effort,
-          // bounded — anything unresolved is picked up by the next autosave).
-          blocks: await enrichBlocksWithLinkTitles(data.blocks as Block[], { budgetMs: 5_000 }),
+          // Best-effort, bounded enrichment: raw URLs become titled links and
+          // address-only stops gain coordinates for the Live Map. Anything
+          // unresolved is picked up by the next autosave.
+          blocks: await enrichBlocksWithCoords(
+            await enrichBlocksWithLinkTitles(data.blocks as Block[], { budgetMs: 5_000 }),
+            { budgetMs: 4_000, destination },
+          ),
           skin: skin.meta.id,
         },
       })
@@ -129,7 +134,7 @@ export const updateDossier = createServerFn({ method: "POST" })
       // the autosave cadence here.
       const { data: existing } = await supabase
         .from("trips")
-        .select("content")
+        .select("content, destination")
         .eq("slug", data.slug)
         .single();
       const prev = (existing?.content ?? {}) as {
@@ -139,10 +144,22 @@ export const updateDossier = createServerFn({ method: "POST" })
       };
       patch.content = {
         ...prev,
-        // Backfill link titles on every save: new or previously-unresolved raw
-        // URLs gain stored human titles (bounded; failures retried next save).
+        // Backfill on every save: raw URLs gain stored human titles and
+        // coordinate-less stops gain lat/lng for the Live Map (bounded;
+        // failures retried next save).
         ...(data.blocks !== undefined
-          ? { blocks: await enrichBlocksWithLinkTitles(data.blocks as Block[], { budgetMs: 3_000 }) }
+          ? {
+              blocks: await enrichBlocksWithCoords(
+                await enrichBlocksWithLinkTitles(data.blocks as Block[], { budgetMs: 3_000 }),
+                {
+                  budgetMs: 2_500,
+                  destination:
+                    data.destination ??
+                    (existing as { destination?: string } | null)?.destination ??
+                    null,
+                },
+              ),
+            }
           : {}),
         ...(data.meta !== undefined ? { meta: data.meta } : {}),
         ...(data.templateId !== undefined ? { skin: data.templateId } : {}),
