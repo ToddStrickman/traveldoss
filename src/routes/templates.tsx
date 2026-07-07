@@ -5,6 +5,7 @@ import { motion } from "motion/react";
 import { ArrowLeft, Search, X } from "lucide-react";
 import { SKINS, type SkinModule } from "@/lib/skins/registry";
 import { TiltCard } from "@/components/motion/Tilt";
+import { InertRender } from "@/lib/skins/shared/views/parts";
 import { SkinPeek } from "@/components/mobile/SkinPeek";
 import { usePointerCoarse } from "@/components/mobile/PlaceSheet";
 import { IngestionModal } from "@/components/flow/IngestionModal";
@@ -155,7 +156,9 @@ function SkinPreview({ skin }: { skin: SkinModule }) {
         {skin.tokens.fontUrl && (
           <link rel="stylesheet" href={skin.tokens.fontUrl} />
         )}
-        <Render trip={previewFixture.trip} blocks={previewFixture.blocks} />
+        <InertRender>
+          <Render trip={previewFixture.trip} blocks={previewFixture.blocks} />
+        </InertRender>
       </div>
       <div
         aria-hidden

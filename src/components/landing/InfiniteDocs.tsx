@@ -1,5 +1,6 @@
 import { SKINS, type SkinModule } from "@/lib/skins/registry";
 import { Link } from "@tanstack/react-router";
+import { InertRender } from "@/lib/skins/shared/views/parts";
 
 function SkinMiniPreview({ skin }: { skin: SkinModule }) {
   const { Render, previewFixture, tokens } = skin;
@@ -19,7 +20,9 @@ function SkinMiniPreview({ skin }: { skin: SkinModule }) {
         }}
       >
         {tokens.fontUrl && <link rel="stylesheet" href={tokens.fontUrl} />}
-        <Render trip={previewFixture.trip} blocks={previewFixture.blocks} />
+        <InertRender>
+          <Render trip={previewFixture.trip} blocks={previewFixture.blocks} />
+        </InertRender>
       </div>
       <div
         className="absolute inset-0"

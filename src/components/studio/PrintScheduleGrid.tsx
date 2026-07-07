@@ -1,4 +1,5 @@
 import type { Block, TripView } from "@/lib/skins/types";
+import { prettyDomain } from "@/lib/links";
 
 /**
  * Print-only schedule grid appended to the dossier in PDF export
@@ -60,7 +61,7 @@ export function PrintScheduleGrid({ trip, blocks }: { trip: TripView; blocks: Bl
           {b.website ? (
             <div>
               <a href={b.website} style={{ color: "#0a4", textDecoration: "underline" }}>
-                {b.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}
+                {b.websiteTitle ?? b.name ?? prettyDomain(b.website)}
               </a>
             </div>
           ) : null}

@@ -1,6 +1,7 @@
 import { motion } from "motion/react";
 import { SKINS, type SkinModule } from "@/lib/skins/registry";
 import { TiltCard } from "@/components/motion/Tilt";
+import { InertRender } from "@/lib/skins/shared/views/parts";
 
 export function TemplateGallery({ onPick }: { onPick: (skin: SkinModule) => void }) {
   return (
@@ -52,7 +53,9 @@ export function TemplateGallery({ onPick }: { onPick: (skin: SkinModule) => void
                 style={{ width: 1400, transform: "scale(0.22)", pointerEvents: "none" }}
               >
                 {skin.tokens.fontUrl && <link rel="stylesheet" href={skin.tokens.fontUrl} />}
-                <skin.Render trip={skin.previewFixture.trip} blocks={skin.previewFixture.blocks} />
+                <InertRender>
+                  <skin.Render trip={skin.previewFixture.trip} blocks={skin.previewFixture.blocks} />
+                </InertRender>
               </div>
               <div
                 className="absolute inset-0"

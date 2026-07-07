@@ -3,6 +3,8 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { getSkin } from "@/lib/skins/registry";
+import { enrichBlocksWithLinkTitles } from "@/lib/itinerary/link-titles.server";
+import type { Block } from "@/lib/skins/types";
 
 function randomSuffix(len = 6) {
   const alphabet = "abcdefghjkmnpqrstuvwxyz23456789";
@@ -62,7 +64,12 @@ export const createTripFromIngestion = createServerFn({ method: "POST" })
         expires_at: expiresAt,
         ...(data.startDate ? { start_date: data.startDate } : {}),
         ...(data.endDate ? { end_date: data.endDate } : {}),
-        content: { blocks: data.blocks, skin: skin.meta.id },
+        content: {
+          // Raw URLs in the ingested content become titled links (best-effort,
+          // bounded — anything unresolved is picked up by the next autosave).
+          blocks: await enrichBlocksWithLinkTitles(data.blocks as Block[], { budgetMs: 5_000 }),
+          skin: skin.meta.id,
+        },
       })
       .select("id, slug")
       .single();
@@ -132,7 +139,11 @@ export const updateDossier = createServerFn({ method: "POST" })
       };
       patch.content = {
         ...prev,
-        ...(data.blocks !== undefined ? { blocks: data.blocks } : {}),
+        // Backfill link titles on every save: new or previously-unresolved raw
+        // URLs gain stored human titles (bounded; failures retried next save).
+        ...(data.blocks !== undefined
+          ? { blocks: await enrichBlocksWithLinkTitles(data.blocks as Block[], { budgetMs: 3_000 }) }
+          : {}),
         ...(data.meta !== undefined ? { meta: data.meta } : {}),
         ...(data.templateId !== undefined ? { skin: data.templateId } : {}),
       };

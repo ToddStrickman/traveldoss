@@ -4,6 +4,7 @@ import { EditableText, useEditing } from "../Editable";
 import {
   ActivityRow,
   FlightStrip,
+  LinkifiedText,
   PartHeading,
   partOrder,
   SlotAlternativesCarousel,
@@ -151,13 +152,17 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
             <PlanBCue count={d.shadows.length} />
             {d.day.notes ? (
               <div className="tds-day-notes">
-                <EditableText
-                  as="span"
-                  multiline
-                  value={d.day.notes}
-                  placeholder="Notes for the day"
-                  onChange={(v) => onBlockChange(d.dayIndex, { notes: v } as Partial<Block>)}
-                />
+                {editing ? (
+                  <EditableText
+                    as="span"
+                    multiline
+                    value={d.day.notes}
+                    placeholder="Notes for the day"
+                    onChange={(v) => onBlockChange(d.dayIndex, { notes: v } as Partial<Block>)}
+                  />
+                ) : (
+                  <LinkifiedText text={d.day.notes} linkTitles={d.day.linkTitles} />
+                )}
               </div>
             ) : null}
           </header>

@@ -1,4 +1,5 @@
 import type { Block } from "@/lib/skins/types";
+import { LinkifiedText } from "@/lib/skins/shared/views/parts";
 
 /** Active-phase banner pinned above the dossier. Surfaces the next reservation
  *  with its confirmation # and a maps link. */
@@ -15,7 +16,11 @@ export function CompanionToday({ blocks }: { blocks: Block[] }) {
             <p className="text-sm text-ink" style={{ fontFamily: "var(--font-display)" }}>
               {next.title}
             </p>
-            {next?.sub && <p className="text-[11px] text-ink-soft">{next.sub}</p>}
+            {next?.sub && (
+              <p className="text-[11px] text-ink-soft">
+                <LinkifiedText text={next.sub} />
+              </p>
+            )}
           </div>
         </div>
         {next?.mapsUrl && (
