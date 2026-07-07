@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
+import { Check } from "lucide-react";
 
 /**
  * Full-surface generation loader. Crossfades through a sequence of steps
@@ -44,47 +45,65 @@ export function GenerationLoader({
           aria-live="polite"
           aria-busy="true"
         >
-          <div className="surface-card relative flex w-[min(92vw,420px)] flex-col items-center gap-8 rounded-xl px-10 py-12 text-center">
-            {/* breathing gold dot */}
-            <motion.span
-              aria-hidden
-              className="block h-2 w-2 rounded-full bg-seal"
-              animate={{ opacity: [0.35, 1, 0.35], scale: [0.9, 1.15, 0.9] }}
-              transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
-            />
-
-            {/* crossfade label */}
-            <div className="relative h-12 w-full">
-              <AnimatePresence mode="wait">
-                <motion.p
-                  key={steps[i]}
-                  initial={{ opacity: 0, y: 6, filter: "blur(4px)" }}
-                  animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                  exit={{ opacity: 0, y: -6, filter: "blur(4px)" }}
-                  transition={{ duration: 0.7, ease: [0.4, 0, 0.2, 1] }}
-                  className="absolute inset-x-0 text-lg italic leading-snug text-ink"
-                  style={{ fontFamily: "var(--font-display)" }}
-                >
-                  {steps[i]}
-                </motion.p>
-              </AnimatePresence>
+          <div className="surface-card relative flex w-[min(92vw,440px)] flex-col gap-7 rounded-xl px-8 py-10">
+            <div className="text-center text-[10px] font-medium uppercase tracking-[0.45em] text-ink-soft">
+              Preparing your dossier
             </div>
 
+            {/* stepped list — each step is explicit, no crossfade guessing */}
+            <ol className="flex flex-col gap-3">
+              {steps.map((label, idx) => {
+                const state = idx < i ? "done" : idx === i ? "active" : "pending";
+                return (
+                  <li
+                    key={label}
+                    className="flex items-center gap-3 text-[14px] leading-snug"
+                    aria-current={state === "active" ? "step" : undefined}
+                  >
+                    <span
+                      aria-hidden
+                      className="relative inline-flex h-5 w-5 shrink-0 items-center justify-center"
+                    >
+                      {state === "done" && (
+                        <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-seal text-paper">
+                          <Check className="h-3 w-3" strokeWidth={3} />
+                        </span>
+                      )}
+                      {state === "active" && (
+                        <motion.span
+                          className="inline-block h-4 w-4 rounded-full border-2 border-seal border-t-transparent"
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        />
+                      )}
+                      {state === "pending" && (
+                        <span className="inline-block h-4 w-4 rounded-full border border-ink/20" />
+                      )}
+                    </span>
+                    <span
+                      className={
+                        state === "active"
+                          ? "text-ink"
+                          : state === "done"
+                            ? "text-ink-soft line-through decoration-ink/20"
+                            : "text-ink-soft/60"
+                      }
+                    >
+                      {label}
+                    </span>
+                  </li>
+                );
+              })}
+            </ol>
+
             {/* hairline progress */}
-            <div className="relative h-px w-full overflow-hidden bg-white/5">
+            <div className="relative h-px w-full overflow-hidden bg-ink/10">
               <motion.span
                 className="absolute inset-y-0 left-0 bg-seal"
                 initial={false}
                 animate={{ width: `${((i + 1) / steps.length) * 100}%` }}
                 transition={{ duration: 0.7, ease: [0.4, 0, 0.2, 1] }}
               />
-            </div>
-
-            {/* step counter */}
-            <div className="flex items-center gap-3 text-[9px] font-medium uppercase tracking-[0.45em] text-ink-soft">
-              <span className="h-px w-6 bg-white/10" />
-              Step {i + 1} of {steps.length}
-              <span className="h-px w-6 bg-white/10" />
             </div>
           </div>
         </motion.div>
@@ -94,7 +113,7 @@ export function GenerationLoader({
 }
 
 export const DEFAULT_GENERATION_STEPS = [
-  "Gathering your plans…",
-  "Mapping every route…",
-  "Composing your dossier…",
+  "Reading your inbox…",
+  "Researching your destination…",
+  "Designing your doc…",
 ];
