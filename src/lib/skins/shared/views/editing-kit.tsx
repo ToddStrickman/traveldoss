@@ -308,6 +308,93 @@ export function useAddDay(blocks: Block[]) {
   }, [blocks, onBlockAdd]);
 }
 
+/** Slice out the run of blocks belonging to `dayIndex` (from the day marker
+ *  up to but not including the next day marker or the inbound flight) and
+ *  swap it with the adjacent day-run in `direction` (-1 up, +1 down). */
+export function useMoveDay(blocks: Block[]) {
+  const { onBlocksReplace } = useEditing();
+  return useCallback((dayIndex: number, direction: -1 | 1) => {
+    if (blocks[dayIndex]?.kind !== "day") return;
+    // Collect all day-run boundaries.
+    const boundaries: number[] = [];
+    for (let i = 0; i < blocks.length; i++) {
+      const b = blocks[i];
+      if (b.kind === "day") boundaries.push(i);
+      else if (b.kind === "flight" && b.direction === "inbound") { boundaries.push(i); break; }
+    }
+    if (boundaries[boundaries.length - 1] !== blocks.length &&
+        blocks[boundaries[boundaries.length - 1]]?.kind !== "flight") {
+      boundaries.push(blocks.length);
+    } else if (blocks[boundaries[boundaries.length - 1]]?.kind === "flight") {
+      // inbound flight already anchors the tail; leave as-is.
+    } else {
+      boundaries.push(blocks.length);
+    }
+    const dayPos = boundaries.indexOf(dayIndex);
+    if (dayPos < 0) return;
+    const neighbourPos = dayPos + direction;
+    // Must have a same-kind (day) neighbour to swap with.
+    if (neighbourPos < 0 || neighbourPos >= boundaries.length) return;
+    const neighbourStart = boundaries[neighbourPos];
+    if (blocks[neighbourStart]?.kind !== "day") return;
+
+    const aStart = Math.min(dayIndex, neighbourStart);
+    const aEndPos = boundaries.indexOf(aStart) + 1;
+    const aEnd = boundaries[aEndPos];
+    const bStart = aEnd;
+    const bEndPos = boundaries.indexOf(bStart) + 1;
+    const bEnd = boundaries[bEndPos];
+    if (aEnd == null || bEnd == null) return;
+
+    const runA = blocks.slice(aStart, aEnd);
+    const runB = blocks.slice(bStart, bEnd);
+    const next = [
+      ...blocks.slice(0, aStart),
+      ...runB,
+      ...runA,
+      ...blocks.slice(bEnd),
+    ];
+    onBlocksReplace(next);
+  }, [blocks, onBlocksReplace]);
+}
+
+/** Mobile-only up/down arrows shown in the day header to reorder days.
+ *  Kept off desktop via CSS (`.tds-day-reorder` — see skin.css). */
+export function DayReorderControls({
+  onMove,
+  canMoveUp,
+  canMoveDown,
+  dayN,
+}: {
+  onMove: (direction: -1 | 1) => void;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
+  dayN: number;
+}) {
+  return (
+    <div className="tds-day-reorder" data-print="hide" role="group" aria-label={`Reorder Day ${dayN}`}>
+      <button
+        type="button"
+        className="tds-day-reorder-btn tap"
+        onClick={() => onMove(-1)}
+        disabled={!canMoveUp}
+        aria-label={`Move Day ${dayN} earlier`}
+      >
+        <ChevronUp size={14} aria-hidden />
+      </button>
+      <button
+        type="button"
+        className="tds-day-reorder-btn tap"
+        onClick={() => onMove(1)}
+        disabled={!canMoveDown}
+        aria-label={`Move Day ${dayN} later`}
+      >
+        <ChevronDown size={14} aria-hidden />
+      </button>
+    </div>
+  );
+}
+
 export function AddDayButton({ onAdd, label = "Add another day" }: { onAdd: () => void; label?: string }) {
   const [burst, setBurst] = useState(false);
   const handleClick = useCallback(() => {
