@@ -1854,3 +1854,165 @@ button.tds-add-day:focus-visible .tds-add-day-plus {
 .tds-ghost:hover .tds-ghost-guide {
   color: color-mix(in oklab, var(--tds-ink) 72%, transparent);
 }
+
+/* =============================================================
+   VIEW-PARITY ADDITIONS — edit-anywhere + mobile per-view moves.
+   Uses only design tokens so contrast works across every skin
+   (light and dark). Mobile-first, desktop unchanged where noted.
+   ============================================================= */
+
+/* Grid view: reuse the hero chrome on the grid + editable day head. */
+.tds-grid-view .tds-hero { margin-bottom: var(--tds-s3); }
+.tds-grid-day-head { margin: 0 0 var(--tds-s2); }
+.tds-grid-day-head .tds-day-headline {
+  display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+}
+.tds-grid-day-head .tds-day-no {
+  font-size: 10px; letter-spacing: .38em; text-transform: uppercase;
+  color: color-mix(in oklab, var(--tds-soft) 78%, var(--tds-ink));
+}
+.tds-grid-day-head .tds-day-label {
+  font-family: var(--tds-fontDisplay);
+  font-size: 22px; line-height: 1.1; color: var(--tds-ink);
+}
+.tds-grid-day-head .tds-day-notes {
+  font-size: 13px; font-style: italic; margin-top: 6px;
+  color: color-mix(in oklab, var(--tds-soft) 78%, var(--tds-ink));
+}
+
+/* Desktop-only / mobile-only splits for the grid view. */
+.tds-grid-desktop-only { display: block; }
+.tds-grid-mobile-only { display: none; }
+@media (max-width: 767px) {
+  .tds-grid-desktop-only { display: none; }
+  .tds-grid-mobile-only { display: block; }
+}
+
+/* Mobile stacked cards per part-of-day. Decisive framing (icon +
+ * clear label), collapsible, and each part has a soft-tinted
+ * corner-strip so morning/afternoon/evening are visually distinct
+ * without breaking the skin palette. */
+.tds-grid-stack {
+  display: flex; flex-direction: column; gap: 12px;
+  margin-top: 8px;
+}
+.tds-grid-card {
+  position: relative;
+  border: 1px solid var(--tds-rule);
+  border-radius: 12px;
+  background: var(--tds-card, var(--tds-bg));
+  overflow: hidden;
+  transition: box-shadow .2s ease;
+}
+.tds-grid-card[data-drop-over="true"] {
+  background: var(--tds-pop);
+  outline: 1px dashed var(--tds-accent);
+  outline-offset: -4px;
+}
+/* Left accent strip: thin, tokenized so it reads on light & dark skins. */
+.tds-grid-card::before {
+  content: "";
+  position: absolute; inset: 0 auto 0 0; width: 3px;
+  background: color-mix(in oklab, var(--tds-accent) 55%, transparent);
+  opacity: .8;
+}
+.tds-grid-card--morning::before   { background: color-mix(in oklab, var(--tds-accent) 40%, transparent); }
+.tds-grid-card--afternoon::before { background: color-mix(in oklab, var(--tds-accent) 70%, transparent); }
+.tds-grid-card--evening::before   { background: color-mix(in oklab, var(--tds-ink) 55%, transparent); }
+
+.tds-grid-card-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px 12px 18px;
+  border-bottom: 1px solid var(--tds-rule);
+  min-width: 0;
+}
+.tds-grid-card-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; border-radius: 999px; flex: 0 0 auto;
+  border: 1px solid var(--tds-rule);
+  color: var(--tds-ink);
+  background: color-mix(in oklab, var(--tds-accent) 8%, transparent);
+}
+.tds-grid-card-label {
+  font-family: var(--tds-fontDisplay);
+  font-size: 15px; letter-spacing: .04em;
+  color: var(--tds-ink);
+  min-width: 0; flex: 1 1 auto;
+}
+.tds-grid-card-count {
+  font-size: 11px; letter-spacing: .18em;
+  color: color-mix(in oklab, var(--tds-soft) 78%, var(--tds-ink));
+  flex: 0 0 auto;
+}
+.tds-grid-card-body {
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 12px 14px 14px 18px;
+}
+.tds-grid-card-empty {
+  font-size: 12px; font-style: italic;
+  color: color-mix(in oklab, var(--tds-soft) 65%, var(--tds-ink));
+}
+.tds-grid-card--collapsed .tds-grid-card-body { display: none; }
+
+/* Horizontal view: mobile snap-pager. On desktop, keep the existing
+ * side-by-side board. On mobile, each day column fills the viewport
+ * (minus gutter) and snap-scrolls one-at-a-time. */
+.tds-board-pager { display: none; }
+@media (max-width: 767px) {
+  .tds-board {
+    grid-auto-columns: calc(100vw - 2 * var(--tds-s3, 20px));
+    gap: var(--tds-s3);
+    scroll-padding-inline: 0;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    padding-inline: 0;
+    /* hide native scrollbar for a cleaner deck feel */
+    scrollbar-width: none;
+  }
+  .tds-board::-webkit-scrollbar { display: none; }
+  .tds-board-col {
+    scroll-snap-align: center;
+    scroll-snap-stop: always;
+    min-height: 70vh;
+    border-radius: 12px;
+  }
+  .tds-board-pager {
+    display: flex; justify-content: center; align-items: center;
+    gap: 6px; margin: 8px 0 12px; flex-wrap: wrap;
+  }
+  .tds-board-pager-dot {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 32px; height: 32px; padding: 0 8px;
+    border: 1px solid var(--tds-rule);
+    border-radius: 999px;
+    background: transparent;
+    font-size: 10px; letter-spacing: .2em;
+    color: color-mix(in oklab, var(--tds-soft) 72%, var(--tds-ink));
+    cursor: pointer;
+    transition: background-color .18s ease, color .18s ease, border-color .18s ease;
+  }
+  .tds-board-pager-dot[data-active] {
+    background: var(--tds-ink);
+    color: var(--tds-bg);
+    border-color: var(--tds-ink);
+  }
+  .tds-board-pager-dot:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px color-mix(in oklab, var(--tds-accent) 55%, transparent);
+  }
+}
+
+/* Compact add-slot sizes so the button feels right in a kanban card
+ * bucket or a dense grid cell (not just the vertical row). */
+.tds-open-slot--card {
+  font-size: 12px; padding: 8px 10px;
+}
+.tds-open-slot--cell {
+  font-size: 11px; padding: 6px 8px;
+}
+
+/* Grid card empty-state — ensure the "add first activity" button is
+ * always the same tone as the card icon, no matter the skin. */
+.tds-grid-card .tds-open-slot-btn {
+  color: color-mix(in oklab, var(--tds-soft) 78%, var(--tds-ink));
+}
