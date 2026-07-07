@@ -12,6 +12,7 @@ import useEmblaCarousel from "embla-carousel-react";
 import { X } from "lucide-react";
 import type { SkinModule } from "@/lib/skins/registry";
 import { cn } from "@/lib/utils";
+import { InertRender } from "@/lib/skins/shared/views/parts";
 
 export function SkinPeek({
   skins,
@@ -133,10 +134,12 @@ export function SkinPeek({
               {skin.tokens.fontUrl && (
                 <link rel="stylesheet" href={skin.tokens.fontUrl} />
               )}
-              <skin.Render
-                trip={skin.previewFixture.trip}
-                blocks={skin.previewFixture.blocks}
-              />
+              <InertRender>
+                <skin.Render
+                  trip={skin.previewFixture.trip}
+                  blocks={skin.previewFixture.blocks}
+                />
+              </InertRender>
               <div className="h-24" aria-hidden />
             </div>
           ))}
