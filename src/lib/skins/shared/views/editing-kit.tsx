@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { Plus, Sun } from "lucide-react";
+import { Plus, Sun, ChevronUp, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import type { Block, TripView, TripMeta } from "../../types";
 import type { PartOfDay } from "../itinerary";
