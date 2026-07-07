@@ -15,7 +15,7 @@ import { MetaChip } from "@/components/studio/MetaChip";
 import { DayDateChip } from "../DayDateChip";
 import { BlankDayScaffold, isScaffoldTriggered } from "../BlankDayScaffold";
 import { Plus, Sun } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import type { PartOfDay } from "../itinerary";
 
 /** Chronological vertical reading view.
@@ -42,6 +42,17 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
 
   /** Tracks which empty slot has the inline editor open. */
   const [openEditor, setOpenEditor] = useState<{ dayIndex: number; part: PartOfDay } | null>(null);
+
+  /** Mobile-only collapse state. Keyed by dayIndex (whole day) or
+   *  `${dayIndex}:${part}` (part-of-day). Presence = collapsed. */
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
+  const toggleCollapsed = useCallback((key: string) => {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  }, []);
 
   /** Insert a new place block into (dayIndex, part), creating the section
    *  header first when it doesn't exist yet. Reuses onBlockAdd so history /
