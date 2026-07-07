@@ -229,8 +229,16 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
       ) : null}
 
       <ActivityDndContext blocks={blocks}>
-      {it.days.map((d) => (
-        <section key={d.dayIndex} className="tds-day-section" data-block="day">
+      {it.days.map((d) => {
+        const dayKey = `d:${d.dayIndex}`;
+        const dayCollapsed = collapsed.has(dayKey);
+        return (
+        <section
+          key={d.dayIndex}
+          className="tds-day-section"
+          data-block="day"
+          data-collapsed={dayCollapsed || undefined}
+        >
           <header className="tds-day-head">
             <div className="tds-day-headline">
               <div className="tds-day-no">Day {String(d.day.n).padStart(2, "0")}</div>
@@ -246,6 +254,12 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
                 value={d.day.date ?? ""}
                 editable={editing}
                 onChange={(v) => onBlockChange(d.dayIndex, { date: v } as Partial<Block>)}
+              />
+              <CollapseToggle
+                collapsed={dayCollapsed}
+                onToggle={() => toggleCollapsed(dayKey)}
+                label={`Day ${d.day.n}`}
+                variant="day"
               />
             </div>
             <PlanBCue count={d.shadows.length} />
@@ -266,8 +280,11 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
             ) : null}
           </header>
 
+          <div className="tds-day-body">
           {partOrder.map((part) => {
             const list = d[part];
+            const partKey = `p:${d.dayIndex}:${part}`;
+            const partCollapsed = collapsed.has(partKey);
             // Always render the slot so the dossier reads complete even when
             // empty — a soft "Open …" placeholder fills the gap.
             return (
@@ -275,9 +292,18 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
                 key={part}
                 dayIndex={d.dayIndex}
                 part={part}
-                className="tds-part"
+                className={`tds-part${partCollapsed ? " tds-part--collapsed" : ""}`}
               >
-                <PartHeading part={part} />
+                <div className="tds-part-header-row">
+                  <PartHeading part={part} />
+                  <CollapseToggle
+                    collapsed={partCollapsed}
+                    onToggle={() => toggleCollapsed(partKey)}
+                    label={`${part[0].toUpperCase() + part.slice(1)} on Day ${d.day.n}`}
+                    variant="part"
+                  />
+                </div>
+                <div className="tds-part-body">
                 {list.length > 1 ? (
                   <>
                     <SlotAlternativesCarousel
@@ -376,6 +402,7 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
                     ) : null}
                   </div>
                 )}
+                </div>
               </DroppableBucket>
             );
           })}
@@ -389,8 +416,10 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
               ))}
             </div>
           ) : null}
+          </div>
         </section>
-      ))}
+        );
+      })}
       </ActivityDndContext>
 
       {editing ? (
