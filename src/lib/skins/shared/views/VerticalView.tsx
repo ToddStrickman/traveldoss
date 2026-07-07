@@ -448,6 +448,41 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
 type PlaceBlock = Extract<Block, { kind: "place" }>;
 type PlaceSeed = Partial<PlaceBlock>;
 
+/**
+ * Mobile-only collapse toggle. A chevron that morphs into a single
+ * horizontal line when the section is collapsed — the "arrow becomes
+ * a line" affordance. Hidden on md+ via CSS.
+ */
+function CollapseToggle({
+  collapsed,
+  onToggle,
+  label,
+  variant,
+}: {
+  collapsed: boolean;
+  onToggle: () => void;
+  label: string;
+  variant: "day" | "part";
+}) {
+  return (
+    <button
+      type="button"
+      className={`tds-collapse-btn tds-collapse-btn--${variant} tap`}
+      data-print="hide"
+      data-collapsed={collapsed || undefined}
+      onClick={onToggle}
+      aria-expanded={!collapsed}
+      aria-label={`${collapsed ? "Expand" : "Collapse"} ${label}`}
+      title={`${collapsed ? "Expand" : "Collapse"} ${label}`}
+    >
+      <span className="tds-collapse-glyph" aria-hidden>
+        <span className="tds-collapse-stroke tds-collapse-stroke--l" />
+        <span className="tds-collapse-stroke tds-collapse-stroke--r" />
+      </span>
+    </button>
+  );
+}
+
 const CATEGORY_OPTIONS: Array<{ value: NonNullable<PlaceBlock["category"]>; label: string }> = [
   { value: "restaurant", label: "Restaurant" },
   { value: "culture", label: "Culture" },
