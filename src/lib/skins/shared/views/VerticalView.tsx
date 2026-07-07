@@ -379,3 +379,115 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
     </div>
   );
 }
+
+type PlaceBlock = Extract<Block, { kind: "place" }>;
+type PlaceSeed = Partial<PlaceBlock>;
+
+const CATEGORY_OPTIONS: Array<{ value: NonNullable<PlaceBlock["category"]>; label: string }> = [
+  { value: "restaurant", label: "Restaurant" },
+  { value: "culture", label: "Culture" },
+  { value: "walk", label: "Walk / hike" },
+  { value: "event", label: "Event" },
+  { value: "accommodation", label: "Stay" },
+  { value: "transit", label: "Transit" },
+  { value: "other", label: "Other" },
+];
+
+/**
+ * Inline mini-form that replaces the "Add {part} activity" button when
+ * clicked. Captures the essentials (name, time, category, note) so a
+ * fresh place block lands populated in the correct day/part instead of
+ * as an empty stub the user then has to edit field-by-field.
+ */
+function InlineActivityEditor({
+  part,
+  dayN,
+  onSave,
+  onCancel,
+}: {
+  part: PartOfDay;
+  dayN: number;
+  onSave: (seed: PlaceSeed) => void;
+  onCancel: () => void;
+}) {
+  const [name, setName] = useState("");
+  const [time, setTime] = useState("");
+  const [category, setCategory] = useState<NonNullable<PlaceBlock["category"]>>("other");
+  const [note, setNote] = useState("");
+
+  const submit = () => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const seed: PlaceSeed = { name: trimmed, category };
+    if (time.trim()) seed.time = time.trim();
+    if (note.trim()) seed.note = note.trim();
+    onSave(seed);
+  };
+
+  return (
+    <form
+      className="tds-inline-editor"
+      data-print="hide"
+      onSubmit={(e) => { e.preventDefault(); submit(); }}
+      aria-label={`Add ${part} activity to Day ${dayN}`}
+    >
+      <div className="tds-inline-editor-row">
+        <input
+          className="tds-inline-editor-input tds-inline-editor-name"
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder={`${part[0].toUpperCase() + part.slice(1)} activity`}
+          autoFocus
+          onKeyDown={(e) => { if (e.key === "Escape") { e.preventDefault(); onCancel(); } }}
+        />
+        <input
+          className="tds-inline-editor-input tds-inline-editor-time"
+          type="text"
+          value={time}
+          onChange={(e) => setTime(e.target.value)}
+          placeholder="Time"
+          aria-label="Time"
+          onKeyDown={(e) => { if (e.key === "Escape") { e.preventDefault(); onCancel(); } }}
+        />
+        <select
+          className="tds-inline-editor-input tds-inline-editor-cat"
+          value={category}
+          onChange={(e) => setCategory(e.target.value as NonNullable<PlaceBlock["category"]>)}
+          aria-label="Category"
+        >
+          {CATEGORY_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
+      </div>
+      <textarea
+        className="tds-inline-editor-input tds-inline-editor-note"
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        placeholder="Notes (optional)"
+        rows={2}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") { e.preventDefault(); onCancel(); }
+          if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); submit(); }
+        }}
+      />
+      <div className="tds-inline-editor-actions">
+        <button
+          type="button"
+          className="tds-inline-editor-btn tds-inline-editor-cancel tap"
+          onClick={onCancel}
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          className="tds-inline-editor-btn tds-inline-editor-save tap"
+          disabled={!name.trim()}
+        >
+          Save activity
+        </button>
+      </div>
+    </form>
+  );
+}
