@@ -66,6 +66,16 @@ describe("mobile edit-mode parity", () => {
         const { container } = renderView(View);
         expect(container.querySelector(".tds-open-slot-plus")).not.toBeNull();
       });
+
+      it("renders BOTH an empty-slot editor and an 'add another' affordance", () => {
+        const { container } = renderView(View);
+        // DEMO_BLOCKS has filled buckets AND at least one empty part-of-day,
+        // so both slot variants must appear when editing.
+        const empty = container.querySelectorAll(".tds-open-slot[data-empty='true']").length;
+        const another = container.querySelectorAll(".tds-open-slot[data-empty='false']").length;
+        expect(empty).toBeGreaterThan(0);
+        expect(another).toBeGreaterThan(0);
+      });
     });
   }
 });
