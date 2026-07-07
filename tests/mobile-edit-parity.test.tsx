@@ -1,5 +1,5 @@
 import { afterEach, describe, it, expect, mock } from "bun:test";
-import { render, cleanup } from "@testing-library/react";
+import { render, cleanup, fireEvent } from "@testing-library/react";
 import { EditingProvider, type EditingCtx } from "../src/lib/skins/shared/Editable";
 import { VerticalView } from "../src/lib/skins/shared/views/VerticalView";
 import { HorizontalView } from "../src/lib/skins/shared/views/HorizontalView";
@@ -98,6 +98,57 @@ describe("mobile edit-mode parity", () => {
         for (const g of groups) {
           expect(g.querySelectorAll(".tds-day-reorder-btn").length).toBe(2);
         }
+      });
+
+      it("clicking sun-icon Add Day calls onBlockAdd with a new day block", () => {
+        const onBlockAdd = mock(() => {});
+        const ctx: EditingCtx = {
+          editing: true,
+          onBlockChange: mock(() => {}),
+          onBlockRemove: mock(() => {}),
+          onBlockAdd,
+          onBlocksReplace: mock(() => {}),
+          onReorder: mock(() => {}),
+          onTripChange: mock(() => {}),
+          onMoveActivity: mock(() => {}),
+          onMetaChange: mock(() => {}),
+          onTripDatesChange: mock(() => {}),
+        } as EditingCtx;
+        const { container } = render(
+          <EditingProvider value={ctx}>
+            <View trip={DEMO_TRIP} blocks={DEMO_BLOCKS} />
+          </EditingProvider>,
+        );
+        const btn = container.querySelector("button.tds-add-day") as HTMLButtonElement | null;
+        expect(btn).not.toBeNull();
+        fireEvent.click(btn!);
+        expect(onBlockAdd).toHaveBeenCalledTimes(1);
+        const call = (onBlockAdd as unknown as { mock: { calls: unknown[][] } }).mock.calls[0];
+        // Signature: (insertAfter: number, kind: "day", payload: { n, label })
+        expect(call[1]).toBe("day");
+        const payload = call[2] as { n: number; label: string };
+        // DEMO_BLOCKS spans day 1-3, so the next N must be 4.
+        expect(payload.n).toBe(4);
+        expect(payload.label).toBe("Day 04");
+      });
+
+      it("Add Day is hidden when editing is off", () => {
+        const ctx: EditingCtx = {
+          editing: false,
+          onBlockChange: mock(() => {}),
+          onBlockRemove: mock(() => {}),
+          onBlockAdd: mock(() => {}),
+          onBlocksReplace: mock(() => {}),
+          onReorder: mock(() => {}),
+          onTripChange: mock(() => {}),
+          onMoveActivity: mock(() => {}),
+        } as EditingCtx;
+        const { container } = render(
+          <EditingProvider value={ctx}>
+            <View trip={DEMO_TRIP} blocks={DEMO_BLOCKS} />
+          </EditingProvider>,
+        );
+        expect(container.querySelector(".tds-add-day")).toBeNull();
       });
     });
   }
