@@ -69,12 +69,13 @@ describe("mobile edit-mode parity", () => {
 
       it("renders BOTH an empty-slot editor and an 'add another' affordance", () => {
         const { container } = renderView(View);
-        // DEMO_BLOCKS has filled buckets AND at least one empty part-of-day,
-        // so both slot variants must appear when editing.
-        const empty = container.querySelectorAll(".tds-open-slot[data-empty='true']").length;
-        const another = container.querySelectorAll(".tds-open-slot[data-empty='false']").length;
-        expect(empty).toBeGreaterThan(0);
-        expect(another).toBeGreaterThan(0);
+        // AddActivitySlot adds `tds-open-slot-inline` for filled buckets
+        // (add-another) and omits it for empty buckets (open-slot editor).
+        const slots = Array.from(container.querySelectorAll(".tds-open-slot"));
+        const inline = slots.filter((s) => s.classList.contains("tds-open-slot-inline"));
+        const empty = slots.filter((s) => !s.classList.contains("tds-open-slot-inline"));
+        expect(empty.length).toBeGreaterThan(0);
+        expect(inline.length).toBeGreaterThan(0);
       });
     });
   }
