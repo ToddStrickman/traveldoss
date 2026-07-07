@@ -72,6 +72,169 @@ function indexDayLookup(blocks: Block[]): Map<number, number | null> {
   return lookup;
 }
 
+/* ── Keyless fallback: a static OpenStreetMap tile grid ─────────────────
+ * When Google Maps can't authorize (referrer-locked key on non-prod hosts,
+ * missing connector key on forks), the Live Map still works: we compute the
+ * Web-Mercator projection ourselves, lay out public OSM raster tiles as
+ * plain <img>s, and draw numbered day-colored pins + route lines in an SVG
+ * overlay. Zero dependencies, zero API keys, proper OSM attribution. */
+
+const TILE = 256;
+
+function mercator(lat: number, lng: number): { x: number; y: number } {
+  const x = (lng + 180) / 360;
+  const rad = (lat * Math.PI) / 180;
+  const y = (1 - Math.log(Math.tan(rad) + 1 / Math.cos(rad)) / Math.PI) / 2;
+  return { x, y };
+}
+
+function StaticOsmMap({
+  pins,
+  hiddenDays,
+  colorFor,
+}: {
+  pins: Pin[];
+  hiddenDays: Set<number>;
+  colorFor: (day: number | null) => string;
+}) {
+  const boxRef = useRef<HTMLDivElement | null>(null);
+  const [size, setSize] = useState<{ w: number; h: number } | null>(null);
+  useEffect(() => {
+    const el = boxRef.current;
+    if (!el) return;
+    const measure = () => setSize({ w: el.clientWidth, h: el.clientHeight });
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const shown = pins.filter((p) => p.day == null || !hiddenDays.has(p.day));
+
+  const layout = useMemo(() => {
+    if (!size || shown.length === 0) return null;
+    const { w, h } = size;
+    const pts = shown.map((p) => ({ p, m: mercator(p.lat, p.lng) }));
+    const minX = Math.min(...pts.map((t) => t.m.x));
+    const maxX = Math.max(...pts.map((t) => t.m.x));
+    const minY = Math.min(...pts.map((t) => t.m.y));
+    const maxY = Math.max(...pts.map((t) => t.m.y));
+    // Largest zoom (≤17) whose pixel bbox fits with breathing room.
+    let z = 17;
+    while (z > 2) {
+      const scale = TILE * 2 ** z;
+      if ((maxX - minX) * scale <= w - 90 && (maxY - minY) * scale <= h - 90) break;
+      z--;
+    }
+    if (shown.length === 1) z = Math.min(z, 15);
+    const scale = TILE * 2 ** z;
+    const cx = ((minX + maxX) / 2) * scale;
+    const cy = ((minY + maxY) / 2) * scale;
+    const ox = cx - w / 2; // world-pixel origin of the viewport
+    const oy = cy - h / 2;
+    const tiles: Array<{ key: string; url: string; left: number; top: number }> = [];
+    const tx0 = Math.floor(ox / TILE);
+    const ty0 = Math.floor(oy / TILE);
+    const tx1 = Math.floor((ox + w) / TILE);
+    const ty1 = Math.floor((oy + h) / TILE);
+    const nTiles = 2 ** z;
+    for (let tx = tx0; tx <= tx1; tx++) {
+      for (let ty = Math.max(0, ty0); ty <= Math.min(nTiles - 1, ty1); ty++) {
+        const wrappedX = ((tx % nTiles) + nTiles) % nTiles;
+        tiles.push({
+          key: `${z}/${tx}/${ty}`,
+          url: `https://tile.openstreetmap.org/${z}/${wrappedX}/${ty}.png`,
+          left: tx * TILE - ox,
+          top: ty * TILE - oy,
+        });
+      }
+    }
+    const dots = pts.map(({ p, m }) => ({
+      pin: p,
+      left: m.x * scale - ox,
+      top: m.y * scale - oy,
+    }));
+    const paths = new Map<number, string>();
+    for (const d of dots) {
+      if (d.pin.day == null) continue;
+      const prev = paths.get(d.pin.day);
+      paths.set(d.pin.day, `${prev ? `${prev} L` : "M"}${d.left.toFixed(1)},${d.top.toFixed(1)}`);
+    }
+    return { tiles, dots, paths, w, h };
+  }, [size, shown]);
+
+  return (
+    <div ref={boxRef} style={{ position: "absolute", inset: 0, overflow: "hidden", background: "#e8e4dc" }}>
+      {layout ? (
+        <>
+          {layout.tiles.map((t) => (
+            <img
+              key={t.key}
+              src={t.url}
+              alt=""
+              width={TILE}
+              height={TILE}
+              draggable={false}
+              style={{ position: "absolute", left: t.left, top: t.top, userSelect: "none" }}
+            />
+          ))}
+          <svg
+            width={layout.w}
+            height={layout.h}
+            style={{ position: "absolute", inset: 0, pointerEvents: "none" }}
+            aria-hidden
+          >
+            {[...layout.paths.entries()].map(([day, d]) => (
+              <path key={day} d={d} fill="none" stroke={colorFor(day)} strokeWidth={2.5} strokeOpacity={0.55} />
+            ))}
+          </svg>
+          {layout.dots.map(({ pin, left, top }) => (
+            <div
+              key={pin.index}
+              title={`${pin.name}${pin.day != null ? ` · Day ${pin.day}` : ""}`}
+              style={{
+                position: "absolute",
+                left,
+                top,
+                transform: "translate(-50%, -50%)",
+                width: 26,
+                height: 26,
+                borderRadius: 999,
+                background: colorFor(pin.day),
+                border: "2px solid #ffffff",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.35)",
+                color: "#ffffff",
+                font: "700 11px/22px system-ui, sans-serif",
+                textAlign: "center",
+              }}
+            >
+              {pin.order}
+            </div>
+          ))}
+          <div
+            style={{
+              position: "absolute",
+              right: 6,
+              bottom: 4,
+              padding: "2px 6px",
+              borderRadius: 4,
+              background: "rgba(255,255,255,0.75)",
+              font: "400 10px/1.3 system-ui, sans-serif",
+              color: "#333",
+            }}
+          >
+            ©{" "}
+            <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer" style={{ color: "inherit" }}>
+              OpenStreetMap
+            </a>{" "}
+            contributors
+          </div>
+        </>
+      ) : null}
+    </div>
+  );
+}
+
 export function DossierMapButton({
   trip,
   blocks,
@@ -88,10 +251,9 @@ export function DossierMapButton({
     () => blocks.some((b) => b.kind === "place" && b.lat != null && b.lng != null),
     [blocks],
   );
-  // No key (e.g. fork without the connector) or nothing locatable → no button.
-  if (!import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_BROWSER_KEY || !hasAnyCoords) {
-    return null;
-  }
+  // Nothing locatable → no button. (A missing Google key is fine — the
+  // OpenStreetMap fallback renders keyless.)
+  if (!hasAnyCoords) return null;
   // Editing on a phone is already dense (studio bar, drag handles, sheets) —
   // the map yields the space. Desktop keeps the button in every mode.
   if (editing && isMobile) return null;
@@ -390,16 +552,19 @@ function DossierMapOverlay({
           ref={mapEl}
           style={{ position: "absolute", inset: 0, visibility: status === "error" ? "hidden" : "visible" }}
         />
-        {status !== "ready" ? (
+        {status === "error" ? (
+          // Google couldn't authorize (or no key) — the itinerary still gets a
+          // real map: static OpenStreetMap tiles, keyless and dependency-free.
+          <StaticOsmMap pins={pins} hiddenDays={hiddenDays} colorFor={colorFor} />
+        ) : null}
+        {status === "loading" ? (
           <div
             style={{
               position: "absolute", inset: 0, display: "grid", placeItems: "center",
               color: tokens.inkSoft, font: `500 12px/1.5 ${tokens.fontBody}`, textAlign: "center", padding: 24,
             }}
           >
-            {status === "loading"
-              ? "Plotting your dossier…"
-              : "The map couldn't authorize on this host. It works on the published dossier — traveldoss.com."}
+            Plotting your dossier…
           </div>
         ) : null}
       </div>
