@@ -185,6 +185,7 @@ export function EditableDayHeader({
   onMoveDay,
   canMoveUp = false,
   canMoveDown = false,
+  onDeleteDay,
 }: {
   d: { day: { n: number; label: string; date?: string; notes?: string; linkTitles?: Record<string, string> }; dayIndex: number };
   onToggleCollapsed?: () => void;
@@ -195,6 +196,7 @@ export function EditableDayHeader({
   onMoveDay?: (direction: -1 | 1) => void;
   canMoveUp?: boolean;
   canMoveDown?: boolean;
+  onDeleteDay?: () => void;
 }) {
   const { onBlockChange, editing } = useEditing();
   return (
@@ -220,6 +222,7 @@ export function EditableDayHeader({
             canMoveUp={canMoveUp}
             canMoveDown={canMoveDown}
             dayN={d.day.n}
+            onDelete={onDeleteDay}
           />
         ) : null}
         {showCollapse && onToggleCollapsed ? (
