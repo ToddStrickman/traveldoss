@@ -163,7 +163,7 @@ export function SandHero({
   return (
     <div
       ref={containerRef}
-      className={`relative select-none touch-none ${className}`}
+      className={`relative select-none touch-pan-y ${className}`}
       aria-label={accessibleText}
       role="img"
     >
