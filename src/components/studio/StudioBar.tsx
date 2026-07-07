@@ -208,8 +208,8 @@ export function StudioBar({
           </span>
         </button>
       ) : (
-        <span className="hidden sm:inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.3em] text-ink-soft">
-          <span className="hidden sm:inline">
+        <span className="hidden md:inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.3em] text-ink-soft">
+          <span className="hidden md:inline">
             {saving ? "Saving…" : savedAt ? `Saved · ${new Date(savedAt).toLocaleTimeString()}` : "Live"}
           </span>
           <span className="inline-block h-1.5 w-1.5 rounded-full bg-seal align-middle" />

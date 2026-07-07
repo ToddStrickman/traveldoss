@@ -15,8 +15,18 @@ import { toast } from "sonner";
  * Successful imports trigger a refetch of `trip-doc-previews` so the
  * embedded iframe appears on the dossier without a page reload.
  */
-export function GmailImportPanel({ tripId }: { tripId: string }) {
-  const [open, setOpen] = useState(false);
+export function GmailImportPanel({
+  tripId,
+  defaultOpen = false,
+  hideHeader = false,
+}: {
+  tripId: string;
+  /** Skip the "Browse bookings" gate and load the list immediately. */
+  defaultOpen?: boolean;
+  /** Hide the section header when the panel already sits inside a titled surface (e.g. TdSheet). */
+  hideHeader?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
   const fetchList = useServerFn(listBookingEmails);
   const importOne = useServerFn(importBookingEmail);
   const qc = useQueryClient();
@@ -58,7 +68,8 @@ export function GmailImportPanel({ tripId }: { tripId: string }) {
   });
 
   return (
-    <div className="mt-8" data-testid="gmail-import-panel">
+    <div className={hideHeader ? "" : "mt-8"} data-testid="gmail-import-panel">
+      {!hideHeader && (
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
           Import from Gmail
@@ -76,8 +87,9 @@ export function GmailImportPanel({ tripId }: { tripId: string }) {
           {open ? "Hide" : "Browse bookings"}
         </Button>
       </div>
+      )}
 
-      {open && (
+      {(open || hideHeader) && (
         <div className="mt-4 space-y-2" data-testid="gmail-import-list">
           {(isLoading || isFetching) && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">

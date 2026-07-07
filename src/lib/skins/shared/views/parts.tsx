@@ -15,6 +15,7 @@ import { EditableText, useEditing } from "../Editable";
 import { PlaceSheet, usePointerCoarse } from "@/components/mobile/PlaceSheet";
 import type { FlightBlock, ActivityBlock, PartOfDay } from "../itinerary";
 import { extractUrls, prettyDomain } from "@/lib/links";
+import { Trash2 } from "lucide-react";
 
 /**
  * Inert-render mode: set when a skin renders inside an interactive wrapper
@@ -358,7 +359,7 @@ export function ActivityRow({
   activity: ActivityBlock;
   index: number;
 }) {
-  const { onBlockChange, editing } = useEditing();
+  const { onBlockChange, onBlockRemove, editing } = useEditing();
   // Read mode on touch: the row is a tap target opening the acting sheet
   // (call / map / website / copy). Editing keeps inline text behavior.
   const coarse = usePointerCoarse();
@@ -366,6 +367,12 @@ export function ActivityRow({
   const tappable =
     coarse && !editing &&
     !!(activity.address || activity.phone || activity.website || activity.note || activity.hours);
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const label = activity.name?.trim() || "this activity";
+    if (typeof window !== "undefined" && !window.confirm(`Delete "${label}"?`)) return;
+    onBlockRemove(index);
+  };
   return (
     <div
       className="tds-act-row"
@@ -410,6 +417,18 @@ export function ActivityRow({
           </div>
         ) : null}
       </div>
+      {editing ? (
+        <button
+          type="button"
+          className="tds-act-delete tap"
+          data-print="hide"
+          onClick={handleDelete}
+          aria-label={`Delete ${activity.name?.trim() || "activity"}`}
+          title="Delete activity"
+        >
+          <Trash2 size={14} aria-hidden />
+        </button>
+      ) : null}
     </div>
   );
 }

@@ -18,6 +18,7 @@ import { IngestionModal } from "@/components/flow/IngestionModal";
 import { GmailImportPanel } from "@/components/flow/GmailImportPanel";
 import { TripDocPreviews } from "@/components/flow/TripDocPreviews";
 import { DossierMastheadBar } from "@/components/mobile/DossierMastheadBar";
+import { TdSheet } from "@/components/mobile/TdSheet";
 import { LockPill } from "@/components/studio/LockPill";
 import { TemplateMenu } from "@/components/studio/TemplateMenu";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -171,6 +172,7 @@ function DossierPage() {
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [mintOpen, setMintOpen] = useState(false);
+  const [gmailOpen, setGmailOpen] = useState(false);
   const [justMinted, setJustMinted] = useState(false);
   const save = useServerFn(updateDossier);
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -225,10 +227,12 @@ function DossierPage() {
   const isMobile = useIsMobile();
   const lockKey = `td:lock:${trip.slug}`;
   const [locked, setLocked] = useState<boolean>(true);
-  const lockInitRef = useRef(false);
+  const lockUserTouchedRef = useRef(false);
   useEffect(() => {
-    if (lockInitRef.current) return;
-    lockInitRef.current = true;
+    // Honor an explicit user toggle for the rest of the session; otherwise
+    // re-derive from viewport so the first render (where useIsMobile() has
+    // not yet resolved to true) doesn't leave mobile unlocked.
+    if (lockUserTouchedRef.current) return;
     let stored: string | null = null;
     try {
       stored = sessionStorage.getItem(lockKey);
@@ -240,6 +244,7 @@ function DossierPage() {
     else setLocked(isMobile);
   }, [isMobile, lockKey]);
   const toggleLock = useCallback(() => {
+    lockUserTouchedRef.current = true;
     setLocked((prev) => {
       const next = !prev;
       try {
@@ -560,6 +565,7 @@ function DossierPage() {
         tokens={skin.tokens}
         layout={layout}
         onLayoutChange={changeLayout}
+        onOpenGmail={canEdit ? () => setGmailOpen(true) : undefined}
       />
       <div
         aria-hidden
@@ -592,7 +598,11 @@ function DossierPage() {
       <skin.Render trip={view} blocks={blocks} view={layout} />
       <div className="mx-auto max-w-3xl px-6 pb-24" data-print="hide">
         <TripDocPreviews tripId={trip.id} />
-        {canEdit && <GmailImportPanel tripId={trip.id} />}
+        {canEdit && (
+          <div className="hidden md:block">
+            <GmailImportPanel tripId={trip.id} />
+          </div>
+        )}
       </div>
       <Link
         to="/"
@@ -657,6 +667,16 @@ function DossierPage() {
         tripId={trip.id}
         tripCreatedAt={(trip as { created_at?: string }).created_at ?? null}
       />
+      {canEdit && (
+        <TdSheet
+          open={gmailOpen}
+          onOpenChange={setGmailOpen}
+          title="Import from Gmail"
+          description="Pick a booking email to attach to this dossier."
+        >
+          <GmailImportPanel tripId={trip.id} defaultOpen hideHeader />
+        </TdSheet>
+      )}
     </EditingProvider>
   );
 }
