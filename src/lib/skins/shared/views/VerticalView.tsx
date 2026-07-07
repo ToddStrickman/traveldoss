@@ -14,12 +14,21 @@ import { ShadowItinerary, PlanBCue } from "../ShadowItinerary";
 import { MetaChip } from "@/components/studio/MetaChip";
 import { DayDateChip } from "../DayDateChip";
 import { BlankDayScaffold, isScaffoldTriggered } from "../BlankDayScaffold";
+import { Plus } from "lucide-react";
+import type { PartOfDay } from "../itinerary";
 
 /** Chronological vertical reading view.
  *  Outbound flight → Day 01 (morning/afternoon/evening) → … → Inbound flight. */
 export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[] }) {
   const it = buildItinerary(blocks);
-  const { onBlockChange, editing, onMetaChange, onTripDatesChange } = useEditing();
+  const {
+    onBlockChange,
+    editing,
+    onMetaChange,
+    onTripDatesChange,
+    onBlockAdd,
+    onBlocksReplace,
+  } = useEditing();
   const showScaffold = editing && isScaffoldTriggered(blocks);
   const meta = trip.meta ?? {};
   const dateValue = { start: trip.start_date ?? "", end: trip.end_date ?? "" };
@@ -29,6 +38,67 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
   ];
   const placeholderFor = (part: "morning" | "afternoon" | "evening"): string =>
     part === "morning" ? "Open Morning" : part === "afternoon" ? "Open Afternoon" : "Open Evening";
+
+  /** Insert a new place block into (dayIndex, part), creating the section
+   *  header first when it doesn't exist yet. Reuses onBlockAdd so history /
+   *  autosave / view-transition all fire the same way as any other edit. */
+  const addActivity = (dayIndex: number, part: PartOfDay) => {
+    // Range covering just this day (up to next day block or end of list).
+    let dayEnd = blocks.length;
+    for (let i = dayIndex + 1; i < blocks.length; i++) {
+      if (blocks[i].kind === "day") { dayEnd = i; break; }
+    }
+    // Look for the matching part-of-day section within the day range.
+    let sectionIdx = -1;
+    for (let i = dayIndex + 1; i < dayEnd; i++) {
+      const b = blocks[i];
+      if (b.kind === "section" && b.partOfDay === part) { sectionIdx = i; break; }
+    }
+    if (sectionIdx !== -1) {
+      onBlockAdd(sectionIdx, "place", { name: "", category: "other" });
+      return;
+    }
+    // No section yet — build day slice with the missing section + place in one shot.
+    const PART_ORDER: Record<PartOfDay, number> = { morning: 0, afternoon: 1, evening: 2 };
+    if (!onBlocksReplace) {
+      // Fallback: append a section + place at day end. Bucketing still works
+      // because part-of-day is derived left-to-right from the prior section.
+      onBlockAdd(dayEnd - 1, "section", { title: part[0].toUpperCase() + part.slice(1), partOfDay: part });
+      onBlockAdd(dayEnd, "place", { name: "", category: "other" });
+      return;
+    }
+    // Find the correct insertion point so morning < afternoon < evening.
+    let insertAt = dayEnd;
+    for (let i = dayIndex + 1; i < dayEnd; i++) {
+      const b = blocks[i];
+      if (b.kind === "section" && b.partOfDay && PART_ORDER[b.partOfDay] > PART_ORDER[part]) {
+        insertAt = i; break;
+      }
+    }
+    const next: Block[] = blocks.slice();
+    next.splice(insertAt, 0,
+      { kind: "section", title: part[0].toUpperCase() + part.slice(1), partOfDay: part },
+      { kind: "place", name: "", category: "other" },
+    );
+    onBlocksReplace(next);
+  };
+
+  /** Append a new day block at the end of the days list. Empty sections
+   *  render as the click-to-add placeholders below, so the fresh day is
+   *  immediately usable without materializing three section headers. */
+  const addDay = () => {
+    const usedNs = blocks.filter((b): b is Extract<Block, { kind: "day" }> => b.kind === "day").map((d) => d.n);
+    const nextN = (usedNs.length ? Math.max(...usedNs) : 0) + 1;
+    // Insert after the last day-related block (day + its trailing sections/places),
+    // but before an inbound flight so the return leg stays at the tail.
+    let insertAfter = blocks.length - 1;
+    for (let i = blocks.length - 1; i >= 0; i--) {
+      const b = blocks[i];
+      if (b.kind === "flight" && b.direction === "inbound") { insertAfter = i - 1; continue; }
+      if (b.kind === "day" || b.kind === "section" || b.kind === "place") { insertAfter = i; break; }
+    }
+    onBlockAdd(insertAfter, "day", { n: nextN, label: `Day ${String(nextN).padStart(2, "0")}` });
+  };
   return (
     <div className="tds-vertical">
       <header className="tds-hero">
@@ -198,10 +268,33 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
                       </DraggableActivity>
                     ))}
                     {list.length === 0 ? (
-                      <div className="tds-open-slot" aria-label={`${placeholderFor(part)} — drag or add an activity`}>
-                        <span className="tds-open-slot-dot" aria-hidden />
-                        <span>{placeholderFor(part)}</span>
-                      </div>
+                      editing ? (
+                        <button
+                          type="button"
+                          className="tds-open-slot tds-open-slot-btn tap"
+                          onClick={() => addActivity(d.dayIndex, part)}
+                          aria-label={`Add ${part} activity to Day ${d.day.n}`}
+                        >
+                          <span className="tds-open-slot-plus" aria-hidden><Plus size={12} /></span>
+                          <span>Add {part} activity</span>
+                        </button>
+                      ) : (
+                        <div className="tds-open-slot" aria-label={`${placeholderFor(part)} — drag or add an activity`}>
+                          <span className="tds-open-slot-dot" aria-hidden />
+                          <span>{placeholderFor(part)}</span>
+                        </div>
+                      )
+                    ) : null}
+                    {editing && list.length > 0 ? (
+                      <button
+                        type="button"
+                        className="tds-open-slot tds-open-slot-btn tds-open-slot-inline tap"
+                        onClick={() => addActivity(d.dayIndex, part)}
+                        aria-label={`Add another ${part} activity to Day ${d.day.n}`}
+                      >
+                        <span className="tds-open-slot-plus" aria-hidden><Plus size={12} /></span>
+                        <span>Add another</span>
+                      </button>
                     ) : null}
                   </div>
                 )}
@@ -221,6 +314,20 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
         </section>
       ))}
       </ActivityDndContext>
+
+      {editing ? (
+        <div className="tds-add-day-row" data-print="hide">
+          <button
+            type="button"
+            className="tds-add-day tap"
+            onClick={addDay}
+            aria-label="Add another day"
+          >
+            <span className="tds-add-day-plus" aria-hidden><Plus size={14} /></span>
+            <span>Add another day</span>
+          </button>
+        </div>
+      ) : null}
 
       <FlightStrip inbound={it.flights.inbound} />
 
