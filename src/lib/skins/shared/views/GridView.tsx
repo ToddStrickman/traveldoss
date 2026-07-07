@@ -107,9 +107,16 @@ export function GridView({ trip, blocks }: { trip: TripView; blocks: Block[] }) 
       ) : null}
 
       <ActivityDndContext blocks={blocks}>
-      {it.days.map((d) => (
+      {it.days.map((d, dPos) => (
         <section key={d.dayIndex} className="tds-grid-section" data-block="day">
-          <EditableDayHeader d={d} className="tds-grid-day-head" showCollapse={false} />
+          <EditableDayHeader
+            d={d}
+            className="tds-grid-day-head"
+            showCollapse={false}
+            onMoveDay={(dir) => moveDay(d.dayIndex, dir)}
+            canMoveUp={dPos > 0}
+            canMoveDown={dPos < it.days.length - 1}
+          />
           <PlanBCue count={d.shadows.length} />
 
           {/* Desktop: dense 3-col table. Hidden on mobile via CSS. */}
