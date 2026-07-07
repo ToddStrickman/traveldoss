@@ -565,6 +565,7 @@ function DossierPage() {
         tokens={skin.tokens}
         layout={layout}
         onLayoutChange={changeLayout}
+        onOpenGmail={canEdit ? () => setGmailOpen(true) : undefined}
       />
       <div
         aria-hidden
@@ -597,7 +598,11 @@ function DossierPage() {
       <skin.Render trip={view} blocks={blocks} view={layout} />
       <div className="mx-auto max-w-3xl px-6 pb-24" data-print="hide">
         <TripDocPreviews tripId={trip.id} />
-        {canEdit && <GmailImportPanel tripId={trip.id} />}
+        {canEdit && (
+          <div className="hidden md:block">
+            <GmailImportPanel tripId={trip.id} />
+          </div>
+        )}
       </div>
       <Link
         to="/"
@@ -662,6 +667,16 @@ function DossierPage() {
         tripId={trip.id}
         tripCreatedAt={(trip as { created_at?: string }).created_at ?? null}
       />
+      {canEdit && (
+        <TdSheet
+          open={gmailOpen}
+          onOpenChange={setGmailOpen}
+          title="Import from Gmail"
+          description="Pick a booking email to attach to this dossier."
+        >
+          <GmailImportPanel tripId={trip.id} defaultOpen hideHeader />
+        </TdSheet>
+      )}
     </EditingProvider>
   );
 }
