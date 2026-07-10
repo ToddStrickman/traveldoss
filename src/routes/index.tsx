@@ -187,7 +187,7 @@ function Landing() {
         <Parallax depth={-6}>
         <Link
           to="/login"
-          className="td-shimmer tap mb-4 inline-flex min-h-11 items-center gap-2 rounded-full border border-ink/20 bg-paper/40 px-4 py-1.5 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/70 backdrop-blur-sm transition-colors hover:border-seal hover:text-seal"
+          className="td-shimmer tap mb-4 inline-flex min-h-11 items-center gap-2 rounded-full border border-ink/20 bg-surface/70 px-4 py-1.5 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/70 shadow-[var(--highlight-inset)] backdrop-blur-sm transition-colors hover:border-seal hover:text-seal"
         >
           Login
         </Link>

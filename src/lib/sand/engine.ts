@@ -356,8 +356,8 @@ export class SandEngine {
         // the field's boundary feathers into the page instead of cutting.
         P.hx[i] = this.gridOrigin.x + this.rand() * this.gridOrigin.w;
         P.hy[i] = this.gridOrigin.y + this.rand() * this.gridOrigin.h;
-        if (this.rand() < 0.4) {
-          P.hx[i] += this.gauss() * gw * 0.14;
+        if (this.rand() < 0.5) {
+          P.hx[i] += this.gauss() * gw * 0.24;
           P.hy[i] += this.gauss() * gh * 0.1 - Math.abs(this.gauss()) * gh * 0.3;
         }
       }

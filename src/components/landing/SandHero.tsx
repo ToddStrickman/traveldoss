@@ -47,7 +47,7 @@ const DEFAULT_LINES: HeadlineLine[] = [
  * grains into the margin so the field never reads as a rectangle. Deepest
  * below: the excavation's tailings drift under the content that follows.
  */
-const BLEED = { x: 0.14, top: 0.12, bottom: 0.42 };
+const BLEED = { x: 0.22, top: 0.12, bottom: 0.42 };
 
 export function SandHero({
   lines = DEFAULT_LINES,
