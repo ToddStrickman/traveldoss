@@ -14,6 +14,7 @@ import { createTripFromIngestion } from "@/lib/trips.functions";
 import type { Block } from "@/lib/skins/types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { SITE_URL } from "@/lib/site";
 
 function TemplatesSkeleton() {
   return (
@@ -83,34 +84,34 @@ export const Route = createFileRoute("/templates")({
   }),
   head: () => ({
     meta: [
-      { title: "Dossier Templates — TravelDoss" },
+      { title: "Travel Itinerary Templates — TravelDoss" },
       {
         name: "description",
         content:
-          "Pick a TravelDoss dossier template. Each is a distinct editorial design for your trip's dossier — one URL, one dollar, one month.",
+          "Pick from 10 beautiful travel itinerary templates. Each dossier design maps your trip day by day — one URL, one dollar, one month.",
       },
       {
         property: "og:title",
-        content: "TravelDoss Dossier Templates — Editorial Designs for Your Trip",
+        content: "Travel Itinerary Templates — Editorial Dossier Designs | TravelDoss",
       },
       {
         property: "og:description",
         content:
-          "Eight editorial dossier templates for your trip. One dollar, one URL, one month — composed like a magazine.",
+          "Ten editorial dossier templates for your trip. One dollar, one URL, one month — composed like a magazine.",
       },
-      { property: "og:url", content: "https://traveldoss.lovable.app/templates" },
+      { property: "og:url", content: `${SITE_URL}/templates` },
     ],
-    links: [{ rel: "canonical", href: "https://traveldoss.lovable.app/templates" }],
+    links: [{ rel: "canonical", href: `${SITE_URL}/templates` }],
     scripts: [
       {
         type: "application/ld+json",
         children: JSON.stringify({
           "@context": "https://schema.org",
           "@type": "CollectionPage",
-          name: "TravelDoss Dossier Templates",
+          name: "TravelDoss Travel Itinerary Templates",
           description:
-            "Gallery of editorial dossier templates for TravelDoss trips.",
-          url: "https://traveldoss.lovable.app/templates",
+            "Gallery of editorial travel itinerary and dossier templates for TravelDoss trips.",
+          url: `${SITE_URL}/templates`,
         }),
       },
     ],

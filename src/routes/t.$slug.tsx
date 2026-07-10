@@ -27,6 +27,7 @@ import { toast } from "sonner";
 import { useHistory, useUndoRedoShortcuts } from "@/hooks/use-history";
 import { useItineraryRefiner } from "@/hooks/use-itinerary-refiner";
 import { hardenItineraryAi } from "@/lib/itinerary/harden.functions";
+import { SITE_URL } from "@/lib/site";
 
 type RefineHistoryEntry = {
   id: string;
@@ -58,7 +59,7 @@ export const Route = createFileRoute("/t/$slug")({
     const title = `${trip.destination} — A TravelDoss Dossier`;
     const description =
       trip.subtitle ?? `A travel dossier for ${trip.destination}.`;
-    const url = `https://traveldoss.lovable.app/t/${trip.slug}`;
+    const url = `${SITE_URL}/t/${trip.slug}`;
     const meta: Array<Record<string, string>> = [
       { title },
       { name: "description", content: description },

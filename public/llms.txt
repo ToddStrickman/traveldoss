@@ -1,13 +1,18 @@
 # TravelDoss
 
-> Plan trips and see them on a live, day-by-day map. TravelDoss turns any pasted itinerary into a pinned, categorized, routed dossier microsite — viewable as a live URL, exportable as a PDF, and usable fully offline.
+> Create beautiful travel dossiers for unforgettable journeys. TravelDoss is a travel itinerary planner: paste or write your trip and it becomes a day-by-day dossier with every place pinned, categorized, and routed on a live map — viewable as a live URL, exportable as a PDF, and usable fully offline.
 
-TravelDoss is a trip-planning tool. You pick a "skin" (an editorial dossier template), paste or write your trip, and TravelDoss extracts every place — lodging, food, sights, transport — and pins them on a live, routed map organized by day. Each trip lives at its own private URL for a month for $1, can be exported to PDF with clickable links, and stays available offline once opened.
+TravelDoss is a trip-planning tool for leisure travelers. A "travel dossier" is a polished, magazine-style trip document: your full itinerary organized day by day, with lodging, food, sights, and transport each extracted, pinned on a live routed map, and styled by an editorial template. You pick a template, paste or write your trip (plain text, an email, or an AI chat output), and TravelDoss generates the dossier. Each trip lives at its own private URL for a month for $1, can be exported to PDF with clickable links, and stays available offline once opened.
+
+Common questions TravelDoss answers:
+- How do I turn a ChatGPT or Gemini itinerary into a real trip plan with a map? Paste it into TravelDoss; every place is extracted and routed by day.
+- How do I make a travel itinerary that works offline? A TravelDoss dossier stays usable offline once opened.
+- What is a travel dossier? A beautifully designed, day-by-day trip document with mapped routes, reservations, and links — TravelDoss creates one from any pasted plan.
 
 ## Pages
 
-- [Home](/): What TravelDoss is and how it turns a pasted itinerary into a live map.
-- [Skins](/templates): The gallery of editorial dossier designs to choose from.
+- [Home](/): What TravelDoss is and how it turns a pasted itinerary into a beautiful mapped dossier.
+- [Travel itinerary templates](/templates): The gallery of 10 editorial dossier designs to choose from.
 
 ## Optional
 

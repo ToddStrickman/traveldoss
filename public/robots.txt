@@ -3,4 +3,4 @@ Allow: /
 Disallow: /app
 Disallow: /login
 
-Sitemap: https://traveldoss.lovable.app/sitemap.xml
+Sitemap: https://traveldoss.com/sitemap.xml
