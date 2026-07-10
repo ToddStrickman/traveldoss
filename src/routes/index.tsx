@@ -260,7 +260,7 @@ function Landing() {
           <div className="mt-5 border-y border-ink/10 px-2 py-7 text-left sm:px-6">
             <p className="font-serif text-[22px] leading-tight text-ink sm:text-[26px]">
               trav·el dos·si·er
-              <span className="ml-3 align-middle font-sans text-[12px] tracking-wide text-ink/40 sm:text-[13px]">
+              <span className="ml-3 inline-block whitespace-nowrap align-middle font-sans text-[12px] tracking-wide text-ink/40 sm:text-[13px]">
                 /ˈtra-vəl ˈdä-sē-ˌā/
               </span>
               <span className="ml-2.5 align-middle font-serif text-[13px] italic text-seal/80 sm:text-sm">
