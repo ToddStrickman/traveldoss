@@ -351,26 +351,26 @@ export class SandEngine {
         P.hx[i] = src.x + this.gauss() * sigma;
         P.hy[i] = src.y + this.gauss() * sigma * 0.7;
       } else {
-        // Loose drift: an elliptical bloom that feathers out past the text
-        // bounds (and, with bleed, spills into the page below) — a uniform
-        // rectangle here is what makes the field read as a square.
-        const v = this.view();
-        const a = this.rand() * Math.PI * 2;
-        const r = Math.pow(this.rand(), 0.62); // dense center, feathered rim
-        const rx = Math.min(gw * 0.72, v.vw * 0.46);
-        const ry = Math.sin(a) < 0
-          ? Math.min(gh * 0.95, v.bottom * 0.92) // spill deep below the box
-          : Math.min(gh * 0.55, v.top * 0.85);
-        P.hx[i] = Math.cos(a) * r * rx;
-        P.hy[i] = Math.sin(a) * r * ry;
+        // Uniform across the field — the original look — but a fraction of
+        // the drift smears past it on a gaussian tail (heavier below), so
+        // the field's boundary feathers into the page instead of cutting.
+        P.hx[i] = this.gridOrigin.x + this.rand() * this.gridOrigin.w;
+        P.hy[i] = this.gridOrigin.y + this.rand() * this.gridOrigin.h;
+        if (this.rand() < 0.4) {
+          P.hx[i] += this.gauss() * gw * 0.14;
+          P.hy[i] += this.gauss() * gh * 0.1 - Math.abs(this.gauss()) * gh * 0.3;
+        }
       }
       P.px[i] = P.hx[i]; P.py[i] = P.hy[i];
       const layerRoll = this.rand();
       P.layer[i] = layerRoll < 0.55 ? 0 : layerRoll < 0.9 ? 1 : 2;
       P.zone[i] = 0.5 + 0.5 * this.noise.fbm(P.hx[i] * 0.006 + 31, P.hy[i] * 0.006, 2);
-      const cell = this.cellOf(P.hx[i], P.hy[i]);
+      // Nearest cell, clamped: spill grains past the field still belong to
+      // the excavation at its edge — same dig/lift lifecycle as every other
+      // grain, so interaction never exposes the grid's rectangle.
+      const cell = this.cellOfClamped(P.hx[i], P.hy[i]);
       P.cell[i] = cell;
-      if (cell >= 0) this.cellBuckets[cell].push(i);
+      this.cellBuckets[cell].push(i);
       // Each grain lifts at a different cleanliness → granular, uneven digging.
       P.burialGate[i] = 0.15 + this.rand() * 0.7;
 
@@ -692,10 +692,6 @@ export class SandEngine {
       const cl = cell >= 0 ? this.clean[cell] : 1;
       if (i < this.nLetters + this.nGlyphs) {
         arr[i] = cl;
-      } else if (cell < 0) {
-        // Off-grid spill: ambient sand past the excavation's memory. It is
-        // simply present — never dug, never flicked away.
-        arr[i] = 1;
       } else {
         // Overburden presence: 1 until cleanliness passes its gate, then gone.
         const lifted = cl > P.burialGate[i];
@@ -1012,6 +1008,14 @@ export class SandEngine {
     return cy * GRID_COLS + cx;
   }
 
+  /** Nearest cell, clamped into the grid — for grains homed past the field. */
+  private cellOfClamped(x: number, y: number): number {
+    const g = this.gridOrigin;
+    const cx = Math.min(GRID_COLS - 1, Math.max(0, Math.floor(((x - g.x) / g.w) * GRID_COLS)));
+    const cy = Math.min(this.gridRows - 1, Math.max(0, Math.floor(((y - g.y) / g.h) * this.gridRows)));
+    return cy * GRID_COLS + cx;
+  }
+
   private forEachCellInRadius(
     x: number, y: number, radius: number,
     fn: (idx: number, falloff: number) => void,
@@ -1126,8 +1130,11 @@ void main() {
     col = mix(col, vec3(0.35, 0.36, 0.42), 0.38);
     alpha *= vReveal * 0.85;
   } else {
-    // Hidden glyphs: only whisper into view after deep excavation.
-    float presence = smoothstep(0.9, 0.99, vReveal);
+    // Hidden glyphs: only whisper into view after deep excavation. The gate
+    // sits above anything the opening reveal or ambient gusts can reach
+    // (~0.9 + gusts), so they surface for deliberate diggers only — ambient
+    // weather must never scatter "stray marks" across the field.
+    float presence = smoothstep(0.965, 0.995, vReveal);
     alpha *= presence * 0.3;
     col = mix(col, vec3(0.92, 0.80, 0.55), 0.5);
   }
