@@ -214,23 +214,12 @@ function Landing() {
         />
         </Parallax>
 
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1, delay: 0.3 }}
-          className="mt-6 max-w-md text-[13px] leading-relaxed text-ink-soft md:text-sm"
-        >
-          Transform scattered plans into a beautifully organized travel
-          dossier, complete with mapped routes, reservations, and a day-by-day
-          journey.
-        </motion.p>
-
         {/* Editorial CTA */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4 }}
-          className="relative mt-8"
+          className="relative mt-10"
         >
           <Link
             to="/templates"
@@ -267,9 +256,9 @@ function Landing() {
                 noun
               </span>
             </p>
-            <ol className="mt-5 space-y-4 font-serif text-[15px] leading-relaxed text-ink-soft sm:text-base">
+            <ol className="mt-6 space-y-5 font-serif text-[15px] leading-relaxed text-ink-soft sm:text-base">
               <li className="flex gap-4">
-                <span className="shrink-0 text-ink/35">1.</span>
+                <span className="shrink-0 font-serif italic text-seal/60">1.</span>
                 <span>
                   Where your trips are generated, built, or crafted to provide
                   you with a clean and clear understanding of what you'll be
@@ -279,7 +268,16 @@ function Landing() {
                 </span>
               </li>
               <li className="flex gap-4">
-                <span className="shrink-0 text-ink/35">2.</span>
+                <span className="shrink-0 font-serif italic text-seal/60">2.</span>
+                <span>
+                  Transform scattered plans into a beautifully organized travel
+                  dossier, complete with <em className="not-italic text-ink">mapped routes</em>,{" "}
+                  <em className="not-italic text-ink">reservations</em>, and{" "}
+                  <em className="not-italic text-ink">a day-by-day journey</em>.
+                </span>
+              </li>
+              <li className="flex gap-4">
+                <span className="shrink-0 font-serif italic text-seal/60">3.</span>
                 <span className="italic text-ink/55">
                   The cure for the common itinerary.
                 </span>
