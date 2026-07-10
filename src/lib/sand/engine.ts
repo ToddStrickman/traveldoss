@@ -39,6 +39,13 @@ export interface SandEngineOptions {
   dustIntensity: number;
   /** Override the story's reveal duration, seconds. */
   revealDuration?: number;
+  /**
+   * Extra visible margin past the layout box, as fractions of it. The canvas
+   * element must be enlarged by the same fractions (see SandHero). Loose sand
+   * feathers into this margin so the field never reads as a rectangle; the
+   * inscription itself stays sized and centered to the layout box.
+   */
+  bleed?: { x?: number; top?: number; bottom?: number };
   lighting?: LightingPreset;
   persist: boolean;
   reducedMotion: boolean;
@@ -207,25 +214,48 @@ export class SandEngine {
 
   // ── Setup ────────────────────────────────────────────────────────────
 
+  /**
+   * Visible world extents: the layout box plus the bleed margins.
+   * x is symmetric; top/bottom are each the distance from the world origin
+   * (the layout box's center, where the inscription is anchored) to that edge.
+   */
+  private view(): { vw: number; vh: number; top: number; bottom: number } {
+    const b = this.opts.bleed;
+    const bx = (b?.x ?? 0) * this.width;
+    const bt = (b?.top ?? 0) * this.height;
+    const bb = (b?.bottom ?? 0) * this.height;
+    return {
+      vw: this.width + 2 * bx,
+      vh: this.height + bt + bb,
+      top: this.height / 2 + bt,
+      bottom: this.height / 2 + bb,
+    };
+  }
+
   private applyViewport(): void {
-    const { width: w, height: h } = this;
+    const v = this.view();
     const dpr = Math.min(window.devicePixelRatio || 1, this.quality === 2 ? 2 : 1.25);
     this.renderer.setPixelRatio(dpr);
-    this.renderer.setSize(w, h, false);
-    this.camera.left = -w / 2;
-    this.camera.right = w / 2;
-    this.camera.top = h / 2;
-    this.camera.bottom = -h / 2;
+    this.renderer.setSize(v.vw, v.vh, false);
+    this.camera.left = -v.vw / 2;
+    this.camera.right = v.vw / 2;
+    this.camera.top = v.top;
+    this.camera.bottom = -v.bottom;
     this.camera.updateProjectionMatrix();
     if (this.grainMat) {
       this.grainMat.uniforms.uPixelRatio.value = dpr;
-      (this.grainMat.uniforms.uHalfView.value as THREE.Vector2).set(w / 2, h / 2);
+      (this.grainMat.uniforms.uViewExt.value as THREE.Vector3).set(v.vw / 2, v.top, v.bottom);
     }
     if (this.dustMat) {
       this.dustMat.uniforms.uPixelRatio.value = dpr;
-      (this.dustMat.uniforms.uHalfView.value as THREE.Vector2).set(w / 2, h / 2);
+      (this.dustMat.uniforms.uViewExt.value as THREE.Vector3).set(v.vw / 2, v.top, v.bottom);
     }
-    if (this.shaft) this.shaft.scale.set(w, h, 1);
+    if (this.shaft) {
+      this.shaft.scale.set(v.vw, v.vh, 1);
+      // Keep the quad centered on the camera (not the world origin) so its
+      // uv-edge fade still hugs the canvas when the bleed is asymmetric.
+      this.shaft.position.y = (v.top - v.bottom) / 2;
+    }
   }
 
   private buildParticles(): void {
@@ -321,8 +351,18 @@ export class SandEngine {
         P.hx[i] = src.x + this.gauss() * sigma;
         P.hy[i] = src.y + this.gauss() * sigma * 0.7;
       } else {
-        P.hx[i] = this.gridOrigin.x + this.rand() * this.gridOrigin.w;
-        P.hy[i] = this.gridOrigin.y + this.rand() * this.gridOrigin.h;
+        // Loose drift: an elliptical bloom that feathers out past the text
+        // bounds (and, with bleed, spills into the page below) — a uniform
+        // rectangle here is what makes the field read as a square.
+        const v = this.view();
+        const a = this.rand() * Math.PI * 2;
+        const r = Math.pow(this.rand(), 0.62); // dense center, feathered rim
+        const rx = Math.min(gw * 0.72, v.vw * 0.46);
+        const ry = Math.sin(a) < 0
+          ? Math.min(gh * 0.95, v.bottom * 0.92) // spill deep below the box
+          : Math.min(gh * 0.55, v.top * 0.85);
+        P.hx[i] = Math.cos(a) * r * rx;
+        P.hy[i] = Math.sin(a) * r * ry;
       }
       P.px[i] = P.hx[i]; P.py[i] = P.hy[i];
       const layerRoll = this.rand();
@@ -371,7 +411,7 @@ export class SandEngine {
         uTint: { value: new THREE.Vector3(...light.tint) },
         uSunDir: { value: new THREE.Vector2(...light.sunDir).normalize() },
         uAmbient: { value: light.ambient },
-        uHalfView: { value: new THREE.Vector2(this.width / 2, this.height / 2) },
+        uViewExt: { value: new THREE.Vector3(this.width / 2, this.height / 2, this.height / 2) },
       },
       vertexShader: GRAIN_VERT,
       fragmentShader: GRAIN_FRAG,
@@ -404,7 +444,7 @@ export class SandEngine {
       uniforms: {
         uPixelRatio: { value: 1 },
         uTint: { value: new THREE.Vector3(...light.tint) },
-        uHalfView: { value: new THREE.Vector2(this.width / 2, this.height / 2) },
+        uViewExt: { value: new THREE.Vector3(this.width / 2, this.height / 2, this.height / 2) },
       },
       vertexShader: DUST_VERT,
       fragmentShader: DUST_FRAG,
@@ -440,7 +480,9 @@ export class SandEngine {
     });
     this.shaft = new THREE.Mesh(geo, mat);
     this.shaft.position.z = -1;
-    this.shaft.scale.set(this.width, this.height, 1);
+    const v = this.view();
+    this.shaft.scale.set(v.vw, v.vh, 1);
+    this.shaft.position.y = (v.top - v.bottom) / 2;
     this.scene.add(this.shaft);
   }
 
@@ -479,8 +521,11 @@ export class SandEngine {
 
   pointer(clientX: number, clientY: number, down: boolean): void {
     const rect = this.canvas.getBoundingClientRect();
-    const x = clientX - rect.left - rect.width / 2;
-    const y = -(clientY - rect.top - rect.height / 2);
+    // With an asymmetric bleed the world origin is not the canvas center:
+    // map through the view extents instead.
+    const v = this.view();
+    const x = (clientX - rect.left) * (v.vw / rect.width) - v.vw / 2;
+    const y = v.top - (clientY - rect.top) * (v.vh / rect.height);
     this.ptr.active = true;
     this.ptr.down = down;
     this.ptr.x = x;
@@ -647,6 +692,10 @@ export class SandEngine {
       const cl = cell >= 0 ? this.clean[cell] : 1;
       if (i < this.nLetters + this.nGlyphs) {
         arr[i] = cl;
+      } else if (cell < 0) {
+        // Off-grid spill: ambient sand past the excavation's memory. It is
+        // simply present — never dug, never flicked away.
+        arr[i] = 1;
       } else {
         // Overburden presence: 1 until cleanliness passes its gate, then gone.
         const lifted = cl > P.burialGate[i];
@@ -1021,7 +1070,8 @@ void main() {
 
 const GRAIN_FRAG = /* glsl */ `
 uniform vec3 uTint;
-uniform vec2 uSunDir, uHalfView;
+uniform vec2 uSunDir;
+uniform vec3 uViewExt; // x: half width, y: top extent, z: bottom extent
 uniform float uAmbient, uGlow, uTime;
 varying float vSeed, vKind, vAccent, vEdge, vReveal, vSparkle;
 varying vec2 vWorld;
@@ -1084,8 +1134,10 @@ void main() {
 
   // Dissolve before the canvas boundary so scattered grains never hard-clip
   // against the page — the hero must stay contiguous with the site around it.
-  alpha *= smoothstep(uHalfView.x, uHalfView.x - 48.0, abs(vWorld.x))
-         * smoothstep(uHalfView.y, uHalfView.y - 32.0, abs(vWorld.y));
+  // The vertical extents differ when the bleed is asymmetric.
+  float yExt = mix(uViewExt.z, uViewExt.y, step(0.0, vWorld.y));
+  alpha *= smoothstep(uViewExt.x, uViewExt.x - 48.0, abs(vWorld.x))
+         * smoothstep(yExt, yExt - 32.0, abs(vWorld.y));
 
   gl_FragColor = vec4(col * shade * uTint, alpha);
 }
@@ -1107,15 +1159,16 @@ void main() {
 
 const DUST_FRAG = /* glsl */ `
 uniform vec3 uTint;
-uniform vec2 uHalfView;
+uniform vec3 uViewExt; // x: half width, y: top extent, z: bottom extent
 varying float vLife, vSeed;
 varying vec2 vWorld;
 void main() {
   if (vLife <= 0.0) discard;
   float d = length(gl_PointCoord - 0.5);
   float a = smoothstep(0.5, 0.0, d) * vLife * 0.16;
-  a *= smoothstep(uHalfView.x, uHalfView.x - 48.0, abs(vWorld.x))
-     * smoothstep(uHalfView.y, uHalfView.y - 32.0, abs(vWorld.y));
+  float yExt = mix(uViewExt.z, uViewExt.y, step(0.0, vWorld.y));
+  a *= smoothstep(uViewExt.x, uViewExt.x - 48.0, abs(vWorld.x))
+     * smoothstep(yExt, yExt - 32.0, abs(vWorld.y));
   vec3 col = mix(vec3(0.85, 0.76, 0.58), vec3(0.95, 0.9, 0.8), vSeed);
   gl_FragColor = vec4(col * uTint, a);
 }

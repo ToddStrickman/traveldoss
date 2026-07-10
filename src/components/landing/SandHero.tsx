@@ -40,6 +40,15 @@ const DEFAULT_LINES: HeadlineLine[] = [
   { text: "Doss", italic: true, accent: "." },
 ];
 
+/**
+ * How far the sand may spill past the layout box, as fractions of it.
+ * The canvas is enlarged by these insets (pointer-events: none, so content
+ * beneath — e.g. the CTA — stays clickable) and the engine feathers loose
+ * grains into the margin so the field never reads as a rectangle. Deepest
+ * below: the excavation's tailings drift under the content that follows.
+ */
+const BLEED = { x: 0.14, top: 0.12, bottom: 0.42 };
+
 export function SandHero({
   lines = DEFAULT_LINES,
   accessibleText = "Travel Doss.",
@@ -104,6 +113,7 @@ export function SandHero({
         windIntensity,
         dustIntensity,
         revealDuration,
+        bleed: BLEED,
         lighting,
         persist,
         reducedMotion,
@@ -163,7 +173,7 @@ export function SandHero({
   return (
     <div
       ref={containerRef}
-      className={`relative select-none touch-pan-y ${className}`}
+      className={`relative cursor-crosshair select-none touch-pan-y ${className}`}
       aria-label={accessibleText}
       role="img"
     >
@@ -180,8 +190,18 @@ export function SandHero({
         <canvas
           ref={canvasRef}
           aria-hidden
-          className="absolute inset-0 h-full w-full cursor-crosshair"
-          style={{ opacity: mode === "pending" ? 0 : 1, transition: "opacity 0.9s ease" }}
+          // Oversized past the layout box so loose sand can bleed into the
+          // page; pointer-events-none keeps content underneath interactive
+          // (cursor digging listens on the container, not the canvas).
+          className="pointer-events-none absolute"
+          style={{
+            left: `${-BLEED.x * 100}%`,
+            right: `${-BLEED.x * 100}%`,
+            top: `${-BLEED.top * 100}%`,
+            bottom: `${-BLEED.bottom * 100}%`,
+            opacity: mode === "pending" ? 0 : 1,
+            transition: "opacity 0.9s ease",
+          }}
         />
       )}
     </div>
@@ -219,9 +239,17 @@ async function drawStaticGrains(
 
   const w = container.clientWidth;
   const h = container.clientHeight;
+  // The canvas is oversized past the container (bleed); draw into its full
+  // box but keep the inscription centered on the container's center.
+  const cw = canvas.clientWidth || w;
+  const ch = canvas.clientHeight || h;
+  const crect = container.getBoundingClientRect();
+  const krect = canvas.getBoundingClientRect();
+  const cx = crect.left - krect.left + w / 2;
+  const cy = crect.top - krect.top + h / 2;
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  canvas.width = w * dpr;
-  canvas.height = h * dpr;
+  canvas.width = cw * dpr;
+  canvas.height = ch * dpr;
   const ctx = canvas.getContext("2d");
   if (!ctx) return false;
 
@@ -241,7 +269,7 @@ async function drawStaticGrains(
     ctx.globalAlpha = 0.55 + rand() * 0.45;
     const r = 0.8 + rand() * 0.8;
     ctx.beginPath();
-    ctx.arc(w / 2 + p.x, h / 2 - p.y, r, 0, Math.PI * 2);
+    ctx.arc(cx + p.x, cy - p.y, r, 0, Math.PI * 2);
     ctx.fill();
   }
   return true;
