@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { ElevateTagline } from "@/components/brand/ElevateTagline";
+import { SITE_URL } from "@/lib/site";
 
 export const Route = createFileRoute("/login")({
   // Optional key so plain <Link to="/login"> typechecks everywhere; the
@@ -32,10 +33,10 @@ export const Route = createFileRoute("/login")({
         property: "og:description",
         content: "Access your TravelDoss trip dossiers and continue planning your journey.",
       },
-      { property: "og:url", content: "https://traveldoss.lovable.app/login" },
+      { property: "og:url", content: `${SITE_URL}/login` },
       { name: "robots", content: "noindex,follow" },
     ],
-    links: [{ rel: "canonical", href: "https://traveldoss.lovable.app/login" }],
+    links: [{ rel: "canonical", href: `${SITE_URL}/login` }],
   }),
 });
 

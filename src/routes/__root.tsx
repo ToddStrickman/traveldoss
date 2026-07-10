@@ -15,6 +15,7 @@ import { registerServiceWorker } from "@/lib/pwa/register-sw";
 import { MotionPermissionPrompt } from "@/components/motion/Tilt";
 import { GyroWallpaper } from "@/components/motion/GyroWallpaper";
 import { MobileBubbles } from "@/components/motion/MobileBubbles";
+import { SITE_URL } from "@/lib/site";
 
 function NotFoundComponent() {
   return (
@@ -83,15 +84,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
       { name: "apple-mobile-web-app-title", content: "TravelDoss" },
       { title: "TravelDoss - Your trip in a beautiful dossier" },
-      { name: "description", content: "Transform text, email, call recordings, and AI outputs into a polished trip dossier and exportable microsite for online or offline access." },
+      { name: "description", content: "Create beautiful travel dossiers for unforgettable journeys. Turn scattered plans into a day-by-day itinerary with every place mapped — offline-ready." },
       { name: "author", content: "TravelDoss" },
       { property: "og:title", content: "TravelDoss - Your trip in a beautiful dossier" },
-      { property: "og:description", content: "Transform text, email, call recordings, and AI outputs into a polished trip dossier and exportable microsite for online or offline access." },
+      { property: "og:description", content: "Create beautiful travel dossiers for unforgettable journeys. Turn scattered plans into a day-by-day itinerary with every place mapped — offline-ready." },
       { property: "og:type", content: "website" },
       { property: "og:site_name", content: "TravelDoss" },
-      { name: "twitter:card", content: "summary" },
+      { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "TravelDoss - Your trip in a beautiful dossier" },
-      { name: "twitter:description", content: "Transform text, email, call recordings, and AI outputs into a polished trip dossier and exportable microsite for online or offline access." },
+      { name: "twitter:description", content: "Create beautiful travel dossiers for unforgettable journeys. Turn scattered plans into a day-by-day itinerary with every place mapped — offline-ready." },
       { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d68b6039-25b0-47d1-b3a4-12f4524dc2b9/id-preview-74fa5ff6--096f9178-141f-473d-bf14-38fc2445783f.lovable.app-1780348785317.png" },
       { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d68b6039-25b0-47d1-b3a4-12f4524dc2b9/id-preview-74fa5ff6--096f9178-141f-473d-bf14-38fc2445783f.lovable.app-1780348785317.png" },
     ],
@@ -118,13 +119,34 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "@graph": [
             {
               "@type": "Organization",
+              "@id": `${SITE_URL}/#organization`,
               name: "TravelDoss",
-              url: "https://traveldoss.lovable.app",
+              url: SITE_URL,
+              logo: `${SITE_URL}/favicon.png`,
             },
             {
               "@type": "WebSite",
+              "@id": `${SITE_URL}/#website`,
               name: "TravelDoss",
-              url: "https://traveldoss.lovable.app",
+              url: SITE_URL,
+              publisher: { "@id": `${SITE_URL}/#organization` },
+            },
+            {
+              "@type": "WebApplication",
+              "@id": `${SITE_URL}/#app`,
+              name: "TravelDoss",
+              url: SITE_URL,
+              applicationCategory: "TravelApplication",
+              operatingSystem: "Web",
+              description:
+                "Travel itinerary planner that turns pasted or written trip plans into a beautiful day-by-day dossier — every place pinned, categorized, and routed on a live map, offline-ready.",
+              offers: {
+                "@type": "Offer",
+                price: "1.00",
+                priceCurrency: "USD",
+                description: "One dossier, one URL, live for one month.",
+              },
+              publisher: { "@id": `${SITE_URL}/#organization` },
             },
           ],
         }),

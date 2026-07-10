@@ -16,6 +16,7 @@ import type { Block } from "@/lib/skins/types";
 import { createTripFromIngestion } from "@/lib/trips.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { SITE_URL } from "@/lib/site";
 
 export const Route = createFileRoute("/")({
   component: Landing,
@@ -36,9 +37,9 @@ export const Route = createFileRoute("/")({
         content:
           "Create beautiful dossiers for unforgettable journeys. Paste or write your trip — every place pinned, categorized, and routed by day on a live map, offline-ready.",
       },
-      { property: "og:url", content: "https://traveldoss.lovable.app/" },
+      { property: "og:url", content: `${SITE_URL}/` },
     ],
-    links: [{ rel: "canonical", href: "https://traveldoss.lovable.app/" }],
+    links: [{ rel: "canonical", href: `${SITE_URL}/` }],
   }),
 });
 
