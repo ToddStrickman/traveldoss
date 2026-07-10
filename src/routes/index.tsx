@@ -21,7 +21,7 @@ export const Route = createFileRoute("/")({
   component: Landing,
   head: () => ({
     meta: [
-      { title: "TravelDoss — Plan trips, see them on a live map" },
+      { title: "TravelDoss — Create beautiful dossiers for unforgettable journeys" },
       {
         name: "description",
         content:
@@ -29,7 +29,7 @@ export const Route = createFileRoute("/")({
       },
       {
         property: "og:title",
-        content: "TravelDoss — Plan trips, see them on a live map",
+        content: "TravelDoss — Create beautiful dossiers for unforgettable journeys",
       },
       {
         property: "og:description",
