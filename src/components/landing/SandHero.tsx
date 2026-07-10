@@ -88,6 +88,7 @@ export function SandHero({
     let disposed = false;
     let rebuildTimer: ReturnType<typeof setTimeout> | undefined;
     let lastW = container.clientWidth;
+    let lastH = container.clientHeight;
     let ro: ResizeObserver | undefined;
 
     const onMove = (e: PointerEvent) => engine?.pointer(e.clientX, e.clientY, e.buttons > 0);
@@ -103,6 +104,7 @@ export function SandHero({
       await waitForSize(container);
       if (disposed) return;
       lastW = container.clientWidth;
+      lastH = container.clientHeight;
 
       const opts: SandEngineOptions = {
         lines,
@@ -143,11 +145,16 @@ export function SandHero({
         const rect = entries[0]?.contentRect;
         if (!rect || !engine) return;
         engine.resize(rect.width, rect.height);
-        // Width shifts change the rasterized font size → re-sample, debounced.
-        if (Math.abs(rect.width - lastW) > 80) {
+        // Size shifts change the rasterized font size → re-sample, debounced.
+        // Height matters as much as width: the box width caps at 1100px on
+        // large screens, and the sampler is usually height-constrained — a
+        // stale height leaves the inscription small in a grown box (a big
+        // empty band under the text).
+        if (Math.abs(rect.width - lastW) > 80 || Math.abs(rect.height - lastH) > 60) {
           clearTimeout(rebuildTimer);
           rebuildTimer = setTimeout(() => {
             lastW = rect.width;
+            lastH = rect.height;
             void engine?.rebuild(rect.width, rect.height);
           }, 300);
         }
