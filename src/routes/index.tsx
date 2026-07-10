@@ -219,7 +219,10 @@ function Landing() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4 }}
-          className="relative mt-4"
+          // Negative top margin: the sampled wordmark's em-box carries dead
+          // font padding below the descenders, so the CTA must ride up into
+          // the hero box for the VISIBLE gap to read tight.
+          className="relative -mt-2 md:-mt-9"
         >
           <Link
             to="/templates"

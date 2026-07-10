@@ -201,11 +201,14 @@ export function SandHero({
           // page; pointer-events-none keeps content underneath interactive
           // (cursor digging listens on the container, not the canvas).
           className="pointer-events-none absolute"
+          // Canvas is a replaced element: with only insets it would size to
+          // its intrinsic pixel buffer (dpr-scaled!), so width/height must be
+          // explicit for the stretch to hold on high-dpr screens.
           style={{
             left: `${-BLEED.x * 100}%`,
-            right: `${-BLEED.x * 100}%`,
             top: `${-BLEED.top * 100}%`,
-            bottom: `${-BLEED.bottom * 100}%`,
+            width: `${(1 + 2 * BLEED.x) * 100}%`,
+            height: `${(1 + BLEED.top + BLEED.bottom) * 100}%`,
             opacity: mode === "pending" ? 0 : 1,
             transition: "opacity 0.9s ease",
           }}
