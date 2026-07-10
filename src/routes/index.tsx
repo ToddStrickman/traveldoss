@@ -195,15 +195,12 @@ function Landing() {
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="mb-6 inline-flex flex-col items-center gap-3 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/55"
+          className="mb-4 inline-flex flex-col items-center gap-3 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/55"
         >
           <span className="inline-flex items-center gap-3">
             <span className="h-px w-8 bg-ink/30" />
             Travel Better.
             <span className="h-px w-8 bg-ink/30" />
-          </span>
-          <span className="border border-ink/10 px-2.5 py-1 text-[9px] tracking-[0.35em] text-ink/35">
-            Itineraries suck.
           </span>
         </motion.span>
         </Parallax>
@@ -248,6 +245,48 @@ function Landing() {
             </span>
           </Link>
         </motion.div>
+
+        {/* Dictionary definition — the site's quotable, extractable answer to
+            "what is a travel dossier?" (also the AEO citation target). */}
+        <motion.section
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.9, delay: 0.55 }}
+          className="mt-12 w-full max-w-xl"
+        >
+          <p className="text-center text-[9px] font-medium uppercase tracking-[0.45em] text-ink/30">
+            Definition · What is a travel dossier?
+          </p>
+          <div className="mt-5 border-y border-ink/10 px-2 py-7 text-left sm:px-6">
+            <p className="font-serif text-[22px] leading-tight text-ink sm:text-[26px]">
+              trav·el dos·si·er
+              <span className="ml-3 align-middle font-sans text-[12px] tracking-wide text-ink/40 sm:text-[13px]">
+                /ˈtra-vəl ˈdä-sē-ˌā/
+              </span>
+              <span className="ml-2.5 align-middle font-serif text-[13px] italic text-seal/80 sm:text-sm">
+                noun
+              </span>
+            </p>
+            <ol className="mt-5 space-y-4 font-serif text-[15px] leading-relaxed text-ink-soft sm:text-base">
+              <li className="flex gap-4">
+                <span className="shrink-0 text-ink/35">1.</span>
+                <span>
+                  Where your trips are generated, built, or crafted to provide
+                  you with a clean and clear understanding of what you'll be
+                  doing, where you'll be going, and what you need to know when
+                  you get there — in a beautiful format that you'll want to
+                  look at even when the trip is over.
+                </span>
+              </li>
+              <li className="flex gap-4">
+                <span className="shrink-0 text-ink/35">2.</span>
+                <span className="italic text-ink/55">
+                  The cure for the common itinerary.
+                </span>
+              </li>
+            </ol>
+          </div>
+        </motion.section>
 
         <div className="mt-8 flex items-center gap-4 text-[9px] font-medium uppercase tracking-[0.45em] text-ink/35">
           <div className="h-px w-10 bg-ink/15" />
