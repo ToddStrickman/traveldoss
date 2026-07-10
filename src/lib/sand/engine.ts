@@ -20,7 +20,6 @@ import { rollStory, LIGHTING, type Story, type LightingPreset } from "./story";
 import {
   ensureFontLoaded,
   sampleHeadline,
-  sampleGlyphs,
   type HeadlineLine,
   type SampledPoint,
 } from "./textSampler";
@@ -271,10 +270,11 @@ export class SandEngine {
       maxPoints: Math.floor(particleCount * 0.62),
       rand: this.rand,
     });
-    const glyphs = sampleGlyphs(
-      sampled.width, sampled.height,
-      Math.floor(particleCount * 0.04), this.rand,
-    );
+    // Hidden chisel-mark glyphs are retired (owner call, 2026-07-10): even
+    // gated behind deep excavation they read as stray broken lines, not
+    // ancient carving. textSampler's sampleGlyphs stays available should
+    // they ever return.
+    const glyphs: SampledPoint[] = [];
     const nOver = Math.floor(particleCount * 0.34);
 
     this.nLetters = sampled.points.length;
