@@ -260,11 +260,9 @@ function Landing() {
               <li className="flex gap-4">
                 <span className="shrink-0 font-serif italic text-seal/60">1.</span>
                 <span>
-                  Where your trips are generated, built, or crafted to provide
-                  you with a clean and clear understanding of what you'll be
-                  doing, where you'll be going, and what you need to know when
-                  you get there — in a beautiful format that you'll want to
-                  look at even when the trip is over.
+                  A day-by-day telling of your trip — where you're going, what
+                  you're doing, and what to know when you arrive — so beautiful
+                  you'll keep it long after the journey ends.
                 </span>
               </li>
               <li className="flex gap-4">
