@@ -3,6 +3,7 @@ import { generateText, Output } from "ai";
 import { z, ZodError, type ZodIssue } from "zod";
 import type { DebugAttempt, DebugReport } from "@/lib/itinerary/debug-report";
 import { resolveTripDates, type ResolvedDates } from "@/lib/itinerary/trip-brief";
+import { isCreditsMessage } from "@/lib/itinerary/ai-errors";
 
 /**
  * AI itinerary generator.
@@ -311,7 +312,7 @@ export const generateItineraryAi = createServerFn({ method: "POST" })
       } catch (err) {
         lastErr = err;
         const msg = err instanceof Error ? err.message : String(err);
-        if (/402|credit/i.test(msg)) {
+        if (isCreditsMessage(msg)) {
           throw new Error("AI credits exhausted. Add credits in Workspace → Usage.");
         }
         if (/429|rate/i.test(msg) && attempt < MAX_ATTEMPTS) {
