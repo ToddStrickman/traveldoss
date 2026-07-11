@@ -93,6 +93,11 @@ const TABS: {
 
 import { tripRef } from "@/lib/trip-ref";
 import { ElevateTagline } from "@/components/brand/ElevateTagline";
+import {
+  clearPendingComposer,
+  peekPendingComposer,
+  savePendingComposer,
+} from "@/lib/mint-pending";
 
 export function IngestionModal({
   open,
@@ -156,9 +161,20 @@ export function IngestionModal({
   async function ensureAuthed(): Promise<boolean> {
     const { data } = await supabase.auth.getUser();
     if (data.user) return true;
+    // Preserve everything the user has composed BEFORE leaving for /login —
+    // this runs ahead of parsing, so without it a pasted itinerary or
+    // generate prompt is simply gone after the sign-in round trip.
+    if (template) {
+      savePendingComposer({
+        templateId: template.meta.id,
+        tab,
+        text,
+        genPrompt,
+      });
+    }
     toast.message("Sign in to compose your dossier", {
       description:
-        "Signing in lets us tailor the dossier to you, attach real contact details, and put your name on the trip for checkout.",
+        "Your draft is saved — we'll bring you right back to it after you sign in.",
     });
     const back = `${location.pathname}${location.searchStr}${
       location.searchStr.includes("mint=1") ? "" : (location.searchStr ? "&" : "?") + "mint=1"
@@ -192,6 +208,24 @@ export function IngestionModal({
     tab === "generate"
       ? genPrompt.trim().length >= 6 || genDestination.trim().length > 0
       : text.trim().length >= 8;
+
+  // Restore a composer draft stashed by ensureAuthed before a login
+  // redirect. Only when the modal opens empty for the SAME template, so a
+  // draft can never stomp text the user is actively typing.
+  useEffect(() => {
+    if (!open || !template) return;
+    const pending = peekPendingComposer();
+    if (!pending || pending.templateId !== template.meta.id) return;
+    if (text.trim() || genPrompt.trim()) return;
+    setTab(pending.tab);
+    setText(pending.text);
+    setGenPrompt(pending.genPrompt);
+    clearPendingComposer();
+    toast.message("Right where you left it", {
+      description: "Your draft survived the sign-in. Compose when ready.",
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, template]);
 
   // Saved drafts (local-first, syncs when signed in) + a11y toggle.
   const saved = useSavedTripRequests();
