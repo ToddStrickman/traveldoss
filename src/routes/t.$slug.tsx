@@ -172,6 +172,7 @@ function DossierPage() {
   const [isOwner, setIsOwner] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(false);
   const [mintOpen, setMintOpen] = useState(false);
   const [gmailOpen, setGmailOpen] = useState(false);
   const [justMinted, setJustMinted] = useState(false);
@@ -258,7 +259,7 @@ function DossierPage() {
   }, [lockKey]);
   const isEditing = canEdit && !locked;
 
-  const queueSave = useCallback((patch: {
+  type SavePatch = {
     blocks?: Block[];
     templateId?: string;
     destination?: string;
@@ -266,21 +267,76 @@ function DossierPage() {
     startDate?: string;
     endDate?: string;
     meta?: import("@/lib/skins/types").TripMeta;
-  }) => {
+  };
+
+  // Unflushed edits, merged across queueSave calls so a flush (retry,
+  // tab-hide, unload) always sends everything still pending — losing a
+  // patch here is losing the user's work.
+  const pendingPatch = useRef<SavePatch | null>(null);
+  // Toast on the ok→error TRANSITION only; a flaky connection must not
+  // machine-gun toasts on every debounce tick.
+  const errorToasted = useRef(false);
+
+  const performSave = useCallback(async () => {
+    const patch = pendingPatch.current;
+    if (!patch) return;
+    pendingPatch.current = null;
+    try {
+      const r = await save({ data: { slug: trip.slug, ...patch } });
+      if (r.savedAt) setSavedAt(r.savedAt);
+      setSaveError(false);
+      if (errorToasted.current) {
+        errorToasted.current = false;
+        toast.success("Saved — your changes are safe.");
+      }
+    } catch (e) {
+      console.error("[autosave]", e);
+      // Re-queue so the next edit, retry, or flush resends these changes
+      // (newer fields win over the failed ones).
+      pendingPatch.current = { ...patch, ...pendingPatch.current };
+      setSaveError(true);
+      if (!errorToasted.current) {
+        errorToasted.current = true;
+        toast.error("Changes aren't saving", {
+          description:
+            e instanceof Error ? e.message : "Check your connection — we'll keep retrying.",
+          duration: 10_000,
+          action: { label: "Retry now", onClick: () => void performSave() },
+        });
+      }
+    } finally {
+      setSaving(false);
+    }
+  }, [save, trip.slug]);
+
+  const queueSave = useCallback((patch: SavePatch) => {
     if (!canEdit) return;
+    pendingPatch.current = { ...pendingPatch.current, ...patch };
     if (debounce.current) clearTimeout(debounce.current);
     setSaving(true);
-    debounce.current = setTimeout(async () => {
-      try {
-        const r = await save({ data: { slug: trip.slug, ...patch } });
-        if (r.savedAt) setSavedAt(r.savedAt);
-      } catch (e) {
-        console.error("[autosave]", e);
-      } finally {
-        setSaving(false);
-      }
-    }, 800);
-  }, [canEdit, save, trip.slug]);
+    debounce.current = setTimeout(() => void performSave(), 800);
+  }, [canEdit, performSave]);
+
+  // The 800ms debounce is a data-loss window on tab close/switch: flush
+  // pending edits the moment the page hides. (Best effort — pagehide can
+  // cut a fetch short, but visibilitychange fires earlier and usually
+  // completes; together they shrink the window to near zero.)
+  useEffect(() => {
+    const flush = () => {
+      if (!pendingPatch.current) return;
+      if (debounce.current) clearTimeout(debounce.current);
+      void performSave();
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") flush();
+    };
+    window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [performSave]);
 
   const onTemplateChange = useCallback(
     (id: string) => {
@@ -584,8 +640,11 @@ function DossierPage() {
           style={{ top: "calc(56px + env(safe-area-inset-top, 0px))" }}
         >
           <span className="inline-flex items-center gap-2">
-            <span aria-hidden className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-paper" />
-            Editing · auto-saves
+            <span
+              aria-hidden
+              className={`inline-block h-1.5 w-1.5 animate-pulse rounded-full ${saveError ? "bg-red-400" : "bg-paper"}`}
+            />
+            {saveError ? "Editing · NOT saving — check connection" : "Editing · auto-saves"}
           </span>
           <button
             type="button"
@@ -641,6 +700,7 @@ function DossierPage() {
                 templateId={templateId}
                 saving={saving}
                 savedAt={savedAt}
+                saveError={saveError}
                 onTemplateChange={onTemplateChange}
                 onUndo={undo}
                 onRedo={redo}
