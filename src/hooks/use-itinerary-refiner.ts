@@ -4,7 +4,7 @@ import { refineItineraryAi } from "@/lib/itinerary/refine.functions";
 import type { Block } from "@/lib/skins/types";
 import type { TripMeta } from "@/lib/skins/types";
 
-type RefineSnapshot = {
+export type RefineSnapshot = {
   blocks: Block[];
   destination: string;
   startDate: string;
@@ -17,6 +17,13 @@ type Options = {
   debounceMs?: number;
   /** Called with refined blocks once a refine pass completes. */
   onRefined: (next: Block[], reason: string) => void;
+  /**
+   * Monotonic local-edit counter. A refine result computed against an older
+   * revision is STALE: applying it would replace the whole blocks array and
+   * silently destroy whatever the user typed while the call was in flight.
+   * Stale results are dropped and the pass re-runs from the fresh snapshot.
+   */
+  revision?: () => number;
 };
 
 /**
@@ -36,7 +43,7 @@ export function useItineraryRefiner(snap: RefineSnapshot, opts: Options) {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inflight = useRef(false);
   const dirty = useRef(false);
-  const lastSignature = useRef<string>(signature(snap));
+  const lastSignature = useRef<string>(refineSignature(snap));
   const lastReason = useRef<string>("");
   const latestSnap = useRef(snap);
   latestSnap.current = snap;
@@ -48,6 +55,7 @@ export function useItineraryRefiner(snap: RefineSnapshot, opts: Options) {
     }
     const current = latestSnap.current;
     if (!current.blocks.length) return;
+    const startRevision = opts.revision?.() ?? 0;
     inflight.current = true;
     setStatus("sharpening");
     try {
@@ -62,7 +70,14 @@ export function useItineraryRefiner(snap: RefineSnapshot, opts: Options) {
         },
       });
       if (res?.blocks?.length) {
-        opts.onRefined(res.blocks as Block[], lastReason.current);
+        if (opts.revision && opts.revision() !== startRevision) {
+          // The user edited while the model worked — this result no longer
+          // describes their dossier. Re-run from the fresh snapshot instead
+          // of overwriting their changes.
+          dirty.current = true;
+        } else {
+          opts.onRefined(res.blocks as Block[], lastReason.current);
+        }
       }
       setStatus("idle");
     } catch (err) {
@@ -83,7 +98,7 @@ export function useItineraryRefiner(snap: RefineSnapshot, opts: Options) {
 
   useEffect(() => {
     if (!opts.enabled) return;
-    const sig = signature(snap);
+    const sig = refineSignature(snap);
     if (sig === lastSignature.current) return;
     lastReason.current = diffReason(snap, lastSignature.current);
     lastSignature.current = sig;
@@ -103,12 +118,15 @@ export function useItineraryRefiner(snap: RefineSnapshot, opts: Options) {
 
 /** Stable signature over the inputs that should trigger a refine. We don't
  *  refine on every block-text keystroke — only on meta/dates/destination
- *  changes plus block structural changes (count, order, time). */
-function signature(s: RefineSnapshot): string {
+ *  changes plus block structural changes (count, order, time, category).
+ *  Prose renames (place names, day labels) are deliberately EXCLUDED:
+ *  renaming a stop must never trigger an AI rewrite of the dossier.
+ *  Exported for tests. */
+export function refineSignature(s: RefineSnapshot): string {
   const blockSig = s.blocks
     .map((b) => {
-      if (b.kind === "place") return `p:${b.name}|${b.time ?? ""}|${b.category ?? ""}`;
-      if (b.kind === "day") return `d:${b.n}|${b.label}`;
+      if (b.kind === "place") return `p:${b.time ?? ""}|${b.category ?? ""}`;
+      if (b.kind === "day") return `d:${b.n}`;
       if (b.kind === "flight") return `f:${b.from ?? ""}-${b.to ?? ""}`;
       return `${b.kind}`;
     })

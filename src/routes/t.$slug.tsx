@@ -388,6 +388,15 @@ function DossierPage() {
     [setSnap, queueSave, templateId],
   );
 
+  // Monotonic local-edit counter: every snapshot change bumps it. Background
+  // AI passes (harden, refine) capture it at launch and DROP their result if
+  // it moved — a whole-blocks replace computed against a stale snapshot
+  // would silently destroy whatever the user edited in the meantime.
+  const revision = useRef(0);
+  useEffect(() => {
+    revision.current += 1;
+  }, [snap]);
+
   // After undo/redo, push the resulting snapshot to the server.
   const lastSyncedRef = useRef(snap);
   useEffect(() => {
@@ -419,6 +428,7 @@ function DossierPage() {
     },
     {
       enabled: canEdit && blocks.length > 0,
+      revision: () => revision.current,
       onRefined: (nextBlocks, reason) => {
         // Silent merge: replace blocks with the refined set. The history
         // entry coalesces under a single key so the user can undo a
@@ -468,6 +478,7 @@ function DossierPage() {
     if (hardenedFor.current === trip.id) return;
     hardenedFor.current = trip.id;
     const handle = setTimeout(() => {
+      const startRevision = revision.current;
       hardenFn({
         data: {
           blocks,
@@ -479,6 +490,12 @@ function DossierPage() {
       })
         .then((res) => {
           if (!res?.blocks?.length) return;
+          // The user edited while hardening ran: this result describes a
+          // dossier that no longer exists. Their edits win; drop it.
+          if (revision.current !== startRevision) {
+            console.info("[harden] dropped stale result (user edited during pass)");
+            return;
+          }
           setSnap(
             (s) => ({ ...s, blocks: res.blocks as Block[] }),
             { coalesceKey: "harden:initial" },
