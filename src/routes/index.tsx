@@ -219,10 +219,12 @@ function Landing() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4 }}
-          // Negative top margin: the sampled wordmark's em-box carries dead
-          // font padding below the descenders, so the CTA must ride up into
-          // the hero box for the VISIBLE gap to read tight.
-          className="relative -mt-2 md:-mt-9"
+          // The wordmark's em-box carries dead font padding below the
+          // descenders — measured at ~21.5% of the hero's height, which is
+          // clamp(240px, 24vw, 460px). Subtracting it keeps the VISIBLE gap
+          // to the inscription at ~40px on every viewport; a fixed margin
+          // reads too loose on small screens and too tight on large ones.
+          className="relative mt-[calc(40px_-_clamp(52px,5.2vw,99px))]"
         >
           <Link
             to="/templates"
@@ -294,8 +296,11 @@ function Landing() {
           <div className="h-px w-10 bg-ink/15" />
         </div>
 
-        {/* Mobile-only quick chips */}
-        <div className="scroll-x edge-fade-x mt-10 items-center gap-3 px-1 md:hidden">
+        {/* Mobile-only quick chips. The md:hidden must live on a plain
+            wrapper: .scroll-x is unlayered CSS whose display:flex beats
+            Tailwind's layered md:hidden on the same element. */}
+        <div className="md:hidden">
+        <div className="scroll-x edge-fade-x mt-10 items-center gap-3 px-1">
           {[
             { to: "/app" as const, label: "Browse Places" },
             { to: "/templates" as const, label: "Dossier Templates" },
@@ -309,6 +314,7 @@ function Landing() {
               {c.label}
             </Link>
           ))}
+        </div>
         </div>
       </main>
 
