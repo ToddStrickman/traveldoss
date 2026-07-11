@@ -187,7 +187,7 @@ function Landing() {
         <Parallax depth={-6}>
         <Link
           to="/login"
-          className="td-shimmer tap mb-4 inline-flex min-h-11 items-center gap-2 rounded-full border border-ink/20 bg-paper/40 px-4 py-1.5 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/70 backdrop-blur-sm transition-colors hover:border-seal hover:text-seal"
+          className="td-shimmer tap mb-4 inline-flex min-h-11 items-center gap-2 rounded-full border border-ink/20 bg-surface/70 px-4 py-1.5 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/70 shadow-[var(--highlight-inset)] backdrop-blur-sm transition-colors hover:border-seal hover:text-seal"
         >
           Login
         </Link>
@@ -195,15 +195,12 @@ function Landing() {
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="mb-6 inline-flex flex-col items-center gap-3 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/55"
+          className="mb-4 inline-flex flex-col items-center gap-3 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/55"
         >
           <span className="inline-flex items-center gap-3">
             <span className="h-px w-8 bg-ink/30" />
             Travel Better.
             <span className="h-px w-8 bg-ink/30" />
-          </span>
-          <span className="border border-ink/10 px-2.5 py-1 text-[9px] tracking-[0.35em] text-ink/35">
-            Itineraries suck.
           </span>
         </motion.span>
         </Parallax>
@@ -217,23 +214,17 @@ function Landing() {
         />
         </Parallax>
 
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1, delay: 0.3 }}
-          className="mt-6 max-w-md text-[13px] leading-relaxed text-ink-soft md:text-sm"
-        >
-          Transform scattered plans into a beautifully organized travel
-          dossier, complete with mapped routes, reservations, and a day-by-day
-          journey.
-        </motion.p>
-
         {/* Editorial CTA */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4 }}
-          className="relative mt-8"
+          // The wordmark's em-box carries dead font padding below the
+          // descenders — measured at ~21.5% of the hero's height, which is
+          // clamp(240px, 24vw, 460px). Subtracting it keeps the VISIBLE gap
+          // to the inscription at ~40px on every viewport; a fixed margin
+          // reads too loose on small screens and too tight on large ones.
+          className="relative mt-[calc(40px_-_clamp(52px,5.2vw,99px))]"
         >
           <Link
             to="/templates"
@@ -249,14 +240,67 @@ function Landing() {
           </Link>
         </motion.div>
 
+        {/* Dictionary definition — the site's quotable, extractable answer to
+            "what is a travel dossier?" (also the AEO citation target). */}
+        <motion.section
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.9, delay: 0.55 }}
+          className="mt-12 w-full max-w-xl"
+        >
+          <p className="text-center text-[9px] font-medium uppercase tracking-[0.45em] text-ink/30">
+            Definition · What is a travel dossier?
+          </p>
+          <div className="mt-5 border-y border-ink/10 px-2 py-7 text-left sm:px-6">
+            <p className="font-serif text-[22px] leading-tight text-ink sm:text-[26px]">
+              trav·el dos·si·er
+              <span className="ml-3 inline-block whitespace-nowrap align-middle font-sans text-[12px] tracking-wide text-ink/40 sm:text-[13px]">
+                /ˈtra-vəl ˈdä-sē-ˌā/
+              </span>
+              <span className="ml-2.5 align-middle font-serif text-[13px] italic text-seal/80 sm:text-sm">
+                noun
+              </span>
+            </p>
+            <ol className="mt-6 space-y-5 font-serif text-[15px] leading-relaxed text-ink-soft sm:text-base">
+              <li className="flex gap-4">
+                <span className="shrink-0 font-serif italic text-seal/60">1.</span>
+                <span>
+                  A beautifully composed itinerary of your trip, day by day:
+                  where you're going, what you're doing, and what to know when
+                  you arrive. A designed artifact you'll keep long after the
+                  journey ends.
+                </span>
+              </li>
+              <li className="flex gap-4">
+                <span className="shrink-0 font-serif italic text-seal/60">2.</span>
+                <span>
+                  Transform scattered plans into a beautifully organized travel
+                  dossier, complete with <em className="not-italic text-ink">mapped routes</em>,{" "}
+                  <em className="not-italic text-ink">reservations</em>, and{" "}
+                  <em className="not-italic text-ink">a day-by-day journey</em>.
+                </span>
+              </li>
+              <li className="flex gap-4">
+                <span className="shrink-0 font-serif italic text-seal/60">3.</span>
+                <span className="italic text-ink/55">
+                  The cure for the common itinerary.
+                </span>
+              </li>
+            </ol>
+          </div>
+        </motion.section>
+
         <div className="mt-8 flex items-center gap-4 text-[9px] font-medium uppercase tracking-[0.45em] text-ink/35">
           <div className="h-px w-10 bg-ink/15" />
           Do your itinerary justice.
           <div className="h-px w-10 bg-ink/15" />
         </div>
 
-        {/* Mobile-only quick chips */}
-        <div className="scroll-x edge-fade-x mt-10 items-center gap-3 px-1 md:hidden">
+        {/* Mobile-only quick chips. The md:hidden must live on a plain
+            wrapper: .scroll-x is unlayered CSS whose display:flex beats
+            Tailwind's layered md:hidden on the same element. */}
+        <div className="md:hidden">
+        <div className="scroll-x edge-fade-x mt-10 items-center gap-3 px-1">
           {[
             { to: "/app" as const, label: "Browse Places" },
             { to: "/templates" as const, label: "Dossier Templates" },
@@ -270,6 +314,7 @@ function Landing() {
               {c.label}
             </Link>
           ))}
+        </div>
         </div>
       </main>
 

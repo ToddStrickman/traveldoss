@@ -40,6 +40,15 @@ const DEFAULT_LINES: HeadlineLine[] = [
   { text: "Doss", italic: true, accent: "." },
 ];
 
+/**
+ * How far the sand may spill past the layout box, as fractions of it.
+ * The canvas is enlarged by these insets (pointer-events: none, so content
+ * beneath — e.g. the CTA — stays clickable) and the engine feathers loose
+ * grains into the margin so the field never reads as a rectangle. Deepest
+ * below: the excavation's tailings drift under the content that follows.
+ */
+const BLEED = { x: 0.22, top: 0.12, bottom: 0.42 };
+
 export function SandHero({
   lines = DEFAULT_LINES,
   accessibleText = "Travel Doss.",
@@ -79,6 +88,7 @@ export function SandHero({
     let disposed = false;
     let rebuildTimer: ReturnType<typeof setTimeout> | undefined;
     let lastW = container.clientWidth;
+    let lastH = container.clientHeight;
     let ro: ResizeObserver | undefined;
 
     const onMove = (e: PointerEvent) => engine?.pointer(e.clientX, e.clientY, e.buttons > 0);
@@ -94,6 +104,7 @@ export function SandHero({
       await waitForSize(container);
       if (disposed) return;
       lastW = container.clientWidth;
+      lastH = container.clientHeight;
 
       const opts: SandEngineOptions = {
         lines,
@@ -104,6 +115,7 @@ export function SandHero({
         windIntensity,
         dustIntensity,
         revealDuration,
+        bleed: BLEED,
         lighting,
         persist,
         reducedMotion,
@@ -133,11 +145,16 @@ export function SandHero({
         const rect = entries[0]?.contentRect;
         if (!rect || !engine) return;
         engine.resize(rect.width, rect.height);
-        // Width shifts change the rasterized font size → re-sample, debounced.
-        if (Math.abs(rect.width - lastW) > 80) {
+        // Size shifts change the rasterized font size → re-sample, debounced.
+        // Height matters as much as width: the box width caps at 1100px on
+        // large screens, and the sampler is usually height-constrained — a
+        // stale height leaves the inscription small in a grown box (a big
+        // empty band under the text).
+        if (Math.abs(rect.width - lastW) > 80 || Math.abs(rect.height - lastH) > 60) {
           clearTimeout(rebuildTimer);
           rebuildTimer = setTimeout(() => {
             lastW = rect.width;
+            lastH = rect.height;
             void engine?.rebuild(rect.width, rect.height);
           }, 300);
         }
@@ -163,7 +180,7 @@ export function SandHero({
   return (
     <div
       ref={containerRef}
-      className={`relative select-none touch-pan-y ${className}`}
+      className={`relative cursor-crosshair select-none touch-pan-y ${className}`}
       aria-label={accessibleText}
       role="img"
     >
@@ -180,8 +197,21 @@ export function SandHero({
         <canvas
           ref={canvasRef}
           aria-hidden
-          className="absolute inset-0 h-full w-full cursor-crosshair"
-          style={{ opacity: mode === "pending" ? 0 : 1, transition: "opacity 0.9s ease" }}
+          // Oversized past the layout box so loose sand can bleed into the
+          // page; pointer-events-none keeps content underneath interactive
+          // (cursor digging listens on the container, not the canvas).
+          className="pointer-events-none absolute"
+          // Canvas is a replaced element: with only insets it would size to
+          // its intrinsic pixel buffer (dpr-scaled!), so width/height must be
+          // explicit for the stretch to hold on high-dpr screens.
+          style={{
+            left: `${-BLEED.x * 100}%`,
+            top: `${-BLEED.top * 100}%`,
+            width: `${(1 + 2 * BLEED.x) * 100}%`,
+            height: `${(1 + BLEED.top + BLEED.bottom) * 100}%`,
+            opacity: mode === "pending" ? 0 : 1,
+            transition: "opacity 0.9s ease",
+          }}
         />
       )}
     </div>
@@ -219,9 +249,17 @@ async function drawStaticGrains(
 
   const w = container.clientWidth;
   const h = container.clientHeight;
+  // The canvas is oversized past the container (bleed); draw into its full
+  // box but keep the inscription centered on the container's center.
+  const cw = canvas.clientWidth || w;
+  const ch = canvas.clientHeight || h;
+  const crect = container.getBoundingClientRect();
+  const krect = canvas.getBoundingClientRect();
+  const cx = crect.left - krect.left + w / 2;
+  const cy = crect.top - krect.top + h / 2;
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  canvas.width = w * dpr;
-  canvas.height = h * dpr;
+  canvas.width = cw * dpr;
+  canvas.height = ch * dpr;
   const ctx = canvas.getContext("2d");
   if (!ctx) return false;
 
@@ -241,7 +279,7 @@ async function drawStaticGrains(
     ctx.globalAlpha = 0.55 + rand() * 0.45;
     const r = 0.8 + rand() * 0.8;
     ctx.beginPath();
-    ctx.arc(w / 2 + p.x, h / 2 - p.y, r, 0, Math.PI * 2);
+    ctx.arc(cx + p.x, cy - p.y, r, 0, Math.PI * 2);
     ctx.fill();
   }
   return true;

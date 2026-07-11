@@ -20,7 +20,6 @@ import { rollStory, LIGHTING, type Story, type LightingPreset } from "./story";
 import {
   ensureFontLoaded,
   sampleHeadline,
-  sampleGlyphs,
   type HeadlineLine,
   type SampledPoint,
 } from "./textSampler";
@@ -39,6 +38,13 @@ export interface SandEngineOptions {
   dustIntensity: number;
   /** Override the story's reveal duration, seconds. */
   revealDuration?: number;
+  /**
+   * Extra visible margin past the layout box, as fractions of it. The canvas
+   * element must be enlarged by the same fractions (see SandHero). Loose sand
+   * feathers into this margin so the field never reads as a rectangle; the
+   * inscription itself stays sized and centered to the layout box.
+   */
+  bleed?: { x?: number; top?: number; bottom?: number };
   lighting?: LightingPreset;
   persist: boolean;
   reducedMotion: boolean;
@@ -207,25 +213,48 @@ export class SandEngine {
 
   // ── Setup ────────────────────────────────────────────────────────────
 
+  /**
+   * Visible world extents: the layout box plus the bleed margins.
+   * x is symmetric; top/bottom are each the distance from the world origin
+   * (the layout box's center, where the inscription is anchored) to that edge.
+   */
+  private view(): { vw: number; vh: number; top: number; bottom: number } {
+    const b = this.opts.bleed;
+    const bx = (b?.x ?? 0) * this.width;
+    const bt = (b?.top ?? 0) * this.height;
+    const bb = (b?.bottom ?? 0) * this.height;
+    return {
+      vw: this.width + 2 * bx,
+      vh: this.height + bt + bb,
+      top: this.height / 2 + bt,
+      bottom: this.height / 2 + bb,
+    };
+  }
+
   private applyViewport(): void {
-    const { width: w, height: h } = this;
+    const v = this.view();
     const dpr = Math.min(window.devicePixelRatio || 1, this.quality === 2 ? 2 : 1.25);
     this.renderer.setPixelRatio(dpr);
-    this.renderer.setSize(w, h, false);
-    this.camera.left = -w / 2;
-    this.camera.right = w / 2;
-    this.camera.top = h / 2;
-    this.camera.bottom = -h / 2;
+    this.renderer.setSize(v.vw, v.vh, false);
+    this.camera.left = -v.vw / 2;
+    this.camera.right = v.vw / 2;
+    this.camera.top = v.top;
+    this.camera.bottom = -v.bottom;
     this.camera.updateProjectionMatrix();
     if (this.grainMat) {
       this.grainMat.uniforms.uPixelRatio.value = dpr;
-      (this.grainMat.uniforms.uHalfView.value as THREE.Vector2).set(w / 2, h / 2);
+      (this.grainMat.uniforms.uViewExt.value as THREE.Vector3).set(v.vw / 2, v.top, v.bottom);
     }
     if (this.dustMat) {
       this.dustMat.uniforms.uPixelRatio.value = dpr;
-      (this.dustMat.uniforms.uHalfView.value as THREE.Vector2).set(w / 2, h / 2);
+      (this.dustMat.uniforms.uViewExt.value as THREE.Vector3).set(v.vw / 2, v.top, v.bottom);
     }
-    if (this.shaft) this.shaft.scale.set(w, h, 1);
+    if (this.shaft) {
+      this.shaft.scale.set(v.vw, v.vh, 1);
+      // Keep the quad centered on the camera (not the world origin) so its
+      // uv-edge fade still hugs the canvas when the bleed is asymmetric.
+      this.shaft.position.y = (v.top - v.bottom) / 2;
+    }
   }
 
   private buildParticles(): void {
@@ -241,10 +270,11 @@ export class SandEngine {
       maxPoints: Math.floor(particleCount * 0.62),
       rand: this.rand,
     });
-    const glyphs = sampleGlyphs(
-      sampled.width, sampled.height,
-      Math.floor(particleCount * 0.04), this.rand,
-    );
+    // Hidden chisel-mark glyphs are retired (owner call, 2026-07-10): even
+    // gated behind deep excavation they read as stray broken lines, not
+    // ancient carving. textSampler's sampleGlyphs stays available should
+    // they ever return.
+    const glyphs: SampledPoint[] = [];
     const nOver = Math.floor(particleCount * 0.34);
 
     this.nLetters = sampled.points.length;
@@ -321,16 +351,26 @@ export class SandEngine {
         P.hx[i] = src.x + this.gauss() * sigma;
         P.hy[i] = src.y + this.gauss() * sigma * 0.7;
       } else {
+        // Uniform across the field — the original look — but a fraction of
+        // the drift smears past it on a gaussian tail (heavier below), so
+        // the field's boundary feathers into the page instead of cutting.
         P.hx[i] = this.gridOrigin.x + this.rand() * this.gridOrigin.w;
         P.hy[i] = this.gridOrigin.y + this.rand() * this.gridOrigin.h;
+        if (this.rand() < 0.5) {
+          P.hx[i] += this.gauss() * gw * 0.24;
+          P.hy[i] += this.gauss() * gh * 0.1 - Math.abs(this.gauss()) * gh * 0.3;
+        }
       }
       P.px[i] = P.hx[i]; P.py[i] = P.hy[i];
       const layerRoll = this.rand();
       P.layer[i] = layerRoll < 0.55 ? 0 : layerRoll < 0.9 ? 1 : 2;
       P.zone[i] = 0.5 + 0.5 * this.noise.fbm(P.hx[i] * 0.006 + 31, P.hy[i] * 0.006, 2);
-      const cell = this.cellOf(P.hx[i], P.hy[i]);
+      // Nearest cell, clamped: spill grains past the field still belong to
+      // the excavation at its edge — same dig/lift lifecycle as every other
+      // grain, so interaction never exposes the grid's rectangle.
+      const cell = this.cellOfClamped(P.hx[i], P.hy[i]);
       P.cell[i] = cell;
-      if (cell >= 0) this.cellBuckets[cell].push(i);
+      this.cellBuckets[cell].push(i);
       // Each grain lifts at a different cleanliness → granular, uneven digging.
       P.burialGate[i] = 0.15 + this.rand() * 0.7;
 
@@ -371,7 +411,7 @@ export class SandEngine {
         uTint: { value: new THREE.Vector3(...light.tint) },
         uSunDir: { value: new THREE.Vector2(...light.sunDir).normalize() },
         uAmbient: { value: light.ambient },
-        uHalfView: { value: new THREE.Vector2(this.width / 2, this.height / 2) },
+        uViewExt: { value: new THREE.Vector3(this.width / 2, this.height / 2, this.height / 2) },
       },
       vertexShader: GRAIN_VERT,
       fragmentShader: GRAIN_FRAG,
@@ -404,7 +444,7 @@ export class SandEngine {
       uniforms: {
         uPixelRatio: { value: 1 },
         uTint: { value: new THREE.Vector3(...light.tint) },
-        uHalfView: { value: new THREE.Vector2(this.width / 2, this.height / 2) },
+        uViewExt: { value: new THREE.Vector3(this.width / 2, this.height / 2, this.height / 2) },
       },
       vertexShader: DUST_VERT,
       fragmentShader: DUST_FRAG,
@@ -440,7 +480,9 @@ export class SandEngine {
     });
     this.shaft = new THREE.Mesh(geo, mat);
     this.shaft.position.z = -1;
-    this.shaft.scale.set(this.width, this.height, 1);
+    const v = this.view();
+    this.shaft.scale.set(v.vw, v.vh, 1);
+    this.shaft.position.y = (v.top - v.bottom) / 2;
     this.scene.add(this.shaft);
   }
 
@@ -479,8 +521,11 @@ export class SandEngine {
 
   pointer(clientX: number, clientY: number, down: boolean): void {
     const rect = this.canvas.getBoundingClientRect();
-    const x = clientX - rect.left - rect.width / 2;
-    const y = -(clientY - rect.top - rect.height / 2);
+    // With an asymmetric bleed the world origin is not the canvas center:
+    // map through the view extents instead.
+    const v = this.view();
+    const x = (clientX - rect.left) * (v.vw / rect.width) - v.vw / 2;
+    const y = v.top - (clientY - rect.top) * (v.vh / rect.height);
     this.ptr.active = true;
     this.ptr.down = down;
     this.ptr.x = x;
@@ -963,6 +1008,14 @@ export class SandEngine {
     return cy * GRID_COLS + cx;
   }
 
+  /** Nearest cell, clamped into the grid — for grains homed past the field. */
+  private cellOfClamped(x: number, y: number): number {
+    const g = this.gridOrigin;
+    const cx = Math.min(GRID_COLS - 1, Math.max(0, Math.floor(((x - g.x) / g.w) * GRID_COLS)));
+    const cy = Math.min(this.gridRows - 1, Math.max(0, Math.floor(((y - g.y) / g.h) * this.gridRows)));
+    return cy * GRID_COLS + cx;
+  }
+
   private forEachCellInRadius(
     x: number, y: number, radius: number,
     fn: (idx: number, falloff: number) => void,
@@ -1021,7 +1074,8 @@ void main() {
 
 const GRAIN_FRAG = /* glsl */ `
 uniform vec3 uTint;
-uniform vec2 uSunDir, uHalfView;
+uniform vec2 uSunDir;
+uniform vec3 uViewExt; // x: half width, y: top extent, z: bottom extent
 uniform float uAmbient, uGlow, uTime;
 varying float vSeed, vKind, vAccent, vEdge, vReveal, vSparkle;
 varying vec2 vWorld;
@@ -1076,16 +1130,21 @@ void main() {
     col = mix(col, vec3(0.35, 0.36, 0.42), 0.38);
     alpha *= vReveal * 0.85;
   } else {
-    // Hidden glyphs: only whisper into view after deep excavation.
-    float presence = smoothstep(0.9, 0.99, vReveal);
+    // Hidden glyphs: only whisper into view after deep excavation. The gate
+    // sits above anything the opening reveal or ambient gusts can reach
+    // (~0.9 + gusts), so they surface for deliberate diggers only — ambient
+    // weather must never scatter "stray marks" across the field.
+    float presence = smoothstep(0.965, 0.995, vReveal);
     alpha *= presence * 0.3;
     col = mix(col, vec3(0.92, 0.80, 0.55), 0.5);
   }
 
   // Dissolve before the canvas boundary so scattered grains never hard-clip
   // against the page — the hero must stay contiguous with the site around it.
-  alpha *= smoothstep(uHalfView.x, uHalfView.x - 48.0, abs(vWorld.x))
-         * smoothstep(uHalfView.y, uHalfView.y - 32.0, abs(vWorld.y));
+  // The vertical extents differ when the bleed is asymmetric.
+  float yExt = mix(uViewExt.z, uViewExt.y, step(0.0, vWorld.y));
+  alpha *= smoothstep(uViewExt.x, uViewExt.x - 48.0, abs(vWorld.x))
+         * smoothstep(yExt, yExt - 32.0, abs(vWorld.y));
 
   gl_FragColor = vec4(col * shade * uTint, alpha);
 }
@@ -1107,15 +1166,16 @@ void main() {
 
 const DUST_FRAG = /* glsl */ `
 uniform vec3 uTint;
-uniform vec2 uHalfView;
+uniform vec3 uViewExt; // x: half width, y: top extent, z: bottom extent
 varying float vLife, vSeed;
 varying vec2 vWorld;
 void main() {
   if (vLife <= 0.0) discard;
   float d = length(gl_PointCoord - 0.5);
   float a = smoothstep(0.5, 0.0, d) * vLife * 0.16;
-  a *= smoothstep(uHalfView.x, uHalfView.x - 48.0, abs(vWorld.x))
-     * smoothstep(uHalfView.y, uHalfView.y - 32.0, abs(vWorld.y));
+  float yExt = mix(uViewExt.z, uViewExt.y, step(0.0, vWorld.y));
+  a *= smoothstep(uViewExt.x, uViewExt.x - 48.0, abs(vWorld.x))
+     * smoothstep(yExt, yExt - 32.0, abs(vWorld.y));
   vec3 col = mix(vec3(0.85, 0.76, 0.58), vec3(0.95, 0.9, 0.8), vSeed);
   gl_FragColor = vec4(col * uTint, a);
 }
