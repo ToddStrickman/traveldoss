@@ -4,6 +4,7 @@ import { z, ZodError, type ZodIssue } from "zod";
 import type { Block } from "@/lib/skins/types";
 import { parseDropInWithMeta, stripEmoji } from "@/lib/itinerary/parse";
 import { normalizeParsedShape } from "@/lib/itinerary/normalize-ai";
+import { isCreditsMessage, isRateLimitMessage } from "@/lib/itinerary/ai-errors";
 import type {
   DebugAttempt,
   DebugReport,
@@ -226,7 +227,7 @@ export const parseItineraryAi = createServerFn({ method: "POST" })
       parsed = await parseBlocksWithAi(gateway, cleanText, data.source, attempts);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      if (/402|credit/i.test(msg)) {
+      if (isCreditsMessage(msg)) {
         throw new Error("AI credits exhausted. Add credits in Workspace → Usage.");
       }
       if (isRateLimitMessage(msg)) {
@@ -351,7 +352,7 @@ async function parseBlocksWithAi(
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      if (/402|credit/i.test(msg) || isRateLimitMessage(msg)) throw err;
+      if (isCreditsMessage(msg) || isRateLimitMessage(msg)) throw err;
       console.error(`[parse-ai] attempt ${attempt}/${MAX_ATTEMPTS} threw:`, err);
       if (lastRaw) {
         try {
@@ -404,10 +405,6 @@ function extractJsonObject(text: string): string {
   const end = body.lastIndexOf("}");
   if (start === -1 || end === -1 || end <= start) return body.trim();
   return body.slice(start, end + 1);
-}
-
-function isRateLimitMessage(message: string): boolean {
-  return /\b429\b|rate limit|rate-limit|too many requests/i.test(message);
 }
 
 /* ─── schema-mismatch diagnostics ─────────────────────────────────── */
