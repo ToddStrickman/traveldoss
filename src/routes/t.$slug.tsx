@@ -3,7 +3,7 @@ import { z } from "zod";
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { getDossierBySlug } from "@/lib/templates.functions";
-import { updateDossier } from "@/lib/trips.functions";
+import { isTripOwner, updateDossier } from "@/lib/trips.functions";
 import { FALLBACK_SKIN, getSkin } from "@/lib/skins/registry";
 import type { Block, SkinView, TripView } from "@/lib/skins/types";
 import { supabase } from "@/integrations/supabase/client";
@@ -177,26 +177,32 @@ function DossierPage() {
   const [gmailOpen, setGmailOpen] = useState(false);
   const [justMinted, setJustMinted] = useState(false);
   const save = useServerFn(updateDossier);
+  const checkOwner = useServerFn(isTripOwner);
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    const tripOwner = (trip as { user_id?: string }).user_id;
-    // Fast path: read the locally cached session synchronously so
-    // canEdit flips to true on the very first client render for the
-    // owner — otherwise scaffold plus-signs stay dead until the
-    // async getUser round-trip resolves and the user's early clicks
-    // silently drop.
+    // The public payload deliberately carries no user_id (it used to leak
+    // the owner's UUID to every visitor) — ownership is asked of the
+    // server, RLS-scoped. Local session check first so anonymous visitors
+    // never fire an authed call that would only 401.
+    let cancelled = false;
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session?.user && tripOwner && tripOwner === data.session.user.id) {
-        setIsOwner(true);
+      if (!data.session) {
+        if (!cancelled) setIsOwner(false);
+        return;
       }
+      checkOwner({ data: { slug: trip.slug } })
+        .then((r) => {
+          if (!cancelled) setIsOwner(!!r.isOwner);
+        })
+        .catch(() => {
+          if (!cancelled) setIsOwner(false);
+        });
     });
-    // Authoritative confirmation.
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user && tripOwner && tripOwner === data.user.id) setIsOwner(true);
-      else setIsOwner(false);
-    });
-  }, [trip]);
+    return () => {
+      cancelled = true;
+    };
+  }, [trip.slug, checkOwner]);
 
   // Re-open the mint modal after the login round-trip. Users who click
   // "Compose Dossier" while signed out are bounced through /login with
