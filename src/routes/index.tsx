@@ -17,6 +17,7 @@ import { createTripFromIngestion } from "@/lib/trips.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { SITE_URL } from "@/lib/site";
+import { clearPendingComposer, peekPendingComposer } from "@/lib/mint-pending";
 
 export const Route = createFileRoute("/")({
   component: Landing,
@@ -62,11 +63,33 @@ function Landing() {
 
   useEffect(() => {
     const pendingTemplateId = window.sessionStorage.getItem("td_pending_template");
-    if (!pendingTemplateId) return;
+
+    // A composer draft (paste/generate text stashed by the mint modal's
+    // auth gate) reopens the modal; the modal hydrates and consumes it.
+    // The blocks-resume path below wins when both somehow exist.
+    if (!pendingTemplateId) {
+      const draft = peekPendingComposer();
+      if (!draft) return;
+      const draftSkin = SKINS.find((item) => item.meta.id === draft.templateId);
+      if (!draftSkin) {
+        clearPendingComposer();
+        return;
+      }
+      setPicked(draftSkin);
+      setModalOpen(true);
+      return;
+    }
 
     const skin = SKINS.find((item) => item.meta.id === pendingTemplateId);
-    if (!skin) {
+    const clearPending = () => {
       window.sessionStorage.removeItem("td_pending_template");
+      window.sessionStorage.removeItem("td_pending_blocks");
+      window.sessionStorage.removeItem("td_pending_step");
+      window.sessionStorage.removeItem("td_pending_destination");
+      window.sessionStorage.removeItem("td_pending_dates");
+    };
+    if (!skin) {
+      clearPending();
       return;
     }
 
@@ -74,11 +97,6 @@ function Landing() {
     const pendingStep = window.sessionStorage.getItem("td_pending_step") ?? "Reading your itinerary…";
     const pendingDestination = window.sessionStorage.getItem("td_pending_destination");
     const pendingDatesRaw = window.sessionStorage.getItem("td_pending_dates");
-    window.sessionStorage.removeItem("td_pending_template");
-    window.sessionStorage.removeItem("td_pending_blocks");
-    window.sessionStorage.removeItem("td_pending_step");
-    window.sessionStorage.removeItem("td_pending_destination");
-    window.sessionStorage.removeItem("td_pending_dates");
     let pendingDates: { startDate: string | null; endDate: string | null } | null = null;
     try {
       pendingDates = pendingDatesRaw ? JSON.parse(pendingDatesRaw) : null;
@@ -87,6 +105,7 @@ function Landing() {
     }
 
     if (!pendingBlocks) {
+      clearPending();
       setPicked(skin);
       setModalOpen(true);
       return;
@@ -95,6 +114,9 @@ function Landing() {
     const resume = async () => {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) {
+        // Still signed out (they backed out of login): keep the pending
+        // payload for a later authed visit — clearing here used to discard
+        // the parsed blocks entirely — and show them where they were.
         setPicked(skin);
         setModalOpen(true);
         return;
@@ -110,8 +132,10 @@ function Landing() {
             ...(pendingDates?.endDate ? { endDate: pendingDates.endDate } : {}),
           },
         });
+        clearPending();
         setPendingSlug(r.slug);
       } catch (e) {
+        // Keep the payload: the next visit retries instead of losing work.
         console.error(e);
         toast.error("Couldn't create your dossier", { description: String(e) });
         setGenSteps(null);
