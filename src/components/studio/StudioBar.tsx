@@ -14,6 +14,7 @@ export function StudioBar({
   templateId,
   saving,
   savedAt,
+  saveError = false,
   onTemplateChange,
   onMint,
   mintLabel,
@@ -31,6 +32,8 @@ export function StudioBar({
   templateId: string;
   saving: boolean;
   savedAt: string | null;
+  /** True while the last autosave failed and edits are pending retry. */
+  saveError?: boolean;
   onTemplateChange: (id: string) => void;
   onMint?: () => void;
   mintLabel?: string;
@@ -208,11 +211,31 @@ export function StudioBar({
           </span>
         </button>
       ) : (
-        <span className="hidden md:inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.3em] text-ink-soft">
-          <span className="hidden md:inline">
-            {saving ? "Saving…" : savedAt ? `Saved · ${new Date(savedAt).toLocaleTimeString()}` : "Live"}
+        // Save status is trust-critical: visible on EVERY viewport (the
+        // mobile edit banner promises "auto-saves" — the bar must be able
+        // to contradict it when saving fails).
+        <span
+          className={cn(
+            "inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.3em]",
+            saveError ? "text-red-400" : "text-ink-soft",
+          )}
+          role={saveError ? "alert" : undefined}
+        >
+          <span>
+            {saveError
+              ? "Not saved — retrying"
+              : saving
+                ? "Saving…"
+                : savedAt
+                  ? `Saved · ${new Date(savedAt).toLocaleTimeString()}`
+                  : "Live"}
           </span>
-          <span className="inline-block h-1.5 w-1.5 rounded-full bg-seal align-middle" />
+          <span
+            className={cn(
+              "inline-block h-1.5 w-1.5 rounded-full align-middle",
+              saveError ? "animate-pulse bg-red-400" : "bg-seal",
+            )}
+          />
         </span>
       )}
     </motion.div>

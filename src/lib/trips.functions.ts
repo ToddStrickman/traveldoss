@@ -132,11 +132,14 @@ export const updateDossier = createServerFn({ method: "POST" })
       // Merge into the existing content blob so we don't clobber sibling
       // keys (blocks vs meta). Read-then-write is racy but acceptable for
       // the autosave cadence here.
-      const { data: existing } = await supabase
+      const { data: existing, error: readError } = await supabase
         .from("trips")
         .select("content, destination")
         .eq("slug", data.slug)
         .single();
+      // A failed read must fail the save: merging into `{}` would silently
+      // drop the sibling keys (skin/meta) we exist to preserve.
+      if (readError) throw new Error(`Save failed reading the trip: ${readError.message}`);
       const prev = (existing?.content ?? {}) as {
         blocks?: unknown;
         skin?: string;
@@ -167,7 +170,18 @@ export const updateDossier = createServerFn({ method: "POST" })
     }
     if (Object.keys(patch).length === 0) return { ok: true };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await supabase.from("trips").update(patch as any).eq("slug", data.slug);
+    const { data: updated, error } = await supabase
+      .from("trips")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .update(patch as any)
+      .eq("slug", data.slug)
+      .select("id");
     if (error) throw new Error(error.message);
+    // RLS filters rows it rejects instead of erroring: an update that
+    // matched zero rows was REJECTED (wrong owner / unknown slug), not
+    // saved. Returning ok here is how phantom "Saved" states happen.
+    if (!updated?.length) {
+      throw new Error("Save rejected — this account can't edit this trip.");
+    }
     return { ok: true, savedAt: new Date().toISOString() };
   });
