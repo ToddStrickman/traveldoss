@@ -28,7 +28,7 @@ export function EditableHero({
   className?: string;
   compact?: boolean;
 }) {
-  const { editing, onMetaChange, onTripDatesChange } = useEditing();
+  const { editing, onMetaChange, onTripDatesChange, onTripChange } = useEditing();
   const meta = trip.meta ?? {};
   const dateValue = { start: trip.start_date ?? "", end: trip.end_date ?? "" };
   return (
@@ -38,11 +38,33 @@ export function EditableHero({
           as="span"
           value={trip.destination}
           placeholder="Trip title"
-          onChange={() => {}}
+          ariaLabel="Trip title"
+          onChange={(v) => {
+            const next = v.trim();
+            if (!next) {
+              // The server (and the URL slug's dignity) require a title;
+              // EditableText restores the previous text on the next sync.
+              toast.message("A trip needs a title", {
+                description: "We kept the previous one.",
+              });
+              return;
+            }
+            onTripChange("destination", next);
+          }}
         />
         <span className="tds-dot">.</span>
       </h1>
-      {trip.subtitle ? <p className="tds-dek">{trip.subtitle}</p> : null}
+      {editing || trip.subtitle ? (
+        <p className="tds-dek">
+          <EditableText
+            as="span"
+            value={trip.subtitle ?? ""}
+            placeholder="Add a subtitle"
+            ariaLabel="Trip subtitle"
+            onChange={(v) => onTripChange("subtitle", v.trim())}
+          />
+        </p>
+      ) : null}
       <div className="tds-meta-rail" data-print="hide">
         <MetaChip
           label="Dates"
