@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import { useCallback, useMemo, useState, type CSSProperties } from "react";
 import type { Block, SkinTokens, SkinView, TripView } from "../types";
 import "./skin.css";
 import { VerticalView } from "./views/VerticalView";
@@ -6,7 +6,8 @@ import { HorizontalView } from "./views/HorizontalView";
 import { GridView } from "./views/GridView";
 import { useEditing } from "./Editable";
 import { SlotSelectionProvider, useInertRender } from "./views/parts";
-import { DossierMapButton } from "@/components/map/DossierMap";
+import { DossierMapOverlay, indexDayLookup } from "@/components/map/DossierMap";
+import { DayMapContext, type DayMapApi } from "./day-map-context";
 import { GalleryOverlayButton } from "./gallery/CoverflowGallery";
 
 export type SkinFrameProps = {
@@ -27,6 +28,38 @@ export function SkinFrame({ trip, blocks, tokens, view = "vertical" }: SkinFrame
   // Thumbnails (gallery tiles, landing rail) render inert — no floating chrome.
   const inert = useInertRender();
 
+  // The Live Map, owned once at the frame. Day headers open it focused on
+  // their day (owner correction: the map is embedded in each day's header,
+  // not a hovering button).
+  const [mapState, setMapState] = useState<{ open: boolean; initialDay?: number }>({
+    open: false,
+  });
+  const openMap = useCallback((day?: number) => {
+    setMapState({ open: true, initialDay: day });
+  }, []);
+  const locatedDays = useMemo(() => {
+    const dayOf = indexDayLookup(blocks);
+    const set = new Set<number>();
+    blocks.forEach((b, index) => {
+      if (b.kind !== "place" || b.lat == null || b.lng == null) return;
+      const day = dayOf.get(index);
+      if (day != null) set.add(day);
+    });
+    return set;
+  }, [blocks]);
+  const hasAnyCoords = useMemo(
+    () => blocks.some((b) => b.kind === "place" && b.lat != null && b.lng != null),
+    [blocks],
+  );
+  const dayMapApi = useMemo<DayMapApi>(
+    () => ({
+      openMap: inert ? () => {} : openMap,
+      locatedDays: inert ? new Set<number>() : locatedDays,
+      hasAnyCoords: inert ? false : hasAnyCoords,
+    }),
+    [inert, openMap, locatedDays, hasAnyCoords],
+  );
+
   const vars = {
     "--tds-bg": tokens.bg,
     "--tds-ink": tokens.ink,
@@ -39,6 +72,7 @@ export function SkinFrame({ trip, blocks, tokens, view = "vertical" }: SkinFrame
 
   return (
     <SlotSelectionProvider>
+    <DayMapContext.Provider value={dayMapApi}>
     <div className="tds" data-view={view} data-editing={editing ? "true" : undefined} style={vars}>
       {/* React 19 hoists this <link> into <head> and dedupes it. */}
       {tokens.fontUrl ? <link rel="stylesheet" href={tokens.fontUrl} /> : null}
@@ -61,13 +95,22 @@ export function SkinFrame({ trip, blocks, tokens, view = "vertical" }: SkinFrame
         </span>
       </footer>
 
-      {/* The Live Map — every template, one pin button (landing promise). */}
-      {!inert ? <DossierMapButton trip={trip} blocks={blocks} tokens={tokens} /> : null}
+      {/* The Live Map overlay — one instance, opened from any day header. */}
+      {!inert && mapState.open ? (
+        <DossierMapOverlay
+          trip={trip}
+          blocks={blocks}
+          tokens={tokens}
+          initialDay={mapState.initialDay}
+          onClose={() => setMapState({ open: false })}
+        />
+      ) : null}
 
       {/* Rainbow gallery icon — the dossier's photos are opt-in via the
           fullscreen overlay in every view; nothing bulky inline. */}
       {!inert ? <GalleryOverlayButton trip={trip} blocks={blocks} /> : null}
     </div>
+    </DayMapContext.Provider>
     </SlotSelectionProvider>
   );
 }

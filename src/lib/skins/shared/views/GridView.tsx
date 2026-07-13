@@ -157,11 +157,17 @@ export function GridView({ trip, blocks }: { trip: TripView; blocks: Block[] }) 
 
       <ActivityDndContext blocks={blocks}>
       {it.days.map((d, dPos) => (
-        <section key={d.dayIndex} className="tds-grid-section" data-block="day">
+        <section
+          key={d.dayIndex}
+          className="tds-grid-section"
+          data-block="day"
+          data-collapsed={collapsed.has(`day:${d.dayIndex}`) || undefined}
+        >
           <EditableDayHeader
             d={d}
             className="tds-grid-day-head"
-            showCollapse={false}
+            collapsed={collapsed.has(`day:${d.dayIndex}`)}
+            onToggleCollapsed={() => togglePart(`day:${d.dayIndex}`)}
             onMoveDay={(dir) => moveDay(d.dayIndex, dir)}
             canMoveUp={dPos > 0}
             canMoveDown={dPos < it.days.length - 1}
