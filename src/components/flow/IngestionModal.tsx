@@ -346,11 +346,16 @@ export function IngestionModal({
       );
     } catch (err) {
       console.error("[ai-parse] failed, falling back to local parser", err);
-      toast.message("Using offline parser", {
+      toast.warning("AI parser unavailable — used offline parser", {
         description:
           err instanceof Error
             ? err.message
             : "AI enrichment unavailable — we'll still structure your text.",
+        duration: 8000,
+        action: {
+          label: "Retry AI",
+          onClick: () => void submitParse(),
+        },
       });
       const r = parseDropInWithMeta(
         trimmed,
@@ -365,6 +370,11 @@ export function IngestionModal({
       toast.error("We couldn't read structure out of that. Try Day 1, Day 2…");
       return;
     }
+    // Make success obvious: confirm what we pulled out so the user doesn't
+    // have to guess whether the AI ran or the local fallback did.
+    toast.success("Parsed your itinerary", {
+      description: [destination, summarizeBlocks(blocks)].filter(Boolean).join(" — "),
+    });
     // Show what we extracted BEFORE it becomes the dossier. The ReviewStage
     // (reorder, edit, delete, confidence flags) was fully built but sat
     // unreachable for months while parses replaced dossiers sight unseen —
