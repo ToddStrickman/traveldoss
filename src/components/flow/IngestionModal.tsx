@@ -98,6 +98,10 @@ import {
   peekPendingComposer,
   savePendingComposer,
 } from "@/lib/mint-pending";
+import {
+  looksLikeTranscript,
+  stripTranscriptCues,
+} from "@/lib/itinerary/transcript-clean";
 
 export function IngestionModal({
   open,
@@ -402,7 +406,9 @@ export function IngestionModal({
       onGenerate(
         parsed.blocks,
         "Drafting your dossier…",
-        parsed.destination ?? genDestination.trim() ?? null,
+        // `??` kept empty strings alive ("" is not nullish) — downstream
+        // guards only masked it by luck.
+        parsed.destination || genDestination.trim() || null,
         (gen as { resolvedDates?: { startDate: string | null; endDate: string | null } })
           .resolvedDates,
       );
@@ -448,30 +454,59 @@ export function IngestionModal({
     onOpenChange(v);
   }
 
-  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0];
-    if (!f) return;
+  /**
+   * Single intake for picked AND dropped files. Fixes three silent-failure
+   * paths from the audit: binary files (PDF/DOCX/images) were read with
+   * f.text() and fed to the parser as mojibake; files attached on the
+   * Generate tab were written into the paste buffer that tab never shows
+   * (the "Loaded" toast lied); and .vtt/.srt were advertised but their cue
+   * machinery was never stripped.
+   */
+  async function ingestFile(f: File) {
     if (f.type.startsWith("audio/")) {
-      toast.message("Audio transcription is coming soon.", { description: "For now, paste a transcript." });
+      toast.message("Audio transcription is coming soon.", {
+        description: "For now, paste a transcript.",
+      });
       return;
     }
-    const t = await f.text();
+    const isTextLike = /\.(txt|vtt|srt|md|text)$/i.test(f.name) || f.type.startsWith("text/");
+    if (!isTextLike) {
+      toast.error(`Can't read ${f.name} yet`, {
+        description:
+          "PDF, DOCX and email files are coming soon. For now, paste the text or drop a .txt / .vtt / .srt file.",
+      });
+      return;
+    }
+    const raw = await f.text();
+    const t = looksLikeTranscript(raw, f.name) ? stripTranscriptCues(raw) : raw;
+    if (!t.trim()) {
+      toast.error(`${f.name} came out empty`, {
+        description: "Nothing readable after cleaning — paste the text instead.",
+      });
+      return;
+    }
     setText(t);
+    if (tab === "generate") {
+      // The Generate textarea is bound to the prompt, not the paste buffer —
+      // switch to the tab that actually parses the file.
+      setTab("transcript");
+      toast.success(`Loaded ${f.name}`, {
+        description: "Switched to Upload so we parse the file directly.",
+      });
+      return;
+    }
     toast.success(`Loaded ${f.name}`);
+  }
+
+  function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (f) void ingestFile(f);
   }
 
   function onDrop(e: React.DragEvent) {
     e.preventDefault();
     const f = e.dataTransfer.files?.[0];
-    if (!f) return;
-    if (f.type.startsWith("audio/")) {
-      toast.message("Audio transcription is coming soon.");
-      return;
-    }
-    f.text().then((t) => {
-      setText(t);
-      toast.success(`Loaded ${f.name}`);
-    });
+    if (f) void ingestFile(f);
   }
 
   return (
