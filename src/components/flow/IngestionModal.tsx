@@ -77,6 +77,24 @@ function offerDebugReport(report: DebugReport | undefined, label: string) {
   });
 }
 
+/** Compact human summary of what came out of a parse, so a success toast
+ *  can actually confirm "yes, we structured your text" in one glance. */
+function summarizeBlocks(blocks: Block[]): string {
+  let days = 0;
+  let activities = 0;
+  let flights = 0;
+  for (const b of blocks) {
+    if (b.kind === "day") days++;
+    else if (b.kind === "place") activities++;
+    else if (b.kind === "flight") flights++;
+  }
+  const parts: string[] = [];
+  if (days) parts.push(`${days} day${days === 1 ? "" : "s"}`);
+  if (activities) parts.push(`${activities} stop${activities === 1 ? "" : "s"}`);
+  if (flights) parts.push(`${flights} flight${flights === 1 ? "" : "s"}`);
+  return parts.join(" · ") || `${blocks.length} block${blocks.length === 1 ? "" : "s"}`;
+}
+
 type Tab = "paste" | "transcript" | "generate";
 
 const TABS: {
