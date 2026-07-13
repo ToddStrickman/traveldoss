@@ -354,7 +354,7 @@ export function IngestionModal({
         duration: 8000,
         action: {
           label: "Retry AI",
-          onClick: () => void submitParse(),
+          onClick: () => void submit(),
         },
       });
       const r = parseDropInWithMeta(
