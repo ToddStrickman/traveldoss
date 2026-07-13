@@ -36,6 +36,17 @@ export function HorizontalView({ trip, blocks }: { trip: TripView; blocks: Block
   // Mobile pager: which day column is centered right now.
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const [activeDay, setActiveDay] = useState(0);
+  // Per-day truncation: a collapsed board column shrinks to its header
+  // (which keeps the map opener and the toggle for re-expanding).
+  const [collapsedDays, setCollapsedDays] = useState<Set<number>>(() => new Set());
+  const toggleDayCollapsed = useCallback((dayIndex: number) => {
+    setCollapsedDays((prev) => {
+      const next = new Set(prev);
+      if (next.has(dayIndex)) next.delete(dayIndex);
+      else next.add(dayIndex);
+      return next;
+    });
+  }, []);
   const onScroll = useCallback(() => {
     const el = scrollerRef.current;
     if (!el) return;
@@ -92,11 +103,18 @@ export function HorizontalView({ trip, blocks }: { trip: TripView; blocks: Block
       <ActivityDndContext blocks={blocks}>
         <div className="tds-board" role="list" ref={scrollerRef}>
           {it.days.map((d, dPos) => (
-            <section key={d.dayIndex} className="tds-board-col" role="listitem" data-block="day">
+            <section
+              key={d.dayIndex}
+              className="tds-board-col"
+              role="listitem"
+              data-block="day"
+              data-collapsed={collapsedDays.has(d.dayIndex) || undefined}
+            >
               <EditableDayHeader
                 d={d}
                 className="tds-board-col-head"
-                showCollapse={false}
+                collapsed={collapsedDays.has(d.dayIndex)}
+                onToggleCollapsed={() => toggleDayCollapsed(d.dayIndex)}
                 onMoveDay={(dir) => moveDay(d.dayIndex, dir)}
                 canMoveUp={dPos > 0}
                 canMoveDown={dPos < it.days.length - 1}

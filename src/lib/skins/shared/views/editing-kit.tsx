@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
-import { Plus, Sun, ChevronUp, ChevronDown, Trash2 } from "lucide-react";
+import { Plus, Sun, ChevronUp, ChevronDown, Trash2, MapPin } from "lucide-react";
+import { useDayMap } from "../day-map-context";
 import { toast } from "sonner";
 import type { Block, TripView, TripMeta } from "../../types";
 import type { PartOfDay } from "../itinerary";
@@ -221,6 +222,7 @@ export function EditableDayHeader({
   onDeleteDay?: () => void;
 }) {
   const { onBlockChange, editing } = useEditing();
+  const dayMap = useDayMap();
   return (
     <header className={className}>
       <div className="tds-day-headline">
@@ -238,6 +240,22 @@ export function EditableDayHeader({
           editable={editing}
           onChange={(v) => onBlockChange(d.dayIndex, { date: v } as Partial<Block>)}
         />
+        {/* Embedded per-day map (owner correction: in the day header, not a
+            hovering FAB). Always visible when the day has located stops —
+            including while the day is collapsed. */}
+        {dayMap && dayMap.locatedDays.has(d.day.n) ? (
+          <button
+            type="button"
+            className="tds-daymap-btn tap"
+            data-print="hide"
+            onClick={() => dayMap.openMap(d.day.n)}
+            aria-label={`Open the map for Day ${d.day.n}`}
+            title={`Map — Day ${String(d.day.n).padStart(2, "0")}`}
+          >
+            <MapPin size={12} aria-hidden />
+            <span>Map</span>
+          </button>
+        ) : null}
         {editing && onMoveDay ? (
           <DayReorderControls
             onMove={onMoveDay}

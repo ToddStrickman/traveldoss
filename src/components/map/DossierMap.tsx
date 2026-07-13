@@ -2,8 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MapPin, X } from "lucide-react";
 import type { Block, SkinTokens, TripView } from "@/lib/skins/types";
 import { buildItinerary } from "@/lib/skins/shared/itinerary";
-import { useEditing } from "@/lib/skins/shared/Editable";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { loadGoogleMaps } from "@/lib/maps/google-maps-loader";
 
 /**
@@ -60,8 +58,9 @@ function collectVisibleIndexes(): Set<number> {
   return out;
 }
 
-/** Map each block index to its day number (null = preface/essentials). */
-function indexDayLookup(blocks: Block[]): Map<number, number | null> {
+/** Map each block index to its day number (null = preface/essentials).
+ *  Exported for SkinFrame's per-day map buttons (which days are locatable). */
+export function indexDayLookup(blocks: Block[]): Map<number, number | null> {
   const it = buildItinerary(blocks);
   const lookup = new Map<number, number | null>();
   for (const { index } of it.preface) lookup.set(index, null);
@@ -235,84 +234,30 @@ function StaticOsmMap({
   );
 }
 
-export function DossierMapButton({
-  trip,
-  blocks,
-  tokens,
-}: {
-  trip: TripView;
-  blocks: Block[];
-  tokens: SkinTokens;
-}) {
-  const [open, setOpen] = useState(false);
-  const { editing } = useEditing();
-  const isMobile = useIsMobile();
-  const hasAnyCoords = useMemo(
-    () => blocks.some((b) => b.kind === "place" && b.lat != null && b.lng != null),
-    [blocks],
-  );
-  // Nothing locatable → no button. (A missing Google key is fine — the
-  // OpenStreetMap fallback renders keyless.)
-  if (!hasAnyCoords) return null;
-  // Editing on a phone is already dense (studio bar, drag handles, sheets) —
-  // the map yields the space. Desktop keeps the button in every mode.
-  if (editing && isMobile) return null;
-  return (
-    <>
-      <button
-        type="button"
-        data-print="hide"
-        aria-label="Open the Live Map"
-        title="Live Map — every visible stop, plotted"
-        onClick={() => setOpen(true)}
-        className="tds-map-fab"
-        style={{
-          position: "fixed",
-          right: "max(16px, env(safe-area-inset-right))",
-          bottom: "max(76px, calc(env(safe-area-inset-bottom) + 64px))",
-          zIndex: 45,
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 8,
-          padding: "12px 16px",
-          borderRadius: 999,
-          border: `1px solid ${tokens.rule}`,
-          background: tokens.accent,
-          color: tokens.bg,
-          font: `600 11px/1 ${tokens.fontBody}`,
-          letterSpacing: "0.22em",
-          textTransform: "uppercase",
-          cursor: "pointer",
-          boxShadow: "0 10px 30px -12px rgba(0,0,0,0.45)",
-        }}
-      >
-        <MapPin size={15} strokeWidth={2} aria-hidden />
-        <span>Map</span>
-      </button>
-      {open ? (
-        <DossierMapOverlay trip={trip} blocks={blocks} tokens={tokens} onClose={() => setOpen(false)} />
-      ) : null}
-    </>
-  );
-}
+/* The floating DossierMapButton FAB is retired (owner correction): the map
+ * is opened from an embedded button in EVERY day header — see SkinFrame's
+ * DayMapContext and editing-kit's EditableDayHeader. */
 
-function DossierMapOverlay({
+export function DossierMapOverlay({
   trip,
   blocks,
   tokens,
   onClose,
+  initialDay,
 }: {
   trip: TripView;
   blocks: Block[];
   tokens: SkinTokens;
   onClose: () => void;
+  /** Open focused on one day: every OTHER day starts hidden; the existing
+   *  day chips restore them (the reference dossier's in-map day picker). */
+  initialDay?: number;
 }) {
   const mapEl = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
   const markersRef = useRef<Map<number, google.maps.Marker[]>>(new Map());
   const linesRef = useRef<Map<number, google.maps.Polyline>>(new Map());
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
-  const [hiddenDays, setHiddenDays] = useState<Set<number>>(new Set());
 
   // Snapshot what's on screen at open time — the "untruncated only" contract.
   const { pins, unlocatedVisible } = useMemo(() => {
@@ -344,6 +289,15 @@ function DossierMapOverlay({
     for (const p of pins) if (p.day != null) set.add(p.day);
     return [...set].sort((a, b) => a - b);
   }, [pins]);
+
+  // Day-focused opening: start with every other day hidden. (Declared after
+  // `days` so the initializer can see the full day list; hooks order is
+  // stable because none of this is conditional.)
+  const [hiddenDays, setHiddenDays] = useState<Set<number>>(() =>
+    initialDay == null
+      ? new Set<number>()
+      : new Set(days.filter((d) => d !== initialDay)),
+  );
 
   const colorFor = useCallback(
     (day: number | null) =>
