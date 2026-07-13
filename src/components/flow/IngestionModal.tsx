@@ -87,7 +87,10 @@ const TABS: {
   sub: string;
 }[] = [
   { id: "paste", icon: ClipboardPaste, word: "Paste", accent: "Itinerary", sub: "ChatGPT, Claude, notes." },
-  { id: "transcript", icon: Upload, word: "Upload", accent: "Transcript", sub: "Text or .vtt / .srt files." },
+  // The directive's target subtext ("Text, emails, PDFs, documents,
+  // itineraries, and more.") ships WITH multi-format extraction — until
+  // then the label must not invite drops the intake rejects.
+  { id: "transcript", icon: Upload, word: "Upload", accent: "Files", sub: "Text, notes & transcripts — PDFs and email soon." },
   { id: "generate", icon: Wand2, word: "Generate", accent: "Itinerary", sub: "Describe the trip — we'll draft it live." },
 ];
 
@@ -729,15 +732,15 @@ export function IngestionModal({
                   type="button"
                   onClick={() => fileRef.current?.click()}
                   className="td-eyebrow inline-flex items-center gap-1.5 rounded-full border border-ink/15 bg-paper/40 px-3 py-1.5 text-ink/55 transition-elegant hover:border-seal hover:text-seal"
-                  aria-label="Attach a transcript file"
-                  title="Attach .txt, .vtt, or .srt"
+                  aria-label="Attach a file"
+                  title="Attach .txt, .md, .vtt, or .srt"
                 >
                   <Upload className="h-3.5 w-3.5" /> Attach
                 </button>
                 <input
                   ref={fileRef}
                   type="file"
-                  accept=".txt,.vtt,.srt,text/*,audio/*"
+                  accept=".txt,.md,.vtt,.srt,text/*,audio/*"
                   className="hidden"
                   onChange={onFile}
                 />
@@ -754,7 +757,7 @@ export function IngestionModal({
                       tab === "paste"
                         ? "Paste a dossier — Day 1: arrive, check into hotel, dinner at…"
                         : tab === "transcript"
-                        ? "Paste or drop a transcript here — .txt, .vtt, .srt"
+                        ? "Paste or drop a file here — .txt, .md, .vtt, .srt"
                         : 'Describe the trip — "Five days in Lisbon for two, seafood-heavy, balanced pace."'
                     }
                     rows={8}
@@ -763,6 +766,28 @@ export function IngestionModal({
                     }`}
                   />
               </div>
+
+              {/* Example prompts (directive step 3): one tap seeds the brief. */}
+              {tab === "generate" && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="td-eyebrow text-ink/40">Try</span>
+                  {[
+                    "Plan a romantic culinary trip to Sicily.",
+                    "Create a two-week Japan itinerary.",
+                    "A long weekend in Copenhagen — design, coffee, no museums.",
+                  ].map((example) => (
+                    <button
+                      key={example}
+                      type="button"
+                      onClick={() => setGenPrompt(example)}
+                      className="rounded-full border border-ink/15 bg-paper/40 px-3 py-1.5 text-[11.5px] italic text-ink/70 transition-elegant hover:border-seal hover:text-seal"
+                      style={{ fontFamily: "var(--font-display)" }}
+                    >
+                      “{example}”
+                    </button>
+                  ))}
+                </div>
+              )}
 
               <p className="text-[11.5px] leading-[1.55] text-ink-soft">
                 One field, three ways in. We'll only ask for dates, travelers, pace, budget, or
