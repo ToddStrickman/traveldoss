@@ -412,6 +412,10 @@ function TemplatesPage() {
     blocks: Block[],
     firstStep: string,
     destination: string | null,
+    // The modal's 4th argument: trip-brief's deterministically resolved
+    // calendar. This signature used to omit it, so trips minted from
+    // /templates silently lost their start/end dates.
+    dates?: { startDate: string | null; endDate: string | null },
   ) {
     if (!modalSkin) return;
     const { data: u } = await supabase.auth.getUser();
@@ -434,6 +438,8 @@ function TemplatesPage() {
           templateId: modalSkin.meta.id,
           blocks,
           ...(destination ? { destination } : {}),
+          ...(dates?.startDate ? { startDate: dates.startDate } : {}),
+          ...(dates?.endDate ? { endDate: dates.endDate } : {}),
         },
       });
       setPendingSlug(r.slug);
