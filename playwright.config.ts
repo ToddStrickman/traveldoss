@@ -18,14 +18,16 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   reporter: [["list"]],
   use: {
-    baseURL: process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:5173",
+    // The Lovable vite wrapper (@lovable.dev/vite-tanstack-config) serves the
+    // dev server on 8080, not vite's stock 5173.
+    baseURL: process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:8080",
     trace: "retain-on-failure",
   },
   webServer: process.env.PLAYWRIGHT_BASE_URL
     ? undefined
     : {
         command: "bun run dev",
-        url: "http://localhost:5173",
+        url: "http://localhost:8080",
         reuseExistingServer: !process.env.CI,
         timeout: 120_000,
       },
