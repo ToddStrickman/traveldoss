@@ -17,6 +17,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TSlugRouteImport } from './routes/t.$slug'
+import { Route as E2eReviewRouteImport } from './routes/e2e.review'
 import { Route as E2eKanbanRouteImport } from './routes/e2e.kanban'
 import { Route as E2eDossierRouteImport } from './routes/e2e.dossier'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
@@ -63,6 +64,11 @@ const IndexRoute = IndexRouteImport.update({
 const TSlugRoute = TSlugRouteImport.update({
   id: '/t/$slug',
   path: '/t/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const E2eReviewRoute = E2eReviewRouteImport.update({
+  id: '/e2e/review',
+  path: '/e2e/review',
   getParentRoute: () => rootRouteImport,
 } as any)
 const E2eKanbanRoute = E2eKanbanRouteImport.update({
@@ -122,6 +128,7 @@ export interface FileRoutesByFullPath {
   '/app': typeof AuthenticatedAppRoute
   '/e2e/dossier': typeof E2eDossierRoute
   '/e2e/kanban': typeof E2eKanbanRoute
+  '/e2e/review': typeof E2eReviewRoute
   '/t/$slug': typeof TSlugRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -139,6 +146,7 @@ export interface FileRoutesByTo {
   '/app': typeof AuthenticatedAppRoute
   '/e2e/dossier': typeof E2eDossierRoute
   '/e2e/kanban': typeof E2eKanbanRoute
+  '/e2e/review': typeof E2eReviewRoute
   '/t/$slug': typeof TSlugRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -158,6 +166,7 @@ export interface FileRoutesById {
   '/_authenticated/app': typeof AuthenticatedAppRoute
   '/e2e/dossier': typeof E2eDossierRoute
   '/e2e/kanban': typeof E2eKanbanRoute
+  '/e2e/review': typeof E2eReviewRoute
   '/t/$slug': typeof TSlugRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -177,6 +186,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/e2e/dossier'
     | '/e2e/kanban'
+    | '/e2e/review'
     | '/t/$slug'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -194,6 +204,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/e2e/dossier'
     | '/e2e/kanban'
+    | '/e2e/review'
     | '/t/$slug'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -212,6 +223,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app'
     | '/e2e/dossier'
     | '/e2e/kanban'
+    | '/e2e/review'
     | '/t/$slug'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -230,6 +242,7 @@ export interface RootRouteChildren {
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   E2eDossierRoute: typeof E2eDossierRoute
   E2eKanbanRoute: typeof E2eKanbanRoute
+  E2eReviewRoute: typeof E2eReviewRoute
   TSlugRoute: typeof TSlugRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -292,6 +305,13 @@ declare module '@tanstack/react-router' {
       path: '/t/$slug'
       fullPath: '/t/$slug'
       preLoaderRoute: typeof TSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/e2e/review': {
+      id: '/e2e/review'
+      path: '/e2e/review'
+      fullPath: '/e2e/review'
+      preLoaderRoute: typeof E2eReviewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/e2e/kanban': {
@@ -378,6 +398,7 @@ const rootRouteChildren: RootRouteChildren = {
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   E2eDossierRoute: E2eDossierRoute,
   E2eKanbanRoute: E2eKanbanRoute,
+  E2eReviewRoute: E2eReviewRoute,
   TSlugRoute: TSlugRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,

@@ -81,11 +81,23 @@ function KanbanHarness() {
     [],
   );
 
+  // Flips to true one commit after hydration. Playwright must wait for this
+  // before reading state or dragging: the SSR HTML already contains the board
+  // and the state <script>, but with the *fixture* blocks (the server can't
+  // see localStorage) and with no event listeners attached yet.
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
+
   const view: SkinView = "horizontal";
 
   return (
     <EditingProvider value={ctx}>
-      <div data-testid="kanban-harness" data-skin={skin.meta.id} data-fixture={fixture}>
+      <div
+        data-testid="kanban-harness"
+        data-skin={skin.meta.id}
+        data-fixture={fixture}
+        data-hydrated={hydrated ? "true" : undefined}
+      >
         <skin.Render trip={DEMO_TRIP} blocks={blocks} view={view} />
         {/* Serialized state for Playwright assertions. */}
         <script

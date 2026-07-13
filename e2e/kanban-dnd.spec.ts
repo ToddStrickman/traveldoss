@@ -43,20 +43,55 @@ function bucketNames(blocks: Block[], dayN: number, part: Bucket): string[] {
   return out;
 }
 
-async function dragCard(page: Page, fromText: string, toSelector: string) {
-  const source = page.locator(`.tds-act-card-title`, { hasText: fromText }).first();
-  await source.scrollIntoViewIfNeeded();
-  const sBox = await source.boundingBox();
-  const target = page.locator(toSelector).first();
-  await target.scrollIntoViewIfNeeded();
-  const tBox = await target.boundingBox();
-  if (!sBox || !tBox) throw new Error(`No bounding box for ${fromText} → ${toSelector}`);
+/** Waits until the harness is hydrated. The SSR HTML already shows the board
+ *  and the state <script> (with fixture blocks — the server can't see
+ *  localStorage), so a bare toBeVisible() is not enough: reading state or
+ *  dispatching pointer events before hydration hits a dead page. */
+async function harnessReady(page: Page) {
+  await expect(
+    page.locator('[data-testid="kanban-harness"][data-hydrated="true"]'),
+  ).toBeVisible();
+}
 
-  await page.mouse.move(sBox.x + sBox.width / 2, sBox.y + sBox.height / 2);
+async function dragCard(page: Page, fromText: string, toSelector: string) {
+  const title = page.locator(`.tds-act-card-title`, { hasText: fromText }).first();
+  const card = page.locator("[data-block-index]", { has: title }).first();
+  const target = page.locator(toSelector).first();
+
+  // Press on the source FIRST, while its coordinates are fresh. Scrolling the
+  // target into view before pressing shifts the page and stales the source
+  // box, so the drag would grab whatever card lands under the old coordinates.
+  await card.scrollIntoViewIfNeeded();
+  const cBox = await card.boundingBox();
+  const grabBox = await title.boundingBox();
+  if (!cBox || !grabBox) throw new Error(`No bounding box for source ${fromText}`);
+  const grab = { x: grabBox.x + grabBox.width / 2, y: grabBox.y + grabBox.height / 2 };
+  // closestCenter collision measures the CARD's translated center, not the
+  // pointer. Remember the grab-point → card-center offset so the drop can put
+  // the card's center exactly on the target's center.
+  const off = {
+    x: grab.x - (cBox.x + cBox.width / 2),
+    y: grab.y - (cBox.y + cBox.height / 2),
+  };
+
+  await page.mouse.move(grab.x, grab.y);
   await page.mouse.down();
   // Exceed dnd-kit's 4px activation threshold.
-  await page.mouse.move(sBox.x + sBox.width / 2 + 20, sBox.y + sBox.height / 2 + 20, { steps: 5 });
-  await page.mouse.move(tBox.x + tBox.width / 2, tBox.y + tBox.height / 2, { steps: 10 });
+  await page.mouse.move(grab.x + 20, grab.y + 20, { steps: 5 });
+
+  // Now bring the target into view mid-drag (dnd-kit compensates for ancestor
+  // scroll while a drag is active) and measure it AFTER the scroll settles.
+  await target.scrollIntoViewIfNeeded();
+  const tBox = await target.boundingBox();
+  if (!tBox) {
+    await page.mouse.up();
+    throw new Error(`No bounding box for target ${toSelector}`);
+  }
+  await page.mouse.move(
+    tBox.x + tBox.width / 2 + off.x,
+    tBox.y + tBox.height / 2 + off.y,
+    { steps: 10 },
+  );
   await page.mouse.up();
 }
 
@@ -67,7 +102,7 @@ for (const skin of SKINS) {
       await page.goto(`/e2e/kanban?skin=${skin}&fixture=full`);
       await page.evaluate(() => window.localStorage.clear());
       await page.goto(`/e2e/kanban?skin=${skin}&fixture=full`);
-      await expect(page.locator('[data-testid="kanban-harness"]')).toBeVisible();
+      await harnessReady(page);
     });
 
     test("append: drop card onto an empty area of another bucket", async ({ page }) => {
@@ -81,8 +116,8 @@ for (const skin of SKINS) {
 
     test("insert-before: drop card directly onto another card", async ({ page }) => {
       // Drop Belcanto onto the Museu card (Day 2 morning) — must land BEFORE it.
-      const targetCardTitle = '.tds-board-col:nth-of-type(2) .tds-board-bucket[data-part="morning"] .tds-act-card-title';
-      await dragCard(page, "Belcanto", targetCardTitle);
+      const targetCard = '.tds-board-col:nth-of-type(2) .tds-board-bucket[data-part="morning"] [data-block-index]';
+      await dragCard(page, "Belcanto", targetCard);
       const state = await readState(page);
       const bucket = bucketNames(state, 2, "morning");
       const beIdx = bucket.indexOf("Dinner · Belcanto");
@@ -107,7 +142,7 @@ for (const skin of SKINS) {
       // bucket renders the "—" placeholder. Dropping must create the section
       // in the correct part-of-day order.
       await page.goto(`/e2e/kanban?skin=${skin}&fixture=sparse`);
-      await expect(page.locator('[data-testid="kanban-harness"]')).toBeVisible();
+      await harnessReady(page);
 
       // Pre-condition: Day 2 morning is empty.
       const pre = await readState(page);
@@ -143,8 +178,10 @@ for (const skin of SKINS) {
 
     test("dropping a card onto itself is a no-op", async ({ page }) => {
       const before = await readState(page);
+      // Target Belcanto's OWN title explicitly — Day 1 evening also holds
+      // "Aperitivo · Pensão Amor", so the bucket's first card is not Belcanto.
       const cardTitle =
-        '.tds-board-col:nth-of-type(1) .tds-board-bucket[data-part="evening"] .tds-act-card-title';
+        '.tds-board-col:nth-of-type(1) .tds-board-bucket[data-part="evening"] [data-block-index]:has-text("Belcanto")';
       // Drag Belcanto onto its own title — pointer leaves & returns, must not duplicate or remove.
       await dragCard(page, "Belcanto", cardTitle);
       const after = await readState(page);
@@ -222,7 +259,7 @@ for (const skin of SKINS) {
         await page.goto(`/e2e/kanban?skin=${skin}&fixture=sparse`);
         await page.evaluate(() => window.localStorage.clear());
         await page.goto(`/e2e/kanban?skin=${skin}&fixture=sparse`);
-        await expect(page.locator('[data-testid="kanban-harness"]')).toBeVisible();
+        await harnessReady(page);
 
         await dragCard(
           page,
@@ -233,7 +270,7 @@ for (const skin of SKINS) {
         expect(bucketNames(before, 2, "morning")).toEqual(["Coffee"]);
 
         await page.reload();
-        await expect(page.locator('[data-testid="kanban-harness"]')).toBeVisible();
+        await harnessReady(page);
         const after = await readState(page);
 
         expect(after).toEqual(before);
@@ -246,12 +283,13 @@ for (const skin of SKINS) {
         await dragCard(
           page,
           "Belcanto",
-          '.tds-board-col:nth-of-type(1) .tds-board-bucket[data-part="evening"] .tds-act-card-title',
+          // Belcanto's own card — the bucket's first card is Aperitivo.
+          '.tds-board-col:nth-of-type(1) .tds-board-bucket[data-part="evening"] [data-block-index]:has-text("Belcanto")',
         );
         const afterDrop = await readState(page);
 
         await page.reload();
-        await expect(page.locator('[data-testid="kanban-harness"]')).toBeVisible();
+        await harnessReady(page);
         const afterReload = await readState(page);
 
         // Drop was a no-op AND reload preserved the no-op.
@@ -280,7 +318,7 @@ for (const skin of SKINS) {
         expect(bucketNames(beforeReload, 1, "morning")).toContain(name);
 
         await page.reload();
-        await expect(page.locator('[data-testid="kanban-harness"]')).toBeVisible();
+        await harnessReady(page);
         const afterReload = await readState(page);
 
         // Full block array (including section markers) must match exactly.
@@ -304,7 +342,7 @@ for (const skin of SKINS) {
         const before = await readState(page);
 
         await page.reload();
-        await expect(page.locator('[data-testid="kanban-harness"]')).toBeVisible();
+        await harnessReady(page);
         const after = await readState(page);
 
         expect(after).toEqual(before);
