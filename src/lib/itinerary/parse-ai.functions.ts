@@ -573,9 +573,29 @@ async function enrichPlacesViaWebSearch(
   );
   if (targets.length === 0) return;
 
-  // Pull facts from Google Places in parallel (cap concurrency to be polite).
-  const enrichedFlags = await Promise.all(
-    targets.map((p) => fillFromGooglePlaces(p, destination, mapsKey)),
+  // Pull facts from Google Places with BOUNDED parallelism and a per-run
+  // cap. The old Promise.all fired one uncapped billable request per place
+  // (a 60-stop paste = 60 parallel calls) and the comment claiming a
+  // concurrency cap was aspirational. Anything past the cap is picked up
+  // by the save-time backfill (geo.server.ts) on the next autosave.
+  const PER_RUN_CAP = 24;
+  const CONCURRENCY = 4;
+  if (targets.length > PER_RUN_CAP) {
+    console.warn(
+      `[parse-ai] enriching ${PER_RUN_CAP}/${targets.length} places this run; the rest backfill on save`,
+    );
+  }
+  const capped = targets.slice(0, PER_RUN_CAP);
+  const enrichedFlags = new Array<boolean>(targets.length).fill(false);
+  let cursor = 0;
+  await Promise.all(
+    Array.from({ length: Math.min(CONCURRENCY, capped.length) }, async () => {
+      for (;;) {
+        const i = cursor++;
+        if (i >= capped.length) return;
+        enrichedFlags[i] = await fillFromGooglePlaces(capped[i], destination, mapsKey);
+      }
+    }),
   );
 
   // Batch-generate concise notes for enriched places that still lack one.
@@ -595,6 +615,10 @@ async function fillFromGooglePlaces(
   apiKey: string,
 ): Promise<boolean> {
   const query = destination ? `${place.name}, ${destination}` : place.name;
+  // Per-request timeout: without one, a single slow Places call stalled the
+  // ENTIRE parse (mirrors geo.server.ts's abort discipline).
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 3_000);
   try {
     const res = await fetch(
       "https://places.googleapis.com/v1/places:searchText",
@@ -607,6 +631,7 @@ async function fillFromGooglePlaces(
             "places.displayName,places.formattedAddress,places.internationalPhoneNumber,places.websiteUri,places.regularOpeningHours,places.location",
         },
         body: JSON.stringify({ textQuery: query, pageSize: 1 }),
+        signal: ctrl.signal,
       },
     );
     if (!res.ok) return false;
@@ -663,6 +688,8 @@ async function fillFromGooglePlaces(
     return changed;
   } catch {
     return false;
+  } finally {
+    clearTimeout(timer);
   }
 }
 
