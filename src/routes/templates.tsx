@@ -470,7 +470,8 @@ function TemplatesPage() {
       <header className="relative z-10 mx-auto flex max-w-[1600px] items-center justify-between border-b border-ink/10 px-6 py-6 md:px-12">
         <Link
           to="/"
-          className="inline-flex items-center gap-3 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/60 transition-colors hover:text-seal"
+          aria-label="Back to the TravelDoss home page"
+          className="inline-flex items-center gap-3 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/70 underline decoration-ink/30 decoration-dotted underline-offset-4 transition-colors hover:text-seal hover:decoration-seal"
         >
           TravelDoss<span className="text-ink/30">®</span>
         </Link>

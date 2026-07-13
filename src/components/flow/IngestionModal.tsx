@@ -7,7 +7,7 @@ import { useServerFn } from "@tanstack/react-start";
 import type { Block } from "@/lib/skins/types";
 import type { SkinModule } from "@/lib/skins/registry";
 import { toast } from "sonner";
-import { useNavigate, useLocation } from "@tanstack/react-router";
+import { Link, useNavigate, useLocation } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import {
   GripVertical,
@@ -539,7 +539,14 @@ export function IngestionModal({
             <div className="flex flex-col gap-4">
               <div className="td-eyebrow flex items-center gap-3 text-ink/55">
                 <span className="h-px w-8 bg-ink/25" />
-                TravelDoss<span className="text-ink/30">®</span>
+                <Link
+                  to="/"
+                  onClick={() => onOpenChange(false)}
+                  aria-label="Back to the TravelDoss home page"
+                  className="text-ink/75 underline decoration-ink/30 decoration-dotted underline-offset-4 transition-colors hover:text-seal hover:decoration-seal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal/60 rounded-sm"
+                >
+                  TravelDoss<span className="text-ink/30">®</span>
+                </Link>
                 <span className="text-ink/30">·</span>
                 {template ? template.meta.codename : "Dossier Template"}
               </div>
@@ -912,7 +919,14 @@ export function ReviewStage({
           <div className="flex flex-col gap-3">
             <div className="td-eyebrow flex items-center gap-3 text-ink/55">
               <span className="h-px w-8 bg-ink/25" />
-              TravelDoss<span className="text-ink/30">®</span>
+              <Link
+                to="/"
+                onClick={onCancel}
+                aria-label="Back to the TravelDoss home page"
+                className="text-ink/75 underline decoration-ink/30 decoration-dotted underline-offset-4 transition-colors hover:text-seal hover:decoration-seal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal/60 rounded-sm"
+              >
+                TravelDoss<span className="text-ink/30">®</span>
+              </Link>
               <span className="text-ink/30">·</span>
               {templateName}
               <span className="text-ink/30">·</span>
