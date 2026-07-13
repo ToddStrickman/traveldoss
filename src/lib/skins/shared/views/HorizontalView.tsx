@@ -58,7 +58,12 @@ export function HorizontalView({ trip, blocks }: { trip: TripView; blocks: Block
     <div className="tds-horizontal">
       <EditableHero trip={trip} className="tds-hero tds-board-head" />
       {showScaffold ? null : (
-        <FlightStrip outbound={it.flights.outbound} inbound={it.flights.inbound} />
+        <FlightStrip
+          outbound={it.flights.outbound}
+          inbound={it.flights.inbound}
+          outboundIndex={it.flights.outboundIndex}
+          inboundIndex={it.flights.inboundIndex}
+        />
       )}
 
       {showScaffold ? (

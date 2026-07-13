@@ -25,7 +25,13 @@ export type ItineraryDay = {
 };
 
 export type Itinerary = {
-  flights: { outbound?: FlightBlock; inbound?: FlightBlock };
+  flights: {
+    outbound?: FlightBlock;
+    inbound?: FlightBlock;
+    /** Block indexes so views can hand flights to the edit sheet. */
+    outboundIndex?: number;
+    inboundIndex?: number;
+  };
   /** Activities before any day block (e.g. hotel, currency). */
   preface: { activity: ActivityBlock; index: number }[];
   days: ItineraryDay[];
@@ -46,8 +52,13 @@ export function buildItinerary(blocks: Block[]): Itinerary {
 
   blocks.forEach((block, index) => {
     if (block.kind === "flight") {
-      if (block.direction === "inbound") flights.inbound = block;
-      else flights.outbound = flights.outbound ?? block;
+      if (block.direction === "inbound") {
+        flights.inbound = block;
+        flights.inboundIndex = index;
+      } else if (!flights.outbound) {
+        flights.outbound = block;
+        flights.outboundIndex = index;
+      }
       return;
     }
     if (block.kind === "day") {

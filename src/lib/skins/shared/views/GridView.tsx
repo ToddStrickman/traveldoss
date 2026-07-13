@@ -6,7 +6,8 @@ import type { PartOfDay } from "../itinerary";
 import { ShadowItinerary, PlanBCue } from "../ShadowItinerary";
 import { BlankDayScaffold, isScaffoldTriggered } from "../BlankDayScaffold";
 import { useEditing } from "../Editable";
-import { Sunrise, Sun, Moon } from "lucide-react";
+import { Sunrise, Sun, Moon, Pencil } from "lucide-react";
+import { FlightEditSheet } from "../ActivityEditSheet";
 import { useCallback, useState } from "react";
 import {
   EditableHero,
@@ -19,6 +20,54 @@ import {
   useMoveDay,
   useDeleteDay,
 } from "./editing-kit";
+
+/** Grid flight row with the shared edit sheet behind a pencil (the grid
+ *  table was fully read-only; flights had no editor in ANY view). */
+function FlightTableRow({
+  leg,
+  f,
+  index,
+  editing,
+}: {
+  leg: string;
+  f: Extract<Block, { kind: "flight" }>;
+  index?: number;
+  editing: boolean;
+}) {
+  const [editOpen, setEditOpen] = useState(false);
+  return (
+    <tr>
+      <td className="tds-td-strong">
+        <span className="inline-flex items-center gap-1.5">
+          {leg}
+          {editing && index != null ? (
+            <>
+              <button
+                type="button"
+                className="tds-act-delete tap"
+                data-print="hide"
+                onClick={() => setEditOpen(true)}
+                aria-label={`Edit ${leg.toLowerCase()} flight`}
+                title="Edit flight details"
+              >
+                <Pencil size={12} aria-hidden />
+              </button>
+              {editOpen ? (
+                <FlightEditSheet flight={f} index={index} open={editOpen} onOpenChange={setEditOpen} />
+              ) : null}
+            </>
+          ) : null}
+        </span>
+      </td>
+      <td>{[f.airline, f.flightNumber].filter(Boolean).join(" ") || "—"}</td>
+      <td>{[f.from, f.to].filter(Boolean).join(" → ") || "—"}</td>
+      <td>{f.date ?? "—"}</td>
+      <td>{f.departTime ?? "—"}</td>
+      <td>{f.arriveTime ?? "—"}</td>
+      <td>{f.confirmation ?? "—"}</td>
+    </tr>
+  );
+}
 
 const PART_ICON: Record<PartOfDay, typeof Sunrise> = {
   morning: Sunrise,
@@ -51,9 +100,15 @@ export function GridView({ trip, blocks }: { trip: TripView; blocks: Block[] }) 
       return next;
     });
   }, []);
-  const flights: Array<{ leg: string; f: NonNullable<typeof it.flights.outbound> }> = [];
-  if (it.flights.outbound) flights.push({ leg: "Outbound", f: it.flights.outbound });
-  if (it.flights.inbound) flights.push({ leg: "Inbound", f: it.flights.inbound });
+  const flights: Array<{
+    leg: string;
+    f: NonNullable<typeof it.flights.outbound>;
+    index?: number;
+  }> = [];
+  if (it.flights.outbound)
+    flights.push({ leg: "Outbound", f: it.flights.outbound, index: it.flights.outboundIndex });
+  if (it.flights.inbound)
+    flights.push({ leg: "Inbound", f: it.flights.inbound, index: it.flights.inboundIndex });
 
   return (
     <div className="tds-grid-view">
@@ -80,16 +135,8 @@ export function GridView({ trip, blocks }: { trip: TripView; blocks: Block[] }) 
               </tr>
             </thead>
             <tbody>
-              {flights.map(({ leg, f }) => (
-                <tr key={leg}>
-                  <td className="tds-td-strong">{leg}</td>
-                  <td>{[f.airline, f.flightNumber].filter(Boolean).join(" ") || "—"}</td>
-                  <td>{[f.from, f.to].filter(Boolean).join(" → ") || "—"}</td>
-                  <td>{f.date ?? "—"}</td>
-                  <td>{f.departTime ?? "—"}</td>
-                  <td>{f.arriveTime ?? "—"}</td>
-                  <td>{f.confirmation ?? "—"}</td>
-                </tr>
+              {flights.map(({ leg, f, index }) => (
+                <FlightTableRow key={leg} leg={leg} f={f} index={index} editing={editing} />
               ))}
             </tbody>
           </table>
@@ -148,7 +195,7 @@ export function GridView({ trip, blocks }: { trip: TripView; blocks: Block[] }) 
                           ) : (
                             list.map(({ activity, index }) => (
                               <DraggableActivity key={index} index={index}>
-                                <ActivityCell activity={activity} />
+                                <ActivityCell activity={activity} index={index} />
                               </DraggableActivity>
                             ))
                           )}
@@ -207,7 +254,7 @@ export function GridView({ trip, blocks }: { trip: TripView; blocks: Block[] }) 
                     ) : null}
                     {list.map(({ activity, index }) => (
                       <DraggableActivity key={index} index={index}>
-                        <ActivityCell activity={activity} />
+                        <ActivityCell activity={activity} index={index} />
                       </DraggableActivity>
                     ))}
                     {editing ? (
@@ -230,7 +277,7 @@ export function GridView({ trip, blocks }: { trip: TripView; blocks: Block[] }) 
             <div className="tds-grid-essentials">
               {d.unassigned.map(({ activity, index }) => (
                 <DraggableActivity key={index} index={index}>
-                  <ActivityCell activity={activity} />
+                  <ActivityCell activity={activity} index={index} />
                 </DraggableActivity>
               ))}
             </div>
