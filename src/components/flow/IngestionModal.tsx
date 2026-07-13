@@ -342,9 +342,14 @@ export function IngestionModal({
       toast.error("We couldn't read structure out of that. Try Day 1, Day 2…");
       return;
     }
-    const label = tab === "transcript" ? "Reading your transcript…" : "Reading your dossier…";
-    onGenerate(blocks, label, destination);
-    handleOpenChange(false);
+    // Show what we extracted BEFORE it becomes the dossier. The ReviewStage
+    // (reorder, edit, delete, confidence flags) was fully built but sat
+    // unreachable for months while parses replaced dossiers sight unseen —
+    // the audit's single most leveraged fix.
+    setReviewLabel(tab === "transcript" ? "Reading your transcript…" : "Reading your dossier…");
+    setReviewDestination(destination);
+    setReviewBlocks(blocks);
+    setStage("review");
   }
 
   async function submitGenerate(
@@ -442,8 +447,9 @@ export function IngestionModal({
       return;
     }
     onGenerate(reviewBlocks, reviewLabel, reviewDestination);
-    setStage("source");
-    setReviewBlocks([]);
+    // No stage reset here: the parent closes the modal (async), and
+    // handleOpenChange(false) resets review state then — resetting now
+    // flashes the source stage for a frame before the close lands.
   }
 
   function handleOpenChange(v: boolean) {
@@ -781,7 +787,9 @@ export function IngestionModal({
 /* Review stage                                                        */
 /* ------------------------------------------------------------------ */
 
-function ReviewStage({
+// Exported for the dev-only /e2e/review harness (the live path requires an
+// authed parse, which local environments can't drive).
+export function ReviewStage({
   blocks,
   destination,
   onBlocksChange,
