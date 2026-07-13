@@ -85,6 +85,26 @@ export const createTripFromIngestion = createServerFn({ method: "POST" })
     return { tripId: trip.id, slug: trip.slug };
   });
 
+/**
+ * Owner check for a public dossier view. RLS-scoped: the select only sees
+ * rows the caller owns, so a hit means ownership. Exists so the public
+ * getDossierBySlug payload never has to ship the owner's user_id.
+ */
+export const isTripOwner = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ slug: z.string().min(1).max(128) }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: row, error } = await context.supabase
+      .from("trips")
+      .select("id")
+      .eq("slug", data.slug)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return { isOwner: !!row };
+  });
+
 /** Update an existing dossier (autosave). Owner only via RLS. */
 export const updateDossier = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

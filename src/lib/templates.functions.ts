@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { getSkin } from "@/lib/skins/registry";
+import { projectPublicTrip, type PublicTripRow } from "@/lib/public-trip";
 
 function randomSuffix(len = 6) {
   const alphabet = "abcdefghjkmnpqrstuvwxyz23456789";
@@ -69,10 +70,13 @@ export const getDossierBySlug = createServerFn({ method: "GET" })
     z.object({ slug: z.string().min(1).max(128) }).parse(input),
   )
   .handler(async ({ data }) => {
+    // Sensitive columns (user_id, visibility, status) are never selected:
+    // this payload goes to every anonymous visitor. Owner detection is the
+    // authed isTripOwner fn in trips.functions.ts.
     const { data: trip, error } = await supabaseAdmin
       .from("trips")
       .select(
-        "id, slug, destination, subtitle, tone, template_id, hero_image_url, start_date, end_date, content, visibility, status, expires_at, user_id, created_at",
+        "id, slug, destination, subtitle, tone, template_id, hero_image_url, start_date, end_date, content, expires_at, created_at",
       )
       .eq("slug", data.slug)
       .neq("visibility", "private")
@@ -82,6 +86,7 @@ export const getDossierBySlug = createServerFn({ method: "GET" })
       throw new Error("Failed to load dossier");
     }
     if (!trip) return { trip: null };
-    const expired = trip.expires_at ? new Date(trip.expires_at).getTime() < Date.now() : false;
-    return { trip, expired };
+    // Strips content/dates from expired trips — the re-publish gate must be
+    // enforced here, not in the client render.
+    return projectPublicTrip(trip as PublicTripRow);
   });
