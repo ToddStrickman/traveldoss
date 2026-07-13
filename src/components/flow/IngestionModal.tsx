@@ -357,6 +357,27 @@ export function IngestionModal({
     setStage("review");
   }
 
+  // Cancellation for the generate pipeline. Cancelling (button or the hard
+  // deadline) bumps the run id; stale awaits notice and bail without
+  // touching state. Honest limitation: the server call itself keeps
+  // running — we stop WAITING, we cannot reach into the worker — so all
+  // copy says "stopped", never "aborted".
+  const genRun = useRef(0);
+  function cancelGenerate(reason: "user" | "deadline") {
+    genRun.current += 1;
+    setParsing(false);
+    setGenPhase("idle");
+    if (reason === "user") {
+      toast.message("Generation stopped", {
+        description: "We stopped waiting on that draft. Adjust the prompt and go again whenever.",
+      });
+    } else {
+      toast.error("This took longer than it should", {
+        description: "We stopped waiting after 3 minutes — a retry usually comes back fast.",
+      });
+    }
+  }
+
   async function submitGenerate(
     extraAnswers?: Array<{ question: string; answer: string }>,
   ) {
@@ -368,6 +389,14 @@ export function IngestionModal({
     }
     setParsing(true);
     setGenPhase("drafting");
+    const run = ++genRun.current;
+    const stale = () => genRun.current !== run;
+    // Hard deadline: worst-case the pipeline is 3 outer × 4 inner model
+    // calls plus enrichment with no platform-visible progress — without
+    // this the user is pinned on "drafting" indefinitely.
+    const deadline = setTimeout(() => {
+      if (!stale()) cancelGenerate("deadline");
+    }, 180_000);
     try {
       const gen = await generateAi({
         data: {
@@ -383,6 +412,7 @@ export function IngestionModal({
           useLiveResearch: true,
         },
       });
+      if (stale()) return;
       offerDebugReport(
         (gen as { debugReport?: DebugReport }).debugReport,
         "Generated with fallback",
@@ -409,6 +439,7 @@ export function IngestionModal({
       const parsed = await parseAi({
         data: { text: gen.draft, source: "ai" },
       });
+      if (stale()) return;
       offerDebugReport(
         (parsed as { debugReport?: DebugReport }).debugReport,
         "Parsed generator output",
@@ -431,6 +462,8 @@ export function IngestionModal({
       );
       handleOpenChange(false);
     } catch (err) {
+      // A failure landing after cancel is noise, not news.
+      if (stale()) return;
       console.error("[ai-generate] failed", err);
       toast.error(
         err instanceof Error
@@ -438,8 +471,11 @@ export function IngestionModal({
           : "Couldn't generate that dossier. Try again in a moment.",
       );
     } finally {
-      setParsing(false);
-      setGenPhase("idle");
+      clearTimeout(deadline);
+      if (!stale()) {
+        setParsing(false);
+        setGenPhase("idle");
+      }
     }
   }
 
@@ -588,19 +624,28 @@ export function IngestionModal({
         {/* Unified composer */}
         <div className="px-5 sm:px-8 md:px-10 pt-8">
           {tab === "generate" && parsing && !clarifyQs.length ? (
-            <GenerationProgress
-              phase={genPhase}
-              // Real state, not literals: these were hardcoded to "" so the
-              // facts panel always showed defaults regardless of input.
-              destination={genDestination}
-              duration={genDuration}
-              startDate={genStartDate}
-              travelers={genTravelers}
-              pace={genPace}
-              budget={genBudget}
-              interests={genInterests}
-              prompt={genPrompt}
-            />
+            <div className="flex flex-col gap-4">
+              <GenerationProgress
+                phase={genPhase}
+                // Real state, not literals: these were hardcoded to "" so the
+                // facts panel always showed defaults regardless of input.
+                destination={genDestination}
+                duration={genDuration}
+                startDate={genStartDate}
+                travelers={genTravelers}
+                pace={genPace}
+                budget={genBudget}
+                interests={genInterests}
+                prompt={genPrompt}
+              />
+              <button
+                type="button"
+                onClick={() => cancelGenerate("user")}
+                className="self-center text-[10px] font-medium uppercase tracking-[0.3em] text-ink/50 underline decoration-ink/25 decoration-dotted underline-offset-4 transition-colors hover:text-seal hover:decoration-seal"
+              >
+                Stop generating
+              </button>
+            </div>
           ) : clarifyQs.length ? (
             <div className="flex flex-col gap-4">
               <div className="flex items-start gap-3 rounded-md border border-seal/30 bg-seal/10 px-4 py-3 text-[12.5px] leading-[1.6] text-ink">
