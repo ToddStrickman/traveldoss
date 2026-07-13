@@ -9,8 +9,10 @@ import * as React from "react";
 import useEmblaCarousel from "embla-carousel-react";
 import { X } from "lucide-react";
 import type { SkinModule } from "@/lib/skins/registry";
+import type { SkinView } from "@/lib/skins/types";
 import { cn } from "@/lib/utils";
 import { InertRender } from "@/lib/skins/shared/views/parts";
+import { ViewSwitch } from "@/components/ViewSwitch";
 
 export function SkinPeek({
   skins,
@@ -31,6 +33,13 @@ export function SkinPeek({
   );
   const [emblaRef, emblaApi] = useEmblaCarousel({ startIndex, align: "start" });
   const [index, setIndex] = React.useState(startIndex);
+  // The signature pivot, present in the sample too. Horizontal/grid views
+  // pan sideways themselves, so skin-to-skin drag is disabled off-vertical
+  // (arrows, dots, and keyboard still browse the rack).
+  const [view, setView] = React.useState<SkinView>("vertical");
+  React.useEffect(() => {
+    emblaApi?.reInit({ watchDrag: view === "vertical" });
+  }, [emblaApi, view]);
   const closeRef = React.useRef<HTMLButtonElement>(null);
   const rootRef = React.useRef<HTMLDivElement>(null);
 
@@ -139,6 +148,7 @@ export function SkinPeek({
                 <skin.Render
                   trip={skin.previewFixture.trip}
                   blocks={skin.previewFixture.blocks}
+                  view={view}
                 />
               </InertRender>
               <div className="h-24" aria-hidden />
@@ -147,8 +157,14 @@ export function SkinPeek({
         </div>
       </div>
 
-      {/* Rack dots + pinned mint (width-capped on desktop) */}
+      {/* View pivot + rack dots + pinned mint (width-capped on desktop) */}
       <div className="border-t border-white/10 bg-paper/95 px-4 pt-3 backdrop-blur-md pb-safe sm:mx-auto sm:w-full sm:max-w-xl sm:border-x sm:border-t sm:rounded-t-xl">
+        <ViewSwitch
+          value={view}
+          onChange={setView}
+          tokens={active.tokens}
+          className="mx-auto mb-2 flex w-fit gap-1 rounded-full p-1"
+        />
         <div
           className="mb-3 flex items-center justify-center gap-0.5"
           role="tablist"
