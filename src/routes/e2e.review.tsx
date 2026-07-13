@@ -8,6 +8,7 @@ import { useState } from "react";
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { ReviewStage } from "@/components/flow/IngestionModal";
+import { GenerationLoader } from "@/components/GenerationLoader";
 import { parseDropInWithMeta } from "@/lib/itinerary/parse";
 import type { Block } from "@/lib/skins/types";
 
@@ -21,6 +22,11 @@ Check in Adler Spa Resort, Siculiana.
 Sunset walk at Torre Salsa reserve.`;
 
 export const Route = createFileRoute("/e2e/review")({
+  // Route-validated so SSR and client agree — reading window.location in
+  // render caused a structural hydration mismatch that killed the page.
+  validateSearch: (search: Record<string, unknown>): { loader?: "1" } => ({
+    loader: search.loader === "1" || search.loader === 1 ? "1" : undefined,
+  }),
   beforeLoad: () => {
     if (!import.meta.env.DEV) throw notFound();
   },
@@ -31,8 +37,11 @@ function ReviewHarness() {
   const parsed = parseDropInWithMeta(SAMPLE, "text");
   const [blocks, setBlocks] = useState<Block[]>(parsed.blocks);
   const [destination, setDestination] = useState<string | null>(parsed.destination);
+  // ?loader=1 mounts the mint loader (auth-gated in the real flow).
+  const showLoader = Route.useSearch().loader === "1";
   return (
     <div className="min-h-dvh bg-paper text-ink">
+      <GenerationLoader open={showLoader} label="Composing your dossier" />
       <ReviewStage
         blocks={blocks}
         destination={destination}

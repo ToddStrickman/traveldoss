@@ -8,7 +8,6 @@ import {
   type TripBrief, DEFAULT_BRIEF,
   DESTINATION_TYPES, SEASONS, TRAVELERS, BUDGETS, PACES, MOBILITY, INTERESTS,
 } from "@/lib/itinerary/framework";
-import { GenerationLoader } from "@/components/GenerationLoader";
 
 export const Route = createFileRoute("/plan")({
   component: PlanPage,
@@ -34,8 +33,6 @@ function PlanPage() {
   const [view, setView] = useState<SkinView>("vertical");
   const [tab, setTab] = useState<(typeof TABS)[number]["key"]>("brief");
   const [text, setText] = useState("");
-  const [loadingSteps, setLoadingSteps] = useState<string[] | null>(null);
-  const [pendingBlocks, setPendingBlocks] = useState<Block[] | null>(null);
 
   const set = <K extends keyof TripBrief>(k: K, v: TripBrief[K]) => setBrief((b) => ({ ...b, [k]: v }));
   const toggleInterest = (i: (typeof INTERESTS)[number]) =>
@@ -50,36 +47,21 @@ function PlanPage() {
     slug: "preview",
   };
 
-  function runWith(steps: string[], next: Block[]) {
-    setPendingBlocks(next);
-    setLoadingSteps(steps);
-  }
+  // The local parse is synchronous — blocks apply immediately. (This page
+  // used to hold the finished result behind a fake three-step loader that
+  // claimed to be "researching your destination"; no research happens here.)
   function build() {
-    runWith(
-      ["Reading your brief…", "Researching your destination…", "Designing your doc…"],
-      adaptItinerary(brief),
-    );
+    setBlocks(adaptItinerary(brief));
   }
   function ingest() {
     if (tab === "brief") return;
     const parsed = parseDropIn(text, tab);
     if (!parsed.length) return;
-    const sourceLabel =
-      tab === "ai" ? "Reading your AI output…" : tab === "transcript" ? "Reading your transcript…" : "Reading your notes…";
-    runWith([sourceLabel, "Structuring days and places…", "Designing your doc…"], parsed);
+    setBlocks(parsed);
   }
 
   return (
     <div className="grid min-h-dvh grid-cols-1 bg-background text-ink lg:grid-cols-[380px_1fr]">
-      <GenerationLoader
-        open={loadingSteps !== null}
-        steps={loadingSteps ?? []}
-        onDone={() => {
-          if (pendingBlocks) setBlocks(pendingBlocks);
-          setPendingBlocks(null);
-          setLoadingSteps(null);
-        }}
-      />
       {/* ---- left: controls ---- */}
       <aside className="border-b border-ink/10 p-6 lg:sticky lg:top-0 lg:h-dvh lg:overflow-y-auto lg:border-b-0 lg:border-r">
         <Link to="/" className="text-[10px] uppercase tracking-[0.4em] text-ink-soft hover:text-seal">← TravelDoss</Link>
