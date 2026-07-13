@@ -10,6 +10,7 @@ import { halcyon } from "./halcyon";
 import { calliope } from "./calliope";
 import { cassian } from "./cassian";
 import { solveig } from "./solveig";
+import { aurelia } from "./aurelia";
 
 /**
  * The full cast. epictetus + orsino are the original hand-built reference
@@ -26,6 +27,7 @@ export const SKINS: SkinModule[] = [
   calliope,
   cassian,
   solveig,
+  aurelia,
 ];
 
 export const getSkin = (id: string): SkinModule | undefined =>

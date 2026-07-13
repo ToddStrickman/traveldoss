@@ -8,6 +8,7 @@ import { FALLBACK_SKIN, getSkin } from "@/lib/skins/registry";
 import type { Block, SkinView, TripView } from "@/lib/skins/types";
 import { supabase } from "@/integrations/supabase/client";
 import { StudioBar } from "@/components/studio/StudioBar";
+import { ViewSwitch } from "@/components/ViewSwitch";
 import { ExportMenu } from "@/components/studio/ExportMenu";
 import { PrintScheduleGrid } from "@/components/studio/PrintScheduleGrid";
 import { CompanionToday } from "@/components/studio/CompanionToday";
@@ -767,43 +768,6 @@ function DossierPage() {
 
 /** Live Vertical · Horizontal · Grid control. Styled from the active skin's
  *  tokens; fixed, centered at the top. Switching never mutates content. */
-function ViewSwitch({
-  value,
-  onChange,
-  tokens,
-}: {
-  value: SkinView;
-  onChange: (v: SkinView) => void;
-  tokens: { bg: string; ink: string; accent: string; rule: string };
-}) {
-  const opts: SkinView[] = ["vertical", "horizontal", "grid"];
-  return (
-    <div
-      role="radiogroup"
-      aria-label="Layout"
-      data-print="hide"
-      className="fixed left-1/2 top-3 z-50 hidden -translate-x-1/2 gap-1 rounded-full p-1 backdrop-blur-sm sm:top-4 md:flex"
-      style={{ background: `${tokens.bg}d9`, border: `1px solid ${tokens.rule}` }}
-    >
-      {opts.map((o) => {
-        const on = o === value;
-        return (
-          <button
-            key={o}
-            role="radio"
-            aria-checked={on}
-            onClick={() => onChange(o)}
-            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.15em] transition-colors sm:px-4 sm:py-2.5"
-            style={{ color: on ? tokens.bg : tokens.ink, background: on ? tokens.accent : "transparent" }}
-          >
-            {o}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
 function ExpiredDossier({ slug, destination }: { slug: string; destination: string }) {
   return (
     <div className="flex min-h-dvh items-center justify-center bg-background px-6 text-center">
