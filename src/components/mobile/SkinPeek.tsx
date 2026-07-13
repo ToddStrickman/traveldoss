@@ -1,11 +1,9 @@
 /**
- * SkinPeek — the mobile newsstand. Tapping a gallery tile opens the skin
- * full-screen at its real mobile rendering; swiping left/right browses
- * neighboring skins like magazines on a rack. Mint stays pinned in the
- * thumb zone.
- *
- * Vertical pan scrolls the open skin; horizontal drag (embla axis lock)
- * moves between skins. Desktop never sees this — tiles mint directly.
+ * SkinPeek — the template newsstand, every pointer type. Activating a
+ * gallery tile opens the skin full-screen at its REAL rendering (mobile
+ * layout on phones, desktop layout on desktops); swipe / drag / arrow keys
+ * browse neighboring skins like magazines on a rack. Mint stays pinned at
+ * the bottom — preview first, commit second.
  */
 import * as React from "react";
 import useEmblaCarousel from "embla-carousel-react";
@@ -109,6 +107,9 @@ export function SkinPeek({
           <X className="h-5 w-5" />
         </button>
         <div className="min-w-0 flex-1 text-center">
+          <div className="text-[8px] font-medium uppercase tracking-[0.45em] text-ink/40">
+            Preview
+          </div>
           <div
             className="truncate text-lg leading-tight"
             style={{ fontFamily: "var(--font-display)" }}
@@ -146,8 +147,8 @@ export function SkinPeek({
         </div>
       </div>
 
-      {/* Rack dots + pinned mint */}
-      <div className="border-t border-white/10 bg-paper/95 px-4 pt-3 backdrop-blur-md pb-safe">
+      {/* Rack dots + pinned mint (width-capped on desktop) */}
+      <div className="border-t border-white/10 bg-paper/95 px-4 pt-3 backdrop-blur-md pb-safe sm:mx-auto sm:w-full sm:max-w-xl sm:border-x sm:border-t sm:rounded-t-xl">
         <div
           className="mb-3 flex items-center justify-center gap-0.5"
           role="tablist"
@@ -192,6 +193,9 @@ export function SkinPeek({
           )}
           {minting ? "Minting your dossier…" : `Mint ${active.meta.codename}`}
         </button>
+        <div className="mt-2 hidden pb-2 text-center text-[9px] uppercase tracking-[0.3em] text-ink/35 sm:block">
+          ← → browse templates · Esc closes
+        </div>
       </div>
     </div>
   );

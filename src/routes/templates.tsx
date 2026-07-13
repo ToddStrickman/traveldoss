@@ -7,7 +7,6 @@ import { SKINS, type SkinModule } from "@/lib/skins/registry";
 import { TiltCard } from "@/components/motion/Tilt";
 import { InertRender } from "@/lib/skins/shared/views/parts";
 import { SkinPeek } from "@/components/mobile/SkinPeek";
-import { usePointerCoarse } from "@/components/mobile/PlaceSheet";
 import { IngestionModal } from "@/components/flow/IngestionModal";
 import { GenerationLoader } from "@/components/GenerationLoader";
 import { createTripFromIngestion } from "@/lib/trips.functions";
@@ -15,6 +14,7 @@ import type { Block } from "@/lib/skins/types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { SITE_URL } from "@/lib/site";
+import { peekPendingComposer } from "@/lib/mint-pending";
 
 function TemplatesSkeleton() {
   return (
@@ -272,7 +272,6 @@ function SkinCard({
 function TemplatesPage() {
   const [picking, setPicking] = useState<string | null>(null);
   const [peekId, setPeekId] = useState<string | null>(null);
-  const mobileRead = usePointerCoarse();
   const [query, setQuery] = useState("");
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -312,17 +311,21 @@ function TemplatesPage() {
     });
   }, [query, activeTag]);
 
-  // Auto-jump to preview when arriving with ?pick=<id> (e.g. from the homepage rail).
+  // Auto-jump when arriving with ?pick=<id> (e.g. from the homepage rail):
+  // open the PREVIEW on every pointer type — the rail promises "preview ·
+  // tap to open" and desktop used to break that promise by jumping straight
+  // to the mint modal. One exception: a login round-trip with a stashed
+  // composer draft goes straight to the modal so the draft restores.
   const autoPickedRef = useRef(false);
   useEffect(() => {
     if (autoPickedRef.current) return;
     if (!pickParam) return;
     if (!SKINS.some((s) => s.meta.id === pickParam)) return;
     autoPickedRef.current = true;
-    if (mobileRead) {
-      setPeekId(pickParam);
-    } else {
+    if (peekPendingComposer()?.templateId === pickParam) {
       handlePick(pickParam);
+    } else {
+      setPeekId(pickParam);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pickParam]);
@@ -565,7 +568,7 @@ function TemplatesPage() {
               key={skin.meta.id}
               skin={skin}
               onPick={handlePick}
-              onOpen={mobileRead ? setPeekId : undefined}
+              onOpen={setPeekId}
               onPrefetch={prefetch}
               picking={picking === skin.meta.id}
             />
