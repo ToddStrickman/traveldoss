@@ -1,36 +1,38 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
-import { Check } from "lucide-react";
 
 /**
- * Full-surface generation loader. Crossfades through a sequence of steps
- * with the same skeuomorphic surface treatment used across the app.
+ * Full-surface mint loader — honest by construction. The mint is ONE server
+ * call the client cannot observe from outside, so this shows one active
+ * operation with a rotating description of what that call actually does.
+ * No timer-driven checkmarks pretending to track progress (the previous
+ * version advanced fake steps every 1100ms and even claimed "Reading your
+ * inbox…"); the parent unmounts the loader when the real work completes.
  */
 export function GenerationLoader({
   open,
-  steps,
-  stepMs = 1100,
-  onDone,
+  label = "Composing your dossier",
 }: {
   open: boolean;
-  steps: string[];
-  stepMs?: number;
-  onDone?: () => void;
+  label?: string;
 }) {
-  const [i, setI] = useState(0);
+  const DETAILS = [
+    "extracting days and places",
+    "titling every link",
+    "pinning coordinates for the map",
+    "setting the type",
+  ];
+  const [detail, setDetail] = useState(0);
 
   useEffect(() => {
     if (!open) {
-      setI(0);
+      setDetail(0);
       return;
     }
-    if (i >= steps.length - 1) {
-      const t = setTimeout(() => onDone?.(), stepMs);
-      return () => clearTimeout(t);
-    }
-    const t = setTimeout(() => setI((n) => n + 1), stepMs);
-    return () => clearTimeout(t);
-  }, [open, i, steps.length, stepMs, onDone]);
+    const t = setInterval(() => setDetail((n) => (n + 1) % DETAILS.length), 1800);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   return (
     <AnimatePresence>
@@ -45,64 +47,42 @@ export function GenerationLoader({
           aria-live="polite"
           aria-busy="true"
         >
-          <div className="surface-card relative flex w-[min(92vw,440px)] flex-col gap-7 rounded-xl px-8 py-10">
-            <div className="text-center text-[10px] font-medium uppercase tracking-[0.45em] text-ink-soft">
+          <div className="surface-card relative flex w-[min(92vw,440px)] flex-col items-center gap-6 rounded-xl px-8 py-10 text-center">
+            <div className="text-[10px] font-medium uppercase tracking-[0.45em] text-ink-soft">
               Preparing your dossier
             </div>
 
-            {/* stepped list — each step is explicit, no crossfade guessing */}
-            <ol className="flex flex-col gap-3">
-              {steps.map((label, idx) => {
-                const state = idx < i ? "done" : idx === i ? "active" : "pending";
-                return (
-                  <li
-                    key={label}
-                    className="flex items-center gap-3 text-[14px] leading-snug"
-                    aria-current={state === "active" ? "step" : undefined}
-                  >
-                    <span
-                      aria-hidden
-                      className="relative inline-flex h-5 w-5 shrink-0 items-center justify-center"
-                    >
-                      {state === "done" && (
-                        <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-seal text-paper">
-                          <Check className="h-3 w-3" strokeWidth={3} />
-                        </span>
-                      )}
-                      {state === "active" && (
-                        <motion.span
-                          className="inline-block h-4 w-4 rounded-full border-2 border-seal border-t-transparent"
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                        />
-                      )}
-                      {state === "pending" && (
-                        <span className="inline-block h-4 w-4 rounded-full border border-ink/20" />
-                      )}
-                    </span>
-                    <span
-                      className={
-                        state === "active"
-                          ? "text-ink"
-                          : state === "done"
-                            ? "text-ink-soft line-through decoration-ink/20"
-                            : "text-ink-soft/60"
-                      }
-                    >
-                      {label}
-                    </span>
-                  </li>
-                );
-              })}
-            </ol>
+            <div className="flex items-center gap-3">
+              <motion.span
+                aria-hidden
+                className="inline-block h-4 w-4 shrink-0 rounded-full border-2 border-seal border-t-transparent"
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+              />
+              <span className="text-[15px] text-ink">{label}</span>
+            </div>
 
-            {/* hairline progress */}
+            {/* What the one in-flight call is doing — description, not a
+                checklist; nothing is marked complete until it IS. */}
+            <AnimatePresence mode="wait">
+              <motion.span
+                key={detail}
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.35 }}
+                className="text-[12px] italic text-ink-soft"
+              >
+                — {DETAILS[detail]} —
+              </motion.span>
+            </AnimatePresence>
+
+            {/* Indeterminate hairline sweep */}
             <div className="relative h-px w-full overflow-hidden bg-ink/10">
               <motion.span
-                className="absolute inset-y-0 left-0 bg-seal"
-                initial={false}
-                animate={{ width: `${((i + 1) / steps.length) * 100}%` }}
-                transition={{ duration: 0.7, ease: [0.4, 0, 0.2, 1] }}
+                className="absolute inset-y-0 w-1/3 bg-seal"
+                animate={{ left: ["-33%", "100%"] }}
+                transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
               />
             </div>
           </div>
@@ -111,9 +91,3 @@ export function GenerationLoader({
     </AnimatePresence>
   );
 }
-
-export const DEFAULT_GENERATION_STEPS = [
-  "Reading your inbox…",
-  "Researching your destination…",
-  "Designing your doc…",
-];

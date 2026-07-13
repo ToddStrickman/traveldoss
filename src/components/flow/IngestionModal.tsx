@@ -188,7 +188,12 @@ export function IngestionModal({
     return false;
   }
   const generateAi = useServerFn(generateItineraryAi);
-  type GenPhase = "idle" | "research" | "draft" | "enrich" | "done";
+  // Two phases because the pipeline has exactly two observable server
+  // calls: generateAi (research + drafting in one pass) and parseAi
+  // (structuring + enrichment in one pass). Anything more granular would
+  // be theater — the old research/draft/enrich trio flipped "draft" and
+  // "enrich" back-to-back client-side, so "Drafting" never visibly ran.
+  type GenPhase = "idle" | "drafting" | "structuring" | "done";
   const [genPhase, setGenPhase] = useState<GenPhase>("idle");
 
   // ── Generate-tab state ───────────────────────────────────────────────
@@ -362,7 +367,7 @@ export function IngestionModal({
       return;
     }
     setParsing(true);
-    setGenPhase("research");
+    setGenPhase("drafting");
     try {
       const gen = await generateAi({
         data: {
@@ -391,9 +396,16 @@ export function IngestionModal({
         });
         return;
       }
-      setGenPhase("draft");
-      // Hand the AI draft to the existing parser for blocks + live enrichment.
-      setGenPhase("enrich");
+      if ((gen as { researchApplied?: boolean }).researchApplied === false) {
+        // Never fail silently: research can no-op (missing key, Firecrawl
+        // error) and the itinerary is then model-knowledge only.
+        toast.message("Drafted without live research", {
+          description:
+            "Live web research was unavailable, so hours and openings come from model knowledge — verify before you go.",
+        });
+      }
+      // Hand the AI draft to the existing parser for blocks + enrichment.
+      setGenPhase("structuring");
       const parsed = await parseAi({
         data: { text: gen.draft, source: "ai" },
       });
@@ -578,13 +590,15 @@ export function IngestionModal({
           {tab === "generate" && parsing && !clarifyQs.length ? (
             <GenerationProgress
               phase={genPhase}
-              destination=""
-              duration=""
-              startDate=""
-              travelers=""
-              pace=""
-              budget=""
-              interests={[]}
+              // Real state, not literals: these were hardcoded to "" so the
+              // facts panel always showed defaults regardless of input.
+              destination={genDestination}
+              duration={genDuration}
+              startDate={genStartDate}
+              travelers={genTravelers}
+              pace={genPace}
+              budget={genBudget}
+              interests={genInterests}
               prompt={genPrompt}
             />
           ) : clarifyQs.length ? (
@@ -1606,7 +1620,7 @@ function Labeled({ label, children }: { label: string; children: React.ReactNode
 /* Generation progress                                                 */
 /* ------------------------------------------------------------------ */
 
-export type GenPhaseLocal = "idle" | "research" | "draft" | "enrich" | "done";
+export type GenPhaseLocal = "idle" | "drafting" | "structuring" | "done";
 
 export function GenerationProgress({
   phase,
@@ -1629,13 +1643,15 @@ export function GenerationProgress({
   interests: string[];
   prompt: string;
 }) {
+  // One step per OBSERVABLE server call — each spinner below corresponds to
+  // a real in-flight request, and "when configured" wording avoids claiming
+  // integrations (Firecrawl, Places) that may not have keys.
   const steps: { id: GenPhaseLocal; label: string; hint: string }[] = [
-    { id: "research", label: "Researching the destination", hint: "Pulling live notes on neighborhoods, hours, and openings." },
-    { id: "draft", label: "Drafting your dossier", hint: "Composing each day with named venues and editorial reasoning." },
-    { id: "enrich", label: "Verifying venues", hint: "Cross-checking every stop against Google Places for current details." },
-    { id: "done", label: "Ready to review", hint: "Handing off to the review stage." },
+    { id: "drafting", label: "Researching & drafting", hint: "One pass: live web research when configured, then day-by-day composition with named venues." },
+    { id: "structuring", label: "Structuring & enriching", hint: "Parsing the draft into blocks; place details cross-checked when Places is configured." },
+    { id: "done", label: "Ready", hint: "Handing off." },
   ];
-  const order: GenPhaseLocal[] = ["research", "draft", "enrich", "done"];
+  const order: GenPhaseLocal[] = ["drafting", "structuring", "done"];
   const currentIdx = order.indexOf(phase);
 
   const facts: { label: string; value: string }[] = [

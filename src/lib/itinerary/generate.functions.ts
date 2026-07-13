@@ -296,6 +296,10 @@ export const generateItineraryAi = createServerFn({ method: "POST" })
           kind: "draft" as const,
           draft,
           citations,
+          // False when live research no-oped (missing FIRECRAWL_API_KEY,
+          // no destination to research, or Firecrawl failure) — the client
+          // tells the user instead of silently implying researched facts.
+          researchApplied: researchNotes.length > 0,
           // Deterministic window for the caller to stamp onto the trip record.
           resolvedDates: {
             startDate: resolved.startDate ?? null,

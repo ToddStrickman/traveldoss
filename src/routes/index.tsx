@@ -47,7 +47,7 @@ export const Route = createFileRoute("/")({
 function Landing() {
   const [picked, setPicked] = useState<SkinModule | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [genSteps, setGenSteps] = useState<string[] | null>(null);
+  const [minting, setMinting] = useState(false);
   const [pendingSlug, setPendingSlug] = useState<string | null>(null);
   const create = useServerFn(createTripFromIngestion);
   const navigate = useNavigate();
@@ -57,7 +57,7 @@ function Landing() {
   useEffect(() => {
     if (!pendingSlug) return;
     navigate({ to: "/t/$slug", params: { slug: pendingSlug }, search: { mode: "edit" } });
-    setGenSteps(null);
+    setMinting(false);
     setPendingSlug(null);
   }, [pendingSlug, navigate]);
 
@@ -121,7 +121,7 @@ function Landing() {
         setModalOpen(true);
         return;
       }
-      setGenSteps([pendingStep, "Crafting your dossier…", "Designing the pages…"]);
+      setMinting(true);
       try {
         const r = await create({
           data: {
@@ -138,7 +138,7 @@ function Landing() {
         // Keep the payload: the next visit retries instead of losing work.
         console.error(e);
         toast.error("Couldn't create your dossier", { description: String(e) });
-        setGenSteps(null);
+        setMinting(false);
       }
     };
     void resume();
@@ -168,7 +168,7 @@ function Landing() {
       return;
     }
     setModalOpen(false);
-    setGenSteps([firstStep, "Crafting your dossier…", "Designing the pages…"]);
+    setMinting(true);
     try {
       const r = await create({
         data: {
@@ -183,7 +183,7 @@ function Landing() {
     } catch (e) {
       console.error(e);
       toast.error("Couldn't create your dossier", { description: String(e) });
-      setGenSteps(null);
+      setMinting(false);
     }
   }
 
@@ -357,18 +357,7 @@ function Landing() {
         onGenerate={handleGenerate}
       />
 
-      <GenerationLoader
-        open={genSteps !== null}
-        steps={genSteps ?? []}
-        onDone={() => {
-          if (pendingSlug) {
-            navigate({ to: "/t/$slug", params: { slug: pendingSlug }, search: { mode: "edit" } });
-            setGenSteps(null);
-            setPendingSlug(null);
-          }
-          // If slug isn't ready yet, keep the loader open until it arrives.
-        }}
-      />
+      <GenerationLoader open={minting} label="Composing your dossier" />
     </div>
   );
 }

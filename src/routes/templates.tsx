@@ -279,13 +279,13 @@ function TemplatesPage() {
   const create = useServerFn(createTripFromIngestion);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalSkin, setModalSkin] = useState<SkinModule | null>(null);
-  const [genSteps, setGenSteps] = useState<string[] | null>(null);
+  const [minting, setMinting] = useState(false);
   const [pendingSlug, setPendingSlug] = useState<string | null>(null);
 
   useEffect(() => {
     if (!pendingSlug) return;
     navigate({ to: "/t/$slug", params: { slug: pendingSlug }, search: { mode: "edit" } });
-    setGenSteps(null);
+    setMinting(false);
     setPendingSlug(null);
   }, [pendingSlug, navigate]);
 
@@ -434,7 +434,7 @@ function TemplatesPage() {
     }
     setModalOpen(false);
     setPicking(modalSkin.meta.id);
-    setGenSteps([firstStep, "Crafting your dossier…", "Designing the pages…"]);
+    setMinting(true);
     try {
       const r = await create({
         data: {
@@ -451,7 +451,7 @@ function TemplatesPage() {
       toast.error("Couldn't create your dossier", {
         description: e instanceof Error ? e.message : String(e),
       });
-      setGenSteps(null);
+      setMinting(false);
       setPicking(null);
     }
   };
@@ -621,17 +621,7 @@ function TemplatesPage() {
         onGenerate={handleGenerate}
       />
 
-      <GenerationLoader
-        open={genSteps !== null}
-        steps={genSteps ?? []}
-        onDone={() => {
-          if (pendingSlug) {
-            navigate({ to: "/t/$slug", params: { slug: pendingSlug }, search: { mode: "edit" } });
-            setGenSteps(null);
-            setPendingSlug(null);
-          }
-        }}
-      />
+      <GenerationLoader open={minting} label="Composing your dossier" />
     </div>
   );
 }
