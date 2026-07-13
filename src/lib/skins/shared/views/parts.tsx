@@ -15,7 +15,8 @@ import { EditableText, useEditing } from "../Editable";
 import { PlaceSheet, usePointerCoarse } from "@/components/mobile/PlaceSheet";
 import type { FlightBlock, ActivityBlock, PartOfDay } from "../itinerary";
 import { extractUrls, prettyDomain } from "@/lib/links";
-import { Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
+import { ActivityEditSheet, FlightEditSheet } from "../ActivityEditSheet";
 
 /**
  * Inert-render mode: set when a skin renders inside an interactive wrapper
@@ -367,20 +368,34 @@ function DetailRowsList({ rows }: { rows: DetailRow[] }) {
 export function FlightStrip({
   outbound,
   inbound,
+  outboundIndex,
+  inboundIndex,
 }: {
   outbound?: FlightBlock;
   inbound?: FlightBlock;
+  outboundIndex?: number;
+  inboundIndex?: number;
 }) {
   if (!outbound && !inbound) return null;
   return (
     <div className="tds-flightstrip" data-block="flightstrip" data-print="hide-empty">
-      {outbound ? <FlightRow flight={outbound} label="Departure" /> : null}
-      {inbound ? <FlightRow flight={inbound} label="Return" /> : null}
+      {outbound ? <FlightRow flight={outbound} label="Departure" index={outboundIndex} /> : null}
+      {inbound ? <FlightRow flight={inbound} label="Return" index={inboundIndex} /> : null}
     </div>
   );
 }
 
-function FlightRow({ flight, label }: { flight: FlightBlock; label: string }) {
+function FlightRow({
+  flight,
+  label,
+  index,
+}: {
+  flight: FlightBlock;
+  label: string;
+  index?: number;
+}) {
+  const { editing } = useEditing();
+  const [editSheetOpen, setEditSheetOpen] = useState(false);
   const route = [flight.from, flight.to].filter(Boolean).join(" → ");
   const carrier = [flight.airline, flight.flightNumber].filter(Boolean).join(" ");
   const fields: Array<{ label: string; value: string }> = [];
@@ -398,6 +413,34 @@ function FlightRow({ flight, label }: { flight: FlightBlock; label: string }) {
           <AirfareIcon />
         </span>
         <span className="tds-flightstrip-label">{label}</span>
+        {/* Flights were the last fully-locked block kind: no editor existed
+            anywhere, and a blank-flow flight ghost yielded a permanent "—"
+            row. The pencil opens the shared FlightEditSheet. */}
+        {editing && index != null ? (
+          <>
+            <button
+              type="button"
+              className="tds-act-delete tap"
+              data-print="hide"
+              onClick={(e) => {
+                e.stopPropagation();
+                setEditSheetOpen(true);
+              }}
+              aria-label={`Edit ${label.toLowerCase()} flight`}
+              title="Edit flight details"
+            >
+              <Pencil size={13} aria-hidden />
+            </button>
+            {editSheetOpen ? (
+              <FlightEditSheet
+                flight={flight}
+                index={index}
+                open={editSheetOpen}
+                onOpenChange={setEditSheetOpen}
+              />
+            ) : null}
+          </>
+        ) : null}
       </div>
       <div className="tds-flightstrip-route" aria-label={`Route ${route || "unknown"}`}>
         {route || "—"}
@@ -427,6 +470,7 @@ export function ActivityRow({
   // (call / map / website / copy). Editing keeps inline text behavior.
   const coarse = usePointerCoarse();
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [editSheetOpen, setEditSheetOpen] = useState(false);
   const tappable =
     coarse && !editing &&
     !!(activity.address || activity.phone || activity.website || activity.note || activity.hours);
@@ -486,16 +530,39 @@ export function ActivityRow({
         ) : null}
       </div>
       {editing ? (
-        <button
-          type="button"
-          className="tds-act-delete tap"
-          data-print="hide"
-          onClick={handleDelete}
-          aria-label={`Delete ${activity.name?.trim() || "activity"}`}
-          title="Delete activity"
-        >
-          <Trash2 size={14} aria-hidden />
-        </button>
+        <>
+          <button
+            type="button"
+            className="tds-act-delete tap"
+            data-print="hide"
+            onClick={(e) => {
+              e.stopPropagation();
+              setEditSheetOpen(true);
+            }}
+            aria-label={`Edit details of ${activity.name?.trim() || "activity"}`}
+            title="Edit all details"
+          >
+            <Pencil size={14} aria-hidden />
+          </button>
+          <button
+            type="button"
+            className="tds-act-delete tap"
+            data-print="hide"
+            onClick={handleDelete}
+            aria-label={`Delete ${activity.name?.trim() || "activity"}`}
+            title="Delete activity"
+          >
+            <Trash2 size={14} aria-hidden />
+          </button>
+          {editSheetOpen ? (
+            <ActivityEditSheet
+              activity={activity}
+              index={index}
+              open={editSheetOpen}
+              onOpenChange={setEditSheetOpen}
+            />
+          ) : null}
+        </>
       ) : null}
     </div>
   );
@@ -504,12 +571,37 @@ export function ActivityRow({
 /** Compact kanban-card variant of an activity for the horizontal board. */
 export function ActivityCard({ activity, index }: { activity: ActivityBlock; index: number }) {
   const { onBlockChange, editing } = useEditing();
+  const [editSheetOpen, setEditSheetOpen] = useState(false);
   return (
     <div className="tds-act-card" data-block="activity-card" data-block-index={index}>
       <div className="tds-act-card-head">
         <CategoryIcon category={activity.category} className="tds-cat-icon" />
         {activity.time ? <span className="tds-act-card-time">{activity.time}</span> : null}
         <span className="tds-act-card-cat">{categoryLabel(activity.category)}</span>
+        {editing ? (
+          <>
+            <button
+              type="button"
+              className="tds-act-delete tap"
+              data-print="hide"
+              style={{ marginLeft: "auto" }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setEditSheetOpen(true);
+              }}
+              aria-label={`Edit details of ${activity.name?.trim() || "activity"}`}
+              title="Edit all details"
+            >
+              <Pencil size={13} aria-hidden />
+            </button>
+            <ActivityEditSheet
+              activity={activity}
+              index={index}
+              open={editSheetOpen}
+              onOpenChange={setEditSheetOpen}
+            />
+          </>
+        ) : null}
       </div>
       <div className="tds-act-card-title">
         {editing ? (
@@ -538,6 +630,8 @@ export function ActivityCard({ activity, index }: { activity: ActivityBlock; ind
  *  disclosure keeps the day matrix scannable without losing anything). */
 export function ActivityCell({ activity, index }: { activity: ActivityBlock; index?: number }) {
   const inert = useInertRender();
+  const { editing } = useEditing();
+  const [editSheetOpen, setEditSheetOpen] = useState(false);
   const { kind, rest } = splitActivityName(activity.name);
   const rows = buildDetailRows(activity);
   const address = rows.find((r) => r.key === "address");
@@ -550,6 +644,30 @@ export function ActivityCell({ activity, index }: { activity: ActivityBlock; ind
             redundant with it ("Walk ·" vs WALK) and steps aside. */}
         <span className="tds-act-cell-cat">{kind ?? categoryLabel(activity.category)}</span>
         {activity.time ? <span className="tds-act-cell-time">{activity.time}</span> : null}
+        {editing && index != null ? (
+          <>
+            <button
+              type="button"
+              className="tds-act-delete tap"
+              data-print="hide"
+              style={{ marginLeft: "auto" }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setEditSheetOpen(true);
+              }}
+              aria-label={`Edit details of ${activity.name?.trim() || "activity"}`}
+              title="Edit all details"
+            >
+              <Pencil size={12} aria-hidden />
+            </button>
+            <ActivityEditSheet
+              activity={activity}
+              index={index}
+              open={editSheetOpen}
+              onOpenChange={setEditSheetOpen}
+            />
+          </>
+        ) : null}
       </div>
       <div className="tds-act-cell-name">{rest}</div>
       {address ? (
