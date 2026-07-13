@@ -77,6 +77,24 @@ function offerDebugReport(report: DebugReport | undefined, label: string) {
   });
 }
 
+/** Compact human summary of what came out of a parse, so a success toast
+ *  can actually confirm "yes, we structured your text" in one glance. */
+function summarizeBlocks(blocks: Block[]): string {
+  let days = 0;
+  let activities = 0;
+  let flights = 0;
+  for (const b of blocks) {
+    if (b.kind === "day") days++;
+    else if (b.kind === "place") activities++;
+    else if (b.kind === "flight") flights++;
+  }
+  const parts: string[] = [];
+  if (days) parts.push(`${days} day${days === 1 ? "" : "s"}`);
+  if (activities) parts.push(`${activities} stop${activities === 1 ? "" : "s"}`);
+  if (flights) parts.push(`${flights} flight${flights === 1 ? "" : "s"}`);
+  return parts.join(" · ") || `${blocks.length} block${blocks.length === 1 ? "" : "s"}`;
+}
+
 type Tab = "paste" | "transcript" | "generate";
 
 const TABS: {
@@ -328,11 +346,16 @@ export function IngestionModal({
       );
     } catch (err) {
       console.error("[ai-parse] failed, falling back to local parser", err);
-      toast.message("Using offline parser", {
+      toast.warning("AI parser unavailable — used offline parser", {
         description:
           err instanceof Error
             ? err.message
             : "AI enrichment unavailable — we'll still structure your text.",
+        duration: 8000,
+        action: {
+          label: "Retry AI",
+          onClick: () => void submit(),
+        },
       });
       const r = parseDropInWithMeta(
         trimmed,
@@ -347,6 +370,11 @@ export function IngestionModal({
       toast.error("We couldn't read structure out of that. Try Day 1, Day 2…");
       return;
     }
+    // Make success obvious: confirm what we pulled out so the user doesn't
+    // have to guess whether the AI ran or the local fallback did.
+    toast.success("Parsed your itinerary", {
+      description: [destination, summarizeBlocks(blocks)].filter(Boolean).join(" — "),
+    });
     // Show what we extracted BEFORE it becomes the dossier. The ReviewStage
     // (reorder, edit, delete, confidence flags) was fully built but sat
     // unreachable for months while parses replaced dossiers sight unseen —
