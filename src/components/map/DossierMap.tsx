@@ -267,12 +267,19 @@ export function DossierMapOverlay({
     const pins: Pin[] = [];
     let unlocated = 0;
     blocks.forEach((b, index) => {
-      if (b.kind !== "place" || !visible.has(index)) return;
+      if (b.kind !== "place") return;
+      // Structural visibility filters out collapsed/truncated content, EXCEPT
+      // when the traveler opened the map focused on a specific day — then that
+      // day's pins are always included even if that day is currently collapsed
+      // (otherwise the "Map" button on a collapsed day header opens an empty
+      // map).
+      const day = dayOf.get(index) ?? null;
+      const forceInclude = initialDay != null && day === initialDay;
+      if (!forceInclude && !visible.has(index)) return;
       if (b.lat == null || b.lng == null) {
         unlocated++;
         return;
       }
-      const day = dayOf.get(index) ?? null;
       const key = day ?? 0;
       const order = (perDayCount.get(key) ?? 0) + 1;
       perDayCount.set(key, order);
