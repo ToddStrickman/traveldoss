@@ -128,6 +128,7 @@ export function IngestionModal({
   onGenerate,
   tripId,
   tripCreatedAt,
+  initialTab,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -141,8 +142,14 @@ export function IngestionModal({
   /** Stable reference derived from the trip id + created_at. */
   tripId?: string | null;
   tripCreatedAt?: string | null;
+  /** Which source tab to focus when the modal opens. Defaults to "paste". */
+  initialTab?: Tab;
 }) {
-  const [tab, setTab] = useState<Tab>("paste");
+  const [tab, setTab] = useState<Tab>(initialTab ?? "paste");
+  // When the parent re-opens the modal with a new initialTab, honor it.
+  useEffect(() => {
+    if (open && initialTab) setTab(initialTab);
+  }, [open, initialTab]);
 
   // Keep the sticky footer above the on-screen keyboard: expose the visual
   // viewport shortfall as --kb-inset (consumed by the footer's bottom-[]).
