@@ -1,5 +1,11 @@
 import { ClipboardPaste, FileUp, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 /**
  * Fixed glassmorphism action dock for the landing page. Groups the three
@@ -19,6 +25,7 @@ export function ActionDock({
   className?: string;
 }) {
   return (
+    <TooltipProvider delayDuration={1000} skipDelayDuration={300}>
     <div
       role="toolbar"
       aria-label="Quick actions"
@@ -41,7 +48,9 @@ export function ActionDock({
       }}
     >
       {/* Primary — accent-filled, high-contrast, lifts on hover */}
-      <button
+      <Tooltip>
+        <TooltipTrigger asChild>
+        <button
         type="button"
         onClick={onCompose}
         className={cn(
@@ -55,16 +64,32 @@ export function ActionDock({
       >
         <Sparkles className="h-4 w-4" aria-hidden />
         <span>Compose</span>
-      </button>
+        </button>
+        </TooltipTrigger>
+        <TooltipContent side="top" sideOffset={8}>
+          Compose a new dossier with AI
+        </TooltipContent>
+      </Tooltip>
 
       <span aria-hidden className="h-6 w-px bg-white/15" />
 
       {/* Paste text */}
-      <DockButton onClick={onPaste} icon={<ClipboardPaste className="h-4 w-4" aria-hidden />} label="Paste text" />
+      <DockButton
+        onClick={onPaste}
+        icon={<ClipboardPaste className="h-4 w-4" aria-hidden />}
+        label="Paste text"
+        tooltip="Paste an itinerary or booking email"
+      />
 
       {/* Import file */}
-      <DockButton onClick={onImport} icon={<FileUp className="h-4 w-4" aria-hidden />} label="Import file" />
+      <DockButton
+        onClick={onImport}
+        icon={<FileUp className="h-4 w-4" aria-hidden />}
+        label="Import file"
+        tooltip="Upload a booking PDF or document"
+      />
     </div>
+    </TooltipProvider>
   );
 }
 
@@ -72,13 +97,17 @@ function DockButton({
   onClick,
   icon,
   label,
+  tooltip,
 }: {
   onClick: () => void;
   icon: React.ReactNode;
   label: string;
+  tooltip: string;
 }) {
   return (
-    <button
+    <Tooltip>
+      <TooltipTrigger asChild>
+      <button
       type="button"
       onClick={onClick}
       className={cn(
@@ -92,6 +121,11 @@ function DockButton({
       {icon}
       <span className="hidden sm:inline">{label}</span>
       <span className="sr-only sm:hidden">{label}</span>
-    </button>
+      </button>
+      </TooltipTrigger>
+      <TooltipContent side="top" sideOffset={8}>
+        {tooltip}
+      </TooltipContent>
+    </Tooltip>
   );
 }
