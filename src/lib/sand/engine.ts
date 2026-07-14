@@ -101,6 +101,7 @@ export class SandEngine {
   private seed: number;
 
   private n = 0;              // total grains
+  private activeN = 0;        // grains the governor keeps live (≤ n)
   private nLetters = 0;
   private nGlyphs = 0;
   private pools!: Pools;
@@ -128,6 +129,8 @@ export class SandEngine {
   // Pointer state (world units). History rings give the trailing pressure wave.
   private ptr = { x: 0, y: 0, vx: 0, vy: 0, speed: 0, active: false, down: false };
   private ptrTrail: { x: number; y: number }[] = [];
+  private ptrPrev: { x: number; y: number } | null = null;
+  private trailAcc = 0;
 
   // Timing / lifecycle
   private raf = 0;
@@ -280,6 +283,7 @@ export class SandEngine {
     this.nLetters = sampled.points.length;
     this.nGlyphs = glyphs.length;
     this.n = this.nLetters + this.nGlyphs + nOver;
+    this.activeN = this.n;
 
     // Memory grid spans the text bounds with margin.
     const gw = sampled.width * 1.12;
@@ -516,7 +520,9 @@ export class SandEngine {
       this.revealSweep = 0;
       this.time = Math.min(this.time, this.story.revealDelay);
     }
-    this.applyViewport();
+    // The fresh geometry starts at a full draw range; re-trim it (and
+    // activeN) to the current quality tier. Also re-applies the viewport.
+    this.applyQuality();
   }
 
   pointer(clientX: number, clientY: number, down: boolean): void {
@@ -536,6 +542,7 @@ export class SandEngine {
     this.ptr.active = false;
     this.ptr.down = false;
     this.ptr.speed = 0;
+    this.ptrPrev = null;
   }
 
   dispose(): void {
@@ -560,10 +567,17 @@ export class SandEngine {
     if (!this.running || this.disposed) return;
     const rawDt = (now - this.lastT) / 1000;
     this.lastT = now;
-    const dt = Math.min(rawDt, 1 / 30); // clamp after tab-switch pauses
+    // Clamp after tab-switch pauses. 1/20 keeps motion real-time down to
+    // 20fps (the governor sheds load well before that); only below it does
+    // the sim drop into slow motion rather than exploding the integrator.
+    const dt = Math.min(rawDt, 1 / 20);
     this.time += dt;
 
-    this.frameEMA = this.frameEMA * 0.95 + rawDt * 1000 * 0.05;
+    // Steady-state cost only: one tab-switch gap is a single giant rawDt
+    // that would poison the EMA and nuke quality for seconds after return.
+    if (rawDt < 0.25) {
+      this.frameEMA = this.frameEMA * 0.95 + rawDt * 1000 * 0.05;
+    }
     this.governQuality(dt);
 
     this.updatePointerDynamics(dt);
@@ -588,21 +602,31 @@ export class SandEngine {
 
   private updatePointerDynamics(dt: number): void {
     const p = this.ptr;
+    // Per-frame decay/blend factors are tuned for 60fps; raise to dt so the
+    // cursor feel is identical on high-refresh panels.
+    const n60 = dt * 60;
     if (!p.active) {
-      p.speed *= 0.9;
+      p.speed *= Math.pow(0.9, n60);
       return;
     }
     // Smoothed velocity from position deltas.
-    const last = this.ptrTrail[this.ptrTrail.length - 1];
-    if (last) {
-      const ivx = (p.x - last.x) / Math.max(dt, 1e-3);
-      const ivy = (p.y - last.y) / Math.max(dt, 1e-3);
-      p.vx = p.vx * 0.8 + ivx * 0.2;
-      p.vy = p.vy * 0.8 + ivy * 0.2;
+    if (this.ptrPrev) {
+      const ivx = (p.x - this.ptrPrev.x) / Math.max(dt, 1e-3);
+      const ivy = (p.y - this.ptrPrev.y) / Math.max(dt, 1e-3);
+      const blend = 1 - Math.pow(0.8, n60);
+      p.vx = p.vx * (1 - blend) + ivx * blend;
+      p.vy = p.vy * (1 - blend) + ivy * blend;
       p.speed = Math.hypot(p.vx, p.vy);
     }
-    this.ptrTrail.push({ x: p.x, y: p.y });
-    if (this.ptrTrail.length > 20) this.ptrTrail.shift();
+    this.ptrPrev = { x: p.x, y: p.y };
+    // The trail ring is sampled at a fixed 60Hz cadence so the echo offsets
+    // (len-8, len-16) stay the same *time* behind the cursor at any fps.
+    this.trailAcc += dt;
+    if (this.trailAcc >= 1 / 60) {
+      this.trailAcc %= 1 / 60;
+      this.ptrTrail.push({ x: p.x, y: p.y });
+      if (this.ptrTrail.length > 20) this.ptrTrail.shift();
+    }
     if (p.speed > 12) this.interactionTime += dt;
   }
 
@@ -685,9 +709,10 @@ export class SandEngine {
   private syncRevealAttr(all: boolean): void {
     const arr = this.revealAttr.array as Float32Array;
     const P = this.pools;
-    const chunk = all ? this.n : Math.ceil(this.n / 4);
+    const live = all ? this.n : this.activeN; // trimmed grains aren't drawn
+    const chunk = all ? live : Math.ceil(live / 4);
     for (let k = 0; k < chunk; k++) {
-      const i = all ? k : (this.revealCursor + k) % this.n;
+      const i = all ? k : (this.revealCursor + k) % live;
       const cell = P.cell[i];
       const cl = cell >= 0 ? this.clean[cell] : 1;
       if (i < this.nLetters + this.nGlyphs) {
@@ -710,7 +735,7 @@ export class SandEngine {
         arr[i] = 1 - Math.min(Math.max(gap * 6, 0), 1);
       }
     }
-    if (!all) this.revealCursor = (this.revealCursor + chunk) % this.n;
+    if (!all) this.revealCursor = (this.revealCursor + chunk) % this.activeN;
     this.revealAttr.needsUpdate = true;
   }
 
@@ -749,8 +774,20 @@ export class SandEngine {
       }
     }
 
+    // DAMPING is tuned as per-frame factors at 60fps. Raising them to
+    // dt-normalized exponents keeps motion speed identical on 144Hz panels
+    // (where per-frame damping would crush velocities ~2.4x) and under low
+    // fps. The small zone term is folded in linearly — exact per-grain pow
+    // isn't worth the cost for a ±0.002 damping difference.
+    const n60 = dt * 60;
+    const layerDamp = [
+      Math.pow(DAMPING[0], n60),
+      Math.pow(DAMPING[1], n60),
+      Math.pow(DAMPING[2], n60),
+    ];
+
     const pos = this.posAttr.array as Float32Array;
-    const nAll = this.n;
+    const nAll = this.activeN; // trimmed overburden is skipped by CPU too
     for (let i = 0; i < nAll; i++) {
       const layer = P.layer[i];
       const zone = P.zone[i];
@@ -803,7 +840,7 @@ export class SandEngine {
       }
 
       // Integrate with per-layer damping (friction into the stone).
-      const damp = DAMPING[layer] - zone * 0.02;
+      const damp = layerDamp[layer] * (1 - zone * 0.02 * n60);
       P.vx[i] = (P.vx[i] + fx * dt) * damp;
       P.vy[i] = (P.vy[i] + fy * dt) * damp;
       P.px[i] += P.vx[i] * dt;
@@ -818,6 +855,7 @@ export class SandEngine {
   private updateDust(dt: number): void {
     const arr = this.dustPosAttr.array as Float32Array;
     const life = this.dustLifeAttr.array as Float32Array;
+    const drag = Math.pow(0.985, dt * 60); // per-frame factor → dt-normalized
     for (let i = 0; i < DUST_CAP; i++) {
       if (this.dlife[i] <= 0) {
         life[i] = 0;
@@ -825,8 +863,8 @@ export class SandEngine {
       }
       this.dlife[i] -= dt;
       this.dvy[i] += 14 * dt; // buoyancy: dust rises
-      this.dvx[i] *= 0.985;
-      this.dvy[i] *= 0.985;
+      this.dvx[i] *= drag;
+      this.dvy[i] *= drag;
       this.dpx[i] += this.dvx[i] * dt;
       this.dpy[i] += this.dvy[i] * dt;
       arr[i * 3] = this.dpx[i];
@@ -943,6 +981,8 @@ export class SandEngine {
 
   private applyQuality(): void {
     // Trim from the overburden end of the buffer — letters are untouchable.
+    // activeN gates the CPU physics/reveal loops too: trimming only the draw
+    // range would leave the real bottleneck (30k-grain simulate) untouched.
     const geo = this.grains.geometry;
     const overStart = this.nLetters + this.nGlyphs;
     const overCount = this.n - overStart;
@@ -950,7 +990,8 @@ export class SandEngine {
       this.quality === 2 ? overCount :
       this.quality === 1 ? Math.floor(overCount * 0.55) :
       Math.floor(overCount * 0.25);
-    geo.setDrawRange(0, overStart + keep);
+    this.activeN = overStart + keep;
+    geo.setDrawRange(0, this.activeN);
     this.applyViewport(); // re-clamps DPR for the new quality tier
   }
 
