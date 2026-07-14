@@ -377,19 +377,15 @@ export function IngestionModal({
       toast.error("We couldn't read structure out of that. Try Day 1, Day 2…");
       return;
     }
-    // Make success obvious: confirm what we pulled out so the user doesn't
-    // have to guess whether the AI ran or the local fallback did.
-    toast.success("Parsed your itinerary", {
+    // Skip the standalone review screen — the dossier itself is the review
+    // surface (add/remove/edit inline). We still confirm the parse with a
+    // toast so the user knows what we pulled out, then mint directly.
+    toast.success("Parsed your itinerary — opening dossier", {
       description: [destination, summarizeBlocks(blocks)].filter(Boolean).join(" — "),
     });
-    // Show what we extracted BEFORE it becomes the dossier. The ReviewStage
-    // (reorder, edit, delete, confidence flags) was fully built but sat
-    // unreachable for months while parses replaced dossiers sight unseen —
-    // the audit's single most leveraged fix.
-    setReviewLabel(tab === "transcript" ? "Reading your transcript…" : "Reading your dossier…");
-    setReviewDestination(destination);
-    setReviewBlocks(blocks);
-    setStage("review");
+    const label = tab === "transcript" ? "Reading your transcript…" : "Reading your dossier…";
+    onGenerate(blocks, label, destination);
+    handleOpenChange(false);
   }
 
   // Cancellation for the generate pipeline. Cancelling (button or the hard
