@@ -10,6 +10,7 @@ import { TopoBackground } from "@/components/landing/TopoBackground";
 import { TemplateGallery } from "@/components/flow/TemplateGallery";
 import { IngestionModal } from "@/components/flow/IngestionModal";
 import { GenerationLoader } from "@/components/GenerationLoader";
+import { ActionDock } from "@/components/landing/ActionDock";
 import { Parallax } from "@/components/motion/Tilt";
 import { SKINS, type SkinModule } from "@/lib/skins/registry";
 import type { Block } from "@/lib/skins/types";
@@ -47,6 +48,7 @@ export const Route = createFileRoute("/")({
 function Landing() {
   const [picked, setPicked] = useState<SkinModule | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [initialTab, setInitialTab] = useState<"paste" | "transcript">("paste");
   const [minting, setMinting] = useState(false);
   const [pendingSlug, setPendingSlug] = useState<string | null>(null);
   const create = useServerFn(createTripFromIngestion);
@@ -145,7 +147,17 @@ function Landing() {
   }, [create]);
 
   function openWithTemplate(skin: SkinModule) {
+    setInitialTab("paste");
     setPicked(skin);
+    setModalOpen(true);
+  }
+
+  // Dock actions default to the first skin in the registry so visitors
+  // can enter the compose flow without picking a template first — they
+  // can still switch templates from inside the modal / studio later.
+  function openDock(tab: "paste" | "transcript") {
+    setInitialTab(tab);
+    setPicked((prev) => prev ?? SKINS[0] ?? null);
     setModalOpen(true);
   }
 
@@ -355,9 +367,16 @@ function Landing() {
         onOpenChange={setModalOpen}
         template={picked}
         onGenerate={handleGenerate}
+        initialTab={initialTab}
       />
 
       <GenerationLoader open={minting} label="Composing your dossier" />
+
+      <ActionDock
+        onCompose={() => openDock("paste")}
+        onPaste={() => openDock("paste")}
+        onImport={() => openDock("transcript")}
+      />
     </div>
   );
 }
