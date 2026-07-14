@@ -24,7 +24,7 @@ export type PublicTripRow = {
   hero_image_url: string | null;
   start_date: string | null;
   end_date: string | null;
-  content: unknown;
+  content: Record<string, unknown> | null;
   expires_at: string | null;
   created_at: string | null;
 };
