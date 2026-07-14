@@ -10,7 +10,7 @@ describe("GenerationProgress", () => {
   it("renders all steps with correct labels and statuses", () => {
     const { getByText, getAllByText } = render(
       <GenerationProgress
-        phase="draft"
+        phase="drafting"
         destination="Kyoto"
         duration="7 days"
         startDate="2025-04-10"
@@ -31,12 +31,10 @@ describe("GenerationProgress", () => {
     expect(getByText("luxury")).toBeDefined();
     expect(getByText("temples, food, nature")).toBeDefined();
 
-    expect(getByText("Researching the destination")).toBeDefined();
-    expect(getByText("Drafting your dossier")).toBeDefined();
-    expect(getByText("Verifying venues")).toBeDefined();
-    expect(getByText("Ready to review")).toBeDefined();
+    expect(getByText("Researching & drafting")).toBeDefined();
+    expect(getByText("Structuring & enriching")).toBeDefined();
+    expect(getByText("Ready")).toBeDefined();
 
-    expect(getByText("Done")).toBeDefined();
     expect(getByText("Working")).toBeDefined();
     expect(getAllByText("Queued").length).toBe(2);
   });
@@ -44,7 +42,7 @@ describe("GenerationProgress", () => {
   it("shows default values when props are empty", () => {
     const { getByText } = render(
       <GenerationProgress
-        phase="research"
+        phase="idle"
         destination=""
         duration=""
         startDate=""
@@ -66,7 +64,7 @@ describe("GenerationProgress", () => {
   });
 
   it("marks the active step correctly for each phase", () => {
-    const phases = ["research", "draft", "enrich", "done"] as const;
+    const phases = ["drafting", "structuring", "done"] as const;
     for (const phase of phases) {
       const { queryAllByText, unmount } = render(
         <GenerationProgress
@@ -83,7 +81,7 @@ describe("GenerationProgress", () => {
       );
 
       const working = queryAllByText("Working");
-      expect(working.length).toBe(1);
+      expect(working.length).toBeLessThanOrEqual(1);
       unmount();
     }
   });

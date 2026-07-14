@@ -229,6 +229,7 @@ function summary(b: Block): string {
     case "quote": return `"${b.text.slice(0, 50)}"`;
     case "note": return b.text.slice(0, 60);
   }
+  return "";
 }
 
 const inputCls =

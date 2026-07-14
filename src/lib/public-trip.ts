@@ -24,7 +24,8 @@ export type PublicTripRow = {
   hero_image_url: string | null;
   start_date: string | null;
   end_date: string | null;
-  content: unknown;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  content: Record<string, any> | null;
   expires_at: string | null;
   created_at: string | null;
 };
