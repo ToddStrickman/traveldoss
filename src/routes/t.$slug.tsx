@@ -50,9 +50,9 @@ export const Route = createFileRoute("/t/$slug")({
     view: z.enum(["vertical", "horizontal", "grid"]).optional(),
   }),
   loader: async ({ params }) => {
-    const { trip, expired } = await getDossierBySlug({ data: { slug: params.slug } });
-    if (!trip) throw notFound();
-    return { trip, expired: !!expired };
+    const result = await getDossierBySlug({ data: { slug: params.slug } });
+    if (!result.trip) throw notFound();
+    return { trip: result.trip, expired: !!result.expired };
   },
   head: ({ loaderData }) => {
     const trip = loaderData?.trip;
