@@ -300,7 +300,7 @@ function DossierPage() {
       console.error("[autosave]", e);
       // Re-queue so the next edit, retry, or flush resends these changes
       // (newer fields win over the failed ones).
-      pendingPatch.current = { ...patch, ...pendingPatch.current };
+      pendingPatch.current = { ...patch, ...(pendingPatch.current ?? {}) };
       setSaveError(true);
       if (!errorToasted.current) {
         errorToasted.current = true;
