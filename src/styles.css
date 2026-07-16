@@ -395,8 +395,6 @@
   .td-shimmer::before { animation: none; }
 }
 
-/* MobileBubbles overlay removed — Spec 4 (bubbles retirement). */
-
 /* ────────────────────────────────────────────────────────────────────
  * Mobile foundation (T1 · .design/traveldoss-mobile)
  * Touch ergonomics, safe areas, and coarse-pointer affordances for the
