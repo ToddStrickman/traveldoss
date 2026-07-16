@@ -1,176 +1,129 @@
-## Scope
+# Dossier Editing Redesign + Four Bug Fixes — Plan
 
-Three intertwined changes:
+## Part A · Dossier Editing Experience Redesign
 
-1. **Language sweep** — user-visible "itinerary" becomes "dossier". (Except in the home screen)
-2. **Lock/Unlock edit mode** — global toggle that switches the whole canvas between read and write; mobile is locked by default so a stray finger can't drag a card. Desktop stays unlocked so you can click straight into a field.
-3. **Bottom-bar reclaim** — once a real (non-sample) dossier exists, the fat StudioBar collapses; the "Replace itinerary" CTA disappears entirely. Template picking moves off the bottom.
+### Reuse-first inventory (no parallel UI)
 
-The previously-approved "add-day + auto-chronological reordering" work is a separate ticket and is explicitly out of scope here.
+- `LockPill` (`src/components/studio/LockPill.tsx`) — extend, don't replace.
+- `StudioBar` (`src/components/studio/StudioBar.tsx`) — its save-state read-out is extracted to a `SaveStatus` subcomponent and reused.
+- `EditingProvider` / `useEditing` / `EditableText` / `SortableBlocks` (`src/lib/skins/shared/Editable.tsx`) — already flip every field to contentEditable when unlocked. No per-field edit buttons.
+- `editing-kit.tsx` (`AddActivitySlot`, `AddDayButton`, `DayReorderControls`, `useAddDay`, `useDeleteDay`, `useMoveDay`) — restyled, not duplicated.
+- `ExportMenu` (`src/components/studio/ExportMenu.tsx`) — Copy Link handler + toast reused; the "Live URL" button moves out.
+- `TdSheet` + shadcn `DropdownMenu` — reused for the item overflow menu.
+- `sonner` `toast` — reused for copy/save feedback.
 
----
+### Changes
 
-## 1) Language sweep: itinerary → dossier
+1. **Single Locked / Editing model.** `locked` in `t.$slug.tsx` stays the only source of truth. Remove the row-level `Trash2` in `parts.tsx` (delete lives in overflow menu now). No modal, no confirm, no scroll jump on toggle.
+2. **One sticky editing-status bar (mobile + desktop).** New `EditingStatusBar` (composes `LockPill` + `SaveStatus` + `SharedDossierCard`). Replaces the top mobile "Editing · auto-saves" banner AND the bottom `StudioBar` placement on `/t/:slug`. `StudioBar` stays intact for the pre-mint sample flow (`emphasis="mint"`).
+  - Locked chip: `Lock · Locked · Unlock editing`.
+  - Editing chip: `Unlock · Editing · Saving…/Saved ✓/Offline — waiting/All changes synced ✓ · Undo/Redo · Lock`.
+3. **Inline "Add" cards.** Restyle `AddActivitySlot` and `AddDayButton` as full-width dashed cards using skin tokens (`--tds-rule`, `--tds-soft`); hover lift + seal-tinted border. Tap opens the existing `InlineActivityEditor` in place across Vertical / Horizontal / Grid via the shared kit.
+4. **Share Dossier component (replaces "Live URL").** New `ShareDossierCard` (title · URL · Copy · Locked/Editing badge). Desktop: right side of the status bar. Mobile: stacked below it, full-width Copy, no horizontal scroll. Copy calls the extracted `copyDossierLink(slug)` in `src/lib/share.ts` and fires `toast.success("Copied to clipboard")`. Remove the Live URL button from `ExportMenu`.
+5. **Overflow menu on repeatable items.** New `ItemOverflowMenu` wrapping shadcn `DropdownMenu` on desktop and `TdSheet` on mobile. Options: Duplicate (calls `onBlockAdd(index, block.kind, { ...block })`) and Delete (calls `onBlockRemove`).
+6. **Real-time sharing model.** No publish concept. The public route already reads latest saved `content` on every request, so autosave IS publish. The Shared Dossier URL is always current — reflected by the copy tooltip "Shares the latest saved version".
 
-Rename only user-visible copy. Do **not** rename files, exports, types, hooks, or CSS class names — that ripples through the codebase and off-scope tests without changing what the user sees.
+### New files (only where nothing fits)
 
-### Strings to change
+- `src/components/studio/EditingStatusBar.tsx`
+- `src/components/studio/SharedDossierCard.tsx`
+- `src/components/studio/ItemOverflowMenu.tsx`
+- `src/lib/share.ts` (thin helper)
 
+### Files modified
 
-| File                                        | Line                     | Current                                                                                                         | New                                                                                                    |
-| ------------------------------------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `src/components/studio/StudioBar.tsx`       | 186                      | "Replace itinerary"                                                                                             | Removed with the whole button (see §3)                                                                 |
-| `src/lib/skins/shared/BlankDayScaffold.tsx` | 98                       | "…real slot in your itinerary."                                                                                 | "…real slot in your dossier."                                                                          |
-| `src/components/studio/ExportMenu.tsx`      | 117                      | "…reading your itinerary."                                                                                      | "…reading your dossier."                                                                               |
-| `src/components/flow/IngestionModal.tsx`    | 138, 293, 356, 601, 1531 | "Reading your itinerary…", "Drafting your itinerary…", "Paste an itinerary — Day 1…", "Drafting your itinerary" | "Reading your dossier…", "Drafting your dossier…", "Paste a dossier — Day 1…", "Drafting your dossier" |
-| `src/components/flow/IngestionModal.tsx`    | 155, 333                 | "…tailor the itinerary to you…" / "…tailor the itinerary."                                                      | "…tailor the dossier…"                                                                                 |
-| `src/components/flow/IngestionModal.tsx`    | 365                      | "Couldn't generate that itinerary."                                                                             | "Couldn't generate that dossier."                                                                      |
-| `src/routes/t.$slug.tsx`                    | 560                      | "Replace this dossier's itinerary?"                                                                             | Removed with the mint prompt (see §3)                                                                  |
-| `src/lib/skins/shared/ShadowItinerary.tsx`  | 21                       | Visible heading "Shadow itinerary"                                                                              | "Shadow dossier" (component export name stays `ShadowItinerary`)                                       |
-| `src/lib/skins/shared/ShadowItinerary.tsx`  | 16                       | `aria-label="Shadow itinerary — backup plans"`                                                                  | `aria-label="Shadow dossier — backup plans"`                                                           |
+- `src/routes/t.$slug.tsx` (mount bar, remove banner + bottom bar, drop `max-md:hidden` on `ExportMenu`)
+- `src/components/studio/LockPill.tsx` (`variant="status"`)
+- `src/components/studio/StudioBar.tsx` (export `SaveStatus`; leave mint flow alone)
+- `src/components/studio/ExportMenu.tsx` (remove Live URL button; export `copyDossierLink`)
+- `src/lib/skins/shared/Editable.tsx` (swap row `Trash2` → `ItemOverflowMenu`)
+- `src/lib/skins/shared/views/editing-kit.tsx` (dashed add cards; drop redundant "Day added" toast)
+- `src/lib/skins/shared/skin.css` (token-driven styles for add card + overflow trigger)
 
+### State / API / schema
 
-### Not renaming
-
-- File paths (`src/lib/itinerary/*`, `use-itinerary-refiner`, `ShadowItinerary.tsx`).
-- Type/function names (`Itinerary`, `buildItinerary`, `useItineraryRefiner`, `hardenItineraryAi`, etc.).
-- CSS classes (`.tds-shadow-itinerary`, `.td-...`).
-- Test string in `GenerationProgress.test.tsx` — updated to match the new copy so the test still passes.
-
----
-
-## 2) Lock / Unlock edit mode
-
-New global state that gates every interactive editor.
-
-### State model
-
-Store `locked` in `sessionStorage` under key `td:lock:<trip.slug>` so a refresh keeps the mode, but a fresh session picks the sensible default per device:
-
-- Mobile (via existing `useIsMobile()`): `locked = true` by default.
-- Desktop: `locked = false` by default.
-
-Wire it into `t.$slug.tsx` alongside `canEdit`:
-
-```ts
-const [locked, setLocked] = useState(defaultLockFor(device));
-const isEditing = canEdit && !locked;
-```
-
-Pass `editing: isEditing` into `EditingProvider` — every existing editable (`EditableText`, `MetaChip`, DnD sensors, ghost tiles, delete/add tools) already reads `useEditing().editing`, so they all flip together with zero per-component churn.
-
-### Toggle affordances
-
-- **Desktop** — a `LockPill` component fixed to the top-right of the canvas (same z-band as the current back-pill). Two visual states:
-  - Locked: `Lock` icon · "Editing off" · muted seal border.
-  - Unlocked: `Unlock` icon · "Editing on" · solid seal fill.
-  Framer Motion `AnimatePresence` crossfades the label + icon (opacity + 4px slide) on toggle. `Cmd/Ctrl+E` shortcut mirrors the click.
-- **Mobile** — the Lock/Unlock control becomes the primary right-side action in `DossierMastheadBar` (replacing the current `Days` chip position; Days moves into an overflow menu that only appears when there are 2+ days). Tap target 44px, respects safe-area-inset-top.
-
-### Locked-mode behavior
-
-- `EditableText` renders read-only (already handled by `editing === false`).
-- `SortableBlocks` / `ActivityDndContext` skip mounting sensors when `editing === false` (already the case — but audit `dnd.tsx` line 80: `if (!editing) return <>{children}</>;` is correct).
-- `MetaChip` shows values with no click-to-edit affordance.
-- `BlankDayScaffold` still renders but ghost tiles get a `disabled` treatment with a single-line hint at the top of the scaffold: "Unlock to start filling in your dossier." Clicking a ghost while locked opens the unlock action instead of inserting a block.
-- Mobile only: tapping any editable region while locked flashes a Sonner toast "Unlock to edit" once per session (rate-limited via a ref) so users learn the model without noise.
-
-### Framer Motion
-
-Uses the already-installed `motion` package (`motion/react`) — no new deps.
-
-- `LockPill` icon+label crossfade: `AnimatePresence` + `motion.span` with `initial/animate/exit` opacity + 4px y-translate, `duration: 0.18`.
-- Bottom bar reveal/hide (§3): `motion.div` with `initial={{y: 32, opacity: 0}}` → `animate={{y: 0, opacity: 1}}`.
-- All animations respect `prefers-reduced-motion` via `useReducedMotion()` from `motion/react`, collapsing to opacity-only.
+None. All state already exists (`locked`, `saving`, `savedAt`, `saveError`, slug). No new deps.
 
 ---
 
-## 3) Bottom bar reclaim
+## Part B · Bug Fixes
 
-Current `StudioBar` for a minted dossier carries: undo · redo · history · template select · saving status · **Replace itinerary** button. It's a lot of chrome, and Replace is the confusing part.
+### B1. Paste-parser: results don't render until user hits Edit
 
-### New behavior
+**Diagnosis (to confirm in the fix session, not now):**
 
-- **Sample state (`isSample === true`)** — unchanged. The "Mint this dossier" CTA still lives in the bar because that's how a user commits their scratch dossier into a real one.
-- **Real dossier + locked** — bar hides entirely. A single tiny floating `Unlock to edit` pill sits bottom-right on desktop, bottom-center-safe-area on mobile. This IS the affordance; no other chrome.
-- **Real dossier + unlocked** — bar slides up (Framer Motion) with the reduced set: [Lock] [Undo] [Redo] [History] [Saved status]. **No template select, no Replace CTA.**
+- `IngestionModal.tsx` calls `parseItineraryAi`, then invokes `onGenerate(blocks, …)` — in `src/routes/t.$slug.tsx` (line 751) that is `handleMint`, which persists to Supabase.
+- Strong suspicion (matches user's hypothesis): after `handleMint` writes, the local `blocks` state that feeds `SkinFrame` isn't updated in the same tick — the route only re-reads on loader invalidation. Toggling Edit re-runs a state effect that reseeds from persisted content, so the parsed itinerary "appears" then.
 
-### Where template picking goes
+**Fix scope (state/data-flow only, per guardrails):**
 
-Template swaps are a deliberate design choice, not a per-edit action — they belong off the writing surface. Move the picker into:
+- On successful parse in `IngestionModal`, hand blocks to the caller AND update the route's local `blocks`/`view` state synchronously — same setter path `EditingProvider` already uses for edits — before closing the modal. Call `router.invalidate()` after the DB write resolves so loader-derived state is authoritative.
+- Immediate loading state: show `GenerationProgress` (already exists) the moment `parseItineraryAi` is dispatched — including on the "paste" tab, not just the "generate" tab (see gate at IngestionModal:658 `tab === "generate" && parsing`). Extend the gate to `(tab === "paste" || tab === "generate") && parsing`.
+- Timeout: wrap `parseItineraryAi` in `withRetry`/`AbortController` with a 45s ceiling; on timeout show inline error card with **Try again** action (reuse the toast+action pattern from `ExportMenu.exportToGoogleDoc`).
+- Error state: on catch, render the existing inline warning card with `Try again` button — never close the modal to a blank canvas.
 
-- **Desktop** — a "Template" quiet chip attached to the top-right cluster next to the LockPill. Click opens a Popover with the same select. Only visible for the owner.
-- **Mobile** — an entry in the `DossierMastheadBar` overflow (a new lightweight ⋯ menu; opens the same picker as a bottom sheet using the existing `TdSheet`).
+**Files:** `src/components/flow/IngestionModal.tsx`, `src/routes/t.$slug.tsx`, `src/routes/index.tsx` (mirror the same success handler), `src/lib/itinerary/parse-ai.functions.ts` (accept `AbortSignal`).
+**Guardrails:** no changes to parser prompt, parsing logic, or block schema.
+**Verify:** paste a sample itinerary → progress visible → content on screen without touching Edit → intentionally corrupt paste → error card with Try again.
 
-### Where "Replace" goes
+### B2. Email/password signup and login broken; Google works
 
-Gone. The AI-driven "replace the whole dossier" workflow moves into the desktop template menu as a secondary "Regenerate from source…" action, and the mobile overflow. It stops squatting on the bottom bar. The existing confirm-then-open-IngestionModal flow is unchanged; only its trigger location moves.
+**Diagnosis to run first (report before fixing):**
 
----
+- `src/routes/login.tsx` `onSubmit` already calls `supabase.auth.signUp` / `signInWithPassword` and toasts errors. Two likely real causes: (a) Supabase project has email provider disabled or email confirmations required with no delivery configured; (b) after signup with confirmations on, `signUp` returns no session and code falls through with only a toast — new users think it failed.
+- Verify via `supabase--configure_auth` inspection + Auth logs. If email confirmations required, verify email infra is set up (`email_domain--check_email_domain_status`).
 
-## 4) Reinforced blank-canvas cues
+**Fix scope:**
 
-Existing scaffold already dashes each ghost tile. Add three ambient hints that only appear when `isEditing === true`:
+- If email provider is off, enable via `supabase--configure_auth`. If HIBP not on, keep as-is (out of scope).
+- If auto-confirm off + no delivery, either (a) enable auth email templates (`email_domain--scaffold_auth_email_templates`) OR (b) turn `auto_confirm_email: true` — only if the user approves; do not silently flip.
+- Distinguish error paths in `login.tsx`: `invalid_credentials` → "Wrong email or password"; `email_not_confirmed` → "Confirm your email to sign in" with **Resend** button (`supabase.auth.resend`); `user_already_registered` → "An account exists — sign in instead" with a mode-switch link.
+- After successful `signUp` with a session, `window.location.assign(redirect)` like the signin branch. Without a session, keep the check-email toast but ALSO render an inline confirmation panel (no navigation).
+- `emailRedirectTo` uses `window.location.origin + redirect` — verify `redirect` sanitization already in place (it is) and that the deployed origin, not localhost, is used at runtime.
 
-1. **Hero placeholder underline** — `EditableText` gains a `data-editing="true"` attribute that applies a `.tds-edit-hint` rule: a 1px dashed underline in `color-mix(in oklab, var(--tds-accent) 55%, transparent)` on any element whose text equals its placeholder ("Trip title", "Day label", etc.). Fades in over 200ms on unlock, out on lock (Framer Motion).
-2. **Meta-chip pulse** — empty `MetaChip` tiles already pulse (`td-chip-pulse`); the pulse is currently always on. Gate it on `editing === true` so a locked read-mode dossier reads calm.
-3. **Ambient banner** — first time a user unlocks a blank dossier (no `place`/`flight` blocks), a one-line notice slides in above the scaffold: "Editing on — tap any dashed slot to add real content." Dismissible; remembered per-session via `sessionStorage`.
+**Files:** `src/routes/login.tsx`; possibly `supabase--configure_auth`, `email_domain--*` tools.
+**Guardrails:** no changes to Google OAuth flow, session handling for existing users, or DB tables beyond auth.
+**Verify:** fresh signup email works end-to-end; wrong-password shows specific error; unconfirmed-email shows resend; Google login unchanged.
 
----
+### B3. Lock/unlock control is unintuitive
 
-## 5) Mobile touch specifics
+**Audit (report in fix session):** `LockPill` currently renders top-right on desktop as an icon-only pill (`hidden sm:inline` for label), title `"Editing off/on (⌘/Ctrl+E)"`; on mobile it appears only inside the top banner when already unlocked — first-time owners never see how to enter Edit.
 
-- Lock/Unlock is the mobile gate — no other change to sensor thresholds. The existing `ActivityDndContext` already uses a 250ms long-press touch sensor, which is fine once the user has consciously unlocked.
-- Ghost tiles in `BlankDayScaffold` already carry `.tap` (44px min). Verify the LockPill mobile placement doesn't cover the top-right of the first ghost; if it does, add scroll-margin-top to the scaffold.
-- No horizontal scroll introduced. CLS stays 0 (LockPill has fixed dimensions; bottom-bar reveal animates transform + opacity only).
+**Fix (folds into Part A):**
 
----
+- The new `EditingStatusBar` always renders explicit `Edit` (view) / `Done` (edit) BUTTONS with labels — not icon-only — on both breakpoints, with 44px hit area.
+- Toggle feedback: `toast.success("Editing enabled" / "Editing locked")` on transition; canvas gets `data-editing="true"` which drives a subtle outline on hover-editable regions (already partially present in `skin.css`).
+- Locked-state helper text: "Locked to prevent accidental changes — tap Edit" as a tooltip on the button (1s delay, matching the ActionDock tooltip pattern).
+- Keep ⌘/Ctrl+E as a power-user shortcut; label the button with it in `title`.
 
-## 6) Accessibility & house rules
+**Guardrails:** UI/UX only. No permission/ownership/field-editability changes.
+**Verify:** on 375px and desktop, describe view → tap Edit → banner shows "Editing" + Done button → tap Done → banner shows "Locked" + Edit button; toast confirms each toggle.
 
-- No aria-label blanket adds; LockPill's visible label satisfies its accessible name.
-- All new tap targets ≥44px.
-- `prefers-reduced-motion` collapses every Framer Motion animation to opacity-only via `useReducedMotion()`.
-- Lighthouse a11y and CLS on `/t/<slug>` must stay at their current values — verify after implementation.
+### B4. Generation/processing overlay never appears on mobile
 
----
+**Diagnosis to confirm:**
 
-## Files to change
+- `IngestionModal` gates `<GenerationProgress>` on `tab === "generate" && parsing` (line 658). On the paste tab (mobile-common), overlay never mounts (also B1). Additionally, `GenerationLoader` in `src/routes/index.tsx` uses fixed positioning + `vh`; check for `hidden md:*` classes.
+- Suspect stack: `IngestionModal` `DialogContent` may set `md:max-h-…` allowing progress to be scrolled out of view on mobile; and the outer sheet's `overflow` may clip the fixed overlay.
 
-**Edit**
+**Fix:**
 
-- `src/routes/t.$slug.tsx` — add `locked` state + `defaultLockFor(device)`, derive `isEditing = canEdit && !locked`, pass into `EditingProvider`. Remove the `onMint` + Replace prompt from the StudioBar mount when `!isSample`. Add the desktop LockPill + Template menu mounts.
-- `src/components/studio/StudioBar.tsx` — accept a new `variant?: "sample" | "minimal"`. In `minimal` (real dossier, unlocked), drop the mint button, template select, and refine status label; render `[Lock][Undo][Redo][History][Saved]`. Wrap the outer `<div>` with `motion.div` for slide/fade. Update the removed "Replace itinerary" fallback copy.
-- `src/components/mobile/DossierMastheadBar.tsx` — accept `locked`, `onToggleLock`, `canEdit`, `templateId`, `onTemplateChange`. Right-side slot becomes Lock when `canEdit`; Days moves to an overflow ⋯ menu when needed. Adds a "Template" entry into overflow (owners only).
-- `src/lib/skins/shared/BlankDayScaffold.tsx` — read `editing` from `useEditing()`; when false, disable ghost buttons, dim guide text, show top-of-scaffold hint "Unlock to start filling in your dossier."
-- `src/lib/skins/shared/Editable.tsx` — add `data-editing` to the `EditableText` element so the CSS hint rule can key off it.
-- `src/lib/skins/shared/skin.css` — add `.tds-edit-hint` dashed underline for placeholder text; add gating for `td-chip-pulse`; small style for the ambient unlock banner.
-- Copy sweep files listed in §1.
+- Extend the parsing gate to all intake tabs (paste/upload/generate) — same change as B1.
+- Ensure `<GenerationLoader>` and in-modal `<GenerationProgress>` use `fixed inset-0 z-[70] min-h-[100dvh]` (swap any `100vh` → `100dvh`); no `hidden md:*`.
+- On mobile, promote the progress panel to a full-viewport layer (`fixed inset-0`) inside the modal instead of the scrollable content area, so the address-bar collapse doesn't hide it.
 
-**New**
-
-- `src/components/studio/LockPill.tsx` — the desktop lock toggle with Framer Motion transition and `Cmd/Ctrl+E` shortcut.
-- `src/components/studio/TemplateMenu.tsx` — Popover-based template picker (desktop) + bottom sheet variant used by `DossierMastheadBar` overflow (mobile).
-- `src/components/studio/UnlockBanner.tsx` — the one-shot "Editing on — tap a dashed slot…" notice above the scaffold.
-
-**Not touching**
-
-- `src/routeTree.gen.ts`, per-skin files (cassian/epictetus/orsino/etc.), `src/integrations/supabase/*`, itinerary lib code.
+**Files:** `src/components/flow/IngestionModal.tsx`, `src/components/GenerationLoader.tsx`.
+**Guardrails:** no visual redesign of the panels; match desktop behavior.
+**Verify:** at 375px width, paste and generate flows both show the panel throughout; desktop unchanged.
 
 ---
 
-## Verification
+## Cross-cutting
 
-- `bunx tsgo --noEmit` — clean.
-- `bun test` — no regressions vs. baseline (7 pre-existing AI-parser failures unrelated).
-- Manual: on desktop `/t/<slug>?mode=edit`, page loads unlocked, click Day 01 label, type — persists. Cmd+E locks; everything freezes. On mobile viewport, page loads locked, tap ghost → toast "Unlock to edit"; tap LockPill → scaffold ghosts activate; add a place; scaffold vanishes.
-- CLS check via Lighthouse on `/t/<slug>` — must stay 0.
-
----
-
-## Out of scope (tracked, not built)
-
-- Add-Day affordance + chronological auto-reordering by date (previously approved separately).
-- Any per-skin visual changes.
-- Backend / persistence changes — `locked` is client-only session state.
-- Renaming files, types, hooks, or CSS classes containing "itinerary".
+- No changes to skin content files (`src/lib/skins/*.tsx` except `shared/`) — House Rule #1.
+- No changes to `routeTree.gen.ts` or generated Supabase files.
+- After each part: `npx vitest run` and `tsc --noEmit` clean. Add tests:
+  - `EditingStatusBar` renders `Shared Dossier` URL + copy in both locked/editing states.
+  - Parse success in `IngestionModal` calls `onGenerate` AND leaves modal in a state that resets `parsing` before render.
+  - `login.tsx` maps known Supabase auth error codes to human strings.
+- CLS on `/t/:slug` unchanged (bar has reserved height in both states).
