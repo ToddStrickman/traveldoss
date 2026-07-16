@@ -1,4 +1,4 @@
-import { CalendarPlus, FileText, Link2, Printer } from "lucide-react";
+import { CalendarPlus, FileText, Printer } from "lucide-react";
 import { toast } from "sonner";
 import type { Block, TripView } from "@/lib/skins/types";
 import { buildItineraryIcs, downloadIcs } from "@/lib/ics";
@@ -25,13 +25,6 @@ export function ExportMenu({
   const exportDoc = useServerFn(exportItineraryToGoogleDoc);
   const [exporting, setExporting] = useState(false);
   const [exportAttempt, setExportAttempt] = useState(0);
-  function copyLink() {
-    const url = `${window.location.origin}/t/${slug}`;
-    navigator.clipboard.writeText(url).then(
-      () => toast.success("Link copied", { description: url }),
-      () => toast.error("Couldn't copy"),
-    );
-  }
   function printPdf() {
     document.body.classList.add("td-print-mode");
     setTimeout(() => {
@@ -155,7 +148,6 @@ export function ExportMenu({
       data-print="hide"
       className="fixed right-3 z-40 flex items-center gap-1 rounded-full border border-white/10 bg-paper/85 p-1 text-ink backdrop-blur-md sm:right-5 sm:gap-2 sm:p-1.5 bottom-[max(16px,env(safe-area-inset-bottom))] sm:bottom-[max(72px,calc(env(safe-area-inset-bottom)+72px))]"
     >
-      <ExportButton onClick={copyLink} icon={<Link2 className="h-3.5 w-3.5" />} label="Live URL" />
       {isOwner && (
         <>
           <ExportButton
