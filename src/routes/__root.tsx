@@ -12,9 +12,6 @@ import {
 import appCss from "../styles.css?url";
 import { Toaster } from "@/components/ui/sonner";
 import { registerServiceWorker } from "@/lib/pwa/register-sw";
-import { MotionPermissionPrompt } from "@/components/motion/Tilt";
-import { GyroWallpaper } from "@/components/motion/GyroWallpaper";
-import { MobileBubbles } from "@/components/motion/MobileBubbles";
 import { SITE_URL } from "@/lib/site";
 
 function NotFoundComponent() {
@@ -182,11 +179,8 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <GyroWallpaper />
-      <MobileBubbles />
       <Outlet />
       <Toaster richColors position="top-center" />
-      <MotionPermissionPrompt />
     </QueryClientProvider>
   );
 }
