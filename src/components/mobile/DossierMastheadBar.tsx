@@ -19,6 +19,7 @@ import type { Block } from "@/lib/skins/types";
 import type { SkinView } from "@/lib/skins/types";
 import { cn } from "@/lib/utils";
 import { LockPill } from "@/components/studio/LockPill";
+import { SharedDossierCard } from "@/components/studio/SharedDossierCard";
 import { ViewPill } from "@/components/mobile/ViewSheet";
 
 interface DayEntry {
@@ -50,6 +51,7 @@ function dayStamp(date?: string): number | null {
 export function DossierMastheadBar({
   title,
   blocks,
+  slug,
   canEdit = false,
   locked = false,
   onToggleLock,
@@ -60,6 +62,8 @@ export function DossierMastheadBar({
 }: {
   title: string;
   blocks: Block[];
+  /** Trip slug — enables the Share button in the header. */
+  slug?: string;
   canEdit?: boolean;
   locked?: boolean;
   onToggleLock?: () => void;
@@ -211,6 +215,7 @@ export function DossierMastheadBar({
           {canEdit && onToggleLock ? (
             <LockPill locked={locked} onToggle={onToggleLock} variant="inline" />
           ) : null}
+          {slug ? <SharedDossierCard slug={slug} compact /> : null}
           {!canEdit && days.length < 2 && !layout ? (
             <div className="h-11 w-11 shrink-0" aria-hidden />
           ) : null}
