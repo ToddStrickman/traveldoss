@@ -1,5 +1,13 @@
 import { type CSSProperties, type ReactNode } from "react";
-import { useDeviceTilt } from "@/hooks/use-device-tilt";
+
+/**
+ * Post-bubbles cleanup: the device-orientation system was removed
+ * (see docs/branch-audit.md, Spec 4). These components stay as
+ * passthrough wrappers so existing callers on landing / gallery keep
+ * compiling and rendering — motion is intentionally gone. If we later
+ * want tasteful cursor-parallax on desktop, it should ship as its own
+ * considered feature per the spec pack §4A.
+ */
 
 /**
  * Parallax — translates content opposite the device tilt to create depth.
@@ -10,7 +18,6 @@ import { useDeviceTilt } from "@/hooks/use-device-tilt";
  * Desktop / reduced-motion / pre-permission: renders a plain wrapper.
  */
 export function Parallax({
-  depth = 12,
   className,
   style,
   children,
@@ -22,19 +29,8 @@ export function Parallax({
   children: ReactNode;
   as?: "div" | "section" | "span";
 }) {
-  const { x, y, enabled } = useDeviceTilt();
-  const tx = enabled ? -x * depth : 0;
-  const ty = enabled ? -y * depth : 0;
   return (
-    <As
-      className={className}
-      style={{
-        ...style,
-        transform: `translate3d(${tx.toFixed(2)}px, ${ty.toFixed(2)}px, 0)`,
-        transition: "transform 220ms cubic-bezier(0.22, 1, 0.36, 1)",
-        willChange: enabled ? "transform" : undefined,
-      }}
-    >
+    <As className={className} style={style}>
       {children}
     </As>
   );
@@ -46,44 +42,19 @@ export function Parallax({
  * the tilt direction.
  */
 export function TiltCard({
-  intensity = 8,
-  glare = true,
   className,
   style,
   children,
 }: {
-  intensity?: number; // max rotation in degrees
+  intensity?: number;
   glare?: boolean;
   className?: string;
   style?: CSSProperties;
   children: ReactNode;
 }) {
-  const { x, y, enabled } = useDeviceTilt();
-  const rotY = enabled ? x * intensity : 0;
-  const rotX = enabled ? -y * intensity : 0;
   return (
-    <div
-      className={className}
-      style={{
-        ...style,
-        transform: `perspective(900px) rotateX(${rotX.toFixed(2)}deg) rotateY(${rotY.toFixed(2)}deg)`,
-        transformStyle: "preserve-3d",
-        transition: "transform 180ms cubic-bezier(0.22, 1, 0.36, 1)",
-        willChange: enabled ? "transform" : undefined,
-        position: "relative",
-      }}
-    >
+    <div className={className} style={style}>
       {children}
-      {glare && enabled ? (
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 mix-blend-overlay"
-          style={{
-            background: `radial-gradient(circle at ${50 + x * 40}% ${50 + y * 40}%, rgba(255,255,255,0.18), rgba(255,255,255,0) 55%)`,
-            transition: "background 180ms cubic-bezier(0.22, 1, 0.36, 1)",
-          }}
-        />
-      ) : null}
     </div>
   );
 }
