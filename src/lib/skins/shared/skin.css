@@ -961,8 +961,25 @@ button.tds-add-day[data-burst] .tds-add-day-plus {
 
   .tds-part-header-row {
     display: flex; align-items: center; gap: 10px;
+    flex-wrap: wrap;
   }
   .tds-part-header-row > .tds-part-head { flex: 1 1 auto; }
+  /* When a part is collapsed, drop the cloche toggle onto its own row so it
+     sits UNDER the label (e.g. "Afternoon"). Signals the empty area is
+     expandable instead of stranding the control at the right edge. */
+  .tds-part--collapsed .tds-part-header-row > .tds-part-head { flex-basis: 100%; }
+  .tds-part--collapsed .tds-part-header-row .tds-collapse-btn--part {
+    margin-left: 0;
+    align-self: flex-start;
+    animation: tds-toggle-drop .38s cubic-bezier(.4, 0, .2, 1) both;
+  }
+  @keyframes tds-toggle-drop {
+    from { transform: translateY(-10px); opacity: .35; }
+    to   { transform: translateY(0);     opacity: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tds-part--collapsed .tds-part-header-row .tds-collapse-btn--part { animation: none; }
+  }
 
 /* Collapsed day sections (grid) and board columns (horizontal): the body
    hides; the header — with its map opener and toggle — stays in place. */
