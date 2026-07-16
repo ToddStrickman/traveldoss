@@ -1,129 +1,115 @@
-# Dossier Editing Redesign + Four Bug Fixes — Plan
 
-## Part A · Dossier Editing Experience Redesign
+# TravelDoss Feature Spec Pack — Combined Plan
 
-### Reuse-first inventory (no parallel UI)
-
-- `LockPill` (`src/components/studio/LockPill.tsx`) — extend, don't replace.
-- `StudioBar` (`src/components/studio/StudioBar.tsx`) — its save-state read-out is extracted to a `SaveStatus` subcomponent and reused.
-- `EditingProvider` / `useEditing` / `EditableText` / `SortableBlocks` (`src/lib/skins/shared/Editable.tsx`) — already flip every field to contentEditable when unlocked. No per-field edit buttons.
-- `editing-kit.tsx` (`AddActivitySlot`, `AddDayButton`, `DayReorderControls`, `useAddDay`, `useDeleteDay`, `useMoveDay`) — restyled, not duplicated.
-- `ExportMenu` (`src/components/studio/ExportMenu.tsx`) — Copy Link handler + toast reused; the "Live URL" button moves out.
-- `TdSheet` + shadcn `DropdownMenu` — reused for the item overflow menu.
-- `sonner` `toast` — reused for copy/save feedback.
-
-### Changes
-
-1. **Single Locked / Editing model.** `locked` in `t.$slug.tsx` stays the only source of truth. Remove the row-level `Trash2` in `parts.tsx` (delete lives in overflow menu now). No modal, no confirm, no scroll jump on toggle.
-2. **One sticky editing-status bar (mobile + desktop).** New `EditingStatusBar` (composes `LockPill` + `SaveStatus` + `SharedDossierCard`). Replaces the top mobile "Editing · auto-saves" banner AND the bottom `StudioBar` placement on `/t/:slug`. `StudioBar` stays intact for the pre-mint sample flow (`emphasis="mint"`).
-  - Locked chip: `Lock · Locked · Unlock editing`.
-  - Editing chip: `Unlock · Editing · Saving…/Saved ✓/Offline — waiting/All changes synced ✓ · Undo/Redo · Lock`.
-3. **Inline "Add" cards.** Restyle `AddActivitySlot` and `AddDayButton` as full-width dashed cards using skin tokens (`--tds-rule`, `--tds-soft`); hover lift + seal-tinted border. Tap opens the existing `InlineActivityEditor` in place across Vertical / Horizontal / Grid via the shared kit.
-4. **Share Dossier component (replaces "Live URL").** New `ShareDossierCard` (title · URL · Copy · Locked/Editing badge). Desktop: right side of the status bar. Mobile: stacked below it, full-width Copy, no horizontal scroll. Copy calls the extracted `copyDossierLink(slug)` in `src/lib/share.ts` and fires `toast.success("Copied to clipboard")`. Remove the Live URL button from `ExportMenu`.
-5. **Overflow menu on repeatable items.** New `ItemOverflowMenu` wrapping shadcn `DropdownMenu` on desktop and `TdSheet` on mobile. Options: Duplicate (calls `onBlockAdd(index, block.kind, { ...block })`) and Delete (calls `onBlockRemove`).
-6. **Real-time sharing model.** No publish concept. The public route already reads latest saved `content` on every request, so autosave IS publish. The Shared Dossier URL is always current — reflected by the copy tooltip "Shares the latest saved version".
-
-### New files (only where nothing fits)
-
-- `src/components/studio/EditingStatusBar.tsx`
-- `src/components/studio/SharedDossierCard.tsx`
-- `src/components/studio/ItemOverflowMenu.tsx`
-- `src/lib/share.ts` (thin helper)
-
-### Files modified
-
-- `src/routes/t.$slug.tsx` (mount bar, remove banner + bottom bar, drop `max-md:hidden` on `ExportMenu`)
-- `src/components/studio/LockPill.tsx` (`variant="status"`)
-- `src/components/studio/StudioBar.tsx` (export `SaveStatus`; leave mint flow alone)
-- `src/components/studio/ExportMenu.tsx` (remove Live URL button; export `copyDossierLink`)
-- `src/lib/skins/shared/Editable.tsx` (swap row `Trash2` → `ItemOverflowMenu`)
-- `src/lib/skins/shared/views/editing-kit.tsx` (dashed add cards; drop redundant "Day added" toast)
-- `src/lib/skins/shared/skin.css` (token-driven styles for add card + overflow trigger)
-
-### State / API / schema
-
-None. All state already exists (`locked`, `saving`, `savedAt`, `saveError`, slug). No new deps.
+Build order per your call: **4 → 1 → 3 → 2**. Each slice ships behind clean typecheck + tests, no skin-file edits, mobile-first, CLS-0. Spec 0 is delivered as an advisory since I can't run `git branch -a` from here — I'll produce it as a markdown checklist you can execute.
 
 ---
 
-## Part B · Bug Fixes
+## Slice A — Spec 0 (Advisory)
 
-### B1. Paste-parser: results don't render until user hits Edit
-
-**Diagnosis (to confirm in the fix session, not now):**
-
-- `IngestionModal.tsx` calls `parseItineraryAi`, then invokes `onGenerate(blocks, …)` — in `src/routes/t.$slug.tsx` (line 751) that is `handleMint`, which persists to Supabase.
-- Strong suspicion (matches user's hypothesis): after `handleMint` writes, the local `blocks` state that feeds `SkinFrame` isn't updated in the same tick — the route only re-reads on loader invalidation. Toggling Edit re-runs a state effect that reseeds from persisted content, so the parsed itinerary "appears" then.
-
-**Fix scope (state/data-flow only, per guardrails):**
-
-- On successful parse in `IngestionModal`, hand blocks to the caller AND update the route's local `blocks`/`view` state synchronously — same setter path `EditingProvider` already uses for edits — before closing the modal. Call `router.invalidate()` after the DB write resolves so loader-derived state is authoritative.
-- Immediate loading state: show `GenerationProgress` (already exists) the moment `parseItineraryAi` is dispatched — including on the "paste" tab, not just the "generate" tab (see gate at IngestionModal:658 `tab === "generate" && parsing`). Extend the gate to `(tab === "paste" || tab === "generate") && parsing`.
-- Timeout: wrap `parseItineraryAi` in `withRetry`/`AbortController` with a 45s ceiling; on timeout show inline error card with **Try again** action (reuse the toast+action pattern from `ExportMenu.exportToGoogleDoc`).
-- Error state: on catch, render the existing inline warning card with `Try again` button — never close the modal to a blank canvas.
-
-**Files:** `src/components/flow/IngestionModal.tsx`, `src/routes/t.$slug.tsx`, `src/routes/index.tsx` (mirror the same success handler), `src/lib/itinerary/parse-ai.functions.ts` (accept `AbortSignal`).
-**Guardrails:** no changes to parser prompt, parsing logic, or block schema.
-**Verify:** paste a sample itinerary → progress visible → content on screen without touching Edit → intentionally corrupt paste → error card with Try again.
-
-### B2. Email/password signup and login broken; Google works
-
-**Diagnosis to run first (report before fixing):**
-
-- `src/routes/login.tsx` `onSubmit` already calls `supabase.auth.signUp` / `signInWithPassword` and toasts errors. Two likely real causes: (a) Supabase project has email provider disabled or email confirmations required with no delivery configured; (b) after signup with confirmations on, `signUp` returns no session and code falls through with only a toast — new users think it failed.
-- Verify via `supabase--configure_auth` inspection + Auth logs. If email confirmations required, verify email infra is set up (`email_domain--check_email_domain_status`).
-
-**Fix scope:**
-
-- If email provider is off, enable via `supabase--configure_auth`. If HIBP not on, keep as-is (out of scope).
-- If auto-confirm off + no delivery, either (a) enable auth email templates (`email_domain--scaffold_auth_email_templates`) OR (b) turn `auto_confirm_email: true` — only if the user approves; do not silently flip.
-- Distinguish error paths in `login.tsx`: `invalid_credentials` → "Wrong email or password"; `email_not_confirmed` → "Confirm your email to sign in" with **Resend** button (`supabase.auth.resend`); `user_already_registered` → "An account exists — sign in instead" with a mode-switch link.
-- After successful `signUp` with a session, `window.location.assign(redirect)` like the signin branch. Without a session, keep the check-email toast but ALSO render an inline confirmation panel (no navigation).
-- `emailRedirectTo` uses `window.location.origin + redirect` — verify `redirect` sanitization already in place (it is) and that the deployed origin, not localhost, is used at runtime.
-
-**Files:** `src/routes/login.tsx`; possibly `supabase--configure_auth`, `email_domain--*` tools.
-**Guardrails:** no changes to Google OAuth flow, session handling for existing users, or DB tables beyond auth.
-**Verify:** fresh signup email works end-to-end; wrong-password shows specific error; unconfirmed-email shows resend; Google login unchanged.
-
-### B3. Lock/unlock control is unintuitive
-
-**Audit (report in fix session):** `LockPill` currently renders top-right on desktop as an icon-only pill (`hidden sm:inline` for label), title `"Editing off/on (⌘/Ctrl+E)"`; on mobile it appears only inside the top banner when already unlocked — first-time owners never see how to enter Edit.
-
-**Fix (folds into Part A):**
-
-- The new `EditingStatusBar` always renders explicit `Edit` (view) / `Done` (edit) BUTTONS with labels — not icon-only — on both breakpoints, with 44px hit area.
-- Toggle feedback: `toast.success("Editing enabled" / "Editing locked")` on transition; canvas gets `data-editing="true"` which drives a subtle outline on hover-editable regions (already partially present in `skin.css`).
-- Locked-state helper text: "Locked to prevent accidental changes — tap Edit" as a tooltip on the button (1s delay, matching the ActionDock tooltip pattern).
-- Keep ⌘/Ctrl+E as a power-user shortcut; label the button with it in `title`.
-
-**Guardrails:** UI/UX only. No permission/ownership/field-editability changes.
-**Verify:** on 375px and desktop, describe view → tap Edit → banner shows "Editing" + Done button → tap Done → banner shows "Locked" + Edit button; toast confirms each toggle.
-
-### B4. Generation/processing overlay never appears on mobile
-
-**Diagnosis to confirm:**
-
-- `IngestionModal` gates `<GenerationProgress>` on `tab === "generate" && parsing` (line 658). On the paste tab (mobile-common), overlay never mounts (also B1). Additionally, `GenerationLoader` in `src/routes/index.tsx` uses fixed positioning + `vh`; check for `hidden md:*` classes.
-- Suspect stack: `IngestionModal` `DialogContent` may set `md:max-h-…` allowing progress to be scrolled out of view on mobile; and the outer sheet's `overflow` may clip the fixed overlay.
-
-**Fix:**
-
-- Extend the parsing gate to all intake tabs (paste/upload/generate) — same change as B1.
-- Ensure `<GenerationLoader>` and in-modal `<GenerationProgress>` use `fixed inset-0 z-[70] min-h-[100dvh]` (swap any `100vh` → `100dvh`); no `hidden md:*`.
-- On mobile, promote the progress panel to a full-viewport layer (`fixed inset-0`) inside the modal instead of the scrollable content area, so the address-bar collapse doesn't hide it.
-
-**Files:** `src/components/flow/IngestionModal.tsx`, `src/components/GenerationLoader.tsx`.
-**Guardrails:** no visual redesign of the panels; match desktop behavior.
-**Verify:** at 375px width, paste and generate flows both show the panel throughout; desktop unchanged.
+Deliver `docs/branch-audit.md`: a template with the exact `git` commands, a reconciliation table skeleton (branch · contents · merged? · relevant? · action), and a targeted search checklist for photo/view-switcher/mobile/bubbles/auth work. No code changes. You run the CLI, fill the table, then greenlight the rest.
 
 ---
 
-## Cross-cutting
+## Slice B — Spec 4: Retire Bubbles (subtractive, ship first)
 
-- No changes to skin content files (`src/lib/skins/*.tsx` except `shared/`) — House Rule #1.
-- No changes to `routeTree.gen.ts` or generated Supabase files.
-- After each part: `npx vitest run` and `tsc --noEmit` clean. Add tests:
-  - `EditingStatusBar` renders `Shared Dossier` URL + copy in both locked/editing states.
-  - Parse success in `IngestionModal` calls `onGenerate` AND leaves modal in a state that resets `parsing` before render.
-  - `login.tsx` maps known Supabase auth error codes to human strings.
-- CLS on `/t/:slug` unchanged (bar has reserved height in both states).
+1. **Delete** `src/components/motion/MobileBubbles.tsx`, `src/hooks/use-device-tilt.ts`, and any `GyroWallpaper` usage on mobile. Keep `GyroWallpaper` only if it has a desktop, non-orientation code path; otherwise delete it too (recommendation: remove everywhere per your own doc §4A).
+2. **Purge listeners**: grep-and-remove any `deviceorientation`, `DeviceMotionEvent`, `requestPermission` call sites. Zero live references remain.
+3. **Update imports** in `src/routes/index.tsx` and anywhere else that mounts them; verify no orphaned spacing (SandHero stays untouched).
+4. **Test**: add `tests/no-orientation-listeners.test.ts` — greps the built bundle for `deviceorientation`/`requestPermission` and fails on match.
+
+Acceptance: bundle drops, no iOS permission prompt possible, mobile layout identical minus the bubbles slot.
+
+---
+
+## Slice C — Spec 1: Mobile Integrity + Time-of-Day + View Pivot
+
+### C1. Overflow tripwire + root-cause sweep
+- Add `tests/mobile-overflow.test.ts` using Playwright: for each of the 3 views × sample dossier at 320/375/430, assert `document.scrollWidth <= innerWidth`.
+- Sweep shared views + `skin.css`: add `min-width: 0` to flex/grid children of day columns and boarding-pass rows; add `overflow-wrap: anywhere` to `.tds-edit`, note/address cells, and URL-bearing text; replace any fixed `px` widths with `clamp()`/`minmax()`.
+- `contenteditable`: enforce `max-width: 100%`; use `visualViewport` to scroll active block above the mobile keyboard (helper in `src/lib/skins/shared/keyboard-anchor.ts`).
+- Verify `HorizontalView` and `GridView` collapse to Vertical below 768px (current code uses `md:` gates — audit and fix any leak).
+
+### C2. Time-of-day icons — **recommendation: icons+labels on existing PartOfDay buckets only**
+Rationale: `PartOfDay` already exists in `src/lib/skins/shared/itinerary.ts` and drives Vertical/Grid buckets. Adding a `timeOfDay` field on individual place blocks duplicates that signal, forces a schemaVersion bump, and touches the AI parser, normalizer, and every skin. Sticking to bucket labels gets the visible win with zero schema risk. Revisit only if you later want cross-bucket ordering (e.g., "6am flight before morning coffee").
+
+Implementation:
+- New `src/lib/skins/shared/PartOfDayLabel.tsx`: inline SVG (sunrise/sun/moon) + text label ("Morning/Afternoon/Evening/Night"). Stroke inherits `currentColor` so each skin's tokens color it.
+- Wire into `VerticalView`, `HorizontalView`, `GridView` bucket headers. No per-skin edits.
+- Extend `tests/mobile-edit-parity.test.tsx` with an assertion: each bucket header has both an icon (`svg` role) and text label across all three views.
+
+### C3. Mobile view pivoter that a thumb can find
+- Current: `ViewSheet.tsx` opens from a floating pill. Keep the pill but promote it to a **bottom-anchored 3-option segmented control** (44px, above `env(safe-area-inset-bottom)`) that auto-hides on scroll-down and reappears on scroll-up. First-visit pulse + one-shot tooltip persisted in `localStorage` per trip_id.
+- Preserve all existing Epic H contracts (`?view=` param, `view_switched` analytics — add device class dimension).
+- Desktop unchanged.
+
+---
+
+## Slice D — Spec 3: Auth Screen Sign-Up Distinction + Flow Integrity
+
+1. **Split routes**: keep `/login` (current), add `/signup` that renders the same component in signup mode. `login.tsx` already exists; extract shared form into `src/components/auth/AuthCard.tsx`, thread `mode: 'login' | 'signup'`.
+2. **Button hierarchy**: primary filled "Log in" / outlined 44px "Sign up" beneath a hairline rule and "New to TravelDoss?" caption. Mirror on signup screen.
+3. **Context chip**: if `template_id` + `view` were on the query string, show "Continuing with **{skin name}**"; persist through OAuth round-trip (already using `mint-pending.ts` — extend to also stash `authIntent: {templateId, view}` so it survives magic-link/OAuth).
+4. **Unknown-email recovery**: catch Supabase `invalid_credentials` on login, offer "No account found — Sign up instead?" that navigates to `/signup?email=...`.
+5. **Mobile**: 16px input font, submit visible above keyboard, "Open Mail app" hint on magic-link screen.
+6. **Analytics**: emit `auth_screen_viewed`, `auth_mode_switched`, `auth_completed` with entry-point dimension.
+
+No schema changes.
+
+---
+
+## Slice E — Spec 2: Photo System
+
+### E1. Storage + RLS (migration in same slice, since you greenlit)
+- Create private bucket `trip-photos` via `supabase--storage_create_bucket`.
+- Migration: RLS on `storage.objects` scoped to `trip-photos` where the path prefix `trips/{trip_id}/` maps to a trip owned by `auth.uid()` (join via `public.trips`). Owner-only INSERT/UPDATE/DELETE; SELECT allowed for anon only when the parent trip is published (mirrors public trip visibility).
+
+### E2. Schema
+- Extend `Block` union in `src/lib/skins/types.ts`:
+  - `{ kind: 'gallery', images: GalleryImage[], layoutHint?: 'carousel' | 'collage' | 'auto' }`
+  - Optional `image?: GalleryImage` on `place` blocks.
+- `GalleryImage = { id, storagePath, alt, caption?, width, height, dominantColor? }`.
+- Bump `content.schemaVersion`; existing zod validator ignores unknown block kinds already (R9). Update `parse.ts` / `normalize-ai.ts` to skip cleanly.
+
+### E3. Upload pipeline
+- New `src/lib/photos/upload.ts`: client-side resize (canvas → WebP, JPEG fallback, ≤2000px long edge, ≤300KB), EXIF strip, compute dominant color, capture `width`/`height`. Cap 20/trip enforced in UI.
+- Alt text required; default from `place.name` or caption. `aria-live` prompt.
+- Server fn `savePhotoRecord` under `src/lib/photos.functions.ts` (uses `requireSupabaseAuth`).
+
+### E4. Rendering (shared views only — never per-skin)
+- **Mobile carousel** (`src/lib/skins/shared/gallery/PhotoCarousel.tsx`): CSS scroll-snap cover-flow, dot counter, tap → existing lightbox pattern extended with pinch-zoom via `@use-gesture/react` (already in deps? — will check; if not, hand-rolled pointer-events, no new dep).
+- **Desktop collage** (`src/lib/skins/shared/gallery/CollageRoll.tsx`): justified layout using stored aspect ratios (extends existing `CoverflowGallery.tsx`).
+- Grid view: gallery block spans a featured cell.
+- Fallback per §7.6: any view that can't render → Vertical carousel.
+
+### E5. Editor
+- New "Add photos" tool in `Editable.tsx` block toolbar (mobile: camera + camera roll).
+- Drag-reorder within gallery using existing dnd-kit; inline alt/caption editors reusing `EditableText`.
+
+### E6. Share-card upgrade
+- OG image handler in `src/routes/t.$slug.tsx` head() picks first gallery image (absolute URL from Supabase Storage) when available; falls back to current skin cover.
+
+### E7. Tests
+- `tests/gallery-block-roundtrip.test.ts`: zod parse survives unknown fields, gallery survives normalize.
+- `tests/photo-carousel.test.tsx`: snap layout, reduced-motion variant flat.
+- Playwright: `e2e/photos-upload.spec.ts` (owner uploads → renders in 3 views).
+
+---
+
+## Sequencing & gates
+
+Each slice ends with `bunx vitest run` + `tsgo --noEmit` green before starting the next. Slice E only starts after Slice C's overflow tripwire is green (photos on a broken responsive base is thrash).
+
+## Deliberately out of scope
+
+- Any edits inside `src/lib/skins/<skin>.tsx` (house rule #1).
+- Unsplash fallback (mentioned as "added strength" — deferred to a follow-up).
+- Desktop bubbles replacement / cursor-parallax (deferred, per §4A "shipped as its own considered feature").
+- Cross-bucket `timeOfDay` field on places (see C2 recommendation).
+
+## Technical notes
+
+- All new mobile UI behind `md:hidden` or `useIsMobile()`; desktop trees untouched per house rule #3.
+- All animations honor `prefers-reduced-motion`.
+- No new heavy deps: carousel = scroll-snap; masonry = flex + aspect-ratio; pinch-zoom = pointer events (fallback if `@use-gesture/react` is not already in the tree).
+- `routeTree.gen.ts` untouched; new routes are `signup.tsx` (auto-registered).
