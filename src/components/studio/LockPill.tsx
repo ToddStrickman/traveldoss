@@ -40,7 +40,8 @@ export function LockPill({
     return () => window.removeEventListener("keydown", onKey);
   }, [onToggle]);
 
-  const label = locked ? "Editing off" : "Editing on";
+  const label = locked ? "Edit" : "Done";
+  const srLabel = locked ? "Unlock editing" : "Lock editing";
   const Icon = locked ? Lock : Unlock;
 
   const base =
@@ -64,7 +65,8 @@ export function LockPill({
       data-print="hide"
       data-locked={locked ? "true" : "false"}
       aria-pressed={!locked}
-      title={`${label} (⌘/Ctrl+E)`}
+      title={`${srLabel} (⌘/Ctrl+E)`}
+      aria-label={srLabel}
       className={cn(base, desktopChrome, className)}
     >
       <AnimatePresence mode="wait" initial={false}>
@@ -77,7 +79,7 @@ export function LockPill({
           className="inline-flex items-center gap-2"
         >
           <Icon className="h-3.5 w-3.5" aria-hidden />
-          <span className="hidden sm:inline">{label}</span>
+          <span>{label}</span>
         </motion.span>
       </AnimatePresence>
     </button>
