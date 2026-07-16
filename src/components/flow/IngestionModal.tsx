@@ -654,7 +654,7 @@ export function IngestionModal({
 
         {/* Unified composer */}
         <div className="px-5 sm:px-8 md:px-10 pt-8">
-          {tab === "generate" && parsing && !clarifyQs.length ? (
+          {parsing && !clarifyQs.length ? (
             <div className="flex flex-col gap-4">
               <GenerationProgress
                 phase={genPhase}

@@ -43,7 +43,7 @@ export function GenerationLoader({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-paper/85 backdrop-blur-sm"
+          className="fixed inset-0 z-[70] flex min-h-[100dvh] items-center justify-center bg-paper/90 backdrop-blur-sm px-4"
           aria-live="polite"
           aria-busy="true"
         >
