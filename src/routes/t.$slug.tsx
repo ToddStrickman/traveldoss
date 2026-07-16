@@ -21,6 +21,7 @@ import { TripDocPreviews } from "@/components/flow/TripDocPreviews";
 import { DossierMastheadBar } from "@/components/mobile/DossierMastheadBar";
 import { TdSheet } from "@/components/mobile/TdSheet";
 import { LockPill } from "@/components/studio/LockPill";
+import { EditingStatusBar } from "@/components/studio/EditingStatusBar";
 import { TemplateMenu } from "@/components/studio/TemplateMenu";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AnimatePresence } from "motion/react";
@@ -700,9 +701,17 @@ function DossierPage() {
       <ViewSwitch value={layout} onChange={changeLayout} tokens={skin.tokens} />
       {/* Mobile view switching now lives inline in the DossierMastheadBar
           (matches desktop's top-center pills) — no separate floating pill. */}
+      <EditingStatusBar
+        slug={trip.slug}
+        canEdit={canEdit}
+        locked={locked}
+        onToggleLock={toggleLock}
+        saving={saving}
+        savedAt={savedAt}
+        saveError={saveError}
+      />
       {canEdit && (
         <>
-          <LockPill locked={locked} onToggle={toggleLock} />
           <TemplateMenu
             templateId={templateId}
             onTemplateChange={onTemplateChange}
