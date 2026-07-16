@@ -641,6 +641,7 @@ function DossierPage() {
       <DossierMastheadBar
         title={destination}
         blocks={blocks}
+        slug={trip.slug}
         canEdit={canEdit}
         locked={locked}
         onToggleLock={toggleLock}
