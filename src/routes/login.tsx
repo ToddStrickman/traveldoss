@@ -47,25 +47,73 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
+  function mapAuthError(err: unknown): { title: string; description?: string; action?: "resend" | "switch" } {
+    const msg = err instanceof Error ? err.message : String(err ?? "");
+    const code = (err as { code?: string } | null)?.code ?? "";
+    const lower = msg.toLowerCase();
+    if (code === "invalid_credentials" || lower.includes("invalid login")) {
+      return { title: "Wrong email or password", description: "Double-check and try again, or reset your password." };
+    }
+    if (code === "email_not_confirmed" || lower.includes("email not confirmed")) {
+      return { title: "Confirm your email to sign in", description: "We sent you a confirmation link — check your inbox.", action: "resend" };
+    }
+    if (code === "user_already_exists" || code === "email_exists" || lower.includes("already registered") || lower.includes("already exists")) {
+      return { title: "An account already exists", description: "Sign in with your existing password instead.", action: "switch" };
+    }
+    if (lower.includes("rate limit") || code === "over_email_send_rate_limit") {
+      return { title: "Too many attempts", description: "Give it a minute and try again." };
+    }
+    if (lower.includes("password")) {
+      return { title: "Password issue", description: msg };
+    }
+    return { title: "Authentication failed", description: msg || undefined };
+  }
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: { emailRedirectTo: window.location.origin + redirect },
         });
         if (error) throw error;
-        toast.success("Check your email to confirm your account.");
+        if (data.session) {
+          window.location.assign(redirect);
+          return;
+        }
+        toast.success("Check your email to confirm your account.", {
+          description: "Click the link we just sent to finish sign-up.",
+        });
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         window.location.assign(redirect);
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Authentication failed");
+      const mapped = mapAuthError(err);
+      toast.error(mapped.title, {
+        description: mapped.description,
+        action:
+          mapped.action === "resend"
+            ? {
+                label: "Resend email",
+                onClick: () => {
+                  void supabase.auth
+                    .resend({ type: "signup", email, options: { emailRedirectTo: window.location.origin + redirect } })
+                    .then(({ error }) =>
+                      error
+                        ? toast.error("Couldn't resend", { description: error.message })
+                        : toast.success("Confirmation email sent"),
+                    );
+                },
+              }
+            : mapped.action === "switch"
+              ? { label: "Sign in", onClick: () => setMode("signin") }
+              : undefined,
+      });
     } finally {
       setLoading(false);
     }
