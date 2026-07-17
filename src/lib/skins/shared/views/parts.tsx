@@ -452,6 +452,7 @@ export function ActivityImages({
           images={usable}
           startIndex={lightboxAt}
           onClose={() => setLightboxAt(null)}
+          fallbackQuery={fallbackQuery}
         />
       ) : null}
     </div>
