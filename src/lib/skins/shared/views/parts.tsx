@@ -360,7 +360,18 @@ export function ActivityImages({
   );
 
   // No real images AND no fallback query available → nothing to show.
-  if (total === 0 && (!images || images.length === 0) && !fallbackQuery) return null;
+  if (total === 0 && (!images || images.length === 0) && !fallbackQuery) {
+    if (!onImagesChange) return null;
+    return (
+      <div className="tds-act-images tds-act-images--empty" data-count={1} data-print="hide">
+        <DayPhotoUploader
+          images={images}
+          onChange={onImagesChange}
+          dayLabel={uploadLabel ?? "this day"}
+        />
+      </div>
+    );
+  }
   if (total === 0) {
     // Everything failed — leave a discreet retry so the layout doesn't vanish.
     return (
@@ -375,6 +386,13 @@ export function ActivityImages({
             Retry
           </button>
         </div>
+        {onImagesChange ? (
+          <DayPhotoUploader
+            images={images}
+            onChange={onImagesChange}
+            dayLabel={uploadLabel ?? "this day"}
+          />
+        ) : null}
       </div>
     );
   }
@@ -460,6 +478,13 @@ export function ActivityImages({
           startIndex={lightboxAt}
           onClose={() => setLightboxAt(null)}
           fallbackQuery={fallbackQuery}
+        />
+      ) : null}
+      {onImagesChange ? (
+        <DayPhotoUploader
+          images={images}
+          onChange={onImagesChange}
+          dayLabel={uploadLabel ?? "this day"}
         />
       ) : null}
     </div>
