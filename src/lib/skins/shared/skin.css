@@ -2581,3 +2581,105 @@ button.tds-add-day[data-burst] .tds-add-day-plus {
 .tds-carousel-empty-msg { flex: 1 1 220px; min-width: 0; }
 .tds-carousel-empty-credit { font-size: 11px; opacity: 0.75; }
 @media print { .tds-act-images--empty { display: none; } }
+
+/* Tap-target button that wraps each carousel image so touch users get an
+ * obvious "open fullscreen" affordance without breaking the existing frame. */
+.tds-carousel-open {
+  appearance: none;
+  display: block;
+  width: 100%; height: 100%;
+  padding: 0; margin: 0;
+  border: 0; background: transparent;
+  cursor: zoom-in;
+  border-radius: inherit;
+  overflow: hidden;
+}
+.tds-carousel-open > img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.tds-carousel-open:focus-visible {
+  outline: 2px solid var(--tds-accent, currentColor);
+  outline-offset: 2px;
+}
+
+/* Fullscreen lightbox overlay: high contrast dim, zoomable image, keyboard
+ * and touch controls. Rendered inside the carousel; position:fixed lifts it
+ * above every skin's chrome. */
+.tds-lightbox {
+  position: fixed; inset: 0;
+  z-index: 90;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  background: rgba(8, 10, 14, 0.94);
+  color: #f7f7f8;
+  animation: tds-lightbox-fade 160ms ease-out both;
+  touch-action: none;
+}
+@keyframes tds-lightbox-fade { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .tds-lightbox { animation: none; } }
+
+.tds-lightbox-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  font: 500 13px/1 var(--tds-fontBody, inherit);
+}
+.tds-lightbox-counter { opacity: 0.85; letter-spacing: 0.02em; }
+.tds-lightbox-tools { display: inline-flex; align-items: center; gap: 6px; }
+.tds-lightbox-zoom { min-width: 44px; text-align: center; font-variant-numeric: tabular-nums; opacity: 0.8; }
+.tds-lightbox-btn {
+  appearance: none;
+  width: 40px; height: 40px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.08);
+  color: inherit;
+  font: 600 18px/1 inherit;
+  cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.tds-lightbox-btn:hover:not(:disabled) { background: rgba(255,255,255,0.16); }
+.tds-lightbox-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.tds-lightbox-close { font-size: 22px; }
+
+.tds-lightbox-stage {
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+  padding: 8px;
+}
+.tds-lightbox-img {
+  max-width: min(96vw, 1600px);
+  max-height: 100%;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+  transform-origin: center center;
+  transition: transform 180ms ease;
+  will-change: transform;
+}
+.tds-lightbox-img[data-zoomed] { transition: none; }
+
+.tds-lightbox-nav {
+  position: absolute;
+  top: 50%; transform: translateY(-50%);
+  width: 48px; height: 48px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(20,22,28,0.6);
+  color: #fff;
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.tds-lightbox-nav:hover { background: rgba(20,22,28,0.85); }
+.tds-lightbox-nav--prev { left: max(12px, env(safe-area-inset-left)); }
+.tds-lightbox-nav--next { right: max(12px, env(safe-area-inset-right)); }
+
+.tds-lightbox-caption {
+  padding: 10px 16px 14px;
+  text-align: center;
+  font: 400 13px/1.4 var(--tds-fontBody, inherit);
+  color: rgba(247,247,248,0.85);
+}
+
+@media print { .tds-lightbox { display: none; } }
