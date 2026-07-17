@@ -9,6 +9,8 @@ import { InertRender } from "@/lib/skins/shared/views/parts";
 import { SkinPeek } from "@/components/mobile/SkinPeek";
 import { IngestionModal } from "@/components/flow/IngestionModal";
 import { GenerationLoader } from "@/components/GenerationLoader";
+import { SandHero } from "@/components/landing/SandHero";
+import { TopoBackground } from "@/components/landing/TopoBackground";
 import { createTripFromIngestion } from "@/lib/trips.functions";
 import type { Block } from "@/lib/skins/types";
 import { supabase } from "@/integrations/supabase/client";
