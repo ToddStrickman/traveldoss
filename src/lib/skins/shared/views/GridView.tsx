@@ -6,7 +6,7 @@ import type { PartOfDay } from "../itinerary";
 import { ShadowItinerary, PlanBCue } from "../ShadowItinerary";
 import { BlankDayScaffold, isScaffoldTriggered } from "../BlankDayScaffold";
 import { useEditing } from "../Editable";
-import { Sunrise, Sun, Moon, Pencil } from "lucide-react";
+import { Sunrise, Sun, Moon, Pencil, Copy, Check } from "lucide-react";
 import { FlightEditSheet } from "../ActivityEditSheet";
 import { AirfareIcon } from "../CategoryIcon";
 import { useCallback, useState } from "react";
@@ -36,6 +36,7 @@ function FlightTableRow({
   editing: boolean;
 }) {
   const [editOpen, setEditOpen] = useState(false);
+  const flightNo = [f.airline, f.flightNumber].filter(Boolean).join(" ");
   return (
     <tr>
       <td className="tds-td-strong">
@@ -60,13 +61,61 @@ function FlightTableRow({
           ) : null}
         </span>
       </td>
-      <td>{[f.airline, f.flightNumber].filter(Boolean).join(" ") || "—"}</td>
+      <td>
+        {flightNo ? (
+          <span className="tds-flight-copy-cell">
+            <span>{flightNo}</span>
+            {f.flightNumber ? (
+              <CopyChip value={f.flightNumber} label="flight number" />
+            ) : null}
+          </span>
+        ) : (
+          "—"
+        )}
+      </td>
       <td>{[f.from, f.to].filter(Boolean).join(" → ") || "—"}</td>
       <td>{f.date ?? "—"}</td>
       <td>{f.departTime ?? "—"}</td>
       <td>{f.arriveTime ?? "—"}</td>
-      <td>{f.confirmation ?? "—"}</td>
+      <td>
+        {f.confirmation ? (
+          <span className="tds-flight-copy-cell">
+            <span>{f.confirmation}</span>
+            <CopyChip value={f.confirmation} label="confirmation code" />
+          </span>
+        ) : (
+          "—"
+        )}
+      </td>
     </tr>
+  );
+}
+
+/** One-tap copy for a short value (flight #, confirmation). Icon-only,
+ *  keyboard-accessible, gives a 1.4s "copied" affordance. */
+function CopyChip({ value, label }: { value: string; label: string }) {
+  const [copied, setCopied] = useState(false);
+  const onCopy = async (e: { stopPropagation: () => void }) => {
+    e.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1400);
+    } catch {
+      /* clipboard blocked — value is still visible next to the chip */
+    }
+  };
+  return (
+    <button
+      type="button"
+      onClick={onCopy}
+      data-print="hide"
+      className="tds-copy-chip tap"
+      aria-label={copied ? `Copied ${label}` : `Copy ${label}`}
+      title={copied ? "Copied" : `Copy ${label}`}
+    >
+      {copied ? <Check size={12} aria-hidden /> : <Copy size={12} aria-hidden />}
+    </button>
   );
 }
 
