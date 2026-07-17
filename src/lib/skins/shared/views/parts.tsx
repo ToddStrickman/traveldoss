@@ -270,6 +270,7 @@ export function ActivityImages({
 }) {
   const [failed, setFailed] = useState<Set<string>>(new Set());
   const [retryTick, setRetryTick] = useState(0);
+  const [lightboxAt, setLightboxAt] = useState<number | null>(null);
   const usable = useMemo(
     () => (images ?? []).filter((im) => im.src && !failed.has(im.src)),
     [images, failed],
@@ -404,6 +405,7 @@ export function ActivityImages({
               total={total}
               eager={eager}
               onError={() => setFailed((prev) => new Set(prev).add(im.src))}
+              onOpen={() => setLightboxAt(i)}
             />
           );
         })}
@@ -450,6 +452,13 @@ export function ActivityImages({
           </div>
         </>
       )}
+      {lightboxAt != null ? (
+        <CarouselLightbox
+          images={usable}
+          startIndex={lightboxAt}
+          onClose={() => setLightboxAt(null)}
+        />
+      ) : null}
     </div>
   );
 }
