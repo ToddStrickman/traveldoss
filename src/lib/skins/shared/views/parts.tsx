@@ -586,6 +586,7 @@ function CarouselLightbox({
 
   const onWheel = (e: React.WheelEvent) => {
     if (!e.ctrlKey && !e.metaKey && Math.abs(e.deltaY) < 20) return;
+    // (preload effect declared above handles neighbour warm-up)
     e.preventDefault();
     setZoom((z) => {
       const next = Math.max(1, Math.min(4, z + (e.deltaY < 0 ? 0.25 : -0.25)));
