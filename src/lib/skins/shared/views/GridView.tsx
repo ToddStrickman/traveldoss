@@ -95,7 +95,7 @@ function FlightTableRow({
  *  keyboard-accessible, gives a 1.4s "copied" affordance. */
 function CopyChip({ value, label }: { value: string; label: string }) {
   const [copied, setCopied] = useState(false);
-  const onCopy = async (e: React.MouseEvent) => {
+  const onCopy = async (e: { stopPropagation: () => void }) => {
     e.stopPropagation();
     try {
       await navigator.clipboard.writeText(value);
