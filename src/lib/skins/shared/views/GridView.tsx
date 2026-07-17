@@ -9,7 +9,7 @@ import { useEditing } from "../Editable";
 import { Sunrise, Sun, Moon, Pencil, Copy, Check, ChevronDown, ExternalLink } from "lucide-react";
 import { FlightEditSheet } from "../ActivityEditSheet";
 import { AirfareIcon } from "../CategoryIcon";
-import { useCallback, useState } from "react";
+import { useCallback, useState, type ReactNode } from "react";
 import {
   EditableHero,
   EditableDayHeader,
