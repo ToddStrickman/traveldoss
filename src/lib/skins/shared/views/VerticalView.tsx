@@ -89,7 +89,13 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
             onDeleteDay={() => deleteDay(d.dayIndex)}
           />
           <PlanBCue count={d.shadows.length} />
-          {!dayCollapsed ? <ActivityImages images={d.day.images} /> : null}
+          {!dayCollapsed ? (
+            <ActivityImages
+              images={d.day.images}
+              fallbackQuery={`${trip.destination} ${d.day.label ?? ""}`.trim()}
+              fallbackLabel={d.day.label || `Day ${d.day.n}`}
+            />
+          ) : null}
 
           <div className="tds-day-body">
           {partOrder.map((part) => {
