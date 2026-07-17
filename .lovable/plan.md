@@ -1,115 +1,105 @@
+# Site UX Audit — Fix Plan
 
-# TravelDoss Feature Spec Pack — Combined Plan
+Findings from a full pass over the visitor path (`/`, `/templates`, `/t/$slug`, `/login`). Ordered by severity. Every change stays in `src/lib/skins/shared/*` or route/component files — no per-skin edits (house rule #1). All new mobile UI ships as `md:hidden` siblings or gated by `useIsMobile()` (house rule #3).
 
-Build order per your call: **4 → 1 → 3 → 2**. Each slice ships behind clean typecheck + tests, no skin-file edits, mobile-first, CLS-0. Spec 0 is delivered as an advisory since I can't run `git branch -a` from here — I'll produce it as a markdown checklist you can execute.
+## P0 — Ship first
 
----
+### 1. Fixed bottom-bar collision on `/t/$slug` (mobile)
+`StudioBar`, `ExportMenu`, and `ViewPill` are all independently `fixed` near the bottom with the same safe-area offset. On a phone with the mint StudioBar plus either export or view pill, they overlap at the right edge.
 
-## Slice A — Spec 0 (Advisory)
+- Introduce a shared bottom-stack layout constant (`src/lib/ui/bottom-stack.ts`) exporting offsets for row 0 (StudioBar), row 1 (ExportMenu / ViewPill).
+- Push `ExportMenu` and `ViewPill` above `StudioBar` on mobile only, using the same `env(safe-area-inset-bottom)` math.
+- When `isEditing`, hide `ExportMenu` (already partially done) and the floating `ViewPill` — put view switching in the top masthead instead so nothing competes with editing controls.
 
-Deliver `docs/branch-audit.md`: a template with the exact `git` commands, a reconciliation table skeleton (branch · contents · merged? · relevant? · action), and a targeted search checklist for photo/view-switcher/mobile/bubbles/auth work. No code changes. You run the CLI, fill the table, then greenlight the rest.
+### 2. Per-day photo carousel
+Today only a whole-trip Coverflow overlay exists; days render a static `ActivityImages` row. There's no owner upload path either.
 
----
+- Build `src/lib/skins/shared/gallery/DayPhotoCarousel.tsx` — scroll-snap CSS carousel on mobile, 3-up cover-flow-lite on desktop, tap to open the existing Coverflow overlay pre-scrolled to that image.
+- Replace `<ActivityImages>` inside each day header in `VerticalView` / `HorizontalView` / `GridView` with `DayPhotoCarousel` when `day.images.length > 0`; keep the existing static grid as a `prefers-reduced-motion` fallback.
+- Add a lightweight owner upload button ("Add photos") in edit mode via `Editable.tsx` block toolbar: uses the existing `trip-photos` storage bucket if present, otherwise creates it (private bucket + RLS scoped by trip owner, GRANT to authenticated/service_role). Client resizes to ≤2000px / ≤300KB WebP, strips EXIF, requires alt text.
+- Extend the shared `day.images` collector to feed `DayPhotoCarousel` from both `place.image` and any per-day `gallery` blocks (kind already exists in `types.ts`).
 
-## Slice B — Spec 4: Retire Bubbles (subtractive, ship first)
+### 3. Collapsed-column layout in Horizontal/Grid boards
+A collapsed middle column can leave a tall empty gap next to expanded siblings.
 
-1. **Delete** `src/components/motion/MobileBubbles.tsx`, `src/hooks/use-device-tilt.ts`, and any `GyroWallpaper` usage on mobile. Keep `GyroWallpaper` only if it has a desktop, non-orientation code path; otherwise delete it too (recommendation: remove everywhere per your own doc §4A).
-2. **Purge listeners**: grep-and-remove any `deviceorientation`, `DeviceMotionEvent`, `requestPermission` call sites. Zero live references remain.
-3. **Update imports** in `src/routes/index.tsx` and anywhere else that mounts them; verify no orphaned spacing (SandHero stays untouched).
-4. **Test**: add `tests/no-orientation-listeners.test.ts` — greps the built bundle for `deviceorientation`/`requestPermission` and fails on match.
+- Verify with Playwright at 375px with a 3-day trip / middle collapsed; if the gap appears, set `align-items: start` on the board grid and add a subtle "expand" affordance in the collapsed column footer so it doesn't read as a layout bug.
 
-Acceptance: bundle drops, no iOS permission prompt possible, mobile layout identical minus the bubbles slot.
+## P1 — Clarity & polish
 
----
+### 4. Truncate/expand affordance (desktop + mobile)
+The butler-cloche icon is charming but not universally recognized as "collapse". First-time users miss it.
 
-## Slice C — Spec 1: Mobile Integrity + Time-of-Day + View Pivot
+- Add a persistent chevron caret next to the cloche in `CollapseToggle` (`editing-kit.tsx`): rotates 0°/180° on toggle. Cloche stays for personality; chevron carries the affordance.
+- Add a visible "Collapse" / "Expand" text label at ≥768px (currently label is `aria-label` only). Mobile keeps icon+chevron to save space.
+- Increase touch target to 32×32 for the "part" variant on mobile (currently 26×26 with a 16px glyph).
+- Unify Grid desktop `<details>` disclosure with `CollapseToggle` so desktop and mobile Grid share one pattern.
+- Persist collapse state per trip in `localStorage` (`tds:collapsed:{tripId}`) so refreshes remember it.
+- Add a "Collapse all days / Expand all" control in the masthead for trips with ≥3 days.
 
-### C1. Overflow tripwire + root-cause sweep
-- Add `tests/mobile-overflow.test.ts` using Playwright: for each of the 3 views × sample dossier at 320/375/430, assert `document.scrollWidth <= innerWidth`.
-- Sweep shared views + `skin.css`: add `min-width: 0` to flex/grid children of day columns and boarding-pass rows; add `overflow-wrap: anywhere` to `.tds-edit`, note/address cells, and URL-bearing text; replace any fixed `px` widths with `clamp()`/`minmax()`.
-- `contenteditable`: enforce `max-width: 100%`; use `visualViewport` to scroll active block above the mobile keyboard (helper in `src/lib/skins/shared/keyboard-anchor.ts`).
-- Verify `HorizontalView` and `GridView` collapse to Vertical below 768px (current code uses `md:` gates — audit and fix any leak).
+### 5. Save-status parity on mobile
+`EditingStatusBar` shows autosave feedback on desktop; the mobile `DossierMastheadBar` shows nothing.
 
-### C2. Time-of-day icons — **recommendation: icons+labels on existing PartOfDay buckets only**
-Rationale: `PartOfDay` already exists in `src/lib/skins/shared/itinerary.ts` and drives Vertical/Grid buckets. Adding a `timeOfDay` field on individual place blocks duplicates that signal, forces a schemaVersion bump, and touches the AI parser, normalizer, and every skin. Sticking to bucket labels gets the visible win with zero schema risk. Revisit only if you later want cross-bucket ordering (e.g., "6am flight before morning coffee").
+- Add a compact `SaveStatus` chip (idle / saving / saved · time) to `DossierMastheadBar` mirroring the desktop component.
 
-Implementation:
-- New `src/lib/skins/shared/PartOfDayLabel.tsx`: inline SVG (sunrise/sun/moon) + text label ("Morning/Afternoon/Evening/Night"). Stroke inherits `currentColor` so each skin's tokens color it.
-- Wire into `VerticalView`, `HorizontalView`, `GridView` bucket headers. No per-skin edits.
-- Extend `tests/mobile-edit-parity.test.tsx` with an assertion: each bucket header has both an icon (`svg` role) and text label across all three views.
+### 6. Refinement history on mobile
+Currently `hidden sm:inline-flex` — mobile owners can't reach it.
 
-### C3. Mobile view pivoter that a thumb can find
-- Current: `ViewSheet.tsx` opens from a floating pill. Keep the pill but promote it to a **bottom-anchored 3-option segmented control** (44px, above `env(safe-area-inset-bottom)`) that auto-hides on scroll-down and reappears on scroll-up. First-visit pulse + one-shot tooltip persisted in `localStorage` per trip_id.
-- Preserve all existing Epic H contracts (`?view=` param, `view_switched` analytics — add device class dimension).
-- Desktop unchanged.
+- Surface refinement history inside the mobile masthead overflow (three-dots) or as a sheet trigger on tablet+phone.
 
----
+### 7. Login / signup (Spec 3, partial)
+- Split `/signup` as its own route rendering the shared `AuthCard` in signup mode; keep in-page mode toggle as fallback.
+- Read `template_id` / `view` from `search`, persist through OAuth via `mint-pending`, and render a "Continuing with {skin}" chip above the form.
+- On `invalid_credentials`, offer "No account found — Sign up instead?" linking to `/signup?email=...`.
+- Fix duplicated Tailwind class on `login.tsx:183` (`md:py-20 md:py-28`).
 
-## Slice D — Spec 3: Auth Screen Sign-Up Distinction + Flow Integrity
+### 8. Export button labels on mobile
+Three unlabeled circular icons are ambiguous. Show a short text label ("PDF", "Doc", "Cal") next to each icon on mobile, or collapse to a single "Export" pill that opens a sheet with labeled rows.
 
-1. **Split routes**: keep `/login` (current), add `/signup` that renders the same component in signup mode. `login.tsx` already exists; extract shared form into `src/components/auth/AuthCard.tsx`, thread `mode: 'login' | 'signup'`.
-2. **Button hierarchy**: primary filled "Log in" / outlined 44px "Sign up" beneath a hairline rule and "New to TravelDoss?" caption. Mirror on signup screen.
-3. **Context chip**: if `template_id` + `view` were on the query string, show "Continuing with **{skin name}**"; persist through OAuth round-trip (already using `mint-pending.ts` — extend to also stash `authIntent: {templateId, view}` so it survives magic-link/OAuth).
-4. **Unknown-email recovery**: catch Supabase `invalid_credentials` on login, offer "No account found — Sign up instead?" that navigates to `/signup?email=...`.
-5. **Mobile**: 16px input font, submit visible above keyboard, "Open Mail app" hint on magic-link screen.
-6. **Analytics**: emit `auth_screen_viewed`, `auth_mode_switched`, `auth_completed` with entry-point dimension.
+### 9. Gallery edge cases
+- Show the gallery button in mobile edit mode too (currently hidden) so owners can preview while editing.
+- Lower `MIN_IMAGES` to 1 so a single hero photo still opens.
+- When trip photos exceed `MAX_IMAGES = 24`, show a subtle "+N more" indicator instead of silently dropping.
 
-No schema changes.
+### 10. Templates page polish
+- Fix typo `templates.tsx:497` "mint it it will go live" → "mint it — it will go live".
+- Resolve the nested `<button>` inside `role="button"` card by making the whole card a plain `<div>` with a single top-level `<button>` for pick, or vice-versa.
+- Debounce the `SkinPreview` basis switch across the 767px breakpoint so template thumbnails don't jump on tablet resizes.
 
----
+### 11. MetaChip long-value wrapping
+Add `max-w-full min-w-0` on the chip value span and let the interests chip expand to a second row rather than clipping.
 
-## Slice E — Spec 2: Photo System
+### 12. Destructive action safety
+`MetaChip` "Clear" wipes fields instantly with autosave 800ms later. Add a small inline "Undo" toast (5s) whenever a clear/delete commits — replaces the missing mobile Cmd-Z.
 
-### E1. Storage + RLS (migration in same slice, since you greenlit)
-- Create private bucket `trip-photos` via `supabase--storage_create_bucket`.
-- Migration: RLS on `storage.objects` scoped to `trip-photos` where the path prefix `trips/{trip_id}/` maps to a trip owned by `auth.uid()` (join via `public.trips`). Owner-only INSERT/UPDATE/DELETE; SELECT allowed for anon only when the parent trip is published (mirrors public trip visibility).
+## P2 — Nice-to-haves / code hygiene
 
-### E2. Schema
-- Extend `Block` union in `src/lib/skins/types.ts`:
-  - `{ kind: 'gallery', images: GalleryImage[], layoutHint?: 'carousel' | 'collage' | 'auto' }`
-  - Optional `image?: GalleryImage` on `place` blocks.
-- `GalleryImage = { id, storagePath, alt, caption?, width, height, dominantColor? }`.
-- Bump `content.schemaVersion`; existing zod validator ignores unknown block kinds already (R9). Update `parse.ts` / `normalize-ai.ts` to skip cleanly.
-
-### E3. Upload pipeline
-- New `src/lib/photos/upload.ts`: client-side resize (canvas → WebP, JPEG fallback, ≤2000px long edge, ≤300KB), EXIF strip, compute dominant color, capture `width`/`height`. Cap 20/trip enforced in UI.
-- Alt text required; default from `place.name` or caption. `aria-live` prompt.
-- Server fn `savePhotoRecord` under `src/lib/photos.functions.ts` (uses `requireSupabaseAuth`).
-
-### E4. Rendering (shared views only — never per-skin)
-- **Mobile carousel** (`src/lib/skins/shared/gallery/PhotoCarousel.tsx`): CSS scroll-snap cover-flow, dot counter, tap → existing lightbox pattern extended with pinch-zoom via `@use-gesture/react` (already in deps? — will check; if not, hand-rolled pointer-events, no new dep).
-- **Desktop collage** (`src/lib/skins/shared/gallery/CollageRoll.tsx`): justified layout using stored aspect ratios (extends existing `CoverflowGallery.tsx`).
-- Grid view: gallery block spans a featured cell.
-- Fallback per §7.6: any view that can't render → Vertical carousel.
-
-### E5. Editor
-- New "Add photos" tool in `Editable.tsx` block toolbar (mobile: camera + camera roll).
-- Drag-reorder within gallery using existing dnd-kit; inline alt/caption editors reusing `EditableText`.
-
-### E6. Share-card upgrade
-- OG image handler in `src/routes/t.$slug.tsx` head() picks first gallery image (absolute URL from Supabase Storage) when available; falls back to current skin cover.
-
-### E7. Tests
-- `tests/gallery-block-roundtrip.test.ts`: zod parse survives unknown fields, gallery survives normalize.
-- `tests/photo-carousel.test.tsx`: snap layout, reduced-motion variant flat.
-- Playwright: `e2e/photos-upload.spec.ts` (owner uploads → renders in 3 views).
-
----
+- Extract the three copies of `bottom-[max(16px, env(safe-area-inset-bottom))]` (`ActionDock`, `StudioBar`, `ExportMenu`) into one utility.
+- Rename `tds-act-delete` used for the edit-pencil in `GridView.tsx:45` to `tds-act-edit`.
+- StudioBar template `<select>` on mobile: constrain to 120px and show ellipsis.
+- `t.$slug.tsx` mint-modal effect: add a `didOpenRef` guard so it can't re-open on unrelated re-renders.
+- `templates.tsx` scroll-restoration: always restore `window.history.scrollRestoration` in a `finally` cleanup.
+- Reduced-motion fallback for the collapse "drop" animation: keep a static position change so reduced-motion users still see the toggle move under the label.
+- Landing "Login" pill (`index.tsx:224`): raise contrast and drop the shimmer so it reads as a primary auth entry, not decorative eyebrow text.
 
 ## Sequencing & gates
 
-Each slice ends with `bunx vitest run` + `tsgo --noEmit` green before starting the next. Slice E only starts after Slice C's overflow tripwire is green (photos on a broken responsive base is thrash).
+1. P0.1 (bottom-bar collision) → visual verify at 320/375/430.
+2. P0.2 (per-day carousel + upload) — behind the storage/RLS migration; ships with `tests/day-carousel.test.tsx` + Playwright upload spec.
+3. P0.3 (board layout) — Playwright verification first, then fix if reproduced.
+4. P1 clarity items (4–7) in one batch since they touch shared kit + masthead.
+5. P1 polish (8–11) + P2 hygiene as a cleanup pass.
 
-## Deliberately out of scope
+Each slice ends with `bunx vitest run` + `tsgo --noEmit` green.
 
-- Any edits inside `src/lib/skins/<skin>.tsx` (house rule #1).
-- Unsplash fallback (mentioned as "added strength" — deferred to a follow-up).
-- Desktop bubbles replacement / cursor-parallax (deferred, per §4A "shipped as its own considered feature").
-- Cross-bucket `timeOfDay` field on places (see C2 recommendation).
+## Out of scope
 
-## Technical notes
+- Per-skin file edits (house rule #1).
+- Rewriting existing Coverflow overlay (only extending it).
+- Desktop bubbles / gyroscope work (already retired).
+- Payments, auth providers, backend schema beyond the `trip-photos` bucket + RLS.
 
-- All new mobile UI behind `md:hidden` or `useIsMobile()`; desktop trees untouched per house rule #3.
-- All animations honor `prefers-reduced-motion`.
-- No new heavy deps: carousel = scroll-snap; masonry = flex + aspect-ratio; pinch-zoom = pointer events (fallback if `@use-gesture/react` is not already in the tree).
-- `routeTree.gen.ts` untouched; new routes are `signup.tsx` (auto-registered).
+## Open items to confirm before starting
+
+- Confirm `HorizontalView` collapsed-column gap actually reproduces (P0.3).
+- Confirm no photo-upload code already exists on an unmerged branch before I build Spec 2.
+- Do you want the per-day carousel to double as the owner upload surface, or should uploads live only in the block toolbar? (Recommendation: both — the carousel gets a "+" tile in edit mode.)
