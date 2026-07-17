@@ -8,6 +8,7 @@ import { BlankDayScaffold, isScaffoldTriggered } from "../BlankDayScaffold";
 import { useEditing } from "../Editable";
 import { Sunrise, Sun, Moon, Pencil } from "lucide-react";
 import { FlightEditSheet } from "../ActivityEditSheet";
+import { AirfareIcon } from "../CategoryIcon";
 import { useCallback, useState } from "react";
 import {
   EditableHero,
@@ -119,9 +120,14 @@ export function GridView({ trip, blocks }: { trip: TripView; blocks: Block[] }) 
       ) : (
         <>
       {flights.length > 0 ? (
-        <section className="tds-grid-section">
-          <h2 className="tds-grid-h2">Flights</h2>
-          <div className="tds-table-scroll">
+        <section className="tds-grid-section tds-flights-boarding">
+          <h2 className="tds-grid-h2 tds-flights-h2">
+            <AirfareIcon className="tds-flights-h2-icon" aria-hidden />
+            <span>Flights</span>
+          </h2>
+          <div className="tds-table-scroll tds-boarding-pass">
+          <span className="tds-boarding-notch tds-boarding-notch-l" aria-hidden />
+          <span className="tds-boarding-notch tds-boarding-notch-r" aria-hidden />
           <table className="tds-table tds-table-flights">
             <thead>
               <tr>
