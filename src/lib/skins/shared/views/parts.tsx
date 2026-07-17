@@ -470,9 +470,10 @@ const CarouselSlide = (() => {
     total: number;
     eager: boolean;
     onError: () => void;
+    onOpen?: () => void;
   };
   const Component = (
-    { image, index, total, eager, onError }: Props,
+    { image, index, total, eager, onError, onOpen }: Props,
     ref: React.Ref<HTMLElement>,
   ) => {
     const [loaded, setLoaded] = useState(false);
@@ -485,20 +486,28 @@ const CarouselSlide = (() => {
         aria-roledescription={total > 1 ? "slide" : undefined}
         aria-label={total > 1 ? `${index + 1} of ${total}` : undefined}
       >
-        <img
-          src={image.src}
-          alt={image.alt}
-          loading={eager ? "eager" : "lazy"}
-          decoding="async"
-          draggable={false}
-          style={
-            image.focalPoint
-              ? { objectPosition: `${image.focalPoint.x * 100}% ${image.focalPoint.y * 100}%` }
-              : undefined
-          }
-          onLoad={() => setLoaded(true)}
-          onError={onError}
-        />
+        <button
+          type="button"
+          className="tds-carousel-open"
+          data-print="hide"
+          aria-label={`Open photo ${index + 1}${total > 1 ? ` of ${total}` : ""} in fullscreen viewer`}
+          onClick={(e) => { e.stopPropagation(); onOpen?.(); }}
+        >
+          <img
+            src={image.src}
+            alt={image.alt}
+            loading={eager ? "eager" : "lazy"}
+            decoding="async"
+            draggable={false}
+            style={
+              image.focalPoint
+                ? { objectPosition: `${image.focalPoint.x * 100}% ${image.focalPoint.y * 100}%` }
+                : undefined
+            }
+            onLoad={() => setLoaded(true)}
+            onError={onError}
+          />
+        </button>
       </figure>
     );
   };
@@ -506,6 +515,184 @@ const CarouselSlide = (() => {
   // eslint-disable-next-line react/display-name
   return React.forwardRef(Component);
 })();
+
+/** Fullscreen lightbox for the day-image carousel. Tap-to-open, prev/next
+ *  controls, keyboard navigation, click-to-toggle zoom (1x <-> 2.25x),
+ *  drag-to-pan while zoomed, wheel-to-zoom on desktop, Esc to close. */
+function CarouselLightbox({
+  images,
+  startIndex,
+  onClose,
+}: {
+  images: GalleryImage[];
+  startIndex: number;
+  onClose: () => void;
+}) {
+  const n = images.length;
+  const [idx, setIdx] = useState(() => Math.min(Math.max(startIndex, 0), Math.max(n - 1, 0)));
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const drag = useRef<{ x: number; y: number; px: number; py: number; id: number } | null>(null);
+
+  const go = useCallback(
+    (delta: number) => {
+      if (n === 0) return;
+      setIdx((i) => ((i + delta) % n + n) % n);
+      setZoom(1);
+      setPan({ x: 0, y: 0 });
+    },
+    [n],
+  );
+
+  const toggleZoom = useCallback(() => {
+    setZoom((z) => (z > 1 ? 1 : 2.25));
+    setPan({ x: 0, y: 0 });
+  }, []);
+
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, []);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { e.preventDefault(); onClose(); }
+      else if (e.key === "ArrowRight") { e.preventDefault(); go(1); }
+      else if (e.key === "ArrowLeft") { e.preventDefault(); go(-1); }
+      else if (e.key === "+" || e.key === "=") { e.preventDefault(); setZoom((z) => Math.min(4, z + 0.5)); }
+      else if (e.key === "-" || e.key === "_") {
+        e.preventDefault();
+        setZoom((z) => {
+          const next = Math.max(1, z - 0.5);
+          if (next === 1) setPan({ x: 0, y: 0 });
+          return next;
+        });
+      }
+      else if (e.key === "0") { e.preventDefault(); setZoom(1); setPan({ x: 0, y: 0 }); }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [go, onClose]);
+
+  if (n === 0) return null;
+  const image = images[idx];
+
+  const onWheel = (e: React.WheelEvent) => {
+    if (!e.ctrlKey && !e.metaKey && Math.abs(e.deltaY) < 20) return;
+    e.preventDefault();
+    setZoom((z) => {
+      const next = Math.max(1, Math.min(4, z + (e.deltaY < 0 ? 0.25 : -0.25)));
+      if (next === 1) setPan({ x: 0, y: 0 });
+      return next;
+    });
+  };
+  const onPointerDown = (e: React.PointerEvent) => {
+    if (zoom <= 1) return;
+    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+    drag.current = { x: e.clientX, y: e.clientY, px: pan.x, py: pan.y, id: e.pointerId };
+  };
+  const onPointerMove = (e: React.PointerEvent) => {
+    const d = drag.current;
+    if (!d || d.id !== e.pointerId) return;
+    setPan({ x: d.px + (e.clientX - d.x), y: d.py + (e.clientY - d.y) });
+  };
+  const onPointerUp = (e: React.PointerEvent) => {
+    if (drag.current?.id === e.pointerId) drag.current = null;
+  };
+
+  return (
+    <div
+      className="tds-lightbox"
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Photo ${idx + 1} of ${n}`}
+      data-print="hide"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="tds-lightbox-bar">
+        <span className="tds-lightbox-counter" aria-live="polite">{idx + 1} / {n}</span>
+        <div className="tds-lightbox-tools">
+          <button
+            type="button"
+            className="tds-lightbox-btn tap"
+            aria-label="Zoom out"
+            disabled={zoom <= 1}
+            onClick={(e) => {
+              e.stopPropagation();
+              setZoom((z) => {
+                const next = Math.max(1, z - 0.5);
+                if (next === 1) setPan({ x: 0, y: 0 });
+                return next;
+              });
+            }}
+          >−</button>
+          <span className="tds-lightbox-zoom">{Math.round(zoom * 100)}%</span>
+          <button
+            type="button"
+            className="tds-lightbox-btn tap"
+            aria-label="Zoom in"
+            disabled={zoom >= 4}
+            onClick={(e) => { e.stopPropagation(); setZoom((z) => Math.min(4, z + 0.5)); }}
+          >+</button>
+          <button
+            type="button"
+            className="tds-lightbox-btn tds-lightbox-close tap"
+            aria-label="Close viewer"
+            onClick={(e) => { e.stopPropagation(); onClose(); }}
+          >×</button>
+        </div>
+      </div>
+
+      <div
+        className="tds-lightbox-stage"
+        onWheel={onWheel}
+        onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      >
+        <img
+          src={image.src}
+          alt={image.alt}
+          draggable={false}
+          className="tds-lightbox-img"
+          data-zoomed={zoom > 1 || undefined}
+          style={{
+            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+            cursor: zoom > 1 ? (drag.current ? "grabbing" : "grab") : "zoom-in",
+          }}
+          onDoubleClick={toggleZoom}
+          onClick={(e) => { e.stopPropagation(); toggleZoom(); }}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerCancel={onPointerUp}
+        />
+      </div>
+
+      {n > 1 ? (
+        <>
+          <button
+            type="button"
+            className="tds-lightbox-nav tds-lightbox-nav--prev tap"
+            aria-label="Previous photo"
+            onClick={(e) => { e.stopPropagation(); go(-1); }}
+          >
+            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+          </button>
+          <button
+            type="button"
+            className="tds-lightbox-nav tds-lightbox-nav--next tap"
+            aria-label="Next photo"
+            onClick={(e) => { e.stopPropagation(); go(1); }}
+          >
+            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+          </button>
+        </>
+      ) : null}
+
+      {image.caption ? <div className="tds-lightbox-caption">{image.caption}</div> : null}
+    </div>
+  );
+}
 
 type DetailRow = {
   key: string;
