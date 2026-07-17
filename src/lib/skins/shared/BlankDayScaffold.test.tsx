@@ -40,7 +40,7 @@ describe("BlankDayScaffold", () => {
 
   it("outbound flight ghost seeds outbound flight + Day 01 skeleton", () => {
     const { onBlocksReplace, getByText } = renderScaffold([]);
-    fireEvent.click(getByText("Add outbound flight").closest("button")!);
+    fireEvent.click(getByText("Add outbound travel").closest("button")!);
     expect(onBlocksReplace).toHaveBeenCalledTimes(1);
     const next = onBlocksReplace.mock.calls[0][0] as Block[];
     expect(next[0]).toMatchObject({ kind: "flight", direction: "outbound" });
@@ -52,7 +52,7 @@ describe("BlankDayScaffold", () => {
 
   it("inbound flight ghost appends an inbound flight last", () => {
     const { onBlocksReplace, getByText } = renderScaffold([]);
-    fireEvent.click(getByText("Add inbound flight").closest("button")!);
+    fireEvent.click(getByText("Add return travel").closest("button")!);
     const next = onBlocksReplace.mock.calls[0][0] as Block[];
     expect(next[next.length - 1]).toMatchObject({ kind: "flight", direction: "inbound" });
   });

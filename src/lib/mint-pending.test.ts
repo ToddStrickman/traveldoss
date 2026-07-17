@@ -10,7 +10,12 @@ function makeStorage() {
     clear: () => void map.clear(),
   };
 }
-(globalThis as Record<string, unknown>).window = { localStorage: makeStorage() };
+// Attach to the shared happy-dom window from test-setup.ts instead of
+// replacing it — clobbering `window` here broke every component test that
+// ran after this file in the same process (React saw a window with no
+// addEventListener).
+const w = ((globalThis as Record<string, unknown>).window ??= {}) as Record<string, unknown>;
+w.localStorage ??= makeStorage();
 
 const { savePendingComposer, peekPendingComposer, clearPendingComposer } =
   await import("./mint-pending");

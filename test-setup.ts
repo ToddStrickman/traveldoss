@@ -15,6 +15,9 @@ globalThis.MouseEvent = window.MouseEvent;
 globalThis.KeyboardEvent = window.KeyboardEvent;
 globalThis.ResizeObserver = window.ResizeObserver;
 globalThis.MutationObserver = window.MutationObserver;
+// The activity carousels lazy-load images via IntersectionObserver; without
+// this shim any component that renders ActivityImages throws in tests.
+globalThis.IntersectionObserver = window.IntersectionObserver;
 globalThis.requestAnimationFrame = window.requestAnimationFrame.bind(window);
 globalThis.cancelAnimationFrame = window.cancelAnimationFrame.bind(window);
 (window as any).SyntaxError = SyntaxError;
@@ -22,3 +25,13 @@ globalThis.cancelAnimationFrame = window.cancelAnimationFrame.bind(window);
 (window as any).Error = Error;
 (window as any).RangeError = RangeError;
 (window as any).ReferenceError = ReferenceError;
+
+// @testing-library/react's auto-cleanup registers on import only if a global
+// afterEach already exists — under `bun test` it doesn't, so without this,
+// component tests from one FILE leak DOM into the next (tests passed alone
+// but failed in the full run).
+import { afterEach } from "bun:test";
+import { cleanup } from "@testing-library/react";
+afterEach(() => {
+  cleanup();
+});
