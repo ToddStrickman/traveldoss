@@ -543,6 +543,9 @@ function CarouselLightbox({
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const drag = useRef<{ x: number; y: number; px: number; py: number; id: number } | null>(null);
+  // Touch swipe (only when not zoomed) — separate from pan drag which owns
+  // pointer movement while zoomed in.
+  const swipe = useRef<{ x: number; y: number; id: number; t: number } | null>(null);
   const [overrides, setOverrides] = useState<Record<number, string>>({});
   const [status, setStatus] = useState<Record<number, "loading" | "ok" | "error">>({});
 
@@ -632,7 +635,12 @@ function CarouselLightbox({
     });
   };
   const onPointerDown = (e: React.PointerEvent) => {
-    if (zoom <= 1) return;
+    if (zoom <= 1) {
+      if (e.pointerType === "touch" || e.pointerType === "pen") {
+        swipe.current = { x: e.clientX, y: e.clientY, id: e.pointerId, t: Date.now() };
+      }
+      return;
+    }
     (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
     drag.current = { x: e.clientX, y: e.clientY, px: pan.x, py: pan.y, id: e.pointerId };
   };
@@ -643,6 +651,20 @@ function CarouselLightbox({
   };
   const onPointerUp = (e: React.PointerEvent) => {
     if (drag.current?.id === e.pointerId) drag.current = null;
+    const s = swipe.current;
+    if (s && s.id === e.pointerId) {
+      swipe.current = null;
+      const dx = e.clientX - s.x;
+      const dy = e.clientY - s.y;
+      const dt = Date.now() - s.t;
+      if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5 && dt < 800) {
+        go(dx < 0 ? 1 : -1);
+      }
+    }
+  };
+  const onPointerCancel = (e: React.PointerEvent) => {
+    if (drag.current?.id === e.pointerId) drag.current = null;
+    if (swipe.current?.id === e.pointerId) swipe.current = null;
   };
 
   return (
