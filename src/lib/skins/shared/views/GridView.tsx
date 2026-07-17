@@ -10,6 +10,7 @@ import { Sunrise, Sun, Moon, Pencil, Copy, Check, ChevronDown, ExternalLink } fr
 import { FlightEditSheet } from "../ActivityEditSheet";
 import { AirfareIcon } from "../CategoryIcon";
 import { useCallback, useState, type ReactNode } from "react";
+import { airportTzLabel, flightDuration } from "../airportTz";
 import {
   EditableHero,
   EditableDayHeader,
@@ -38,7 +39,11 @@ function FlightTableRow({
   const [editOpen, setEditOpen] = useState(false);
   const [open, setOpen] = useState(false);
   const flightNo = [f.airline, f.flightNumber].filter(Boolean).join(" ");
+  const depTz = airportTzLabel(f.from, f.date);
+  const arrTz = airportTzLabel(f.to, f.arriveDate ?? f.date);
+  const duration = flightDuration(f.date, f.departTime, f.arriveTime, f.from, f.to, f.arriveDate);
   const details: Array<{ label: string; value: ReactNode }> = [];
+  if (duration) details.push({ label: "Duration", value: duration });
   if (f.fareClass) details.push({ label: "Class", value: f.fareClass });
   if (f.seat) details.push({ label: "Seat", value: f.seat });
   if (f.boardingGroup) details.push({ label: "Boarding group", value: f.boardingGroup });
@@ -118,8 +123,33 @@ function FlightTableRow({
       </td>
       <td>{[f.from, f.to].filter(Boolean).join(" → ") || "—"}</td>
       <td>{f.date ?? "—"}</td>
-      <td>{f.departTime ?? "—"}</td>
-      <td>{f.arriveTime ?? "—"}</td>
+      <td>
+        {f.departTime ? (
+          <span
+            className="tds-flight-time"
+            title={depTz ? `Local time at ${f.from ?? "origin"}` : undefined}
+          >
+            <span>{f.departTime}</span>
+            {depTz ? <span className="tds-flight-tz">{depTz}</span> : null}
+          </span>
+        ) : (
+          "—"
+        )}
+      </td>
+      <td>
+        {f.arriveTime ? (
+          <span
+            className="tds-flight-time"
+            title={arrTz ? `Local time at ${f.to ?? "destination"}` : undefined}
+          >
+            <span>{f.arriveTime}</span>
+            {arrTz ? <span className="tds-flight-tz">{arrTz}</span> : null}
+            {f.arriveDate ? <span className="tds-flight-nextday" aria-label={`arrives ${f.arriveDate}`}>+</span> : null}
+          </span>
+        ) : (
+          "—"
+        )}
+      </td>
       <td>
         {f.confirmation ? (
           <span className="tds-flight-copy-cell">
