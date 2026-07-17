@@ -529,16 +529,21 @@ function CarouselLightbox({
   images,
   startIndex,
   onClose,
+  fallbackQuery,
 }: {
   images: GalleryImage[];
   startIndex: number;
   onClose: () => void;
+  /** When provided, the failure state offers a one-tap Unsplash fallback. */
+  fallbackQuery?: string;
 }) {
   const n = images.length;
   const [idx, setIdx] = useState(() => Math.min(Math.max(startIndex, 0), Math.max(n - 1, 0)));
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const drag = useRef<{ x: number; y: number; px: number; py: number; id: number } | null>(null);
+  const [overrides, setOverrides] = useState<Record<number, string>>({});
+  const [status, setStatus] = useState<Record<number, "loading" | "ok" | "error">>({});
 
   const go = useCallback(
     (delta: number) => {
