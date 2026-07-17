@@ -693,11 +693,12 @@ function CarouselLightbox({
         onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       >
         <img
-          src={image.src}
-          alt={image.alt}
+          src={currentSrc}
+          alt={baseImage.alt}
           draggable={false}
           className="tds-lightbox-img"
           data-zoomed={zoom > 1 || undefined}
+          data-hidden={currentStatus === "error" || undefined}
           style={{
             transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
             cursor: zoom > 1 ? (drag.current ? "grabbing" : "grab") : "zoom-in",
@@ -708,7 +709,35 @@ function CarouselLightbox({
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerUp}
+          onLoad={() => setIdxStatus("ok")}
+          onError={() => setIdxStatus("error")}
         />
+        {currentStatus === "error" ? (
+          <div className="tds-lightbox-error" role="alert" onClick={(e) => e.stopPropagation()}>
+            <div className="tds-lightbox-error-title">This photo didn't load</div>
+            <p className="tds-lightbox-error-body">
+              Check your connection, or swap in a preview image for now.
+            </p>
+            <div className="tds-lightbox-error-actions">
+              <button
+                type="button"
+                className="tds-lightbox-btn tap"
+                onClick={(e) => { e.stopPropagation(); retry(); }}
+              >
+                Retry
+              </button>
+              {fallbackQuery ? (
+                <button
+                  type="button"
+                  className="tds-lightbox-btn tap"
+                  onClick={(e) => { e.stopPropagation(); useFallback(); }}
+                >
+                  Use preview photo
+                </button>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
       </div>
 
       {n > 1 ? (
@@ -732,7 +761,7 @@ function CarouselLightbox({
         </>
       ) : null}
 
-      {image.caption ? <div className="tds-lightbox-caption">{image.caption}</div> : null}
+      {baseImage.caption ? <div className="tds-lightbox-caption">{baseImage.caption}</div> : null}
     </div>
   );
 }
