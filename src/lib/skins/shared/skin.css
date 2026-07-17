@@ -242,6 +242,52 @@
 }
 @media (pointer: coarse) { .tds-copy-chip { opacity: 1; } }
 @media print { .tds-copy-chip { display: none; } }
+
+/* Expandable flight row — airline contact, class/seat, baggage etc. */
+.tds-flight-disclose {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: 999px;
+  border: 1px solid var(--tds-rule);
+  background: var(--tds-bg); color: var(--tds-soft);
+  cursor: pointer;
+  transition: transform .2s ease, color .18s ease, border-color .18s ease, background-color .18s ease;
+}
+.tds-flight-disclose:hover,
+.tds-flight-disclose:focus-visible {
+  color: var(--tds-accent); border-color: var(--tds-accent);
+  background: color-mix(in oklab, var(--tds-accent) 10%, var(--tds-bg));
+  outline: none;
+}
+.tds-flight-disclose[data-open] { transform: rotate(180deg); }
+.tds-flight-details-row > td {
+  padding: 10px 14px 14px !important;
+  background: color-mix(in oklab, var(--tds-accent) 4%, var(--tds-bg));
+  border-top: 1px dashed var(--tds-rule);
+}
+.tds-flight-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px 18px;
+  margin: 0;
+}
+.tds-flight-detail { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.tds-flight-detail dt {
+  font-size: 11px; letter-spacing: .06em; text-transform: uppercase;
+  color: color-mix(in oklab, var(--tds-soft) 78%, var(--tds-ink));
+}
+.tds-flight-detail dd {
+  margin: 0; font-size: 14px; color: var(--tds-ink);
+  overflow-wrap: anywhere;
+}
+.tds-flight-detail-link {
+  display: inline-flex; align-items: center; gap: 4px;
+  color: var(--tds-accent); text-decoration: underline;
+  text-underline-offset: 2px;
+}
+@media print {
+  .tds-flight-disclose { display: none; }
+  .tds-flight-details-row { display: table-row; }
+}
 @media (max-width: 640px) {
   .tds-act-row { grid-template-columns: 48px 18px 1fr; gap: 8px; }
   .tds-act-title { font-size: 17px; }

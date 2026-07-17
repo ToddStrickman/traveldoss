@@ -6,10 +6,10 @@ import type { PartOfDay } from "../itinerary";
 import { ShadowItinerary, PlanBCue } from "../ShadowItinerary";
 import { BlankDayScaffold, isScaffoldTriggered } from "../BlankDayScaffold";
 import { useEditing } from "../Editable";
-import { Sunrise, Sun, Moon, Pencil, Copy, Check } from "lucide-react";
+import { Sunrise, Sun, Moon, Pencil, Copy, Check, ChevronDown, ExternalLink } from "lucide-react";
 import { FlightEditSheet } from "../ActivityEditSheet";
 import { AirfareIcon } from "../CategoryIcon";
-import { useCallback, useState } from "react";
+import { useCallback, useState, type ReactNode } from "react";
 import {
   EditableHero,
   EditableDayHeader,
@@ -36,11 +36,54 @@ function FlightTableRow({
   editing: boolean;
 }) {
   const [editOpen, setEditOpen] = useState(false);
+  const [open, setOpen] = useState(false);
   const flightNo = [f.airline, f.flightNumber].filter(Boolean).join(" ");
+  const details: Array<{ label: string; value: ReactNode }> = [];
+  if (f.fareClass) details.push({ label: "Class", value: f.fareClass });
+  if (f.seat) details.push({ label: "Seat", value: f.seat });
+  if (f.boardingGroup) details.push({ label: "Boarding group", value: f.boardingGroup });
+  if (f.boardingTime) details.push({ label: "Boarding time", value: f.boardingTime });
+  if (f.gate) details.push({ label: "Gate", value: f.gate });
+  if (f.baggage) details.push({ label: "Baggage", value: f.baggage });
+  if (f.passenger) details.push({ label: "Passenger", value: f.passenger });
+  if (f.price) details.push({ label: "Price", value: f.price });
+  if (f.arriveDate) details.push({ label: "Arrival date", value: f.arriveDate });
+  if (f.airline) {
+    const q = encodeURIComponent(`${f.airline} customer service contact`);
+    details.push({
+      label: "Airline contact",
+      value: (
+        <a
+          href={`https://www.google.com/search?q=${q}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="tds-flight-detail-link"
+        >
+          {f.airline} <ExternalLink size={11} aria-hidden />
+        </a>
+      ),
+    });
+  }
+  if (f.note) details.push({ label: "Notes", value: f.note });
+  const hasDetails = details.length > 0;
   return (
+    <>
     <tr>
       <td className="tds-td-strong">
         <span className="inline-flex items-center gap-1.5">
+          {hasDetails ? (
+            <button
+              type="button"
+              className="tds-flight-disclose tap"
+              onClick={() => setOpen((v) => !v)}
+              aria-expanded={open}
+              aria-label={open ? `Hide ${leg.toLowerCase()} flight details` : `Show ${leg.toLowerCase()} flight details`}
+              title={open ? "Hide details" : "Show details"}
+              data-open={open || undefined}
+            >
+              <ChevronDown size={12} aria-hidden />
+            </button>
+          ) : null}
           {leg}
           {editing && index != null ? (
             <>
@@ -88,6 +131,21 @@ function FlightTableRow({
         )}
       </td>
     </tr>
+    {hasDetails && open ? (
+      <tr className="tds-flight-details-row">
+        <td colSpan={7}>
+          <dl className="tds-flight-details">
+            {details.map(({ label, value }) => (
+              <div key={label} className="tds-flight-detail">
+                <dt>{label}</dt>
+                <dd>{value}</dd>
+              </div>
+            ))}
+          </dl>
+        </td>
+      </tr>
+    ) : null}
+    </>
   );
 }
 
