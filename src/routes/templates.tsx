@@ -9,6 +9,8 @@ import { InertRender } from "@/lib/skins/shared/views/parts";
 import { SkinPeek } from "@/components/mobile/SkinPeek";
 import { IngestionModal } from "@/components/flow/IngestionModal";
 import { GenerationLoader } from "@/components/GenerationLoader";
+import { SandHero } from "@/components/landing/SandHero";
+import { TopoBackground } from "@/components/landing/TopoBackground";
 import { createTripFromIngestion } from "@/lib/trips.functions";
 import type { Block } from "@/lib/skins/types";
 import { supabase } from "@/integrations/supabase/client";
@@ -458,6 +460,7 @@ function TemplatesPage() {
 
   return (
     <div className="relative min-h-dvh overflow-hidden bg-background text-foreground selection:bg-seal/40">
+      <TopoBackground />
       <div
         aria-hidden
         className="pointer-events-none fixed inset-0 z-0 opacity-[0.05] mix-blend-overlay"
@@ -490,16 +493,15 @@ function TemplatesPage() {
           Back
         </button>
 
-        <motion.h1
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="mt-16 text-[14vw] font-normal leading-[0.95] tracking-[-0.03em] md:text-[7vw]"
-          style={{ fontFamily: "var(--font-display)" }}
-        >
-          <span className="text-ink">Pick your </span>
-          <span className="italic text-ink/85">dossier template<span className="text-seal">.</span></span>
-        </motion.h1>
+        <h1 className="sr-only">Pick your dossier template.</h1>
+        <SandHero
+          className="mt-10 h-[46vw] max-h-[420px] min-h-[220px] w-[min(96vw,1200px)] md:mt-16 md:h-[22vw]"
+          lines={[
+            { text: "Pick your" },
+            { text: "dossier template", italic: true, accent: "." },
+          ]}
+          accessibleText="Pick your dossier template."
+        />
         <p className="mt-6 max-w-xl text-sm leading-relaxed text-ink-soft md:text-base">
           Select an elegant dossier template from the studio. Furnish it with automation, AI, or manually. Finally, <em className="italic">mint</em> it — it will go live for the duration of your trip.
         </p>
