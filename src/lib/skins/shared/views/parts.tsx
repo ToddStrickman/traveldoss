@@ -714,6 +714,10 @@ function CarouselLightbox({
         className="tds-lightbox-stage"
         onWheel={onWheel}
         onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerCancel}
       >
         <img
           src={currentSrc}
@@ -728,10 +732,6 @@ function CarouselLightbox({
           }}
           onDoubleClick={toggleZoom}
           onClick={(e) => { e.stopPropagation(); toggleZoom(); }}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onPointerCancel={onPointerUp}
           onLoad={() => setIdxStatus("ok")}
           onError={() => setIdxStatus("error")}
         />
