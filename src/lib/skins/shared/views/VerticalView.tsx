@@ -29,7 +29,7 @@ import {
  *  Outbound flight → Day 01 (morning/afternoon/evening) → … → Inbound flight. */
 export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[] }) {
   const it = buildItinerary(blocks);
-  const { editing } = useEditing();
+  const { editing, onBlockChange } = useEditing();
   const showScaffold = editing && isScaffoldTriggered(blocks);
   const placeholderFor = (part: "morning" | "afternoon" | "evening"): string =>
     part === "morning" ? "Open Morning" : part === "afternoon" ? "Open Afternoon" : "Open Evening";
@@ -94,6 +94,12 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
               images={d.day.images}
               fallbackQuery={`${trip.destination} ${d.day.label ?? ""}`.trim()}
               fallbackLabel={d.day.label || `Day ${d.day.n}`}
+              uploadLabel={d.day.label || `Day ${d.day.n}`}
+              onImagesChange={
+                editing
+                  ? (next) => onBlockChange(d.dayIndex, { images: next } as Partial<Block>)
+                  : undefined
+              }
             />
           ) : null}
 
