@@ -12,7 +12,6 @@
  * editing subtree so they only appear when editing).
  */
 import * as React from "react";
-import { LockPill } from "./LockPill";
 import { SharedDossierCard } from "./SharedDossierCard";
 import { cn } from "@/lib/utils";
 
@@ -55,21 +54,18 @@ function SaveStatus({ saving, savedAt, saveError, editing }: SaveState & { editi
 export function EditingStatusBar({
   slug,
   canEdit,
-  locked,
-  onToggleLock,
   saving,
   savedAt,
   saveError,
 }: {
   slug: string;
   canEdit: boolean;
-  locked: boolean;
-  onToggleLock: () => void;
   saving: boolean;
   savedAt: string | null;
   saveError: boolean;
 }) {
-  const editing = canEdit && !locked;
+  // Desktop has no lock concept — owners edit inline by clicking any field.
+  const editing = canEdit;
   return (
     <div
       data-print="hide"
@@ -78,7 +74,7 @@ export function EditingStatusBar({
     >
       <div className="flex min-w-0 items-center gap-3">
         {canEdit ? (
-          <LockPill locked={locked} onToggle={onToggleLock} variant="inline" />
+          <span className="td-eyebrow truncate text-ink/70">Editing</span>
         ) : (
           <span className="td-eyebrow truncate text-ink/50">Viewing</span>
         )}
