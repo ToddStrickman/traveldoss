@@ -242,7 +242,32 @@ function useReducedMotion() {
   return reduced;
 }
 
-export function ActivityImages({ images }: { images?: GalleryImage[] }) {
+/** Minimum images that count as a real photo row. Below this we surface a
+ *  friendly empty state (with an Unsplash preview when a query is provided)
+ *  so days never look broken. */
+const MIN_DAY_IMAGES = 1;
+
+function unsplashFallbackImage(query: string): GalleryImage {
+  const q = encodeURIComponent(query.trim().slice(0, 80) || "travel");
+  return {
+    src: `https://source.unsplash.com/featured/1200x800/?${q}`,
+    alt: `Illustrative photo of ${query}`,
+    license: "unsplash",
+  } as GalleryImage;
+}
+
+export function ActivityImages({
+  images,
+  fallbackQuery,
+  fallbackLabel,
+}: {
+  images?: GalleryImage[];
+  /** When provided and no real images exist, render an Unsplash preview
+   *  keyed off this query with a clear "preview photo" message. */
+  fallbackQuery?: string;
+  /** Optional short label shown alongside the preview badge, e.g. day title. */
+  fallbackLabel?: string;
+}) {
   const [failed, setFailed] = useState<Set<string>>(new Set());
   const [retryTick, setRetryTick] = useState(0);
   const usable = useMemo(
@@ -307,6 +332,35 @@ export function ActivityImages({ images }: { images?: GalleryImage[] }) {
     [active, goTo, total],
   );
 
+  const tooFew = total < MIN_DAY_IMAGES;
+  if (tooFew && fallbackQuery) {
+    // Empty-state: single Unsplash preview + clear messaging so owners know
+    // to swap it for their own photos.
+    const fb = unsplashFallbackImage(fallbackQuery);
+    return (
+      <div className="tds-act-images tds-act-images--empty" data-count={1} data-print="hide">
+        <figure className="tds-act-image tds-carousel-slide" data-loaded>
+          <img
+            src={fb.src}
+            alt={fb.alt}
+            loading="lazy"
+            decoding="async"
+            draggable={false}
+            onError={() => setFailed((prev) => new Set(prev).add(fb.src))}
+          />
+          <figcaption className="tds-carousel-empty">
+            <span className="tds-carousel-empty-badge">Preview photo</span>
+            <span className="tds-carousel-empty-msg">
+              {fallbackLabel
+                ? `Illustrative image for ${fallbackLabel} — add your own photos to personalise this day.`
+                : "Illustrative image — add your own photos to personalise this day."}
+            </span>
+            <span className="tds-carousel-empty-credit">via Unsplash</span>
+          </figcaption>
+        </figure>
+      </div>
+    );
+  }
   if (!images || images.length === 0) return null;
   if (total === 0) {
     // Everything failed — leave a discreet retry so the layout doesn't vanish.
