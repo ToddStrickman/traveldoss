@@ -2791,3 +2791,55 @@ button.tds-add-day[data-burst] .tds-add-day-plus {
 @media (prefers-reduced-motion: reduce) {
   .tds-photo-uploader-spin { animation: none; }
 }
+
+/* ---------- Flights: boarding-pass frame + plane icon ---------- */
+.tds-flights-h2 {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+}
+.tds-flights-h2-icon {
+  width: 0.9em;
+  height: 0.9em;
+  flex: 0 0 auto;
+  color: color-mix(in oklab, var(--tds-accent) 78%, var(--tds-ink));
+  transform: translateY(-1px);
+}
+
+/* Perforated boarding-pass edge around the flights table. Uses the skin's
+   own tokens so it themes across all ten skins, and reserves space so no
+   CLS is introduced. */
+.tds-flights-boarding .tds-boarding-pass {
+  position: relative;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: var(--tds-paper, transparent);
+  /* Dashed "printed" edge */
+  border: 1.5px dashed color-mix(in oklab, var(--tds-ink) 42%, transparent);
+  /* Subtle inner rule to echo a boarding-pass tear strip */
+  box-shadow:
+    inset 0 0 0 1px color-mix(in oklab, var(--tds-ink) 8%, transparent);
+  /* Undo the mobile fade mask so the frame isn't clipped at the edges */
+  -webkit-mask-image: none !important;
+          mask-image: none !important;
+}
+/* Circular "punch" notches on the left and right, like a stub perforation */
+.tds-boarding-notch {
+  position: absolute;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: var(--tds-bg, #fff);
+  border: 1.5px dashed color-mix(in oklab, var(--tds-ink) 42%, transparent);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+.tds-boarding-notch-l { left: -8px; }
+.tds-boarding-notch-r { right: -8px; }
+@media (max-width: 760px) {
+  .tds-flights-boarding .tds-boarding-pass {
+    padding: 12px 12px;
+  }
+  .tds-boarding-notch { width: 12px; height: 12px; }
+}
