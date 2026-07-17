@@ -59,6 +59,9 @@ export function DossierMastheadBar({
   layout,
   onLayoutChange,
   onOpenGmail,
+  saving = false,
+  savedAt = null,
+  saveError = false,
 }: {
   title: string;
   blocks: Block[];
@@ -76,6 +79,11 @@ export function DossierMastheadBar({
   onLayoutChange?: (v: SkinView) => void;
   /** Owner-only: open the Gmail import sheet. When absent, no button renders. */
   onOpenGmail?: () => void;
+  /** Autosave state — mirrors the desktop EditingStatusBar so mobile owners
+   *  get the same "saving / synced / offline" confirmation. */
+  saving?: boolean;
+  savedAt?: string | null;
+  saveError?: boolean;
 }) {
   const days = React.useMemo(() => collectDays(blocks), [blocks]);
   const [past, setPast] = React.useState(false);
@@ -177,6 +185,40 @@ export function DossierMastheadBar({
         </div>
 
         <div className="flex shrink-0 items-center gap-1">
+          {canEdit && !locked ? (
+            <span
+              className="hidden xs:inline-flex items-center gap-1 text-[9px] font-medium uppercase tracking-[0.28em]"
+              role={saveError ? "alert" : "status"}
+              aria-live="polite"
+              style={{
+                color: tokens
+                  ? saveError
+                    ? "#ef4444"
+                    : `color-mix(in oklab, ${tokens.ink} 55%, transparent)`
+                  : undefined,
+              }}
+              title={
+                saveError
+                  ? "Offline — waiting"
+                  : saving
+                    ? "Saving…"
+                    : savedAt
+                      ? "All changes synced"
+                      : "Auto-saves as you type"
+              }
+            >
+              <span
+                aria-hidden
+                className={cn(
+                  "inline-block h-1.5 w-1.5 rounded-full",
+                  saveError ? "animate-pulse bg-red-500" : saving ? "animate-pulse bg-seal" : "bg-seal/60",
+                )}
+              />
+              <span className="hidden sm:inline">
+                {saveError ? "Offline" : saving ? "Saving" : savedAt ? "Synced" : "Auto"}
+              </span>
+            </span>
+          ) : null}
           {layout && onLayoutChange ? (
             <ViewPill value={layout} onChange={onLayoutChange} variant="inline" />
           ) : null}

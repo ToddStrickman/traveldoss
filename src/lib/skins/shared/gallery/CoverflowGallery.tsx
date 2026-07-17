@@ -38,7 +38,9 @@ export function writeGalleryParam(index: number | null): void {
   window.history.replaceState(window.history.state, "", url);
 }
 
-const MIN_IMAGES = 2;
+// A single hero image still deserves an entry point — owners uploading
+// one photo expect to see it open in the gallery overlay.
+const MIN_IMAGES = 1;
 const MAX_IMAGES = 24;
 /** Licenses that do not require visible credit (record still stored). */
 const NO_CREDIT = /^(cc0|pdm|public domain|pexels|pixabay)/i;

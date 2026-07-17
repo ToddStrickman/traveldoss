@@ -855,6 +855,7 @@ button.tds-add-day[data-burst] .tds-add-day-plus {
   .tds-collapse-btn {
     display: inline-flex;
     align-items: center; justify-content: center;
+    gap: 4px;
     width: 32px; height: 32px;
     padding: 0; margin-left: auto;
     background: transparent;
@@ -868,7 +869,24 @@ button.tds-add-day[data-burst] .tds-add-day-plus {
     outline: none;
     box-shadow: 0 0 0 2px color-mix(in oklab, var(--tds-accent) 55%, transparent);
   }
-  .tds-collapse-btn--part { width: 26px; height: 26px; }
+  .tds-collapse-btn--part { width: auto; height: 32px; padding: 0 8px; }
+  /* On mobile, ensure comfortable touch target. */
+  @media (pointer: coarse) {
+    .tds-collapse-btn--part { min-height: 32px; }
+  }
+
+  /* Universal chevron next to the cloche — the affordance signal. */
+  .tds-collapse-caret {
+    width: 10px; height: 10px;
+    color: color-mix(in oklab, var(--tds-ink) 65%, transparent);
+    transition: transform .3s cubic-bezier(.4, 0, .2, 1);
+  }
+  .tds-collapse-btn[data-collapsed] .tds-collapse-caret {
+    transform: rotate(-90deg);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tds-collapse-caret { transition: none; }
+  }
 
   /* ---- Cloche SVG ---- */
   .tds-cloche {

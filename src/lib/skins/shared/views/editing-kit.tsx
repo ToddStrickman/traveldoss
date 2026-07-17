@@ -189,6 +189,16 @@ export function CollapseToggle({
           <path className="tds-cloche-hand" d="M14.5 5.5 L16 4.5 L17.5 5.5" />
         </g>
       </svg>
+      {/* Universal chevron — carries the "collapsible" affordance for users
+          who don't yet read the cloche as a control. Rotates on state. */}
+      <svg
+        className="tds-collapse-caret"
+        viewBox="0 0 12 12"
+        aria-hidden
+        focusable="false"
+      >
+        <path d="M2.5 4.5 L6 8 L9.5 4.5" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
     </button>
   );
 }

@@ -54,7 +54,7 @@ export function ViewPill({
         )}
         style={
           variant === "floating"
-            ? { bottom: "max(20px, env(safe-area-inset-bottom, 0px))" }
+            ? { bottom: "max(76px, calc(env(safe-area-inset-bottom, 0px) + 76px))" }
             : undefined
         }
       >

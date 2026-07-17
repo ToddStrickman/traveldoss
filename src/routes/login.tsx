@@ -180,7 +180,7 @@ function LoginPage() {
         </Link>
       </header>
 
-      <main className="relative z-10 mx-auto grid min-h-[82vh] max-w-[1400px] grid-cols-12 gap-6 md:gap-10 px-5 py-12 md:px-8 md:py-20 md:py-28">
+      <main className="relative z-10 mx-auto grid min-h-[82vh] max-w-[1400px] grid-cols-12 gap-6 px-5 py-12 md:gap-10 md:px-8 md:py-28">
         <aside className="col-span-12 md:col-span-5 md:border-r md:border-ink/10 md:pr-10">
           <span className="td-eyebrow text-ink/50">
             {mode === "signin" ? "Members · Return" : "Members · Begin"}

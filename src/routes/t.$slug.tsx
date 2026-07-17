@@ -649,6 +649,9 @@ function DossierPage() {
         layout={layout}
         onLayoutChange={changeLayout}
         onOpenGmail={canEdit ? () => setGmailOpen(true) : undefined}
+        saving={saving}
+        savedAt={savedAt}
+        saveError={saveError}
       />
       <div
         aria-hidden

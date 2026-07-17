@@ -146,7 +146,9 @@ export function ExportMenu({
   return (
     <div
       data-print="hide"
-      className="fixed right-3 z-40 flex items-center gap-1 rounded-full border border-white/10 bg-paper/85 p-1 text-ink backdrop-blur-md sm:right-5 sm:gap-2 sm:p-1.5 bottom-[max(16px,env(safe-area-inset-bottom))] sm:bottom-[max(72px,calc(env(safe-area-inset-bottom)+72px))]"
+      // Sits ABOVE the StudioBar on mobile (which lives at
+      // bottom-[max(16px,...)]) so they never collide on narrow phones.
+      className="fixed right-3 z-40 flex items-center gap-1 rounded-full border border-white/10 bg-paper/85 p-1 text-ink backdrop-blur-md sm:right-5 sm:gap-2 sm:p-1.5 bottom-[max(76px,calc(env(safe-area-inset-bottom)+76px))] sm:bottom-[max(72px,calc(env(safe-area-inset-bottom)+72px))]"
     >
       {isOwner && (
         <>
