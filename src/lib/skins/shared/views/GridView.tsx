@@ -272,8 +272,8 @@ export function GridView({ trip, blocks }: { trip: TripView; blocks: Block[] }) 
                 <th>Airline</th>
                 <th>From → To</th>
                 <th>Date</th>
-                <th>Depart</th>
-                <th>Arrive</th>
+                <th title="Local time at origin airport">Depart<span className="tds-flight-th-hint"> · local</span></th>
+                <th title="Local time at destination airport">Arrive<span className="tds-flight-th-hint"> · local</span></th>
                 <th>Conf.</th>
               </tr>
             </thead>
