@@ -2374,3 +2374,184 @@ button.tds-add-day[data-burst] .tds-add-day-plus {
   .tds-act-images::-webkit-scrollbar { display: none; }
   .tds-act-image { flex: 0 0 62vw; scroll-snap-align: start; }
 }
+
+/* ─── Carousel (2+ images) ────────────────────────────────────────────
+ * Overrides the flat grid when [data-carousel] is set. Uses a native
+ * scroll-snap track so touch, trackpad, and click+drag all behave
+ * identically without JS hijacking vertical scroll.
+ */
+.tds-act-images[data-carousel] {
+  position: relative;
+  display: block;
+  max-width: none;
+  padding: 0;
+  margin: 10px 0 6px;
+}
+.tds-carousel-track {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x pan-y; /* let the browser also handle vertical scroll */
+  -webkit-overflow-scrolling: touch;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  border-radius: 14px;
+  outline: none;
+}
+.tds-carousel-track:focus-visible {
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--tds-accent) 60%, transparent);
+}
+.tds-carousel-track::-webkit-scrollbar { display: none; }
+
+.tds-carousel-slide {
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  position: relative;
+  margin: 0;
+  border-radius: 14px;
+  overflow: hidden;
+  aspect-ratio: 16 / 11;
+  background: color-mix(in srgb, var(--tds-ink) 7%, var(--tds-bg));
+}
+@media (max-width: 767px) {
+  .tds-carousel-slide { flex-basis: 88%; }
+}
+.tds-carousel-slide img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+  opacity: 0;
+  transition: opacity .3s ease-out;
+}
+.tds-carousel-slide[data-loaded] img { opacity: 1; }
+/* Skeleton shimmer */
+.tds-carousel-slide::before {
+  content: "";
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(
+      100deg,
+      color-mix(in srgb, var(--tds-ink) 6%, transparent) 20%,
+      color-mix(in srgb, var(--tds-ink) 12%, transparent) 40%,
+      color-mix(in srgb, var(--tds-ink) 6%, transparent) 60%
+    );
+  background-size: 200% 100%;
+  animation: tds-carousel-shimmer 1.4s ease-in-out infinite;
+  opacity: 1;
+  transition: opacity .3s ease-out;
+  pointer-events: none;
+}
+.tds-carousel-slide[data-loaded]::before { opacity: 0; }
+@keyframes tds-carousel-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tds-carousel-slide::before { animation: none; }
+  .tds-carousel-track { scroll-behavior: auto; }
+  .tds-carousel-slide img { transition: none; }
+}
+
+/* Nav buttons */
+.tds-carousel-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px; height: 44px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--tds-bg) 78%, transparent);
+  color: var(--tds-ink);
+  border: 1px solid color-mix(in srgb, var(--tds-ink) 12%, transparent);
+  box-shadow: 0 6px 20px -8px rgba(0,0,0,0.35);
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity .18s ease-out, transform .18s ease-out, background .18s;
+  z-index: 2;
+}
+.tds-carousel-nav--prev { left: 8px; }
+.tds-carousel-nav--next { right: 8px; }
+.tds-act-images[data-carousel]:hover .tds-carousel-nav,
+.tds-act-images[data-carousel]:focus-within .tds-carousel-nav {
+  opacity: 1;
+}
+.tds-carousel-nav:hover { background: var(--tds-bg); }
+.tds-carousel-nav:focus-visible {
+  opacity: 1;
+  outline: 2px solid color-mix(in oklab, var(--tds-accent) 70%, transparent);
+  outline-offset: 2px;
+}
+.tds-carousel-nav:disabled { opacity: 0 !important; pointer-events: none; }
+/* Always show on touch/coarse-pointer devices */
+@media (pointer: coarse) {
+  .tds-carousel-nav { opacity: 0.9; }
+  .tds-carousel-nav:disabled { opacity: 0 !important; }
+}
+
+/* Counter chip */
+.tds-carousel-counter {
+  position: absolute;
+  top: 8px; right: 10px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font: 500 10px/1.4 var(--tds-fontBody, inherit);
+  letter-spacing: 0.08em;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Pagination dots */
+.tds-carousel-dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+.tds-carousel-dot {
+  width: 8px; height: 8px;
+  border-radius: 999px;
+  border: none;
+  padding: 0;
+  background: color-mix(in srgb, var(--tds-ink) 25%, transparent);
+  cursor: pointer;
+  transition: background .18s, width .18s, transform .18s;
+  /* 24px hit target via padding around the visible dot */
+  box-shadow: 0 0 0 8px transparent;
+}
+.tds-carousel-dot[data-active] {
+  background: var(--tds-ink);
+  width: 18px;
+}
+.tds-carousel-dot:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--tds-accent) 70%, transparent);
+  outline-offset: 3px;
+}
+
+/* Error placeholder */
+.tds-carousel-error {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  aspect-ratio: 16 / 5;
+  background: color-mix(in srgb, var(--tds-ink) 6%, var(--tds-bg));
+  color: color-mix(in oklab, var(--tds-ink) 70%, transparent);
+  font: 500 12px/1.4 var(--tds-fontBody, inherit);
+}
+.tds-carousel-retry {
+  border: 1px solid color-mix(in srgb, var(--tds-ink) 25%, transparent);
+  background: transparent;
+  color: var(--tds-ink);
+  padding: 6px 12px;
+  border-radius: 999px;
+  font: inherit;
+  cursor: pointer;
+}
+.tds-carousel-retry:hover { background: color-mix(in srgb, var(--tds-ink) 8%, transparent); }
