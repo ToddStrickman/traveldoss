@@ -17,6 +17,7 @@ import type { FlightBlock, ActivityBlock, PartOfDay } from "../itinerary";
 import { extractUrls, prettyDomain } from "@/lib/links";
 import { Pencil, Trash2 } from "lucide-react";
 import { ActivityEditSheet, FlightEditSheet } from "../ActivityEditSheet";
+import { DayPhotoUploader } from "./DayPhotoUploader";
 
 /**
  * Inert-render mode: set when a skin renders inside an interactive wrapper
@@ -263,6 +264,8 @@ export function ActivityImages({
   images,
   fallbackQuery,
   fallbackLabel,
+  onImagesChange,
+  uploadLabel,
 }: {
   images?: GalleryImage[];
   /** When provided and no real images exist, render an Unsplash preview
@@ -270,6 +273,11 @@ export function ActivityImages({
   fallbackQuery?: string;
   /** Optional short label shown alongside the preview badge, e.g. day title. */
   fallbackLabel?: string;
+  /** Owner-only. When provided, an "Add photo" affordance uploads to
+   *  storage and appends signed URLs to the persisted image order. */
+  onImagesChange?: (next: GalleryImage[]) => void;
+  /** Human label for the target (e.g. day title) used in aria/toast copy. */
+  uploadLabel?: string;
 }) {
   const [failed, setFailed] = useState<Set<string>>(new Set());
   const [retryTick, setRetryTick] = useState(0);
@@ -353,7 +361,18 @@ export function ActivityImages({
   );
 
   // No real images AND no fallback query available → nothing to show.
-  if (total === 0 && (!images || images.length === 0) && !fallbackQuery) return null;
+  if (total === 0 && (!images || images.length === 0) && !fallbackQuery) {
+    if (!onImagesChange) return null;
+    return (
+      <div className="tds-act-images tds-act-images--empty" data-count={1} data-print="hide">
+        <DayPhotoUploader
+          images={images}
+          onChange={onImagesChange}
+          dayLabel={uploadLabel ?? "this day"}
+        />
+      </div>
+    );
+  }
   if (total === 0) {
     // Everything failed — leave a discreet retry so the layout doesn't vanish.
     return (
@@ -368,6 +387,13 @@ export function ActivityImages({
             Retry
           </button>
         </div>
+        {onImagesChange ? (
+          <DayPhotoUploader
+            images={images}
+            onChange={onImagesChange}
+            dayLabel={uploadLabel ?? "this day"}
+          />
+        ) : null}
       </div>
     );
   }
@@ -453,6 +479,13 @@ export function ActivityImages({
           startIndex={lightboxAt}
           onClose={() => setLightboxAt(null)}
           fallbackQuery={fallbackQuery}
+        />
+      ) : null}
+      {onImagesChange ? (
+        <DayPhotoUploader
+          images={images}
+          onChange={onImagesChange}
+          dayLabel={uploadLabel ?? "this day"}
         />
       ) : null}
     </div>
