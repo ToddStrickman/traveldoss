@@ -714,8 +714,6 @@ function DossierPage() {
       <EditingStatusBar
         slug={trip.slug}
         canEdit={canEdit}
-        locked={locked}
-        onToggleLock={toggleLock}
         saving={saving}
         savedAt={savedAt}
         saveError={saveError}
