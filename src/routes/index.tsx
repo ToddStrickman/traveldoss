@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "motion/react";
@@ -8,7 +8,13 @@ import { InfiniteDocs } from "@/components/landing/InfiniteDocs";
 import { FlowScroller } from "@/components/landing/FlowScroller";
 import { TopoBackground } from "@/components/landing/TopoBackground";
 import { TemplateGallery } from "@/components/flow/TemplateGallery";
-import { IngestionModal } from "@/components/flow/IngestionModal";
+// Lazy: the composer (and the @dnd-kit tree it drags in — ~60 kB gzip) is
+// only needed after a click; keeping it out of the landing chunk shortens
+// time-to-interactive on the highest-traffic page. Once opened it stays
+// mounted so closing the modal keeps any typed draft, same as before.
+const IngestionModal = lazy(() =>
+  import("@/components/flow/IngestionModal").then((m) => ({ default: m.IngestionModal })),
+);
 import { GenerationLoader } from "@/components/GenerationLoader";
 import { ActionDock } from "@/components/landing/ActionDock";
 import { Parallax } from "@/components/motion/Tilt";
@@ -48,6 +54,12 @@ export const Route = createFileRoute("/")({
 function Landing() {
   const [picked, setPicked] = useState<SkinModule | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  // Mount-on-first-open for the lazy composer: never unmount afterwards,
+  // so a closed-then-reopened modal keeps its draft state.
+  const [modalMounted, setModalMounted] = useState(false);
+  useEffect(() => {
+    if (modalOpen) setModalMounted(true);
+  }, [modalOpen]);
   const [initialTab, setInitialTab] = useState<"paste" | "transcript">("paste");
   const [minting, setMinting] = useState(false);
   const [pendingSlug, setPendingSlug] = useState<string | null>(null);
@@ -362,13 +374,17 @@ function Landing() {
       <div id="templates" className="sr-only" />
       <TemplateGallery onPick={openWithTemplate} />
 
-      <IngestionModal
-        open={modalOpen}
-        onOpenChange={setModalOpen}
-        template={picked}
-        onGenerate={handleGenerate}
-        initialTab={initialTab}
-      />
+      {modalMounted && (
+        <Suspense fallback={null}>
+          <IngestionModal
+            open={modalOpen}
+            onOpenChange={setModalOpen}
+            template={picked}
+            onGenerate={handleGenerate}
+            initialTab={initialTab}
+          />
+        </Suspense>
+      )}
 
       <GenerationLoader open={minting} label="Composing your dossier" />
 

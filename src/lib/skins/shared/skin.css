@@ -2445,7 +2445,10 @@ button.tds-add-day[data-burst] .tds-add-day-plus {
   transition: opacity .3s ease-out;
   pointer-events: none;
 }
-.tds-carousel-slide[data-loaded]::before { opacity: 0; }
+/* animation: none matters as much as the fade — an infinite shimmer under
+   an invisible overlay still ticks style/paint forever, on every slide of
+   every dossier (and each landing preview). */
+.tds-carousel-slide[data-loaded]::before { opacity: 0; animation: none; }
 @keyframes tds-carousel-shimmer {
   0%   { background-position: 200% 0; }
   100% { background-position: -200% 0; }

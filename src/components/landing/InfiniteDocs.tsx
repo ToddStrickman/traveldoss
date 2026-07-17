@@ -19,7 +19,6 @@ function SkinMiniPreview({ skin }: { skin: SkinModule }) {
           pointerEvents: "none",
         }}
       >
-        {tokens.fontUrl && <link rel="stylesheet" href={tokens.fontUrl} />}
         <InertRender>
           <Render trip={previewFixture.trip} blocks={previewFixture.blocks} />
         </InertRender>
@@ -75,7 +74,10 @@ function DocThumb({ skin }: { skin: SkinModule }) {
 }
 
 export function InfiniteDocs({ onPickTemplate: _onPickTemplate }: { onPickTemplate?: (s: SkinModule) => void } = {}) {
-  const loop = [...SKINS, ...SKINS, ...SKINS, ...SKINS];
+  // The marquee animates to -50%, so two copies are the minimum for a
+  // seamless loop — four just doubled the DOM (and the scroll speed). The
+  // 25s duration keeps the on-screen speed identical to the old 4×/50s.
+  const loop = [...SKINS, ...SKINS];
   return (
     <aside
       className="fixed right-0 top-0 z-40 hidden h-dvh w-[320px] overflow-hidden border-l border-ink/10 md:block"
@@ -87,21 +89,28 @@ export function InfiniteDocs({ onPickTemplate: _onPickTemplate }: { onPickTempla
         <span className="h-px w-6 bg-ink/30" />
         The Dossier Templates
       </div>
-      <div
-        className="td-marquee-track flex flex-col gap-4 px-5 py-24"
-        style={{ animation: "td-scroll-up 50s linear infinite" }}
-      >
-        {loop.map((s, i) => (
-          <Link
-            key={`${s.meta.id}-${i}`}
-            to="/templates"
-            search={{ pick: s.meta.id }}
-            className="td-marquee-item block text-left"
-            aria-label={`Use the ${s.meta.codename} dossier template`}
-          >
-            <DocThumb skin={s} />
-          </Link>
-        ))}
+      {/* Padding lives on the wrapper, spacing on the items (mb-4, not
+          gap-4): the animated track's height is then exactly two copies,
+          so the -50% wrap lands pixel-perfect. With padding/gap inside
+          the animated element the wrap jumped ~88px (masked by the
+          fades, but a jump all the same). */}
+      <div className="px-5 py-24">
+        <div
+          className="td-marquee-track flex flex-col"
+          style={{ animation: "td-scroll-up 25s linear infinite" }}
+        >
+          {loop.map((s, i) => (
+            <Link
+              key={`${s.meta.id}-${i}`}
+              to="/templates"
+              search={{ pick: s.meta.id }}
+              className="td-marquee-item mb-4 block text-left"
+              aria-label={`Use the ${s.meta.codename} dossier template`}
+            >
+              <DocThumb skin={s} />
+            </Link>
+          ))}
+        </div>
       </div>
       <style>{`
         @keyframes td-scroll-up {

@@ -52,7 +52,6 @@ export function TemplateGallery({ onPick }: { onPick: (skin: SkinModule) => void
                 className="absolute left-0 top-0 origin-top-left"
                 style={{ width: 1400, transform: "scale(0.22)", pointerEvents: "none" }}
               >
-                {skin.tokens.fontUrl && <link rel="stylesheet" href={skin.tokens.fontUrl} />}
                 <InertRender>
                   <skin.Render trip={skin.previewFixture.trip} blocks={skin.previewFixture.blocks} />
                 </InertRender>
