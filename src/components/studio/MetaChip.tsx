@@ -109,15 +109,15 @@ export function MetaChip(props: MetaChipProps) {
     if (empty) return null;
     return (
       <span
-        className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] tracking-[0.04em]"
+        className="inline-flex max-w-full items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] tracking-[0.04em]"
         style={{
           borderColor: "color-mix(in oklab, var(--tds-ink) 18%, transparent)",
           background: "color-mix(in oklab, var(--tds-ink) 4%, var(--tds-bg))",
           color: "color-mix(in oklab, var(--tds-soft) 40%, var(--tds-ink))",
         }}
       >
-        <span className="td-eyebrow" style={{ color: "color-mix(in oklab, var(--tds-soft) 55%, var(--tds-ink))" }}>{label}</span>
-        <span style={{ color: "var(--tds-ink)" }}>{text}</span>
+        <span className="td-eyebrow shrink-0" style={{ color: "color-mix(in oklab, var(--tds-soft) 55%, var(--tds-ink))" }}>{label}</span>
+        <span className="min-w-0 truncate" style={{ color: "var(--tds-ink)" }}>{text}</span>
       </span>
     );
   }
