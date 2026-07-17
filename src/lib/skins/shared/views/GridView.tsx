@@ -38,7 +38,7 @@ function FlightTableRow({
   const [editOpen, setEditOpen] = useState(false);
   const [open, setOpen] = useState(false);
   const flightNo = [f.airline, f.flightNumber].filter(Boolean).join(" ");
-  const details: Array<{ label: string; value: React.ReactNode }> = [];
+  const details: Array<{ label: string; value: ReactNode }> = [];
   if (f.fareClass) details.push({ label: "Class", value: f.fareClass });
   if (f.seat) details.push({ label: "Seat", value: f.seat });
   if (f.boardingGroup) details.push({ label: "Boarding group", value: f.boardingGroup });
