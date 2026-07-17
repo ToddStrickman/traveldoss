@@ -1,4 +1,4 @@
-import {
+import React, {
   Children,
   createContext,
   useCallback,
@@ -208,36 +208,241 @@ export function ActivityName({ name }: { name: string }) {
 }
 
 /**
- * Inline photo row — images living with their day/stop (reference: rounded
- * cards in a row directly under the heading). Desktop: up to 3 side by side;
- * mobile: horizontal snap scroll. Broken images drop out silently.
+ * Inline photo carousel — images living with their day/stop.
+ *
+ * Single image → static card. Two or more → a native scroll-snap carousel
+ * that:
+ *  - tracks the finger with momentum (browser-native, so vertical page
+ *    scroll is never hijacked)
+ *  - shows prev/next arrows (fade in on hover on pointer:fine, always
+ *    visible on touch) with a 44px hit target
+ *  - shows tappable pagination dots + an "N / M" counter
+ *  - supports ArrowLeft/Right/Home/End when focused
+ *  - lazy-loads offscreen images, eager-loads the current one, and
+ *    preloads the immediate neighbours
+ *  - preserves layout with skeletons + fixed aspect-ratio (no CLS)
+ *  - offers a Retry when an image fails
+ *  - respects prefers-reduced-motion (auto-scroll behaviour)
+ *
+ * Same public props/DOM class hooks as before so all existing call sites
+ * and per-skin CSS keep working.
  */
-export function ActivityImages({ images }: { images?: import("../../types").GalleryImage[] }) {
+type GalleryImage = import("../../types").GalleryImage;
+
+function useReducedMotion() {
+  const [reduced, setReduced] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const on = () => setReduced(mql.matches);
+    on();
+    mql.addEventListener("change", on);
+    return () => mql.removeEventListener("change", on);
+  }, []);
+  return reduced;
+}
+
+export function ActivityImages({ images }: { images?: GalleryImage[] }) {
   const [failed, setFailed] = useState<Set<string>>(new Set());
+  const [retryTick, setRetryTick] = useState(0);
+  const usable = useMemo(
+    () => (images ?? []).filter((im) => im.src && !failed.has(im.src)),
+    [images, failed],
+  );
+  const total = usable.length;
+  const [active, setActive] = useState(0);
+  const trackRef = useRef<HTMLDivElement | null>(null);
+  const slideRefs = useRef<Array<HTMLElement | null>>([]);
+  const reduced = useReducedMotion();
+
+  // Keep active bounded when images change (e.g. an image errors out).
+  useEffect(() => {
+    if (active > Math.max(0, total - 1)) setActive(Math.max(0, total - 1));
+  }, [total, active]);
+
+  // Observe which slide is centred to drive dots + counter.
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track || total <= 1) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        // Pick the entry with the largest intersection ratio.
+        let best: IntersectionObserverEntry | null = null;
+        for (const e of entries) {
+          if (!best || e.intersectionRatio > best.intersectionRatio) best = e;
+        }
+        if (!best || best.intersectionRatio < 0.5) return;
+        const idx = Number((best.target as HTMLElement).dataset.idx);
+        if (!Number.isNaN(idx)) setActive(idx);
+      },
+      { root: track, threshold: [0.5, 0.75, 1] },
+    );
+    slideRefs.current.forEach((el) => el && io.observe(el));
+    return () => io.disconnect();
+  }, [total]);
+
+  const goTo = useCallback(
+    (idx: number) => {
+      const clamped = Math.max(0, Math.min(total - 1, idx));
+      const el = slideRefs.current[clamped];
+      if (!el) return;
+      el.scrollIntoView({
+        behavior: reduced ? "auto" : "smooth",
+        block: "nearest",
+        inline: "start",
+      });
+      setActive(clamped);
+    },
+    [total, reduced],
+  );
+
+  const onKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (total <= 1) return;
+      if (e.key === "ArrowRight") { e.preventDefault(); goTo(active + 1); }
+      else if (e.key === "ArrowLeft") { e.preventDefault(); goTo(active - 1); }
+      else if (e.key === "Home") { e.preventDefault(); goTo(0); }
+      else if (e.key === "End") { e.preventDefault(); goTo(total - 1); }
+    },
+    [active, goTo, total],
+  );
+
   if (!images || images.length === 0) return null;
-  const usable = images.filter((im) => im.src && !failed.has(im.src)).slice(0, 3);
-  if (usable.length === 0) return null;
+  if (total === 0) {
+    // Everything failed — leave a discreet retry so the layout doesn't vanish.
+    return (
+      <div className="tds-act-images" data-count={1} data-print="hide">
+        <div className="tds-carousel-error" role="status">
+          <span>Images unavailable</span>
+          <button
+            type="button"
+            onClick={() => { setFailed(new Set()); setRetryTick((n) => n + 1); }}
+            className="tds-carousel-retry"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const single = total === 1;
+
   return (
-    <div className="tds-act-images" data-count={usable.length}>
-      {usable.map((im) => (
-        <figure key={im.src} className="tds-act-image">
-          <img
-            src={im.src}
-            alt={im.alt}
-            loading="lazy"
-            draggable={false}
-            style={
-              im.focalPoint
-                ? { objectPosition: `${im.focalPoint.x * 100}% ${im.focalPoint.y * 100}%` }
-                : undefined
-            }
-            onError={() => setFailed((prev) => new Set(prev).add(im.src))}
-          />
-        </figure>
-      ))}
+    <div
+      className="tds-act-images"
+      data-count={Math.min(total, 3)}
+      data-carousel={single ? undefined : ""}
+      role={single ? undefined : "group"}
+      aria-roledescription={single ? undefined : "carousel"}
+      aria-label={single ? undefined : `Photos, ${total} total`}
+      onKeyDown={single ? undefined : onKeyDown}
+    >
+      <div className="tds-carousel-track" ref={trackRef} tabIndex={single ? -1 : 0}>
+        {usable.map((im, i) => {
+          const eager = i === 0 || Math.abs(i - active) <= 1;
+          return (
+            <CarouselSlide
+              key={`${im.src}#${retryTick}`}
+              ref={(el) => { slideRefs.current[i] = el; }}
+              image={im}
+              index={i}
+              total={total}
+              eager={eager}
+              onError={() => setFailed((prev) => new Set(prev).add(im.src))}
+            />
+          );
+        })}
+      </div>
+
+      {!single && (
+        <>
+          <button
+            type="button"
+            className="tds-carousel-nav tds-carousel-nav--prev tap"
+            data-print="hide"
+            aria-label="Previous photo"
+            onClick={(e) => { e.stopPropagation(); goTo(active - 1); }}
+            disabled={active === 0}
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+          </button>
+          <button
+            type="button"
+            className="tds-carousel-nav tds-carousel-nav--next tap"
+            data-print="hide"
+            aria-label="Next photo"
+            onClick={(e) => { e.stopPropagation(); goTo(active + 1); }}
+            disabled={active === total - 1}
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+          </button>
+          <div className="tds-carousel-counter" aria-live="polite" data-print="hide">
+            {active + 1} / {total}
+          </div>
+          <div className="tds-carousel-dots" role="tablist" aria-label="Choose photo" data-print="hide">
+            {usable.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                role="tab"
+                aria-selected={i === active}
+                aria-label={`Photo ${i + 1} of ${total}`}
+                className="tds-carousel-dot"
+                data-active={i === active || undefined}
+                onClick={(e) => { e.stopPropagation(); goTo(i); }}
+              />
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
+
+const CarouselSlide = (() => {
+  type Props = {
+    image: GalleryImage;
+    index: number;
+    total: number;
+    eager: boolean;
+    onError: () => void;
+  };
+  const Component = (
+    { image, index, total, eager, onError }: Props,
+    ref: React.Ref<HTMLElement>,
+  ) => {
+    const [loaded, setLoaded] = useState(false);
+    return (
+      <figure
+        ref={ref as React.Ref<HTMLElement>}
+        className="tds-act-image tds-carousel-slide"
+        data-idx={index}
+        data-loaded={loaded || undefined}
+        aria-roledescription={total > 1 ? "slide" : undefined}
+        aria-label={total > 1 ? `${index + 1} of ${total}` : undefined}
+      >
+        <img
+          src={image.src}
+          alt={image.alt}
+          loading={eager ? "eager" : "lazy"}
+          decoding="async"
+          draggable={false}
+          style={
+            image.focalPoint
+              ? { objectPosition: `${image.focalPoint.x * 100}% ${image.focalPoint.y * 100}%` }
+              : undefined
+          }
+          onLoad={() => setLoaded(true)}
+          onError={onError}
+        />
+      </figure>
+    );
+  };
+  Component.displayName = "CarouselSlide";
+  // eslint-disable-next-line react/display-name
+  return React.forwardRef(Component);
+})();
 
 type DetailRow = {
   key: string;
