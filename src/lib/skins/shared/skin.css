@@ -2407,7 +2407,13 @@ button.tds-add-day[data-burst] .tds-add-day-plus {
 .tds-carousel-track::-webkit-scrollbar { display: none; }
 
 .tds-carousel-slide {
-  flex: 0 0 100%;
+  /* Several modest images per row, never one viewport-swallowing photo:
+     a wide day strip fits ~3 slides (each capped at 420px ≈ 289px tall),
+     a narrow activity card floors at 240px → one slide + a peek of the
+     next, which is what signals "swipe me". flex-basis: 100% here was the
+     old behavior — a single day image at full column width rendered
+     1012×696px in a 1280×720 window. */
+  flex: 0 0 clamp(240px, calc((100% - 20px) / 3), 420px);
   scroll-snap-align: start;
   scroll-snap-stop: always;
   position: relative;
@@ -2418,7 +2424,7 @@ button.tds-add-day[data-burst] .tds-add-day-plus {
   background: color-mix(in srgb, var(--tds-ink) 7%, var(--tds-bg));
 }
 @media (max-width: 767px) {
-  .tds-carousel-slide { flex-basis: 88%; }
+  .tds-carousel-slide { flex-basis: 88%; max-width: none; }
 }
 .tds-carousel-slide img {
   width: 100%; height: 100%;
@@ -2512,23 +2518,31 @@ button.tds-add-day[data-burst] .tds-add-day-plus {
 .tds-carousel-dots {
   display: flex;
   justify-content: center;
-  gap: 6px;
+  gap: 0;
   margin-top: 8px;
 }
 .tds-carousel-dot {
-  width: 8px; height: 8px;
-  border-radius: 999px;
+  /* The button IS the 24px hit target; the visible dot is its ::after.
+     (The old box-shadow "hit target" was wishful — shadows don't catch
+     taps, so the real target was the bare 8px dot.) */
+  width: 24px; height: 24px;
+  position: relative;
   border: none;
   padding: 0;
-  background: color-mix(in srgb, var(--tds-ink) 25%, transparent);
+  background: transparent;
   cursor: pointer;
-  transition: background .18s, width .18s, transform .18s;
-  /* 24px hit target via padding around the visible dot */
-  box-shadow: 0 0 0 8px transparent;
 }
-.tds-carousel-dot[data-active] {
+.tds-carousel-dot::after {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--tds-ink) 25%, transparent);
+  transition: background .18s, inset .18s;
+}
+.tds-carousel-dot[data-active]::after {
   background: var(--tds-ink);
-  width: 18px;
+  inset: 8px 3px;
 }
 .tds-carousel-dot:focus-visible {
   outline: 2px solid color-mix(in oklab, var(--tds-accent) 70%, transparent);
