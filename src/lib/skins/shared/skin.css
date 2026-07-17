@@ -2737,3 +2737,57 @@ button.tds-add-day[data-burst] .tds-add-day-plus {
   justify-content: center;
   flex-wrap: wrap;
 }
+
+/* ── Day photo uploader ────────────────────────────────────────────────── */
+.tds-photo-uploader {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+.tds-photo-uploader-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.tds-photo-uploader-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  min-height: 32px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklab, var(--tds-ink) 22%, transparent);
+  background: color-mix(in oklab, var(--tds-bg) 82%, var(--tds-ink) 4%);
+  color: var(--tds-ink);
+  font: inherit;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 160ms ease, border-color 160ms ease;
+}
+.tds-photo-uploader-btn:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--tds-accent) 14%, var(--tds-bg));
+  border-color: color-mix(in oklab, var(--tds-accent) 45%, var(--tds-ink) 20%);
+}
+.tds-photo-uploader-btn:disabled {
+  opacity: 0.65;
+  cursor: progress;
+}
+.tds-photo-uploader-spin {
+  animation: tds-photo-spin 900ms linear infinite;
+}
+@keyframes tds-photo-spin {
+  to { transform: rotate(360deg); }
+}
+.tds-act-images--empty {
+  padding: 6px 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tds-photo-uploader-spin { animation: none; }
+}
