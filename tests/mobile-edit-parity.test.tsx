@@ -79,6 +79,26 @@ describe("mobile edit-mode parity", () => {
         expect(container.querySelector(".tds-open-slot-plus")).not.toBeNull();
       });
 
+      if (name === "VerticalView") {
+        it("renders the persistent Add-photo tile in the day carousel when editing", () => {
+          // Owner discoverability guarantee: the "+" tile must be present
+          // even when the gallery is showing sourced fallback images.
+          const { container } = renderView(View);
+          expect(container.querySelector(".tds-carousel-add")).not.toBeNull();
+        });
+
+        it("hides the Add-photo tile when not editing", () => {
+          const { container } = render(
+            <EditingProvider
+              value={{ ...makeCtx(), editing: false } as EditingCtx}
+            >
+              <View trip={DEMO_TRIP} blocks={DEMO_BLOCKS} />
+            </EditingProvider>,
+          );
+          expect(container.querySelector(".tds-carousel-add")).toBeNull();
+        });
+      }
+
       it("renders BOTH an empty-slot editor and an 'add another' affordance", () => {
         const { container } = renderView(View, SPARSE_BLOCKS);
         // AddActivitySlot adds `tds-open-slot-inline` for filled buckets

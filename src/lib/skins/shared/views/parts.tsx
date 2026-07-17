@@ -17,7 +17,8 @@ import type { FlightBlock, ActivityBlock, PartOfDay } from "../itinerary";
 import { extractUrls, prettyDomain } from "@/lib/links";
 import { Pencil, Trash2 } from "lucide-react";
 import { ActivityEditSheet, FlightEditSheet } from "../ActivityEditSheet";
-import { DayPhotoUploader } from "./DayPhotoUploader";
+import { DayPhotoUploader, useDayPhotoUpload } from "./DayPhotoUploader";
+import { useFallbackImages } from "../fallback-images";
 
 /**
  * Inert-render mode: set when a skin renders inside an interactive wrapper
@@ -249,32 +250,32 @@ function useReducedMotion() {
  *  sees on screen. */
 const MIN_DAY_IMAGES = 3;
 
-function unsplashFallbackImage(query: string, sig: number): GalleryImage {
-  const q = encodeURIComponent(query.trim().slice(0, 80) || "travel");
-  // `sig` keeps each padded slide visually distinct and gives every slide a
-  // unique src so React keys and the failed-set stay well-behaved.
-  return {
-    src: `https://source.unsplash.com/featured/1200x800/?${q}&sig=${sig}`,
-    alt: `Illustrative photo of ${query}`,
-    license: "unsplash",
-  } as GalleryImage;
-}
+// (The old source.unsplash.com pad generator lived here — that service was
+// discontinued, so every padded slide 404'd and days without photos showed
+// "Images unavailable". Pads now resolve through useFallbackImages: ranked
+// queries against Wikimedia Commons/Openverse, cached across sessions.)
+
+const noopImagesChange = () => {};
 
 export function ActivityImages({
   images,
   fallbackQuery,
+  fallbackQueries,
   fallbackLabel,
   onImagesChange,
   uploadLabel,
 }: {
   images?: GalleryImage[];
-  /** When provided and no real images exist, render an Unsplash preview
-   *  keyed off this query with a clear "preview photo" message. */
+  /** Single fallback search query (legacy call sites). Prefer
+   *  `fallbackQueries` — this becomes the sole entry when it's absent. */
   fallbackQuery?: string;
+  /** Ranked most-specific-first queries for sourcing fallback photos,
+   *  e.g. ["Villa Cimbrone Ravello", "Ravello Italy", "Amalfi Coast"]. */
+  fallbackQueries?: string[];
   /** Optional short label shown alongside the preview badge, e.g. day title. */
   fallbackLabel?: string;
-  /** Owner-only. When provided, an "Add photo" affordance uploads to
-   *  storage and appends signed URLs to the persisted image order. */
+  /** Owner-only. When provided, "Add photo" affordances upload to
+   *  storage and append signed URLs to the persisted image order. */
   onImagesChange?: (next: GalleryImage[]) => void;
   /** Human label for the target (e.g. day title) used in aria/toast copy. */
   uploadLabel?: string;
@@ -282,21 +283,38 @@ export function ActivityImages({
   const [failed, setFailed] = useState<Set<string>>(new Set());
   const [retryTick, setRetryTick] = useState(0);
   const [lightboxAt, setLightboxAt] = useState<number | null>(null);
+  const [dropping, setDropping] = useState(false);
+  const inert = useInertRender();
   const realUsable = useMemo(
     () => (images ?? []).filter((im) => im.src && !failed.has(im.src)),
     [images, failed],
   );
+  const queries = useMemo(
+    () => (fallbackQueries?.length ? fallbackQueries : fallbackQuery ? [fallbackQuery] : []),
+    [fallbackQueries, fallbackQuery],
+  );
+  const wantPads = Math.max(0, MIN_DAY_IMAGES - realUsable.length);
+  // Always resolve the full set for the queries (stable cache regardless of
+  // how many real photos exist right now); slice to the current gap below.
+  const { images: fbImages, status: fbStatus } = useFallbackImages({
+    queries,
+    want: MIN_DAY_IMAGES,
+    enabled: !inert && queries.length > 0 && wantPads > 0,
+    nonce: retryTick,
+  });
   const usable = useMemo(() => {
-    if (!fallbackQuery) return realUsable;
-    if (realUsable.length >= MIN_DAY_IMAGES) return realUsable;
-    const need = MIN_DAY_IMAGES - realUsable.length;
-    const pads: GalleryImage[] = [];
-    for (let i = 0; i < need; i++) {
-      const fb = unsplashFallbackImage(fallbackQuery, i + 1);
-      if (!failed.has(fb.src)) pads.push(fb);
-    }
+    if (wantPads === 0) return realUsable;
+    const pads = fbImages
+      .filter((im) => !failed.has(im.src) && !realUsable.some((r) => r.src === im.src))
+      .slice(0, wantPads);
     return [...realUsable, ...pads];
-  }, [realUsable, fallbackQuery, failed]);
+  }, [realUsable, fbImages, failed, wantPads]);
+  const canUpload = !!onImagesChange && !inert;
+  const uploader = useDayPhotoUpload({
+    images,
+    onChange: onImagesChange ?? noopImagesChange,
+    label: uploadLabel ?? "this day",
+  });
   const realCount = realUsable.length;
   const total = usable.length;
   const isFallback = useCallback(
@@ -360,21 +378,57 @@ export function ActivityImages({
     [active, goTo, total],
   );
 
-  // No real images AND no fallback query available → nothing to show.
-  if (total === 0 && (!images || images.length === 0) && !fallbackQuery) {
-    if (!onImagesChange) return null;
+  const dropProps = canUpload
+    ? {
+        onDragOver: (e: React.DragEvent) => {
+          if (e.dataTransfer?.types?.includes("Files")) {
+            e.preventDefault();
+            setDropping(true);
+          }
+        },
+        onDragLeave: () => setDropping(false),
+        onDrop: (e: React.DragEvent) => {
+          e.preventDefault();
+          setDropping(false);
+          void uploader.onFiles(e.dataTransfer?.files ?? null);
+        },
+      }
+    : {};
+
+  // Fallbacks still resolving and nothing real to show yet → keep the
+  // layout with a shimmering skeleton instead of flashing an empty state.
+  if (total === 0 && fbStatus === "loading") {
     return (
-      <div className="tds-act-images tds-act-images--empty" data-count={1} data-print="hide">
-        <DayPhotoUploader
-          images={images}
-          onChange={onImagesChange}
-          dayLabel={uploadLabel ?? "this day"}
-        />
+      <div className="tds-act-images" data-count={1} data-print="hide" aria-hidden>
+        <figure className="tds-carousel-slide" />
       </div>
     );
   }
   if (total === 0) {
-    // Everything failed — leave a discreet retry so the layout doesn't vanish.
+    // Nothing uploaded and sourcing found nothing (or wasn't possible).
+    if (canUpload) {
+      return (
+        <div
+          className="tds-act-images tds-act-images--empty"
+          data-count={1}
+          data-print="hide"
+          data-dropping={dropping || undefined}
+          {...dropProps}
+        >
+          <div className="tds-photo-empty">
+            <p className="tds-photo-empty-msg">Add your own photos to personalize this day.</p>
+            <DayPhotoUploader
+              images={images}
+              onChange={onImagesChange!}
+              dayLabel={uploadLabel ?? "this day"}
+            />
+          </div>
+        </div>
+      );
+    }
+    if (queries.length === 0) return null;
+    // Visitor view, sourcing exhausted — leave a discreet retry so the
+    // layout doesn't vanish. Retry bypasses the fallback cache.
     return (
       <div className="tds-act-images" data-count={1} data-print="hide">
         <div className="tds-carousel-error" role="status">
@@ -387,13 +441,6 @@ export function ActivityImages({
             Retry
           </button>
         </div>
-        {onImagesChange ? (
-          <DayPhotoUploader
-            images={images}
-            onChange={onImagesChange}
-            dayLabel={uploadLabel ?? "this day"}
-          />
-        ) : null}
       </div>
     );
   }
@@ -410,6 +457,8 @@ export function ActivityImages({
       aria-roledescription={single ? undefined : "carousel"}
       aria-label={single ? undefined : `Photos, ${total} total`}
       onKeyDown={single ? undefined : onKeyDown}
+      data-dropping={dropping || undefined}
+      {...dropProps}
     >
       <div className="tds-carousel-track" ref={trackRef} tabIndex={single ? -1 : 0}>
         {usable.map((im, i) => {
@@ -430,6 +479,26 @@ export function ActivityImages({
             />
           );
         })}
+        {canUpload ? (
+          // Persistent in-carousel "+" — always present (even over
+          // fallbacks) so adding a photo is discoverable at a glance.
+          // Desktop also accepts drag-and-drop anywhere on the gallery.
+          <button
+            type="button"
+            className="tds-carousel-slide tds-carousel-add tap"
+            data-print="hide"
+            onClick={uploader.pick}
+            disabled={uploader.busy}
+            aria-label={`Add photos to ${uploadLabel ?? "this day"}`}
+          >
+            <span className="tds-carousel-add-plus" aria-hidden>
+              {uploader.busy ? "…" : "+"}
+            </span>
+            <span className="tds-carousel-add-label">
+              {uploader.busy ? "Uploading" : "Add photo"}
+            </span>
+          </button>
+        ) : null}
       </div>
 
       {!single && (
@@ -478,16 +547,9 @@ export function ActivityImages({
           images={usable}
           startIndex={lightboxAt}
           onClose={() => setLightboxAt(null)}
-          fallbackQuery={fallbackQuery}
         />
       ) : null}
-      {onImagesChange ? (
-        <DayPhotoUploader
-          images={images}
-          onChange={onImagesChange}
-          dayLabel={uploadLabel ?? "this day"}
-        />
-      ) : null}
+      {canUpload ? uploader.input : null}
     </div>
   );
 }
@@ -563,13 +625,10 @@ function CarouselLightbox({
   images,
   startIndex,
   onClose,
-  fallbackQuery,
 }: {
   images: GalleryImage[];
   startIndex: number;
   onClose: () => void;
-  /** When provided, the failure state offers a one-tap Unsplash fallback. */
-  fallbackQuery?: string;
 }) {
   const n = images.length;
   const [idx, setIdx] = useState(() => Math.min(Math.max(startIndex, 0), Math.max(n - 1, 0)));
@@ -649,12 +708,6 @@ function CarouselLightbox({
     const base = baseImage.src;
     const sep = base.includes("?") ? "&" : "?";
     setOverrides((prev) => ({ ...prev, [idx]: `${base}${sep}retry=${Date.now()}` }));
-    setIdxStatus("loading");
-  };
-  const useFallback = () => {
-    if (!fallbackQuery) return;
-    const fb = unsplashFallbackImage(fallbackQuery, idx + 1);
-    setOverrides((prev) => ({ ...prev, [idx]: fb.src }));
     setIdxStatus("loading");
   };
 
@@ -772,7 +825,7 @@ function CarouselLightbox({
           <div className="tds-lightbox-error" role="alert" onClick={(e) => e.stopPropagation()}>
             <div className="tds-lightbox-error-title">This photo didn't load</div>
             <p className="tds-lightbox-error-body">
-              Check your connection, or swap in a preview image for now.
+              Check your connection and retry.
             </p>
             <div className="tds-lightbox-error-actions">
               <button
@@ -782,15 +835,6 @@ function CarouselLightbox({
               >
                 Retry
               </button>
-              {fallbackQuery ? (
-                <button
-                  type="button"
-                  className="tds-lightbox-btn tap"
-                  onClick={(e) => { e.stopPropagation(); useFallback(); }}
-                >
-                  Use preview photo
-                </button>
-              ) : null}
             </div>
           </div>
         ) : null}
