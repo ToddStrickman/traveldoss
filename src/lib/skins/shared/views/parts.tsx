@@ -263,6 +263,8 @@ export function ActivityImages({
   images,
   fallbackQuery,
   fallbackLabel,
+  onImagesChange,
+  uploadLabel,
 }: {
   images?: GalleryImage[];
   /** When provided and no real images exist, render an Unsplash preview
@@ -270,6 +272,11 @@ export function ActivityImages({
   fallbackQuery?: string;
   /** Optional short label shown alongside the preview badge, e.g. day title. */
   fallbackLabel?: string;
+  /** Owner-only. When provided, an "Add photo" affordance uploads to
+   *  storage and appends signed URLs to the persisted image order. */
+  onImagesChange?: (next: GalleryImage[]) => void;
+  /** Human label for the target (e.g. day title) used in aria/toast copy. */
+  uploadLabel?: string;
 }) {
   const [failed, setFailed] = useState<Set<string>>(new Set());
   const [retryTick, setRetryTick] = useState(0);
