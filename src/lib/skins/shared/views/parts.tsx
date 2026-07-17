@@ -603,7 +603,23 @@ function CarouselLightbox({
   }, [idx, images, n]);
 
   if (n === 0) return null;
-  const image = images[idx];
+  const baseImage = images[idx];
+  const currentSrc = overrides[idx] ?? baseImage.src;
+  const currentStatus = status[idx] ?? "loading";
+  const setIdxStatus = (s: "loading" | "ok" | "error") =>
+    setStatus((prev) => (prev[idx] === s ? prev : { ...prev, [idx]: s }));
+  const retry = () => {
+    const base = baseImage.src;
+    const sep = base.includes("?") ? "&" : "?";
+    setOverrides((prev) => ({ ...prev, [idx]: `${base}${sep}retry=${Date.now()}` }));
+    setIdxStatus("loading");
+  };
+  const useFallback = () => {
+    if (!fallbackQuery) return;
+    const fb = unsplashFallbackImage(fallbackQuery, idx + 1);
+    setOverrides((prev) => ({ ...prev, [idx]: fb.src }));
+    setIdxStatus("loading");
+  };
 
   const onWheel = (e: React.WheelEvent) => {
     if (!e.ctrlKey && !e.metaKey && Math.abs(e.deltaY) < 20) return;
