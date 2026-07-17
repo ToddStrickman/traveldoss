@@ -581,12 +581,27 @@ function CarouselLightbox({
     return () => document.removeEventListener("keydown", onKey);
   }, [go, onClose]);
 
+  // Preload neighbours so next/previous navigation feels instant.
+  useEffect(() => {
+    if (n <= 1) return;
+    const offsets = n > 2 ? [1, -1, 2, -2] : [1, -1];
+    const preloaded: HTMLImageElement[] = [];
+    for (const off of offsets) {
+      const src = images[(idx + off + n) % n]?.src;
+      if (!src) continue;
+      const img = new Image();
+      img.decoding = "async";
+      img.src = src;
+      preloaded.push(img);
+    }
+    return () => { preloaded.length = 0; };
+  }, [idx, images, n]);
+
   if (n === 0) return null;
   const image = images[idx];
 
   const onWheel = (e: React.WheelEvent) => {
     if (!e.ctrlKey && !e.metaKey && Math.abs(e.deltaY) < 20) return;
-    // (preload effect declared above handles neighbour warm-up)
     e.preventDefault();
     setZoom((z) => {
       const next = Math.max(1, Math.min(4, z + (e.deltaY < 0 ? 0.25 : -0.25)));
