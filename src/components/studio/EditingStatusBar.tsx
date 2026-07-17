@@ -73,8 +73,8 @@ export function EditingStatusBar({
   return (
     <div
       data-print="hide"
-      className="fixed inset-x-0 top-0 z-40 hidden items-center justify-between gap-3 border-b border-white/10 bg-paper/85 px-3 py-2 backdrop-blur-md md:flex md:px-5"
-      style={{ paddingTop: "max(0.5rem, env(safe-area-inset-top))" }}
+      className="fixed right-4 z-40 hidden items-center gap-3 rounded-full border border-white/15 bg-paper/85 px-3 py-2 backdrop-blur-md md:inline-flex"
+      style={{ top: "max(1rem, env(safe-area-inset-top))" }}
     >
       <div className="flex min-w-0 items-center gap-3">
         {canEdit ? (
