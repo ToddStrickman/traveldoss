@@ -232,16 +232,22 @@ function DossierPage() {
   const canEdit = isOwner && phase !== "archive" && !expired;
 
   // Global Lock/Unlock — mobile locks by default so a stray finger can't
-  // grab a card; desktop unlocks so clicking straight into a field just
-  // works. Persisted per-trip for the session so a refresh keeps intent.
+  // grab a card. Desktop has no lock concept — clicking into any field
+  // just edits it. Lock preference persisted per-trip for the mobile session.
   const isMobile = useIsMobile();
   const lockKey = `td:lock:${trip.slug}`;
   const [locked, setLocked] = useState<boolean>(true);
   const lockUserTouchedRef = useRef(false);
   useEffect(() => {
-    // Honor an explicit user toggle for the rest of the session; otherwise
-    // re-derive from viewport so the first render (where useIsMobile() has
-    // not yet resolved to true) doesn't leave mobile unlocked.
+    // Desktop: always unlocked, regardless of any prior mobile toggle in
+    // this session (viewport rotation shouldn't strand a user with a
+    // hidden lock button).
+    if (!isMobile) {
+      setLocked(false);
+      return;
+    }
+    // Mobile: honor an explicit user toggle; otherwise fall back to stored
+    // preference, then default-locked.
     if (lockUserTouchedRef.current) return;
     let stored: string | null = null;
     try {
@@ -251,7 +257,7 @@ function DossierPage() {
     }
     if (stored === "0") setLocked(false);
     else if (stored === "1") setLocked(true);
-    else setLocked(isMobile);
+    else setLocked(true);
   }, [isMobile, lockKey]);
   const toggleLock = useCallback(() => {
     lockUserTouchedRef.current = true;
