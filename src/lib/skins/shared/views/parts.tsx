@@ -242,15 +242,18 @@ function useReducedMotion() {
   return reduced;
 }
 
-/** Minimum images that count as a real photo row. Below this we surface a
- *  friendly empty state (with an Unsplash preview when a query is provided)
- *  so days never look broken. */
-const MIN_DAY_IMAGES = 1;
+/** Target number of slides per day. When a day ships fewer real photos we
+ *  top the carousel up with themed Unsplash previews so the row always feels
+ *  complete. The N/M counter reflects the padded total that the user actually
+ *  sees on screen. */
+const MIN_DAY_IMAGES = 3;
 
-function unsplashFallbackImage(query: string): GalleryImage {
+function unsplashFallbackImage(query: string, sig: number): GalleryImage {
   const q = encodeURIComponent(query.trim().slice(0, 80) || "travel");
+  // `sig` keeps each padded slide visually distinct and gives every slide a
+  // unique src so React keys and the failed-set stay well-behaved.
   return {
-    src: `https://source.unsplash.com/featured/1200x800/?${q}`,
+    src: `https://source.unsplash.com/featured/1200x800/?${q}&sig=${sig}`,
     alt: `Illustrative photo of ${query}`,
     license: "unsplash",
   } as GalleryImage;
@@ -271,11 +274,27 @@ export function ActivityImages({
   const [failed, setFailed] = useState<Set<string>>(new Set());
   const [retryTick, setRetryTick] = useState(0);
   const [lightboxAt, setLightboxAt] = useState<number | null>(null);
-  const usable = useMemo(
+  const realUsable = useMemo(
     () => (images ?? []).filter((im) => im.src && !failed.has(im.src)),
     [images, failed],
   );
+  const usable = useMemo(() => {
+    if (!fallbackQuery) return realUsable;
+    if (realUsable.length >= MIN_DAY_IMAGES) return realUsable;
+    const need = MIN_DAY_IMAGES - realUsable.length;
+    const pads: GalleryImage[] = [];
+    for (let i = 0; i < need; i++) {
+      const fb = unsplashFallbackImage(fallbackQuery, i + 1);
+      if (!failed.has(fb.src)) pads.push(fb);
+    }
+    return [...realUsable, ...pads];
+  }, [realUsable, fallbackQuery, failed]);
+  const realCount = realUsable.length;
   const total = usable.length;
+  const isFallback = useCallback(
+    (im: GalleryImage) => usable.indexOf(im) >= realCount,
+    [usable, realCount],
+  );
   const [active, setActive] = useState(0);
   const trackRef = useRef<HTMLDivElement | null>(null);
   const slideRefs = useRef<Array<HTMLElement | null>>([]);
@@ -333,36 +352,8 @@ export function ActivityImages({
     [active, goTo, total],
   );
 
-  const tooFew = total < MIN_DAY_IMAGES;
-  if (tooFew && fallbackQuery) {
-    // Empty-state: single Unsplash preview + clear messaging so owners know
-    // to swap it for their own photos.
-    const fb = unsplashFallbackImage(fallbackQuery);
-    return (
-      <div className="tds-act-images tds-act-images--empty" data-count={1} data-print="hide">
-        <figure className="tds-act-image tds-carousel-slide" data-loaded>
-          <img
-            src={fb.src}
-            alt={fb.alt}
-            loading="lazy"
-            decoding="async"
-            draggable={false}
-            onError={() => setFailed((prev) => new Set(prev).add(fb.src))}
-          />
-          <figcaption className="tds-carousel-empty">
-            <span className="tds-carousel-empty-badge">Preview photo</span>
-            <span className="tds-carousel-empty-msg">
-              {fallbackLabel
-                ? `Illustrative image for ${fallbackLabel} — add your own photos to personalise this day.`
-                : "Illustrative image — add your own photos to personalise this day."}
-            </span>
-            <span className="tds-carousel-empty-credit">via Unsplash</span>
-          </figcaption>
-        </figure>
-      </div>
-    );
-  }
-  if (!images || images.length === 0) return null;
+  // No real images AND no fallback query available → nothing to show.
+  if (total === 0 && (!images || images.length === 0) && !fallbackQuery) return null;
   if (total === 0) {
     // Everything failed — leave a discreet retry so the layout doesn't vanish.
     return (
@@ -382,10 +373,11 @@ export function ActivityImages({
   }
 
   const single = total === 1;
+  const hasFallbacks = realCount < total;
 
   return (
     <div
-      className="tds-act-images"
+      className={`tds-act-images${hasFallbacks ? " tds-act-images--padded" : ""}`}
       data-count={Math.min(total, 3)}
       data-carousel={single ? undefined : ""}
       role={single ? undefined : "group"}
@@ -396,6 +388,7 @@ export function ActivityImages({
       <div className="tds-carousel-track" ref={trackRef} tabIndex={single ? -1 : 0}>
         {usable.map((im, i) => {
           const eager = i === 0 || Math.abs(i - active) <= 1;
+          const fallback = isFallback(im);
           return (
             <CarouselSlide
               key={`${im.src}#${retryTick}`}
@@ -404,6 +397,8 @@ export function ActivityImages({
               index={i}
               total={total}
               eager={eager}
+              fallback={fallback}
+              fallbackLabel={fallback ? fallbackLabel : undefined}
               onError={() => setFailed((prev) => new Set(prev).add(im.src))}
               onOpen={() => setLightboxAt(i)}
             />
@@ -469,22 +464,28 @@ const CarouselSlide = (() => {
     index: number;
     total: number;
     eager: boolean;
+    fallback?: boolean;
+    fallbackLabel?: string;
     onError: () => void;
     onOpen?: () => void;
   };
   const Component = (
-    { image, index, total, eager, onError, onOpen }: Props,
+    { image, index, total, eager, fallback, fallbackLabel, onError, onOpen }: Props,
     ref: React.Ref<HTMLElement>,
   ) => {
     const [loaded, setLoaded] = useState(false);
     return (
       <figure
         ref={ref as React.Ref<HTMLElement>}
-        className="tds-act-image tds-carousel-slide"
+        className={`tds-act-image tds-carousel-slide${fallback ? " tds-carousel-slide--fallback" : ""}`}
         data-idx={index}
         data-loaded={loaded || undefined}
         aria-roledescription={total > 1 ? "slide" : undefined}
-        aria-label={total > 1 ? `${index + 1} of ${total}` : undefined}
+        aria-label={
+          total > 1
+            ? `${index + 1} of ${total}${fallback ? " (preview photo)" : ""}`
+            : undefined
+        }
       >
         <button
           type="button"
@@ -507,6 +508,11 @@ const CarouselSlide = (() => {
             onLoad={() => setLoaded(true)}
             onError={onError}
           />
+          {fallback ? (
+            <span className="tds-carousel-fallback-badge" data-print="hide">
+              Preview{fallbackLabel ? ` · ${fallbackLabel}` : ""} · add your own
+            </span>
+          ) : null}
         </button>
       </figure>
     );
