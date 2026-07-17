@@ -452,6 +452,7 @@ export function ActivityImages({
           images={usable}
           startIndex={lightboxAt}
           onClose={() => setLightboxAt(null)}
+          fallbackQuery={fallbackQuery}
         />
       ) : null}
     </div>
@@ -529,16 +530,21 @@ function CarouselLightbox({
   images,
   startIndex,
   onClose,
+  fallbackQuery,
 }: {
   images: GalleryImage[];
   startIndex: number;
   onClose: () => void;
+  /** When provided, the failure state offers a one-tap Unsplash fallback. */
+  fallbackQuery?: string;
 }) {
   const n = images.length;
   const [idx, setIdx] = useState(() => Math.min(Math.max(startIndex, 0), Math.max(n - 1, 0)));
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const drag = useRef<{ x: number; y: number; px: number; py: number; id: number } | null>(null);
+  const [overrides, setOverrides] = useState<Record<number, string>>({});
+  const [status, setStatus] = useState<Record<number, "loading" | "ok" | "error">>({});
 
   const go = useCallback(
     (delta: number) => {
@@ -598,7 +604,23 @@ function CarouselLightbox({
   }, [idx, images, n]);
 
   if (n === 0) return null;
-  const image = images[idx];
+  const baseImage = images[idx];
+  const currentSrc = overrides[idx] ?? baseImage.src;
+  const currentStatus = status[idx] ?? "loading";
+  const setIdxStatus = (s: "loading" | "ok" | "error") =>
+    setStatus((prev) => (prev[idx] === s ? prev : { ...prev, [idx]: s }));
+  const retry = () => {
+    const base = baseImage.src;
+    const sep = base.includes("?") ? "&" : "?";
+    setOverrides((prev) => ({ ...prev, [idx]: `${base}${sep}retry=${Date.now()}` }));
+    setIdxStatus("loading");
+  };
+  const useFallback = () => {
+    if (!fallbackQuery) return;
+    const fb = unsplashFallbackImage(fallbackQuery, idx + 1);
+    setOverrides((prev) => ({ ...prev, [idx]: fb.src }));
+    setIdxStatus("loading");
+  };
 
   const onWheel = (e: React.WheelEvent) => {
     if (!e.ctrlKey && !e.metaKey && Math.abs(e.deltaY) < 20) return;
@@ -672,11 +694,12 @@ function CarouselLightbox({
         onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       >
         <img
-          src={image.src}
-          alt={image.alt}
+          src={currentSrc}
+          alt={baseImage.alt}
           draggable={false}
           className="tds-lightbox-img"
           data-zoomed={zoom > 1 || undefined}
+          data-hidden={currentStatus === "error" || undefined}
           style={{
             transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
             cursor: zoom > 1 ? (drag.current ? "grabbing" : "grab") : "zoom-in",
@@ -687,7 +710,35 @@ function CarouselLightbox({
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerUp}
+          onLoad={() => setIdxStatus("ok")}
+          onError={() => setIdxStatus("error")}
         />
+        {currentStatus === "error" ? (
+          <div className="tds-lightbox-error" role="alert" onClick={(e) => e.stopPropagation()}>
+            <div className="tds-lightbox-error-title">This photo didn't load</div>
+            <p className="tds-lightbox-error-body">
+              Check your connection, or swap in a preview image for now.
+            </p>
+            <div className="tds-lightbox-error-actions">
+              <button
+                type="button"
+                className="tds-lightbox-btn tap"
+                onClick={(e) => { e.stopPropagation(); retry(); }}
+              >
+                Retry
+              </button>
+              {fallbackQuery ? (
+                <button
+                  type="button"
+                  className="tds-lightbox-btn tap"
+                  onClick={(e) => { e.stopPropagation(); useFallback(); }}
+                >
+                  Use preview photo
+                </button>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
       </div>
 
       {n > 1 ? (
@@ -711,7 +762,7 @@ function CarouselLightbox({
         </>
       ) : null}
 
-      {image.caption ? <div className="tds-lightbox-caption">{image.caption}</div> : null}
+      {baseImage.caption ? <div className="tds-lightbox-caption">{baseImage.caption}</div> : null}
     </div>
   );
 }
