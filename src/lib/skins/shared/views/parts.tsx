@@ -253,7 +253,6 @@ function unsplashFallbackImage(query: string): GalleryImage {
     src: `https://source.unsplash.com/featured/1200x800/?${q}`,
     alt: `Illustrative photo of ${query}`,
     license: "unsplash",
-    provider: "unsplash",
   } as GalleryImage;
 }
 
