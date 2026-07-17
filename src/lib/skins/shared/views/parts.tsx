@@ -17,6 +17,7 @@ import type { FlightBlock, ActivityBlock, PartOfDay } from "../itinerary";
 import { extractUrls, prettyDomain } from "@/lib/links";
 import { Pencil, Trash2 } from "lucide-react";
 import { ActivityEditSheet, FlightEditSheet } from "../ActivityEditSheet";
+import { DayPhotoUploader } from "./DayPhotoUploader";
 
 /**
  * Inert-render mode: set when a skin renders inside an interactive wrapper
