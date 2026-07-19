@@ -2715,6 +2715,68 @@ button.tds-add-day[data-burst] .tds-add-day-plus {
 }
 @media print { .tds-carousel-fallback-badge { display: none; } }
 
+/* ─── Add-photo affordances (owners only) ─────────────────────────────── */
+
+/* Persistent "+" tile at the end of the track. Same footprint behavior as
+ * a photo slide (snaps and scrolls with them) with its own explicit size
+ * so it stays modest regardless of the photo slides' flex rules. */
+.tds-carousel-add {
+  flex: 0 0 clamp(200px, calc((100% - 20px) / 3), 420px);
+  scroll-snap-align: start;
+  aspect-ratio: 16 / 11;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 0;
+  border-radius: 14px;
+  cursor: pointer;
+  background: transparent;
+  border: 1.5px dashed color-mix(in srgb, var(--tds-ink) 30%, transparent);
+  color: color-mix(in srgb, var(--tds-ink) 65%, transparent);
+  transition: border-color .18s, color .18s, background .18s;
+}
+.tds-carousel-add:hover:not(:disabled),
+.tds-carousel-add:focus-visible {
+  border-color: var(--tds-accent);
+  color: var(--tds-ink);
+  background: color-mix(in srgb, var(--tds-ink) 4%, transparent);
+}
+.tds-carousel-add:disabled { cursor: progress; opacity: 0.7; }
+.tds-carousel-add-plus { font-size: 28px; line-height: 1; font-weight: 300; }
+.tds-carousel-add-label {
+  font: 500 10px/1.4 var(--tds-fontBody, inherit);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+@media print { .tds-carousel-add { display: none; } }
+
+/* Drag-and-drop target state (desktop): the whole gallery accepts files. */
+.tds-act-images[data-dropping] {
+  outline: 2px dashed var(--tds-accent);
+  outline-offset: 4px;
+  border-radius: 14px;
+}
+
+/* Owner empty state: personalize message + picker in a dashed frame. */
+.tds-photo-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 18px 16px;
+  border: 1.5px dashed color-mix(in srgb, var(--tds-ink) 25%, transparent);
+  border-radius: 14px;
+}
+.tds-photo-empty-msg {
+  margin: 0;
+  font-style: italic;
+  font-size: 13px;
+  line-height: 1.5;
+  color: color-mix(in srgb, var(--tds-ink) 70%, transparent);
+}
+
 /* Tap-target button that wraps each carousel image so touch users get an
  * obvious "open fullscreen" affordance without breaking the existing frame. */
 .tds-carousel-open {

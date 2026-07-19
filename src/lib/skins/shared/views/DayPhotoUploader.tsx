@@ -14,8 +14,98 @@ function slugify(s: string) {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "photo";
 }
 
-/** Owner-only per-day photo picker. Uploads to `dossier-photos/{uid}/…` and
- *  appends a signed URL to the day's `images[]` in order. */
+/**
+ * Upload machinery shared by every "add photo" affordance: the in-carousel
+ * "+" tile, the empty-state panel, and drag-and-drop onto the gallery.
+ * Uploads to `dossier-photos/{uid}/…` and appends signed URLs to the
+ * persisted image order (user photos always precede sourced fallbacks
+ * because fallbacks are render-time pads, never part of `images`).
+ */
+export function useDayPhotoUpload({
+  images,
+  onChange,
+  label,
+}: {
+  images: GalleryImage[] | undefined;
+  onChange: (next: GalleryImage[]) => void;
+  label: string;
+}) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const pick = useCallback(() => inputRef.current?.click(), []);
+
+  const onFiles = useCallback(
+    async (files: FileList | File[] | null) => {
+      if (!files || files.length === 0) return;
+      setBusy(true);
+      try {
+        const { data: authData, error: authErr } = await supabase.auth.getUser();
+        if (authErr || !authData.user) throw new Error("Please sign in to add photos.");
+        const uid = authData.user.id;
+        const list = Array.from(files).filter((f) => {
+          if (!f.type.startsWith("image/")) {
+            toast.error(`${f.name} isn't an image`);
+            return false;
+          }
+          if (f.size > MAX_BYTES) {
+            toast.error(`${f.name} is over 8 MB`);
+            return false;
+          }
+          return true;
+        });
+        const added: GalleryImage[] = [];
+        for (const file of list) {
+          const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
+          const path = `${uid}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${slugify(file.name.replace(/\.[^.]+$/, ""))}.${ext}`;
+          const up = await supabase.storage.from("dossier-photos").upload(path, file, {
+            cacheControl: "31536000",
+            upsert: false,
+            contentType: file.type || undefined,
+          });
+          if (up.error) throw new Error(up.error.message);
+          const signed = await supabase.storage
+            .from("dossier-photos")
+            .createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
+          if (signed.error || !signed.data?.signedUrl) {
+            throw new Error(signed.error?.message ?? "Could not sign URL");
+          }
+          added.push({
+            src: signed.data.signedUrl,
+            alt: `${label} — uploaded photo`,
+          });
+        }
+        if (added.length > 0) {
+          onChange([...(images ?? []), ...added]);
+          toast.success(added.length === 1 ? "Photo added" : `${added.length} photos added`);
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Upload failed";
+        toast.error(msg);
+      } finally {
+        setBusy(false);
+        if (inputRef.current) inputRef.current.value = "";
+      }
+    },
+    [images, onChange, label],
+  );
+
+  /** Render once near the affordances; `pick()` opens it. */
+  const input = (
+    <input
+      ref={inputRef}
+      type="file"
+      accept={ACCEPT}
+      multiple
+      className="tds-photo-uploader-input"
+      onChange={(e) => onFiles(e.target.files)}
+    />
+  );
+
+  return { busy, pick, onFiles, input };
+}
+
+/** Owner-only per-day photo picker button (empty-state / standalone use). */
 export function DayPhotoUploader({
   images,
   onChange,
@@ -25,57 +115,7 @@ export function DayPhotoUploader({
   onChange: (next: GalleryImage[]) => void;
   dayLabel: string;
 }) {
-  const inputRef = useRef<HTMLInputElement | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  const pick = useCallback(() => inputRef.current?.click(), []);
-
-  const onFiles = useCallback(async (files: FileList | null) => {
-    if (!files || files.length === 0) return;
-    setBusy(true);
-    try {
-      const { data: authData, error: authErr } = await supabase.auth.getUser();
-      if (authErr || !authData.user) throw new Error("Please sign in to add photos.");
-      const uid = authData.user.id;
-      const list = Array.from(files);
-      const added: GalleryImage[] = [];
-      for (const file of list) {
-        if (file.size > MAX_BYTES) {
-          toast.error(`${file.name} is over 8 MB`);
-          continue;
-        }
-        const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
-        const path = `${uid}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${slugify(file.name.replace(/\.[^.]+$/, ""))}.${ext}`;
-        const up = await supabase.storage.from("dossier-photos").upload(path, file, {
-          cacheControl: "31536000",
-          upsert: false,
-          contentType: file.type || undefined,
-        });
-        if (up.error) throw new Error(up.error.message);
-        const signed = await supabase.storage
-          .from("dossier-photos")
-          .createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
-        if (signed.error || !signed.data?.signedUrl) {
-          throw new Error(signed.error?.message ?? "Could not sign URL");
-        }
-        added.push({
-          src: signed.data.signedUrl,
-          alt: `${dayLabel} — uploaded photo`,
-        });
-      }
-      if (added.length > 0) {
-        onChange([...(images ?? []), ...added]);
-        toast.success(added.length === 1 ? "Photo added" : `${added.length} photos added`);
-      }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Upload failed";
-      toast.error(msg);
-    } finally {
-      setBusy(false);
-      if (inputRef.current) inputRef.current.value = "";
-    }
-  }, [images, onChange, dayLabel]);
-
+  const { busy, pick, input } = useDayPhotoUpload({ images, onChange, label: dayLabel });
   return (
     <div className="tds-photo-uploader" data-print="hide">
       <button
@@ -92,14 +132,7 @@ export function DayPhotoUploader({
         )}
         <span>{busy ? "Uploading…" : "Add photo"}</span>
       </button>
-      <input
-        ref={inputRef}
-        type="file"
-        accept={ACCEPT}
-        multiple
-        className="tds-photo-uploader-input"
-        onChange={(e) => onFiles(e.target.files)}
-      />
+      {input}
     </div>
   );
 }
