@@ -470,24 +470,24 @@ function TemplatesPage() {
         }}
       />
 
-      <header className="relative z-10 mx-auto flex max-w-[1600px] items-center justify-between border-b border-ink/10 px-6 py-6 md:px-12">
+      <header className="relative z-10 mx-auto flex max-w-[1600px] items-center justify-between gap-3 border-b border-ink/10 px-4 py-4 sm:px-6 sm:py-6 md:px-12">
         <Link
           to="/"
           aria-label="Back to the TravelDoss home page"
-          className="inline-flex items-center gap-3 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/70 underline decoration-ink/30 decoration-dotted underline-offset-4 transition-colors hover:text-seal hover:decoration-seal"
+          className="tap inline-flex min-h-11 items-center gap-3 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/70 underline decoration-ink/30 decoration-dotted underline-offset-4 transition-colors hover:text-seal hover:decoration-seal"
         >
           TravelDoss<span className="text-ink/30">®</span>
         </Link>
-        <span className="inline-flex items-center gap-3 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/60">
-          <span className="h-px w-6 bg-ink/30" />
+        <span className="inline-flex items-center gap-3 text-right text-[9px] font-medium uppercase tracking-[0.35em] text-ink/60 sm:text-[10px] sm:tracking-[0.4em]">
+          <span aria-hidden className="hidden h-px w-6 bg-ink/30 sm:block" />
           The Dossier Templates
         </span>
       </header>
 
-      <main className="relative z-10 mx-auto max-w-[1600px] px-5 pb-16 sm:px-6 sm:pb-24 md:px-12">
+      <main className="relative z-10 mx-auto max-w-[1600px] px-4 pb-16 sm:px-6 sm:pb-24 md:px-12">
         <button
           onClick={() => window.history.back()}
-          className="mt-8 inline-flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/60 transition-colors hover:text-seal"
+          className="tap mt-6 inline-flex min-h-11 items-center gap-2 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/60 transition-colors hover:text-seal sm:mt-8"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           Back
@@ -495,38 +495,38 @@ function TemplatesPage() {
 
         <h1 className="sr-only">Pick your dossier template.</h1>
         <SandHero
-          className="mt-10 h-[42vw] max-h-[360px] min-h-[200px] w-[min(96vw,780px)] md:mt-14 md:h-[18vw]"
+          className="mt-6 h-[60vw] max-h-[360px] min-h-[220px] w-full md:mt-14 md:h-[18vw] md:w-[min(96vw,780px)]"
           lines={[
             { text: "Pick your" },
             { text: "dossier template", italic: true, accent: "." },
           ]}
           accessibleText="Pick your dossier template."
         />
-        <p className="mt-6 max-w-xl text-sm leading-relaxed text-ink-soft md:text-base">
+        <p className="mt-5 max-w-xl text-[15px] leading-relaxed text-ink-soft sm:text-sm md:text-base">
           Select an elegant dossier template from the studio. Furnish it with automation, AI, or manually. Finally, <em className="italic">mint</em> it — it will go live for the duration of your trip.
         </p>
-        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/40">
+        <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-[9px] font-medium uppercase tracking-[0.35em] text-ink/40 sm:text-[10px] sm:tracking-[0.4em]">
           <span>{SKINS.length} templates</span>
-          <span aria-hidden className="h-px w-4 bg-ink/20" />
+          <span aria-hidden className="h-px w-3 bg-ink/20 sm:w-4" />
           <span>New designs added often</span>
         </div>
 
         {/* Search + Filter */}
-        <div className="mt-10 flex flex-col gap-6">
+        <div className="mt-8 flex flex-col gap-5 sm:mt-10 sm:gap-6">
           {/* Search bar */}
-          <div className="relative max-w-md">
+          <div className="relative w-full max-w-md">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/30" />
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search by name, mood, or style…"
-              className="w-full rounded-none border border-ink/10 bg-surface py-3 pl-10 pr-10 text-sm text-ink placeholder:text-ink/30 focus:border-seal/50 focus:outline-none"
+              className="w-full rounded-none border border-ink/10 bg-surface py-3.5 pl-10 pr-11 text-base text-ink placeholder:text-ink/30 focus:border-seal/50 focus:outline-none sm:py-3 sm:text-sm"
             />
             {query && (
               <button
                 onClick={() => setQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-ink/30 hover:text-ink"
+                className="tap absolute right-1 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center text-ink/30 hover:text-ink"
                 aria-label="Clear search"
               >
                 <X className="h-4 w-4" />
@@ -558,7 +558,7 @@ function TemplatesPage() {
                   setQuery("");
                   setActiveTag(null);
                 }}
-                className="ml-2 shrink-0 text-[10px] font-medium uppercase tracking-[0.25em] text-ink/40 underline-offset-4 transition-colors hover:text-seal"
+                className="tap ml-2 inline-flex min-h-11 shrink-0 items-center text-[10px] font-medium uppercase tracking-[0.25em] text-ink/40 underline-offset-4 transition-colors hover:text-seal"
               >
                 Clear
               </button>
@@ -573,7 +573,7 @@ function TemplatesPage() {
           </p>
         </div>
 
-        <div className="mt-10 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-8 grid grid-cols-1 gap-6 sm:mt-10 sm:gap-8 md:grid-cols-2 lg:grid-cols-3">
           {filteredSkins.map((skin) => (
             <SkinCard
               key={skin.meta.id}
