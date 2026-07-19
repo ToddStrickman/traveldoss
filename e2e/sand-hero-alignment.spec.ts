@@ -159,12 +159,19 @@ test.describe("SandHero inscription alignment", () => {
       });
       const page = await context.newPage();
       await page.goto("/templates", { waitUntil: "networkidle" });
-      // Reveal animation is ~2.5s; give the engine time to settle so the
-      // inscription is present in the frame we sample.
-      await page.waitForTimeout(3500);
-
+      // Reveal animation is ~2.5s but larger viewports take longer to fully
+      // stipple the inscription. Poll for enough grain mass instead of
+      // hard-sleeping, so slow CI machines and big canvases don't flake.
       const geom = await readGeometry(page);
-      const stats = await readGrainStats(page, geom);
+      let stats: Awaited<ReturnType<typeof readGrainStats>> = {
+        total: 0, centroidX: 0, leftHalfMass: 0, rightHalfMass: 0,
+      };
+      const deadline = Date.now() + 12_000;
+      while (Date.now() < deadline) {
+        await page.waitForTimeout(600);
+        stats = await readGrainStats(page, geom);
+        if (stats.total > 300) break;
+      }
 
       // Sanity: the inscription is drawn at all.
       expect(stats.total, "sand grains rendered").toBeGreaterThan(300);
