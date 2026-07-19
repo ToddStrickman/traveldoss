@@ -46,6 +46,8 @@ export interface SandEngineOptions {
    */
   bleed?: { x?: number; top?: number; bottom?: number };
   lighting?: LightingPreset;
+  /** "center" (default) or "left" — per-line inscription alignment. */
+  align?: "center" | "left";
   persist: boolean;
   reducedMotion: boolean;
   seed?: number;
@@ -272,6 +274,7 @@ export class SandEngine {
       worldHeight,
       maxPoints: Math.floor(particleCount * 0.62),
       rand: this.rand,
+      align: this.opts.align,
     });
     // Hidden chisel-mark glyphs are retired (owner call, 2026-07-10): even
     // gated behind deep excavation they read as stray broken lines, not

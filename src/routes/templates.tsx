@@ -501,6 +501,7 @@ function TemplatesPage() {
             { text: "dossier template", italic: true, accent: "." },
           ]}
           accessibleText="Pick your dossier template."
+          align="left"
         />
         <p className="mt-5 max-w-xl text-[15px] leading-relaxed text-ink-soft sm:text-sm md:text-base">
           Select an elegant dossier template from the studio. Furnish it with automation, AI, or manually. Finally, <em className="italic">mint</em> it — it will go live for the duration of your trip.

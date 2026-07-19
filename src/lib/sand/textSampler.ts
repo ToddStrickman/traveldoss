@@ -37,6 +37,12 @@ interface SampleOptions {
   /** Max particles to return; sampler decimates uniformly beyond this. */
   maxPoints: number;
   rand: () => number;
+  /**
+   * Per-line horizontal alignment inside the raster's max-width box.
+   * "center" (default) preserves the old symmetric layout; "left" flush-lefts
+   * every line so a two-line headline reads as a left-aligned inscription.
+   */
+  align?: "center" | "left";
 }
 
 const RASTER_FONT_PX = 220;   // large enough that grid sampling stays crisp
@@ -56,7 +62,7 @@ export async function ensureFontLoaded(family: string, weight = 400): Promise<vo
 }
 
 export function sampleHeadline(opts: SampleOptions): SampledText {
-  const { lines, fontFamily, fontWeight = 400, worldWidth, worldHeight, maxPoints, rand } = opts;
+  const { lines, fontFamily, fontWeight = 400, worldWidth, worldHeight, maxPoints, rand, align = "center" } = opts;
 
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d", { willReadFrequently: true });
@@ -85,7 +91,7 @@ export function sampleHeadline(opts: SampleOptions): SampledText {
   ctx.textBaseline = "alphabetic";
   lines.forEach((line, i) => {
     const m = lineMetrics[i];
-    const x = (rasterW - m.totalW) / 2;
+    const x = align === "left" ? 20 : (rasterW - m.totalW) / 2;
     const baseline = RASTER_FONT_PX * 0.9 + i * lineHeight;
     ctx.font = fontFor(!!line.italic);
     ctx.fillStyle = "rgb(255,0,0)";
