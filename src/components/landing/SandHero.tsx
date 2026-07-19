@@ -29,6 +29,8 @@ export interface SandHeroProps {
   dustIntensity?: number;
   revealDuration?: number;
   lighting?: LightingPreset;
+  /** Per-line inscription alignment. Default "center". */
+  align?: "center" | "left";
   /** Remember excavation progress across visits (localStorage). */
   persist?: boolean;
   className?: string;
@@ -60,6 +62,7 @@ export function SandHero({
   dustIntensity = 1,
   revealDuration,
   lighting,
+  align,
   persist = true,
   className = "",
   onStory,
@@ -118,6 +121,7 @@ export function SandHero({
         revealDuration,
         bleed: BLEED,
         lighting,
+        align,
         persist,
         reducedMotion,
         onStory,
