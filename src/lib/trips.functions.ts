@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import type { PublicTripRow } from "@/lib/public-trip";
 import { getSkin } from "@/lib/skins/registry";
 import { enrichBlocksWithLinkTitles } from "@/lib/itinerary/link-titles.server";
 import { enrichBlocksWithCoords } from "@/lib/itinerary/geo.server";
@@ -103,6 +104,31 @@ export const isTripOwner = createServerFn({ method: "GET" })
       .maybeSingle();
     if (error) throw new Error(error.message);
     return { isOwner: !!row };
+  });
+
+/**
+ * The owner's own dossier, bypassing the public expiry gate. RLS-scoped:
+ * the select only sees rows the caller owns, so anonymous visitors and
+ * other accounts never reach the ungated payload — they keep getting the
+ * stripped expired projection from getDossierBySlug. Exists so expiry
+ * darkens the public link without ever locking the owner out of their
+ * own itinerary.
+ */
+export const getOwnDossierBySlug = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ slug: z.string().min(1).max(128) }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: row, error } = await context.supabase
+      .from("trips")
+      .select(
+        "id, slug, destination, subtitle, tone, template_id, hero_image_url, start_date, end_date, content, expires_at, created_at",
+      )
+      .eq("slug", data.slug)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return { trip: (row ?? null) as PublicTripRow | null };
   });
 
 /** Update an existing dossier (autosave). Owner only via RLS. */

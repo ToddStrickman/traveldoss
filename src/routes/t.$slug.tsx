@@ -3,7 +3,7 @@ import { z } from "zod";
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { getDossierBySlug } from "@/lib/templates.functions";
-import { isTripOwner, updateDossier } from "@/lib/trips.functions";
+import { getOwnDossierBySlug, isTripOwner, updateDossier } from "@/lib/trips.functions";
 import { FALLBACK_SKIN, getSkin } from "@/lib/skins/registry";
 import type { Block, SkinView, TripView } from "@/lib/skins/types";
 import { supabase } from "@/integrations/supabase/client";
@@ -53,7 +53,19 @@ export const Route = createFileRoute("/t/$slug")({
   loader: async ({ params }) => {
     const result = await getDossierBySlug({ data: { slug: params.slug } });
     if (!result.trip) throw notFound();
-    return { trip: result.trip, expired: !!result.expired };
+    if (result.expired) {
+      // The public payload is stripped after expiry, but the OWNER keeps
+      // full access to their dossier. RLS makes this a no-op for everyone
+      // else: unauthenticated callers throw (caught below) and other
+      // accounts get no row — both fall through to the expired page.
+      const own = await getOwnDossierBySlug({ data: { slug: params.slug } }).catch(
+        () => null,
+      );
+      if (own?.trip) {
+        return { trip: own.trip, expired: false, publicExpired: true };
+      }
+    }
+    return { trip: result.trip, expired: !!result.expired, publicExpired: !!result.expired };
   },
   head: ({ loaderData }) => {
     const trip = loaderData?.trip;
@@ -128,7 +140,7 @@ export const Route = createFileRoute("/t/$slug")({
 });
 
 function DossierPage() {
-  const { trip, expired } = Route.useLoaderData();
+  const { trip, expired, publicExpired } = Route.useLoaderData();
   const navigate = useNavigate();
   const search = Route.useSearch();
   const [layout, setLayoutState] = useState<SkinView>(search.view ?? "vertical");
@@ -642,6 +654,14 @@ function DossierPage() {
           {phaseCopy("archive").label} · {phaseCopy("archive").tagline}
         </div>
       )}
+      {publicExpired && (
+        <div
+          data-print="hide"
+          className="sticky top-14 z-30 border-b border-seal/25 bg-paper/85 px-6 py-3 text-center text-[10px] uppercase tracking-[0.4em] text-ink-soft backdrop-blur-md md:top-0"
+        >
+          Public link expired · only you can see this dossier
+        </div>
+      )}
       {/* Mobile top chrome: one bar replaces the floating back pill, the
           top view pills, and gives the day-jump entry point. */}
       <DossierMastheadBar
@@ -794,10 +814,11 @@ function ExpiredDossier({ slug, destination }: { slug: string; destination: stri
           className="mt-4 text-4xl text-ink md:text-5xl"
           style={{ fontFamily: "var(--font-display)" }}
         >
-          {destination} has come and gone<span className="text-seal">.</span>
+          {destination} is resting<span className="text-seal">.</span>
         </h1>
         <p className="mt-4 text-sm text-ink-soft">
-          This dossier's month is up. The owner can re-publish it for another $1.
+          This dossier's publishing window has ended. The owner can re-publish
+          it for another $1.
         </p>
         <p className="mt-6 text-[10px] uppercase tracking-[0.4em] text-ink/35">
           /t/{slug}
