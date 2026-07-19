@@ -495,7 +495,7 @@ function TemplatesPage() {
 
         <h1 className="sr-only">Pick your dossier template.</h1>
         <SandHero
-          className="mt-10 h-[46vw] max-h-[420px] min-h-[220px] w-[min(96vw,1200px)] md:mt-16 md:h-[22vw]"
+          className="mt-10 h-[42vw] max-h-[360px] min-h-[200px] w-[min(96vw,780px)] md:mt-14 md:h-[18vw]"
           lines={[
             { text: "Pick your" },
             { text: "dossier template", italic: true, accent: "." },
@@ -505,9 +505,11 @@ function TemplatesPage() {
         <p className="mt-6 max-w-xl text-sm leading-relaxed text-ink-soft md:text-base">
           Select an elegant dossier template from the studio. Furnish it with automation, AI, or manually. Finally, <em className="italic">mint</em> it — it will go live for the duration of your trip.
         </p>
-        <p className="mt-3 max-w-xl text-[10px] uppercase tracking-[0.4em] text-ink/40">
-          We are always crafting new Dossiers and evolving the product
-        </p>
+        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/40">
+          <span>{SKINS.length} templates</span>
+          <span aria-hidden className="h-px w-4 bg-ink/20" />
+          <span>New designs added often</span>
+        </div>
 
         {/* Search + Filter */}
         <div className="mt-10 flex flex-col gap-6">
