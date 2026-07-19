@@ -219,14 +219,14 @@ function LoginPage() {
               Continue with Google
             </Button>
 
-            <div className="my-7 flex items-center gap-4 td-eyebrow text-ink/40">
+            <div className="my-6 flex items-center gap-4 td-eyebrow text-ink/40">
               <div className="h-px flex-1 bg-ink/10" />
               or
               <div className="h-px flex-1 bg-ink/10" />
             </div>
 
-            <form className="space-y-6" onSubmit={onSubmit}>
-              <div>
+            <form className="space-y-5" onSubmit={onSubmit}>
+              <div className="space-y-2">
                 <Label htmlFor="email" className="td-eyebrow text-ink/55">
                   Email
                 </Label>
@@ -237,10 +237,10 @@ function LoginPage() {
                   autoComplete="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="mt-3 rounded-none border-0 border-b border-ink/20 bg-transparent px-0 text-base text-ink shadow-none focus-visible:border-seal focus-visible:ring-0"
+                  className="h-10 rounded-none border-0 border-b border-ink/20 bg-transparent px-0 text-base text-ink shadow-none focus-visible:border-seal focus-visible:ring-0"
                 />
               </div>
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="password" className="td-eyebrow text-ink/55">
                   Password
                 </Label>
@@ -252,12 +252,12 @@ function LoginPage() {
                   autoComplete={mode === "signin" ? "current-password" : "new-password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="mt-3 rounded-none border-0 border-b border-ink/20 bg-transparent px-0 text-base text-ink shadow-none focus-visible:border-seal focus-visible:ring-0"
+                  className="h-10 rounded-none border-0 border-b border-ink/20 bg-transparent px-0 text-base text-ink shadow-none focus-visible:border-seal focus-visible:ring-0"
                 />
               </div>
               <Button
                 type="submit"
-                className="mt-4 w-full rounded-none bg-seal py-6 text-[10px] uppercase tracking-[0.4em] text-paper hover:bg-seal-soft"
+                className="mt-2 w-full rounded-none bg-seal py-6 text-[10px] uppercase tracking-[0.4em] text-paper hover:bg-seal-soft"
                 disabled={loading}
               >
                 {mode === "signin" ? "Sign in" : "Create account"}
@@ -266,7 +266,7 @@ function LoginPage() {
 
             <button
               type="button"
-              className="mt-8 w-full text-center td-eyebrow text-ink/45 transition-colors hover:text-seal"
+              className="mt-6 w-full text-center td-eyebrow text-ink/45 transition-colors hover:text-seal"
               onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
             >
               {mode === "signin" ? "No account — Sign up" : "Have an account — Sign in"}
