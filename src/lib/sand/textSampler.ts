@@ -91,7 +91,7 @@ export function sampleHeadline(opts: SampleOptions): SampledText {
   ctx.textBaseline = "alphabetic";
   lines.forEach((line, i) => {
     const m = lineMetrics[i];
-    const x = align === "left" ? 20 : (rasterW - m.totalW) / 2;
+    const x = align === "left" ? 0 : (rasterW - m.totalW) / 2;
     const baseline = RASTER_FONT_PX * 0.9 + i * lineHeight;
     ctx.font = fontFor(!!line.italic);
     ctx.fillStyle = "rgb(255,0,0)";
