@@ -90,6 +90,7 @@ export function SandHero({
     let lastW = container.clientWidth;
     let lastH = container.clientHeight;
     let ro: ResizeObserver | undefined;
+    let io: IntersectionObserver | undefined;
 
     const onMove = (e: PointerEvent) => engine?.pointer(e.clientX, e.clientY, e.buttons > 0);
     const onLeave = () => engine?.pointerLeave();
@@ -160,12 +161,27 @@ export function SandHero({
         }
       });
       ro.observe(container);
+
+      // The sim is a full-core burn (30k grains × noise per frame); nobody
+      // needs it while the hero is scrolled out of view. Pause keeps the
+      // last frame on the canvas so the gate is invisible — the sand is
+      // simply mid-pose when the visitor scrolls back up.
+      io = new IntersectionObserver(
+        ([entry]) => {
+          if (!engine) return;
+          if (entry?.isIntersecting) engine.resume();
+          else engine.pause();
+        },
+        { threshold: 0 },
+      );
+      io.observe(container);
     })();
 
     return () => {
       disposed = true;
       clearTimeout(rebuildTimer);
       ro?.disconnect();
+      io?.disconnect();
       container.removeEventListener("pointermove", onMove);
       container.removeEventListener("pointerdown", onMove);
       container.removeEventListener("pointerleave", onLeave);

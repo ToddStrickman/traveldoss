@@ -545,6 +545,32 @@ export class SandEngine {
     this.ptrPrev = null;
   }
 
+  /**
+   * Halt the rAF loop without tearing anything down — the hero scrolled
+   * out of view. The last rendered frame stays on the canvas, so pausing
+   * is invisible; the sim just stops burning CPU/GPU. Safe to call
+   * repeatedly.
+   */
+  pause(): void {
+    if (!this.running || this.disposed) return;
+    this.running = false;
+    cancelAnimationFrame(this.raf);
+    this.persist();
+  }
+
+  /**
+   * Restart after pause(). lastT resets so the first frame doesn't read
+   * the whole paused stretch as one giant dt (same guard as tab
+   * switches). No-op while running, disposed, or in reduced-motion mode
+   * (which never starts the loop).
+   */
+  resume(): void {
+    if (this.running || this.disposed || this.opts.reducedMotion) return;
+    this.running = true;
+    this.lastT = performance.now();
+    this.raf = requestAnimationFrame(this.frame);
+  }
+
   dispose(): void {
     this.disposed = true;
     this.running = false;
