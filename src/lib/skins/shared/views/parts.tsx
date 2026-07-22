@@ -331,52 +331,66 @@ export function ActivityImages({
     if (active > Math.max(0, total - 1)) setActive(Math.max(0, total - 1));
   }, [total, active]);
 
-  // Observe which slide is centred to drive dots + counter.
-  useEffect(() => {
-    const track = trackRef.current;
-    if (!track || total <= 1) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        // Pick the entry with the largest intersection ratio.
-        let best: IntersectionObserverEntry | null = null;
-        for (const e of entries) {
-          if (!best || e.intersectionRatio > best.intersectionRatio) best = e;
-        }
-        if (!best || best.intersectionRatio < 0.5) return;
-        const idx = Number((best.target as HTMLElement).dataset.idx);
-        if (!Number.isNaN(idx)) setActive(idx);
-      },
-      { root: track, threshold: [0.5, 0.75, 1] },
-    );
-    slideRefs.current.forEach((el) => el && io.observe(el));
-    return () => io.disconnect();
-  }, [total]);
+  // Cover Flow drag state — swipe (touch or trackpad drag) shifts the whole
+  // stage together, then snaps to a neighbour based on distance/velocity.
+  const [dragDx, setDragDx] = useState(0);
+  const drag = useRef<{ id: number; x0: number; t0: number; engaged: boolean } | null>(null);
+
+  const totalWithAdd = total + (canUpload ? 1 : 0);
 
   const goTo = useCallback(
     (idx: number) => {
-      const clamped = Math.max(0, Math.min(total - 1, idx));
-      const el = slideRefs.current[clamped];
-      if (!el) return;
-      el.scrollIntoView({
-        behavior: reduced ? "auto" : "smooth",
-        block: "nearest",
-        inline: "start",
-      });
+      const clamped = Math.max(0, Math.min(totalWithAdd - 1, idx));
       setActive(clamped);
     },
-    [total, reduced],
+    [totalWithAdd],
   );
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (total <= 1) return;
+      if (totalWithAdd <= 1) return;
       if (e.key === "ArrowRight") { e.preventDefault(); goTo(active + 1); }
       else if (e.key === "ArrowLeft") { e.preventDefault(); goTo(active - 1); }
       else if (e.key === "Home") { e.preventDefault(); goTo(0); }
-      else if (e.key === "End") { e.preventDefault(); goTo(total - 1); }
+      else if (e.key === "End") { e.preventDefault(); goTo(totalWithAdd - 1); }
     },
-    [active, goTo, total],
+    [active, goTo, totalWithAdd],
   );
+
+  // Pointer-based swipe on the stage. Tap threshold (>8px) so a stationary
+  // click on a neighbour or the active tile always reaches the underlying
+  // button — this is the click-vs-touch parity guarantee.
+  const TAP_SLOP = 8;
+  const onPointerDown = (e: React.PointerEvent) => {
+    if (totalWithAdd <= 1) return;
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    drag.current = { id: e.pointerId, x0: e.clientX, t0: performance.now(), engaged: false };
+  };
+  const onPointerMove = (e: React.PointerEvent) => {
+    const d = drag.current;
+    if (!d || d.id !== e.pointerId) return;
+    const dx = e.clientX - d.x0;
+    if (!d.engaged) {
+      if (Math.abs(dx) < TAP_SLOP) return;
+      d.engaged = true;
+      try { (e.currentTarget as Element).setPointerCapture(e.pointerId); } catch { /* noop */ }
+    }
+    setDragDx(dx);
+  };
+  const endDrag = (e: React.PointerEvent) => {
+    const d = drag.current;
+    if (!d || d.id !== e.pointerId) return;
+    drag.current = null;
+    if (!d.engaged) { setDragDx(0); return; }
+    const stageW = trackRef.current?.clientWidth ?? 1;
+    const dx = e.clientX - d.x0;
+    const dt = Math.max(1, performance.now() - d.t0);
+    const velocity = Math.abs(dx) / dt; // px/ms
+    const past = Math.abs(dx) > stageW * 0.15 || velocity > 0.35;
+    setDragDx(0);
+    if (past) goTo(active + (dx < 0 ? 1 : -1));
+    try { (e.currentTarget as Element).releasePointerCapture(e.pointerId); } catch { /* noop */ }
+  };
 
   const dropProps = canUpload
     ? {
@@ -447,10 +461,12 @@ export function ActivityImages({
 
   const single = total === 1;
   const hasFallbacks = realCount < total;
+  const stageW = trackRef.current?.clientWidth ?? 0;
+  const liveDx = stageW > 0 ? (dragDx / stageW) * 100 : 0; // percent
 
   return (
     <div
-      className={`tds-act-images${hasFallbacks ? " tds-act-images--padded" : ""}`}
+      className={`tds-act-images${hasFallbacks ? " tds-act-images--padded" : ""}${single ? "" : " tds-act-images--coverflow"}`}
       data-count={Math.min(total, 3)}
       data-carousel={single ? undefined : ""}
       role={single ? undefined : "group"}
@@ -460,10 +476,21 @@ export function ActivityImages({
       data-dropping={dropping || undefined}
       {...dropProps}
     >
-      <div className="tds-carousel-track" ref={trackRef} tabIndex={single ? -1 : 0}>
+      <div
+        className="tds-carousel-track"
+        ref={trackRef}
+        tabIndex={single ? -1 : 0}
+        onPointerDown={single ? undefined : onPointerDown}
+        onPointerMove={single ? undefined : onPointerMove}
+        onPointerUp={single ? undefined : endDrag}
+        onPointerCancel={single ? undefined : endDrag}
+      >
         {usable.map((im, i) => {
-          const eager = i === 0 || Math.abs(i - active) <= 1;
+          const offset = i - active;
+          const eager = i === 0 || Math.abs(offset) <= 2;
           const fallback = isFallback(im);
+          const style = single ? undefined : coverFlowStyle(offset, liveDx, reduced);
+          const isActive = i === active;
           return (
             <CarouselSlide
               key={`${im.src}#${retryTick}`}
@@ -475,19 +502,27 @@ export function ActivityImages({
               fallback={fallback}
               fallbackLabel={fallback ? fallbackLabel : undefined}
               onError={() => setFailed((prev) => new Set(prev).add(im.src))}
-              onOpen={() => setLightboxAt(i)}
+              onOpen={() => (isActive ? setLightboxAt(i) : goTo(i))}
+              style={style}
+              coverflow={!single}
+              isActive={isActive}
             />
           );
         })}
         {canUpload ? (
-          // Persistent in-carousel "+" — always present (even over
-          // fallbacks) so adding a photo is discoverable at a glance.
-          // Desktop also accepts drag-and-drop anywhere on the gallery.
+          // Persistent "+" tile — participates in the Cover Flow stage so
+          // adding a photo is one obvious gesture away, on touch and click.
           <button
             type="button"
-            className="tds-carousel-slide tds-carousel-add tap"
+            className={`tds-carousel-slide tds-carousel-add tap${single ? "" : " tds-carousel-slide--coverflow"}`}
             data-print="hide"
-            onClick={uploader.pick}
+            data-active={!single && active === total ? "" : undefined}
+            style={single ? undefined : coverFlowStyle(total - active, liveDx, reduced)}
+            onClick={() => {
+              if (single) { uploader.pick(); return; }
+              if (active === total) uploader.pick();
+              else goTo(total);
+            }}
             disabled={uploader.busy}
             aria-label={`Add photos to ${uploadLabel ?? "this day"}`}
           >
@@ -519,12 +554,12 @@ export function ActivityImages({
             data-print="hide"
             aria-label="Next photo"
             onClick={(e) => { e.stopPropagation(); goTo(active + 1); }}
-            disabled={active === total - 1}
+            disabled={active === totalWithAdd - 1}
           >
             <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
           </button>
           <div className="tds-carousel-counter" aria-live="polite" data-print="hide">
-            {active + 1} / {total}
+            {Math.min(active + 1, total)} / {total}
           </div>
           <div className="tds-carousel-dots" role="tablist" aria-label="Choose photo" data-print="hide">
             {usable.map((_, i) => (
@@ -552,6 +587,28 @@ export function ActivityImages({
       {canUpload ? uploader.input : null}
     </div>
   );
+}
+
+/** Compute the transform for a Cover Flow slide at `offset` from active.
+ *  `liveDxPct` is the in-flight drag delta as a percentage of stage width. */
+function coverFlowStyle(
+  offset: number,
+  liveDxPct: number,
+  reduced: boolean,
+): React.CSSProperties {
+  const abs = Math.abs(offset);
+  const shift = offset * 62 + liveDxPct; // percent of stage width
+  const scale = offset === 0 ? 1 : 0.74;
+  const rotate = reduced ? 0 : Math.max(-1, Math.min(1, offset)) * -18;
+  const opacity = abs > 2 ? 0 : offset === 0 ? 1 : 0.55;
+  const filter = reduced || offset === 0 ? "none" : "blur(1.5px) saturate(0.85)";
+  return {
+    transform: `translate3d(calc(-50% + ${shift}%), -50%, 0) rotateY(${rotate}deg) scale(${scale})`,
+    opacity,
+    filter,
+    zIndex: 100 - abs,
+    pointerEvents: abs > 2 ? "none" : "auto",
+  };
 }
 
 const CarouselSlide = (() => {
