@@ -621,18 +621,23 @@ const CarouselSlide = (() => {
     fallbackLabel?: string;
     onError: () => void;
     onOpen?: () => void;
+    style?: React.CSSProperties;
+    coverflow?: boolean;
+    isActive?: boolean;
   };
   const Component = (
-    { image, index, total, eager, fallback, fallbackLabel, onError, onOpen }: Props,
+    { image, index, total, eager, fallback, fallbackLabel, onError, onOpen, style, coverflow, isActive }: Props,
     ref: React.Ref<HTMLElement>,
   ) => {
     const [loaded, setLoaded] = useState(false);
     return (
       <figure
         ref={ref as React.Ref<HTMLElement>}
-        className={`tds-act-image tds-carousel-slide${fallback ? " tds-carousel-slide--fallback" : ""}`}
+        className={`tds-act-image tds-carousel-slide${fallback ? " tds-carousel-slide--fallback" : ""}${coverflow ? " tds-carousel-slide--coverflow" : ""}`}
         data-idx={index}
         data-loaded={loaded || undefined}
+        data-active={isActive ? "" : undefined}
+        style={style}
         aria-roledescription={total > 1 ? "slide" : undefined}
         aria-label={
           total > 1
