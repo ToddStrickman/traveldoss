@@ -4,16 +4,27 @@ import { useServerFn } from "@tanstack/react-start";
 import { motion } from "motion/react";
 import { Ribbon } from "@/components/landing/Ribbon";
 import { SandHero } from "@/components/landing/SandHero";
-import { InfiniteDocs } from "@/components/landing/InfiniteDocs";
-import { FlowScroller } from "@/components/landing/FlowScroller";
 import { TopoBackground } from "@/components/landing/TopoBackground";
-import { TemplateGallery } from "@/components/flow/TemplateGallery";
 // Lazy: the composer (and the @dnd-kit tree it drags in — ~60 kB gzip) is
 // only needed after a click; keeping it out of the landing chunk shortens
 // time-to-interactive on the highest-traffic page. Once opened it stays
 // mounted so closing the modal keeps any typed draft, same as before.
 const IngestionModal = lazy(() =>
   import("@/components/flow/IngestionModal").then((m) => ({ default: m.IngestionModal })),
+);
+// Lazy: the below-the-fold showcase (InfiniteDocs / FlowScroller /
+// TemplateGallery) each pulls in the full SKINS registry — 11 skin
+// modules and the shared SkinFrame engine — which was ~all shipping in
+// the landing entry chunk. Splitting them lets the hero paint fast and
+// defers the heavy visual mass until the browser is idle.
+const InfiniteDocs = lazy(() =>
+  import("@/components/landing/InfiniteDocs").then((m) => ({ default: m.InfiniteDocs })),
+);
+const FlowScroller = lazy(() =>
+  import("@/components/landing/FlowScroller").then((m) => ({ default: m.FlowScroller })),
+);
+const TemplateGallery = lazy(() =>
+  import("@/components/flow/TemplateGallery").then((m) => ({ default: m.TemplateGallery })),
 );
 import { GenerationLoader } from "@/components/GenerationLoader";
 import { ActionDock } from "@/components/landing/ActionDock";
@@ -366,13 +377,19 @@ function Landing() {
         </div>
       </main>
 
-      <InfiniteDocs onPickTemplate={openWithTemplate} />
+      <Suspense fallback={<div aria-hidden style={{ minHeight: 240 }} />}>
+        <InfiniteDocs onPickTemplate={openWithTemplate} />
+      </Suspense>
 
       <div id="flow" />
-      <FlowScroller />
+      <Suspense fallback={<div aria-hidden style={{ minHeight: 480 }} />}>
+        <FlowScroller />
+      </Suspense>
 
       <div id="templates" className="sr-only" />
-      <TemplateGallery onPick={openWithTemplate} />
+      <Suspense fallback={<div aria-hidden style={{ minHeight: 600 }} />}>
+        <TemplateGallery onPick={openWithTemplate} />
+      </Suspense>
 
       {modalMounted && (
         <Suspense fallback={null}>
