@@ -1,65 +1,118 @@
-## Goal
-Let signed-in users add their own day photos (upload from device or paste URL) that replace the fallback Unsplash slides in each day's carousel. Default surface is per-day; each activity block (morning/afternoon/evening stop) also gets a smaller thumbnail control. Everything is gated to edit mode.
+# Plan — Left rail identity + Cover Flow carousel
 
-## Data model
-No schema changes. Reuse the existing `images?: GalleryImage[]` on the `day` and `place` blocks (`src/lib/skins/types.ts`). Uploaded/pasted photos are appended to that array; the fallback pad logic in `ActivityImages` (already in place) fills any gap up to `MIN_DAY_IMAGES`.
+Two workstreams, independent files, ships together.
 
-## Storage
-Create a public `dossier-photos` bucket (via `supabase--storage_create_bucket`, `public: true`). RLS on `storage.objects`:
-- `SELECT` for anon + authenticated (bucket is public).
-- `INSERT/UPDATE/DELETE` restricted to `bucket_id = 'dossier-photos' AND (storage.foldername(name))[1] = auth.uid()::text`.
-Object key convention: `{userId}/{tripId}/{crypto.randomUUID()}-{safeFilename}`.
+**Cross-cutting requirement (applies to both parts):**
+Every change must be verified on **mobile (375px) and desktop (≥1280px)** before shipping. During implementation and QA, explicitly double-check:
+- **Spacing / rhythm** at both breakpoints — no clipped text, no horizontal page scroll on mobile, no collisions with the fixed bottom bar on mobile or the top masthead on desktop, consistent gutters at 375 / 768 / 1280 / 1680.
+- **Input parity** — every interactive target must respond correctly to **click (mouse)** *and* **touch (finger)**. That means:
+  - Hit targets ≥44×44 on mobile, ≥24×24 on desktop (house rule).
+  - Use pointer events (not mouse-only) so touch and stylus behave identically to click.
+  - No hover-only affordances on mobile: any control revealed on `:hover` must also be reachable on `(pointer: coarse)` (persistent or focus-visible).
+  - Tap vs. swipe disambiguation: a tap must not be swallowed by a swipe handler (movement threshold before drag engages).
+  - Focus rings visible for keyboard on desktop; not required to render on touch.
 
-## New UI (edit mode only)
-Two new components in `src/lib/skins/shared/views/`:
+---
 
-1. `DayPhotoManager.tsx` — full-width panel under the day header when `editing`. Thumbnails of existing `day.images` with per-image "Remove", "Upload photos" (multi-file `<input type="file" accept="image/*">`), and "Paste image URL" + Add. Progress + errors via `sonner`.
-2. `ActivityPhotoThumb.tsx` — 44px "photo" button in each place row, edit-mode only. Popover with the same three affordances sized for a single thumbnail. Updates `place.images`.
+## Part 1 — Left rail (`Ribbon`): session-aware identity
 
-Both call `onBlockChange(index, { images: next })` from `useEditing()`.
+**File:** `src/components/landing/Ribbon.tsx`
 
-## Wiring
-- `VerticalView.tsx`: mount `DayPhotoManager` under `EditableDayHeader`; `ActivityPhotoThumb` in each place row's action cluster.
-- `HorizontalView.tsx` + `GridView.tsx`: same two components in their day header and place cells so parity holds across views.
-- No changes to `parts.tsx` carousel logic — real images automatically take priority over fallbacks.
+Note: the rail itself is `md:flex` (desktop-only surface). No mobile visual change — but verify that removing the `LogIn` "Enter" item doesn't leave a mobile drawer or menu missing a sign-in path; if it does, keep an equivalent entry there.
 
-## Front-end ↔ back-end seam (tight, no lag)
-This feature only touches storage + the existing autosave path. Every seam has an explicit contract so nothing waits on a serial round-trip:
+### Signed-out
+- Replace the static `TD` tile with a **Sign-in chip** linking to `/login`.
+- Same 44×44 footprint (preserves rail geometry + tap/click target).
+- Lucide `UserCircle2` glyph; tooltip "Sign in" (reuse the existing right-side tooltip pattern).
+- Remove the redundant `LogIn` "Enter" nav item — the top chip owns it now.
 
-1. **Auth reuse** — the browser `supabase` client (`@/integrations/supabase/client`) is already imported by the dossier route and holds the signed-in session. Upload calls (`supabase.storage.from('dossier-photos').upload(...)`) run over the same bearer, so no extra sign-in round-trip or middleware wiring is needed.
-2. **Direct-to-storage upload** — the browser PUTs directly to Cloud Storage (Supabase Storage on Cloudflare). It does NOT round-trip through a server function, so upload throughput is bounded by the user's link + the storage edge, not by our worker cold start or the Data API. This is the fastest available path on this stack.
-3. **Optimistic UI** — the moment `upload()` resolves, `getPublicUrl(path)` is synchronous (URL derivation, no network). We push the new `GalleryImage` into the block via `onBlockChange` immediately; the carousel re-renders with the real photo, and the fallback pad drops off in the same frame. There is no "processing" spinner between upload success and the image appearing.
-4. **Existing autosave pipeline** — `onBlockChange` already flows through the trips autosave (`updateTripBlocks` server fn, debounced in `src/routes/t.$slug.tsx`). We add nothing here; the new `images[]` field piggybacks on the same debounced PATCH that already saves label/notes/date edits, so no extra server functions, no extra query invalidations, no extra network chatter per keystroke.
-5. **Public read path is unchanged** — the dossier's public loader still reads `content.blocks` in one query; the new photo URLs are just strings inside that JSON. No N+1, no per-image lookup, no signed-URL step at render (bucket is public), so first paint and SSR performance for shared dossiers are unaffected.
-6. **RLS matches the client contract** — the `(storage.foldername(name))[1] = auth.uid()::text` write policy mirrors the key convention the uploader uses. That means an upload either succeeds or fails immediately at the storage edge with a clear 4xx; we never let a "successful" upload leave a dangling reference in the block JSON. On failure we toast and don't mutate the block.
-7. **Client-side guards prevent server thrash** — we reject `> 8 MB` and non-`image/*` files before the upload call, and we cap concurrent uploads (parallelism ≤ 3 per user gesture). That protects the storage edge from pathological batches and keeps the UI responsive.
-8. **No new hot paths on the worker** — because uploads bypass our worker and reads are already served from the existing `getPublicTrip` server fn, this change adds zero new server functions and zero new HTTP endpoints. Nothing on the Cloudflare Worker gets slower.
-9. **Post-launch verification** — after wiring, we sanity-check with `supabase--slow_queries` and browse the dossier route in the sandboxed Playwright environment to confirm carousel paint time and autosave debounce are unchanged versus the baseline.
+### Signed-in
+- Read session with `supabase.auth.getUser()` on mount + subscribe to `onAuthStateChange` (unsubscribe on unmount).
+- Display name: `user_metadata.full_name || user_metadata.name || email`.
+- Initials: first letter of first + last name token; fall back to first two chars of the email local-part. Uppercase.
+- Top tile becomes a **profile chip** showing initials, links to `/app`. Tooltip = full name.
 
-## Upload path (browser)
-```
-supabase.storage
-  .from('dossier-photos')
-  .upload(`${userId}/${tripId}/${uuid}-${safe}`, file, { upsert: false, contentType: file.type })
-```
-On success: `supabase.storage.from('dossier-photos').getPublicUrl(path)` → push `{ src, alt, license: "user" }` into the block's `images` via `onBlockChange`.
+### A11y & input
+- Tooltip lives in a hidden `<span>`, accessible name stays clean.
+- `aria-live="polite"` on the rail so signed-out → signed-in swap is announced.
+- Tooltip revealed on hover **and** `focus-visible` (keyboard users see it too).
+- No layout shift between states.
 
-## Constraints
-- Only wired when `useEditing().editing === true` — locked dossier renders unchanged.
-- File-size guard: reject files > 8 MB with a toast; accept `image/*` only.
-- Parallelism cap of 3 concurrent uploads per gesture.
-- No new dependencies.
-- Tests + `tsc --noEmit` must stay green.
+---
 
-## Files touched
-- `supabase/migrations/<ts>_dossier_photos_bucket.sql` (RLS policies)
-- `src/lib/skins/shared/views/DayPhotoManager.tsx` (new)
-- `src/lib/skins/shared/views/ActivityPhotoThumb.tsx` (new)
-- `src/lib/skins/shared/views/VerticalView.tsx`
-- `src/lib/skins/shared/views/HorizontalView.tsx`
-- `src/lib/skins/shared/views/GridView.tsx`
-- `src/lib/skins/shared/skin.css` (compact styles for both managers)
+## Part 2 — Per-activity image carousel (Cover Flow)
+
+This is the images-per-day/place carousel rendered by `ActivityImages` in
+`src/lib/skins/shared/views/parts.tsx` — **not** the dossier thumbnail or hero.
+Must feel first-class on both mobile touch and desktop mouse/keyboard.
+
+**Files:** `src/lib/skins/shared/views/parts.tsx`, `src/lib/skins/shared/skin.css`
+
+### Layout model
+- Stage: `position: relative`, height `clamp(220px, 44vw, 380px)`, `perspective: 1400px`, `overflow: hidden`.
+- Each slide is absolutely positioned, centered, transformed from its offset (`offset = index − active`):
+  - `translateX = offset * 62%` of stage width (plus live drag delta while swiping)
+  - `scale = offset === 0 ? 1 : 0.74`
+  - `rotateY = clamp(offset, −1, 1) * −18deg`
+  - `opacity = offset === 0 ? 1 : 0.55` (0 when `|offset| > 2`)
+  - `filter = offset === 0 ? none : blur(1.5px) saturate(0.85)`
+  - `z-index = 100 − |offset|`
+- Slides beyond `|offset| > 2` still render but `opacity:0; pointer-events:none`.
+- Neighbor peek ~14% each side signals more photos exist.
+
+### Spacing double-checks
+- **Mobile (375px):** stage padding matches surrounding day-card gutter (no edge bleed); neighbor peek visible without overflowing viewport; arrows do not overlap the mobile bottom bar or day-card title.
+- **Desktop (≥1280px):** stage width capped so the active slide reads at comfortable viewing distance; arrows sit inside the stage, not colliding with the sidebar rail or export pill.
+
+### Motion
+- Single transition on `transform, opacity, filter` at `520ms cubic-bezier(0.22, 1, 0.36, 1)`.
+- `prefers-reduced-motion`: transitions stripped, `rotateY: 0`, blur removed; scale kept.
+
+### Interaction — click AND touch parity
+- **Arrows:** `goTo(active ± 1)` on click/tap. 44×44 hit target, 32×32 visible chip.
+  - Desktop: fade in on hover/focus-within (200ms), `opacity: 0` at rest.
+  - Touch (`(pointer: coarse)`): persistent `opacity: 0.9` — never hover-only.
+- **Neighbor tap/click:** `goTo(that index)` (via `onOpen={i === active ? openLightbox : goTo}`).
+- **Active tap/click:** opens lightbox.
+- **Keyboard:** `ArrowLeft` / `ArrowRight` / `Home` / `End` on the stage (already wired).
+- **Swipe (touch + trackpad drag):** pointer events on the stage; track live `dx` and translate all slides together; on release snap to `active ± 1` if `|dx| > 15%` of stage width or velocity > `0.35 px/ms`.
+- **Tap vs. swipe:** engage drag only after >8px of movement so a stationary tap always registers as a click on the underlying slide.
+- Focus ring on the active slide only.
+
+### Add-photo tile
+- Participates as the rightmost slot with the same Cover Flow transforms.
+- Active + tap/click → `uploader.pick()`.
+- Non-active tap/click → `goTo(index)`.
+- Same 44×44 minimum on mobile.
+
+### Loading / fallbacks
+- Eager-load extended from `|offset| ≤ 1` to `|offset| ≤ 2`.
+- Existing skeleton shimmer, fallback badges, and error/retry states preserved.
+- `IntersectionObserver` removed — `active` is authoritative.
+
+### Single-image path
+- When `total === 1`, keep today's static card. Cover Flow only kicks in for 2+ slots.
+
+---
 
 ## Out of scope
-- Reordering photos, alt-text editor, EXIF handling, image compression — leave as follow-ups.
-- Photo Finder / Openverse browsing (already exists elsewhere).
+- ActionDock, ExportMenu, top masthead bar, template gallery, dossier thumbnails, hero imagery.
+- Auth flow — Part 1 only reads existing session.
+- Lightbox internals.
+
+## Files touched
+- `src/components/landing/Ribbon.tsx`
+- `src/lib/skins/shared/views/parts.tsx`
+- `src/lib/skins/shared/skin.css`
+
+## Verification (mandatory both viewports)
+- `npx vitest run` + `tsc --noEmit` (house rule).
+- Manual pass at **375px mobile** and **1280px+ desktop**, on a dossier with 4+ day photos:
+  - Cover Flow layout renders, neighbors peek, arrows positioned correctly at both sizes.
+  - Neighbor **click** (mouse) and **tap** (touch) both centre that slide; active click/tap opens lightbox.
+  - Swipe on mobile viewport snaps cleanly; a stationary tap opens lightbox instead of scrubbing.
+  - Arrows fade in on desktop hover; are persistently visible on touch.
+  - Keyboard arrows navigate on desktop.
+  - `prefers-reduced-motion` honored.
+  - No horizontal page scroll at 375px; no collisions with fixed bars at either size.
+  - Ribbon identity chip swaps cleanly on desktop; no mobile regressions.
