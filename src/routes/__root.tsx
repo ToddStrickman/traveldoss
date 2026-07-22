@@ -90,8 +90,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "TravelDoss - Your trip in a beautiful dossier" },
       { name: "twitter:description", content: "Create beautiful travel dossiers for unforgettable journeys. Turn scattered plans into a day-by-day itinerary with every place mapped — offline-ready." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d68b6039-25b0-47d1-b3a4-12f4524dc2b9/id-preview-74fa5ff6--096f9178-141f-473d-bf14-38fc2445783f.lovable.app-1780348785317.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d68b6039-25b0-47d1-b3a4-12f4524dc2b9/id-preview-74fa5ff6--096f9178-141f-473d-bf14-38fc2445783f.lovable.app-1780348785317.png" },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
