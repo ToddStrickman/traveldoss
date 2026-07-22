@@ -48,7 +48,7 @@ function IdentityChip({ user }: { user: User | null }) {
         "group relative flex h-11 w-11 items-center justify-center border text-[11px] font-semibold tracking-[0.14em] transition-colors " +
         (signedOut
           ? "border-seal/60 text-seal shadow-[0_0_0_2px_color-mix(in_oklab,var(--seal,#b8452e)_18%,transparent)] hover:border-seal hover:shadow-[0_0_0_3px_color-mix(in_oklab,var(--seal,#b8452e)_28%,transparent)] focus-visible:shadow-[0_0_0_3px_color-mix(in_oklab,var(--seal,#b8452e)_35%,transparent)]"
-          : "border-ink/20 text-ink hover:border-seal hover:text-seal")
+          : "td-shimmer border-ink/20 text-ink hover:border-seal hover:text-seal")
       }
       style={{ fontFamily: "var(--font-display)" }}
     >
