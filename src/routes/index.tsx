@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from "react";
+import { InViewLazy } from "@/components/landing/InViewLazy";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "motion/react";
@@ -12,20 +13,19 @@ import { TopoBackground } from "@/components/landing/TopoBackground";
 const IngestionModal = lazy(() =>
   import("@/components/flow/IngestionModal").then((m) => ({ default: m.IngestionModal })),
 );
-// Lazy: the below-the-fold showcase (InfiniteDocs / FlowScroller /
-// TemplateGallery) each pulls in the full SKINS registry — 11 skin
-// modules and the shared SkinFrame engine — which was ~all shipping in
-// the landing entry chunk. Splitting them lets the hero paint fast and
-// defers the heavy visual mass until the browser is idle.
-const InfiniteDocs = lazy(() =>
-  import("@/components/landing/InfiniteDocs").then((m) => ({ default: m.InfiniteDocs })),
-);
-const FlowScroller = lazy(() =>
-  import("@/components/landing/FlowScroller").then((m) => ({ default: m.FlowScroller })),
-);
-const TemplateGallery = lazy(() =>
-  import("@/components/flow/TemplateGallery").then((m) => ({ default: m.TemplateGallery })),
-);
+// Below-the-fold sections are gated behind IntersectionObserver via
+// <InViewLazy>: the chunk network fetch starts when the section is
+// within ~1200px of the viewport (prefetch) and React mounts it once
+// it's within ~300px (mount). Rendering a plain React.lazy in JSX would
+// have fetched all three chunks on landing paint, which was the whole
+// reason the page felt slow. Each import factory is stable (module
+// scope) so InViewLazy's effect never re-tears its observers.
+const loadInfiniteDocs = () =>
+  import("@/components/landing/InfiniteDocs").then((m) => ({ default: m.InfiniteDocs }));
+const loadFlowScroller = () =>
+  import("@/components/landing/FlowScroller").then((m) => ({ default: m.FlowScroller }));
+const loadTemplateGallery = () =>
+  import("@/components/flow/TemplateGallery").then((m) => ({ default: m.TemplateGallery }));
 import { GenerationLoader } from "@/components/GenerationLoader";
 import { ActionDock } from "@/components/landing/ActionDock";
 import { Parallax } from "@/components/motion/Tilt";
@@ -377,19 +377,21 @@ function Landing() {
         </div>
       </main>
 
-      <Suspense fallback={<div aria-hidden style={{ minHeight: 240 }} />}>
-        <InfiniteDocs onPickTemplate={openWithTemplate} />
-      </Suspense>
+      <InViewLazy
+        load={loadInfiniteDocs}
+        componentProps={{ onPickTemplate: openWithTemplate }}
+        minHeight={240}
+      />
 
       <div id="flow" />
-      <Suspense fallback={<div aria-hidden style={{ minHeight: 480 }} />}>
-        <FlowScroller />
-      </Suspense>
+      <InViewLazy load={loadFlowScroller} componentProps={{}} minHeight={480} />
 
       <div id="templates" className="sr-only" />
-      <Suspense fallback={<div aria-hidden style={{ minHeight: 600 }} />}>
-        <TemplateGallery onPick={openWithTemplate} />
-      </Suspense>
+      <InViewLazy
+        load={loadTemplateGallery}
+        componentProps={{ onPick: openWithTemplate }}
+        minHeight={600}
+      />
 
       {modalMounted && (
         <Suspense fallback={null}>
