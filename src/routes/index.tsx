@@ -65,6 +65,24 @@ export const Route = createFileRoute("/")({
 function Landing() {
   const [picked, setPicked] = useState<SkinModule | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  // Session-aware Login pill: signed-in visitors already have the rail
+  // identity chip (with matching shimmer), so the hero pill is redundant
+  // — and worse, tapping it bounces off /login's already-signed-in
+  // redirect and reads as broken.
+  const [signedIn, setSignedIn] = useState<boolean | null>(null);
+  useEffect(() => {
+    let alive = true;
+    supabase.auth.getUser().then(({ data }) => {
+      if (alive) setSignedIn(!!data.user);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+      setSignedIn(!!session?.user);
+    });
+    return () => {
+      alive = false;
+      sub.subscription.unsubscribe();
+    };
+  }, []);
   // Mount-on-first-open for the lazy composer: never unmount afterwards,
   // so a closed-then-reopened modal keeps its draft state.
   const [modalMounted, setModalMounted] = useState(false);
@@ -244,12 +262,14 @@ function Landing() {
       {/* Center stage */}
       <main className="relative z-10 mx-auto flex min-h-[82dvh] max-w-[1400px] flex-col items-center justify-center px-6 py-10 text-center md:min-h-[76dvh] md:py-8 md:pl-32 md:pr-[340px]">
         <Parallax depth={-6}>
-        <Link
-          to="/login"
-          className="td-shimmer tap mb-4 inline-flex min-h-11 items-center gap-2 rounded-full border border-ink/20 bg-surface/70 px-4 py-1.5 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/70 shadow-[var(--highlight-inset)] backdrop-blur-sm transition-colors hover:border-seal hover:text-seal"
-        >
-          Login
-        </Link>
+        {signedIn === false && (
+          <Link
+            to="/login"
+            className="td-shimmer tap mb-4 inline-flex min-h-11 items-center gap-2 rounded-full border border-ink/20 bg-surface/70 px-4 py-1.5 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/70 shadow-[var(--highlight-inset)] backdrop-blur-sm transition-colors hover:border-seal hover:text-seal"
+          >
+            Login
+          </Link>
+        )}
         <motion.span
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
