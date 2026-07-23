@@ -42,12 +42,34 @@ export function TopScrollbar({
     if (!el) return;
     measure();
     el.addEventListener("scroll", measure, { passive: true });
+    // scrollWidth changes never resize the container's own box, so observe
+    // the CHILDREN too — late-loading fonts/images widen columns without
+    // firing an observer aimed only at `el`, and the bar would sit out a
+    // session where overflow appeared after mount.
     const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(measure) : null;
-    ro?.observe(el);
-    // Content changes (a day added) shift scrollWidth without a resize.
-    const mo = typeof MutationObserver !== "undefined" ? new MutationObserver(measure) : null;
+    const observeAll = () => {
+      if (!ro) return;
+      ro.disconnect();
+      ro.observe(el);
+      for (const child of el.children) ro.observe(child);
+    };
+    observeAll();
+    // Content changes (a day added) swap children: re-observe and re-measure.
+    const mo =
+      typeof MutationObserver !== "undefined"
+        ? new MutationObserver(() => {
+            observeAll();
+            measure();
+          })
+        : null;
     mo?.observe(el, { childList: true, subtree: true });
+    // Fonts landing late reflow text-sized columns without any DOM change.
+    let cancelled = false;
+    document.fonts?.ready?.then(() => {
+      if (!cancelled) measure();
+    });
     return () => {
+      cancelled = true;
       el.removeEventListener("scroll", measure);
       ro?.disconnect();
       mo?.disconnect();
@@ -67,6 +89,23 @@ export function TopScrollbar({
   // Hooks all live ABOVE this bail-out — metrics flipping null↔set must
   // never change the hook count.
   const dragStyleBackup = useRef<{ snap: string; behavior: string } | null>(null);
+
+  // If the thumb vanishes mid-drag (overflow disappears on resize, or the
+  // whole bar unmounts), no pointerup ever arrives — restore the scroller's
+  // snap/behavior here so "none" can never be stranded on it.
+  useEffect(() => {
+    const restore = () => {
+      const el = targetRef.current;
+      if (el && dragStyleBackup.current) {
+        el.style.scrollSnapType = dragStyleBackup.current.snap;
+        el.style.scrollBehavior = dragStyleBackup.current.behavior;
+        dragStyleBackup.current = null;
+        drag.current = null;
+      }
+    };
+    if (!metrics) restore();
+    return restore;
+  }, [metrics, targetRef]);
 
   if (!metrics) return null;
 

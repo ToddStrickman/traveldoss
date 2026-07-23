@@ -129,12 +129,18 @@ function Landing() {
     if (!myTrips) return null;
     let live: TripLite | null = null;
     let upcoming: TripLite | null = null;
-    const today = new Date().toISOString().slice(0, 10);
+    // Local-day string (toISOString is UTC and misclassifies for part of
+    // the day). ">= today" — not ">" — so a trip starting today that the
+    // (UTC-parsed) phase check hasn't flipped to active yet still shows as
+    // Upcoming instead of falling into neither bucket.
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const today = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
     for (const t of myTrips) {
       const phase = getTemporalPhase(t.start_date, t.end_date);
       if (phase === "active") {
         if (!live) live = t;
-      } else if (t.start_date && t.start_date > today) {
+      } else if (t.start_date && t.start_date >= today) {
         if (!upcoming || t.start_date < (upcoming.start_date ?? "")) upcoming = t;
       }
     }
