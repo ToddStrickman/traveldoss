@@ -125,6 +125,11 @@ function DesktopFlow() {
 }
 
 function MobileFlow() {
+  // Vertical scroll-snap: the mobile flow becomes its own scroll
+  // container so the reader is guided step-by-step through 01 → 05
+  // before the page continues past the section. overscroll-behavior
+  // stays default so reaching the last step naturally releases scroll
+  // back to the document.
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
 
@@ -135,7 +140,7 @@ function MobileFlow() {
     const onScroll = () => {
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
-        const i = Math.round(el.scrollLeft / el.clientWidth);
+        const i = Math.round(el.scrollTop / el.clientHeight);
         setActive(Math.min(STEPS.length - 1, Math.max(0, i)));
       });
     };
@@ -146,33 +151,19 @@ function MobileFlow() {
     };
   }, []);
 
-  const goTo = (i: number) => {
-    const el = scrollerRef.current;
-    if (!el) return;
-    el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" });
-  };
-
   return (
     <section
       className="relative z-10 block md:hidden"
       aria-label="How TravelDoss works"
     >
-      <div className="flex items-center justify-between px-6 pb-6 pt-10 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/45">
-        <span className="inline-flex items-center gap-3">
-          <span className="h-px w-6 bg-ink/25" />
-          The Flow
-        </span>
-        <span>Swipe →</span>
-      </div>
-
       <div
         ref={scrollerRef}
-        className="flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain scroll-smooth pb-8 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="relative h-[100dvh] snap-y snap-mandatory overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {STEPS.map((step, i) => (
           <div
             key={step.n}
-            className="flex w-screen shrink-0 snap-center snap-always flex-col gap-5 px-6"
+            className="flex h-[100dvh] w-full shrink-0 snap-start snap-always flex-col justify-center gap-5 px-6 pb-16 pt-14"
           >
             <div className="flex items-center gap-3 text-[10px] font-medium uppercase tracking-[0.45em] text-ink/45">
               <span className="text-seal">{step.n}</span>
@@ -180,7 +171,7 @@ function MobileFlow() {
               <span>{step.kicker}</span>
             </div>
             <h2
-              className="text-[12vw] font-normal leading-[0.95] tracking-[-0.02em] text-ink"
+              className="text-[11vw] font-normal leading-[0.95] tracking-[-0.02em] text-ink"
               style={{ fontFamily: "var(--font-display)" }}
             >
               {step.title}
@@ -188,34 +179,30 @@ function MobileFlow() {
             <p className="max-w-md text-[13px] leading-relaxed text-ink-soft">
               {step.body}
             </p>
-            <Parallax depth={14} className="relative mt-2 h-[42vh] w-full">
+            <Parallax depth={14} className="relative mt-2 h-[38vh] w-full">
               <Visual variant={step.visual} index={i} />
             </Parallax>
           </div>
         ))}
-      </div>
 
-      {/* Dots */}
-      <div className="flex items-center justify-center gap-2 pb-6">
-        {STEPS.map((s, i) => (
-          <button
-            key={s.n}
-            type="button"
-            onClick={() => goTo(i)}
-            aria-label={`Go to step ${i + 1}`}
-            className={`h-1.5 rounded-full transition-all ${
-              i === active ? "w-8 bg-seal" : "w-1.5 bg-ink/20"
-            }`}
-          />
-        ))}
-      </div>
-
-      <div className="flex items-center justify-between px-6 pb-12 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/45">
-        <span className="inline-flex items-center gap-2">
-          <span className="text-seal">{String(active + 1).padStart(2, "0")}</span>
-          <span className="text-ink/30">/ {String(STEPS.length).padStart(2, "0")}</span>
-        </span>
-        <span>Your itinerary, unfolding.</span>
+        {/* Sticky rail: label + progress dots, so orientation stays
+            constant across the five snapped screens. */}
+        <div className="pointer-events-none sticky bottom-4 left-0 right-0 z-20 -mt-14 flex items-center justify-between px-6 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/45">
+          <span className="inline-flex items-center gap-2">
+            <span className="text-seal">{String(active + 1).padStart(2, "0")}</span>
+            <span className="text-ink/30">/ {String(STEPS.length).padStart(2, "0")}</span>
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            {STEPS.map((s, i) => (
+              <span
+                key={s.n}
+                className={`h-1.5 rounded-full transition-all ${
+                  i === active ? "w-6 bg-seal" : "w-1.5 bg-ink/20"
+                }`}
+              />
+            ))}
+          </span>
+        </div>
       </div>
     </section>
   );
@@ -242,10 +229,10 @@ function Counter({
 function Panel({ step, index, total }: { step: Step; index: number; total: number }) {
   return (
     <div
-      className="flex h-full shrink-0 items-center justify-center px-6 md:px-6 lg:px-8"
+      className="flex h-full shrink-0 items-start justify-center px-6 pt-6 md:px-6 md:pt-4 lg:px-8"
       style={{ width: `${100 / total}%` }}
     >
-      <div className="grid h-full w-full max-w-6xl grid-cols-1 items-center gap-8 md:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] md:gap-10 lg:gap-12">
+      <div className="grid h-full w-full max-w-6xl grid-cols-1 items-start gap-8 pt-2 md:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] md:gap-10 md:pt-4 lg:gap-12">
         {/* Copy */}
         <div className="space-y-5 md:space-y-6">
           <div className="flex items-center gap-4 text-[10px] font-medium uppercase tracking-[0.45em] text-ink/45">
