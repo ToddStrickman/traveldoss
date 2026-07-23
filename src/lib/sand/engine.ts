@@ -288,11 +288,14 @@ export class SandEngine {
     this.n = this.nLetters + this.nGlyphs + nOver;
     this.activeN = this.n;
 
-    // Memory grid spans the text bounds with margin.
-    const gw = sampled.width * 1.12;
-    const gh = sampled.height * 1.5;
+    // Memory grid spans the text bounds with margin. A degenerate sample
+    // (0×0 canvas → scale 0) would make gh/gw NaN, gridRows NaN, and the
+    // bucket array silently empty — every later index then crashes on
+    // undefined. Clamp to a real footprint so the grid math stays finite.
+    const gw = Math.max(1, sampled.width * 1.12);
+    const gh = Math.max(1, sampled.height * 1.5);
     this.gridOrigin = { x: -gw / 2, y: -gh / 2, w: gw, h: gh };
-    this.gridRows = Math.max(8, Math.round(GRID_COLS * (gh / gw)));
+    this.gridRows = Math.max(8, Math.round(GRID_COLS * (gh / gw)) || 0);
     this.clean = new Float32Array(GRID_COLS * this.gridRows);
     this.cleanFloor = Math.max(0, 1 - this.story.burial);
     this.clean.fill(this.cleanFloor);
@@ -497,6 +500,7 @@ export class SandEngine {
 
   resize(width: number, height: number): void {
     if (this.disposed) return;
+    if (!(width > 0 && height > 0)) return; // collapsed box — keep last real size
     this.width = width;
     this.height = height;
     this.applyViewport();
@@ -506,6 +510,7 @@ export class SandEngine {
   /** Full rebuild (text re-sampled at new size). Debounce upstream. */
   async rebuild(width: number, height: number): Promise<void> {
     if (this.disposed) return;
+    if (!(width > 0 && height > 0)) return; // collapsed box — nothing to sample
     const wasClean = this.clean;
     const rows = this.gridRows;
     this.scene.remove(this.grains);
@@ -981,6 +986,7 @@ export class SandEngine {
     if (hi - lo < 0.3) return;
 
     const bucket = this.cellBuckets[(r + 1) * GRID_COLS + c];
+    if (!bucket) return; // grid shrank between frames (rebuild race)
     const P = this.pools;
     const takes = Math.min(bucket.length, 4 + ((this.rand() * 8) | 0));
     for (let k = 0; k < takes; k++) {
@@ -1081,8 +1087,12 @@ export class SandEngine {
   /** Nearest cell, clamped into the grid — for grains homed past the field. */
   private cellOfClamped(x: number, y: number): number {
     const g = this.gridOrigin;
-    const cx = Math.min(GRID_COLS - 1, Math.max(0, Math.floor(((x - g.x) / g.w) * GRID_COLS)));
-    const cy = Math.min(this.gridRows - 1, Math.max(0, Math.floor(((y - g.y) / g.h) * this.gridRows)));
+    // NaN survives Math.min/max clamps (min(k, NaN) is NaN), so a non-finite
+    // coordinate would index cellBuckets[NaN] → undefined. Pin those to 0.
+    let cx = Math.min(GRID_COLS - 1, Math.max(0, Math.floor(((x - g.x) / g.w) * GRID_COLS)));
+    let cy = Math.min(this.gridRows - 1, Math.max(0, Math.floor(((y - g.y) / g.h) * this.gridRows)));
+    if (!Number.isFinite(cx)) cx = 0;
+    if (!Number.isFinite(cy)) cy = 0;
     return cy * GRID_COLS + cx;
   }
 

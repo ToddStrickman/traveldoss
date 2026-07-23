@@ -104,9 +104,16 @@ export function SandHero({
 
       // Never start against a 0×0 container (mid-hydration layout): the text
       // sampler would rasterize at world-width 0 and every grain would home
-      // at the origin. Wait for a real measurement first.
-      await waitForSize(container);
+      // at the origin. Wait for a real measurement first. If the container
+      // still has no size when the wait caps out (stalled layout, hidden
+      // ancestor), building would poison the engine's grid math with NaN —
+      // fall to the plain serif headline instead of a broken sim.
+      const sized = await waitForSize(container);
       if (disposed) return;
+      if (!sized) {
+        setMode("text");
+        return;
+      }
       lastW = container.clientWidth;
       lastH = container.clientHeight;
 
@@ -149,6 +156,9 @@ export function SandHero({
       ro = new ResizeObserver((entries) => {
         const rect = entries[0]?.contentRect;
         if (!rect || !engine) return;
+        // A collapsed box (hidden ancestor, teardown reflow) is not a size
+        // to simulate at — resizing/rebuilding to 0 would NaN the grid.
+        if (rect.width <= 10 || rect.height <= 10) return;
         engine.resize(rect.width, rect.height);
         // Size shifts change the rasterized font size → re-sample, debounced.
         // Height matters as much as width: the box width caps at 1100px on
@@ -244,12 +254,17 @@ function firstFontFamily(value: string): string | null {
   return first || null;
 }
 
-/** Resolves once the element has a real layout size (rAF polling, ~2s cap). */
-function waitForSize(el: HTMLElement): Promise<void> {
+/**
+ * Resolves once the element has a real layout size (rAF polling, ~2s cap).
+ * Resolves true when sized, false when the cap expired first — callers must
+ * NOT build the simulation against a false (the box is still 0×0).
+ */
+function waitForSize(el: HTMLElement): Promise<boolean> {
   return new Promise((resolve) => {
     let tries = 0;
     const check = () => {
-      if ((el.clientWidth > 10 && el.clientHeight > 10) || tries++ > 120) resolve();
+      if (el.clientWidth > 10 && el.clientHeight > 10) resolve(true);
+      else if (tries++ > 120) resolve(false);
       else requestAnimationFrame(check);
     };
     check();
