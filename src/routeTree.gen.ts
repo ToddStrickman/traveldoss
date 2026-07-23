@@ -16,6 +16,7 @@ import { Route as McpRouteImport } from './routes/mcp'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as TemplatesIdRouteImport } from './routes/templates_.$id'
 import { Route as TSlugRouteImport } from './routes/t.$slug'
 import { Route as E2eReviewRouteImport } from './routes/e2e.review'
 import { Route as E2eKanbanRouteImport } from './routes/e2e.kanban'
@@ -59,6 +60,11 @@ const AuthenticatedRoute = AuthenticatedRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TemplatesIdRoute = TemplatesIdRouteImport.update({
+  id: '/templates_/$id',
+  path: '/templates/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TSlugRoute = TSlugRouteImport.update({
@@ -130,6 +136,7 @@ export interface FileRoutesByFullPath {
   '/e2e/kanban': typeof E2eKanbanRoute
   '/e2e/review': typeof E2eReviewRoute
   '/t/$slug': typeof TSlugRoute
+  '/templates/$id': typeof TemplatesIdRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/public/hooks/cleanup-pending-doc-exports': typeof ApiPublicHooksCleanupPendingDocExportsRoute
@@ -148,6 +155,7 @@ export interface FileRoutesByTo {
   '/e2e/kanban': typeof E2eKanbanRoute
   '/e2e/review': typeof E2eReviewRoute
   '/t/$slug': typeof TSlugRoute
+  '/templates/$id': typeof TemplatesIdRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/public/hooks/cleanup-pending-doc-exports': typeof ApiPublicHooksCleanupPendingDocExportsRoute
@@ -168,6 +176,7 @@ export interface FileRoutesById {
   '/e2e/kanban': typeof E2eKanbanRoute
   '/e2e/review': typeof E2eReviewRoute
   '/t/$slug': typeof TSlugRoute
+  '/templates_/$id': typeof TemplatesIdRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/public/hooks/cleanup-pending-doc-exports': typeof ApiPublicHooksCleanupPendingDocExportsRoute
@@ -188,6 +197,7 @@ export interface FileRouteTypes {
     | '/e2e/kanban'
     | '/e2e/review'
     | '/t/$slug'
+    | '/templates/$id'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/public/hooks/cleanup-pending-doc-exports'
@@ -206,6 +216,7 @@ export interface FileRouteTypes {
     | '/e2e/kanban'
     | '/e2e/review'
     | '/t/$slug'
+    | '/templates/$id'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/public/hooks/cleanup-pending-doc-exports'
@@ -225,6 +236,7 @@ export interface FileRouteTypes {
     | '/e2e/kanban'
     | '/e2e/review'
     | '/t/$slug'
+    | '/templates_/$id'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/public/hooks/cleanup-pending-doc-exports'
@@ -244,6 +256,7 @@ export interface RootRouteChildren {
   E2eKanbanRoute: typeof E2eKanbanRoute
   E2eReviewRoute: typeof E2eReviewRoute
   TSlugRoute: typeof TSlugRoute
+  TemplatesIdRoute: typeof TemplatesIdRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   ApiPublicHooksCleanupPendingDocExportsRoute: typeof ApiPublicHooksCleanupPendingDocExportsRoute
@@ -298,6 +311,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/templates_/$id': {
+      id: '/templates_/$id'
+      path: '/templates/$id'
+      fullPath: '/templates/$id'
+      preLoaderRoute: typeof TemplatesIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/t/$slug': {
@@ -400,6 +420,7 @@ const rootRouteChildren: RootRouteChildren = {
   E2eKanbanRoute: E2eKanbanRoute,
   E2eReviewRoute: E2eReviewRoute,
   TSlugRoute: TSlugRoute,
+  TemplatesIdRoute: TemplatesIdRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   ApiPublicHooksCleanupPendingDocExportsRoute:
