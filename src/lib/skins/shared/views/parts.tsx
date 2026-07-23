@@ -15,7 +15,7 @@ import { EditableText, useEditing } from "../Editable";
 import { PlaceSheet, usePointerCoarse } from "@/components/mobile/PlaceSheet";
 import type { FlightBlock, ActivityBlock, PartOfDay } from "../itinerary";
 import { extractUrls, prettyDomain } from "@/lib/links";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Sunrise, Sun, Moon } from "lucide-react";
 import { ActivityEditSheet, FlightEditSheet } from "../ActivityEditSheet";
 import { DayPhotoUploader, useDayPhotoUpload } from "./DayPhotoUploader";
 import { AddPhotoDialog } from "./AddPhotoDialog";
@@ -1457,10 +1457,23 @@ export function ActivityCell({ activity, index }: { activity: ActivityBlock; ind
   );
 }
 
+/** One icon set for parts of day, shared by every view (item: icon parity).
+ *  GridView used to keep a private copy while Vertical/Horizontal had no
+ *  icon at all — same concept, three treatments. */
+export const PART_ICON: Record<PartOfDay, typeof Sunrise> = {
+  morning: Sunrise,
+  afternoon: Sun,
+  evening: Moon,
+};
+
 export function PartHeading({ part }: { part: PartOfDay }) {
+  const Icon = PART_ICON[part];
   return (
     <div className="tds-part-head" data-part={part}>
       <span className="tds-part-rule" aria-hidden />
+      <span className="tds-part-icon" aria-hidden>
+        <Icon size={13} strokeWidth={1.6} />
+      </span>
       <span className="tds-part-label">{PART_LABEL[part]}</span>
     </div>
   );

@@ -184,10 +184,21 @@
 .tds-part-rule {
   display: inline-block; width: 28px; height: 1px; background: var(--tds-accent);
 }
+/* Same Sunrise/Sun/Moon set as the grid — icon parity across views. */
+.tds-part-icon {
+  display: inline-flex; align-items: center;
+  margin-right: -4px; /* the head's 12px gap reads too wide icon-to-label */
+  color: var(--tds-accent);
+}
 .tds-part-label {
   font-size: 10px; letter-spacing: .42em; text-transform: uppercase;
   color: var(--tds-accent); font-weight: 600;
 }
+/* Grid desktop table: part icons inside the column headers. */
+.tds-th-part {
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.tds-th-part svg { color: var(--tds-accent); flex: none; }
 .tds-part-rows { display: flex; flex-direction: column; gap: 2px; }
 
 .tds-act-row {
