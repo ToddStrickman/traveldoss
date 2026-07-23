@@ -16,6 +16,8 @@ import {
   useAddDay,
   useMoveDay,
   useDeleteDay,
+  buildSuggestContext,
+  type SuggestContext,
 } from "./editing-kit";
 
 type ActivityEntry = { activity: Extract<Block, { kind: "place" }>; index: number };
@@ -130,6 +132,7 @@ export function HorizontalView({ trip, blocks }: { trip: TripView; blocks: Block
                   entries={d[part]}
                   editing={editing}
                   onAdd={addActivity}
+                  suggestContext={buildSuggestContext(d, part, trip.destination)}
                 />
               ))}
               {d.unassigned.length > 0 ? (
@@ -162,6 +165,7 @@ function Bucket({
   entries,
   editing,
   onAdd,
+  suggestContext,
 }: {
   dayIndex: number;
   dayN: number;
@@ -169,6 +173,7 @@ function Bucket({
   entries: ActivityEntry[];
   editing: boolean;
   onAdd: (dayIndex: number, part: PartOfDay, seed: Partial<Extract<Block, { kind: "place" }>>) => void;
+  suggestContext?: SuggestContext;
 }) {
   return (
     <DroppableBucket dayIndex={dayIndex} part={part} className="tds-board-bucket">
@@ -188,6 +193,7 @@ function Bucket({
             empty={entries.length === 0}
             size="card"
             onAdd={onAdd}
+            suggestContext={suggestContext}
           />
         ) : null}
       </div>

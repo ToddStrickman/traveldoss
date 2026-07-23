@@ -3221,3 +3221,73 @@ button.tds-add-day[data-burst] .tds-add-day-plus {
   .tds-addphoto-urladd { min-height: 44px; }
   .tds-addphoto-urlrow { padding-block: 2px; }
 }
+
+/* ------------------------------------------------------------------ */
+/* INLINE ACTIVITY EDITOR — time dropdown, location, suggestion row.   */
+/* ------------------------------------------------------------------ */
+.tds-timeselect { position: relative; min-width: 0; }
+.tds-timeselect-list {
+  position: absolute; top: calc(100% + 4px); left: 0; z-index: 40;
+  width: 100%; min-width: 96px; max-height: 216px;
+  overflow-y: auto;
+  background: var(--tds-bg);
+  border: 1px solid var(--tds-rule);
+  border-radius: 10px;
+  box-shadow: 0 14px 34px -12px color-mix(in oklab, var(--tds-ink) 45%, transparent);
+  display: flex; flex-direction: column;
+  padding: 4px;
+}
+.tds-timeselect-option {
+  display: block;
+  padding: 8px 12px;
+  min-height: 36px;
+  text-align: left;
+  font: 500 13px/1.2 var(--tds-fontBody, inherit);
+  font-variant-numeric: tabular-nums;
+  color: var(--tds-ink);
+  background: transparent; border: 0; border-radius: 6px;
+  cursor: pointer;
+}
+.tds-timeselect-option:hover,
+.tds-timeselect-option[aria-selected="true"] {
+  background: color-mix(in oklab, var(--tds-accent) 12%, transparent);
+  color: var(--tds-accent);
+}
+.tds-timeselect-empty {
+  padding: 10px 12px;
+  font-size: 11.5px; font-style: italic;
+  color: color-mix(in oklab, var(--tds-ink) 55%, transparent);
+}
+@media (pointer: coarse) {
+  .tds-timeselect-option { min-height: 44px; }
+}
+
+.tds-inline-editor-suggestion {
+  display: flex; align-items: baseline; gap: 6px;
+  padding: 8px 10px; min-height: 36px;
+  text-align: left;
+  border: 1px dashed color-mix(in oklab, var(--tds-accent) 55%, transparent);
+  border-radius: 8px;
+  background: color-mix(in oklab, var(--tds-accent) 6%, transparent);
+  color: var(--tds-ink);
+  cursor: pointer;
+  font: inherit;
+}
+.tds-inline-editor-suggestion:hover {
+  border-style: solid;
+  border-color: var(--tds-accent);
+}
+.tds-inline-editor-suggestion-tag {
+  flex: none;
+  font-size: 10px; letter-spacing: .18em; text-transform: uppercase;
+  color: var(--tds-accent); font-weight: 600;
+}
+.tds-inline-editor-suggestion-text {
+  min-width: 0;
+  font-size: 12.5px; line-height: 1.35;
+}
+@media (pointer: coarse) {
+  .tds-inline-editor-suggestion { min-height: 44px; }
+  .tds-inline-editor-btn { min-height: 44px; }
+  .tds-inline-editor-input { min-height: 44px; font-size: 16px; }
+}

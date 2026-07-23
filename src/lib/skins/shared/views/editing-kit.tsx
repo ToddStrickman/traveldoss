@@ -1,5 +1,7 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Plus, Sun, ChevronUp, ChevronDown, Trash2, MapPin } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { suggestLocation, type LocationSuggestion } from "@/lib/itinerary/suggest-location.functions";
 import { useDayMap } from "../day-map-context";
 import { toast } from "sonner";
 import type { Block, TripView, TripMeta } from "../../types";
@@ -535,6 +537,7 @@ export function AddActivitySlot({
   empty,
   size = "row",
   onAdd,
+  suggestContext,
 }: {
   dayIndex: number;
   dayN: number;
@@ -543,6 +546,8 @@ export function AddActivitySlot({
   empty: boolean;
   size?: AddSlotSize;
   onAdd: (dayIndex: number, part: PartOfDay, seed: PlaceSeed) => void;
+  /** Locality context for the location suggester (neighbouring stops). */
+  suggestContext?: SuggestContext;
 }) {
   const [open, setOpen] = useState(false);
   if (open) {
@@ -550,6 +555,7 @@ export function AddActivitySlot({
       <InlineActivityEditor
         part={part}
         dayN={dayN}
+        suggestContext={suggestContext}
         onCancel={() => setOpen(false)}
         onSave={(seed) => { onAdd(dayIndex, part, seed); setOpen(false); }}
       />
@@ -573,27 +579,206 @@ export function AddActivitySlot({
   );
 }
 
+/** 30-minute clock options for the time dropdown, calendar-style. */
+const TIME_OPTIONS: string[] = (() => {
+  const out: string[] = [];
+  for (let h = 0; h < 24; h++) {
+    for (const m of [0, 30]) {
+      out.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
+    }
+  }
+  return out;
+})();
+
+/**
+ * Time input in the Google Calendar idiom: free typing with a scrollable
+ * dropdown of half-hour options that filters as you type. Entirely
+ * optional — an empty value simply saves no time.
+ */
+function TimeSelect({
+  value,
+  onChange,
+  onEscape,
+}: {
+  value: string;
+  onChange: (next: string) => void;
+  onEscape: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+  const filtered = value.trim()
+    ? TIME_OPTIONS.filter((t) => t.startsWith(value.trim()) || t.replace(/^0/, "").startsWith(value.trim()))
+    : TIME_OPTIONS;
+  // Land the list at a civilised default instead of midnight.
+  const listRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!open || value.trim()) return;
+    const nine = listRef.current?.querySelector<HTMLElement>('[data-time="09:00"]');
+    nine?.scrollIntoView({ block: "start" });
+  }, [open, value]);
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: PointerEvent) => {
+      if (!wrapRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("pointerdown", onDown);
+    return () => document.removeEventListener("pointerdown", onDown);
+  }, [open]);
+  return (
+    <div className="tds-timeselect" ref={wrapRef}>
+      <input
+        className="tds-inline-editor-input tds-inline-editor-time"
+        type="text"
+        inputMode="numeric"
+        value={value}
+        onChange={(e) => { onChange(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        placeholder="Time"
+        aria-label="Time"
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        onKeyDown={(e) => {
+          if (e.key === "Escape") {
+            e.preventDefault();
+            if (open) setOpen(false);
+            else onEscape();
+          }
+          if (e.key === "Enter" && open && filtered.length > 0) {
+            e.preventDefault();
+            onChange(filtered[0]);
+            setOpen(false);
+          }
+        }}
+      />
+      {open ? (
+        <div className="tds-timeselect-list" role="listbox" aria-label="Pick a time" ref={listRef}>
+          {filtered.map((t) => (
+            <button
+              key={t}
+              type="button"
+              role="option"
+              aria-selected={t === value}
+              data-time={t}
+              className="tds-timeselect-option tap"
+              onClick={() => { onChange(t); setOpen(false); }}
+            >
+              {t}
+            </button>
+          ))}
+          {filtered.length === 0 ? (
+            <div className="tds-timeselect-empty">Free-form is fine too</div>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/** Locality context for the location suggester: the neighbours of the slot
+ *  being filled, so "dinner" resolves near the day's afternoon stop. */
+export type SuggestContext = {
+  destination?: string;
+  prevActivity?: string;
+  nextActivity?: string;
+};
+
+type PartLists = Record<PartOfDay, Array<{ activity: { name: string } }>>;
+
+/** Derive the suggester's locality anchors from a day's part lists: the
+ *  nearest stop before the slot (same part, else an earlier part) and the
+ *  first stop after it. */
+export function buildSuggestContext(
+  d: PartLists,
+  part: PartOfDay,
+  destination?: string,
+): SuggestContext {
+  const order: PartOfDay[] = ["morning", "afternoon", "evening"];
+  const idx = order.indexOf(part);
+  let prevActivity = d[part].length
+    ? d[part][d[part].length - 1].activity.name
+    : undefined;
+  if (!prevActivity) {
+    for (let i = idx - 1; i >= 0; i--) {
+      const list = d[order[i]];
+      if (list.length) { prevActivity = list[list.length - 1].activity.name; break; }
+    }
+  }
+  let nextActivity: string | undefined;
+  for (let i = idx + 1; i < order.length; i++) {
+    const list = d[order[i]];
+    if (list.length) { nextActivity = list[0].activity.name; break; }
+  }
+  return { destination, prevActivity, nextActivity };
+}
+
 export function InlineActivityEditor({
   part,
   dayN,
   onSave,
   onCancel,
+  suggestContext,
 }: {
   part: PartOfDay;
   dayN: number;
   onSave: (seed: PlaceSeed) => void;
   onCancel: () => void;
+  suggestContext?: SuggestContext;
 }) {
   const [name, setName] = useState("");
   const [time, setTime] = useState("");
   const [category, setCategory] = useState<NonNullable<PlaceBlock["category"]>>("other");
   const [note, setNote] = useState("");
+  const [location, setLocation] = useState("");
+  const [suggestion, setSuggestion] = useState<LocationSuggestion | null>(null);
+  const suggest = useServerFn(suggestLocation);
+  const suggestTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const suggestSeq = useRef(0);
+
+  // Debounced contextual lookup: only while the location is still empty,
+  // only once the name says what we're looking for. Failures (signed-out
+  // harness, missing API key, network) silently mean "no suggestion".
+  const queueSuggest = (activityName: string) => {
+    if (suggestTimer.current) clearTimeout(suggestTimer.current);
+    const trimmed = activityName.trim();
+    if (trimmed.length < 3) { setSuggestion(null); return; }
+    suggestTimer.current = setTimeout(() => {
+      const seq = ++suggestSeq.current;
+      suggest({
+        data: {
+          activity: trimmed,
+          destination: suggestContext?.destination,
+          prevActivity: suggestContext?.prevActivity,
+          nextActivity: suggestContext?.nextActivity,
+        },
+      })
+        .then((r) => {
+          if (seq === suggestSeq.current) setSuggestion(r.suggestion);
+        })
+        .catch(() => {
+          if (seq === suggestSeq.current) setSuggestion(null);
+        });
+    }, 700);
+  };
+  useEffect(() => () => { if (suggestTimer.current) clearTimeout(suggestTimer.current); }, []);
+
+  const suggestionLabel = suggestion
+    ? [suggestion.name, suggestion.address].filter(Boolean).join(" — ")
+    : "";
+
   const submit = () => {
     const trimmed = name.trim();
     if (!trimmed) return;
     const seed: PlaceSeed = { name: trimmed, category };
     if (time.trim()) seed.time = time.trim();
     if (note.trim()) seed.note = note.trim();
+    if (location.trim()) {
+      seed.address = location.trim();
+    } else if (suggestion) {
+      // No location entered — the contextual suggestion fills in, clearly
+      // marked as ours, not theirs ("(suggested)" renders with the row).
+      seed.address = [suggestion.name, suggestion.address].filter(Boolean).join(", ");
+      seed.addressSuggested = true;
+    }
     onSave(seed);
   };
   return (
@@ -608,20 +793,12 @@ export function InlineActivityEditor({
           className="tds-inline-editor-input tds-inline-editor-name"
           type="text"
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => { setName(e.target.value); if (!location.trim()) queueSuggest(e.target.value); }}
           placeholder={`${part[0].toUpperCase() + part.slice(1)} activity`}
           autoFocus
           onKeyDown={(e) => { if (e.key === "Escape") { e.preventDefault(); onCancel(); } }}
         />
-        <input
-          className="tds-inline-editor-input tds-inline-editor-time"
-          type="text"
-          value={time}
-          onChange={(e) => setTime(e.target.value)}
-          placeholder="Time"
-          aria-label="Time"
-          onKeyDown={(e) => { if (e.key === "Escape") { e.preventDefault(); onCancel(); } }}
-        />
+        <TimeSelect value={time} onChange={setTime} onEscape={onCancel} />
         <select
           className="tds-inline-editor-input tds-inline-editor-cat"
           value={category}
@@ -633,11 +810,31 @@ export function InlineActivityEditor({
           ))}
         </select>
       </div>
+      <input
+        className="tds-inline-editor-input tds-inline-editor-location"
+        type="text"
+        value={location}
+        onChange={(e) => { setLocation(e.target.value); if (e.target.value.trim()) setSuggestion(null); }}
+        placeholder="Location"
+        aria-label="Location"
+        onKeyDown={(e) => { if (e.key === "Escape") { e.preventDefault(); onCancel(); } }}
+      />
+      {!location.trim() && suggestion ? (
+        <button
+          type="button"
+          className="tds-inline-editor-suggestion tap"
+          onClick={() => setLocation(suggestionLabel)}
+          title="Use this location"
+        >
+          <span className="tds-inline-editor-suggestion-tag">(suggested)</span>
+          <span className="tds-inline-editor-suggestion-text">{suggestionLabel}</span>
+        </button>
+      ) : null}
       <textarea
         className="tds-inline-editor-input tds-inline-editor-note"
         value={note}
         onChange={(e) => setNote(e.target.value)}
-        placeholder="Notes (optional)"
+        placeholder="Notes"
         rows={2}
         onKeyDown={(e) => {
           if (e.key === "Escape") { e.preventDefault(); onCancel(); }

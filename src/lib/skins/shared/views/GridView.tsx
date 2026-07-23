@@ -21,6 +21,7 @@ import {
   CollapseToggle,
   useMoveDay,
   useDeleteDay,
+  buildSuggestContext,
 } from "./editing-kit";
 
 /** Grid flight row with the shared edit sheet behind a pencil (the grid
@@ -356,6 +357,7 @@ export function GridView({ trip, blocks }: { trip: TripView; blocks: Block[] }) 
                               empty={list.length === 0}
                               size="cell"
                               onAdd={addActivity}
+                        suggestContext={buildSuggestContext(d, part, trip.destination)}
                             />
                           ) : null}
                         </div>
@@ -414,6 +416,7 @@ export function GridView({ trip, blocks }: { trip: TripView; blocks: Block[] }) 
                         empty={list.length === 0}
                         size="card"
                         onAdd={addActivity}
+                        suggestContext={buildSuggestContext(d, part, trip.destination)}
                       />
                     ) : null}
                   </div>

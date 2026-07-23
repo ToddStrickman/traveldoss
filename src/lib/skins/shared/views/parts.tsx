@@ -1001,8 +1001,15 @@ function buildDetailRows(a: ActivityBlock): DetailRow[] {
     rows.push({ key: k, label, value, glyph, href });
   };
 
-  // Universal contact / location
-  push("address", "Address", a.address, <GlyphPin />, a.mapsUrl);
+  // Universal contact / location. A suggester-filled address is honestly
+  // labelled — "(suggested)" — so the traveler knows to confirm it.
+  push(
+    "address",
+    "Address",
+    a.address ? (a.addressSuggested ? `(suggested) ${a.address}` : a.address) : undefined,
+    <GlyphPin />,
+    a.mapsUrl,
+  );
   push("phone", "Phone", a.phone, <GlyphPhone />, a.phone ? `tel:${a.phone.replace(/[^+\d]/g, "")}` : undefined);
   // Links never display as raw URLs: resolved title → place name → domain.
   push(
