@@ -85,7 +85,7 @@ function DesktopFlow() {
           content (kicker + headline + copy + ~44vh visual) is finite, so a
           full-viewport sticky left huge dead space above and below. We pin
           content to a ~720px band centered vertically instead. */}
-      <div className="sticky top-[max(0px,calc((100dvh-min(760px,86dvh))/2))] mx-auto h-[min(760px,86dvh)] overflow-hidden">
+      <div className="sticky top-[max(0px,calc((100dvh-min(660px,80dvh))/2))] mx-auto h-[min(660px,80dvh)] overflow-hidden">
         {/* Section label */}
         <div className="pointer-events-none absolute left-8 right-8 top-4 z-20 flex items-center justify-between text-[10px] font-medium uppercase tracking-[0.4em] text-ink/45 md:left-12 md:right-[340px] lg:left-20 xl:left-32 xl:top-6">
           <span className="inline-flex items-center gap-3">
