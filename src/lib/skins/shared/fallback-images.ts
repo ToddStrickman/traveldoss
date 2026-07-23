@@ -200,19 +200,19 @@ async function resolveFallbackImages(
 ): Promise<GalleryImage[]> {
   const seen = new Set<string>();
   const collected: GalleryImage[] = [];
-  const push = (imgs: GalleryImage[]) => {
+  const push = (imgs: GalleryImage[], sourceQuery: string) => {
     for (const im of imgs) {
       if (collected.length >= want) return;
       if (seen.has(im.src)) continue;
       seen.add(im.src);
-      collected.push(im);
+      collected.push({ ...im, sourceQuery });
     }
   };
 
   for (const q of queries) {
     if (collected.length >= want) break;
     try {
-      push(await searchCommons(q, want - collected.length, signal));
+      push(await searchCommons(q, want - collected.length, signal), q);
     } catch {
       /* source down or aborted — try the next rank/source */
     }
@@ -221,7 +221,7 @@ async function resolveFallbackImages(
     for (const q of queries) {
       if (collected.length >= want) break;
       try {
-        push(await searchOpenverse(q, want - collected.length, signal));
+        push(await searchOpenverse(q, want - collected.length, signal), q);
       } catch {
         /* secondary source is best-effort */
       }
@@ -309,14 +309,35 @@ export function buildDayImageQueries(args: {
   dayLabel?: string | null;
   placeNames: string[];
 }): string[] {
+  return buildDayImagePlan({
+    destination: args.destination,
+    dayLabel: args.dayLabel,
+    places: args.placeNames.map((name) => ({ name })),
+  }).queries;
+}
+
+export type DayImagePlan = {
+  queries: string[];
+  /** query → part-of-day of the place that produced it, when known. Lets
+   *  the carousel caption a sourced preview "Day 1 · Afternoon". */
+  partByQuery: Record<string, "morning" | "afternoon" | "evening">;
+};
+
+/** Same ranking as buildDayImageQueries, with part-of-day attribution. */
+export function buildDayImagePlan(args: {
+  destination: string;
+  dayLabel?: string | null;
+  places: Array<{ name: string; part?: "morning" | "afternoon" | "evening" }>;
+}): DayImagePlan {
   const dest = args.destination.trim();
   const queries: string[] = [];
-  for (const name of args.placeNames.slice(0, 4)) {
+  const partByQuery: DayImagePlan["partByQuery"] = {};
+  for (const place of args.places.slice(0, 4)) {
     // The app's "Kind · Venue" convention: the venue is the image-worthy
     // part ("Dinner · Belcanto" → "Belcanto").
-    const m = name.trim().match(/^([A-Za-z][A-Za-z' ]{0,24}?)\s*·\s*(.+)$/);
+    const m = place.name.trim().match(/^([A-Za-z][A-Za-z' ]{0,24}?)\s*·\s*(.+)$/);
     const kind = (m?.[1] ?? "").trim();
-    const n = (m?.[2] ?? name).trim();
+    const n = (m?.[2] ?? place.name).trim();
     // Transit legs and generic labels make terrible image queries. A meal
     // kind keeps its venue ("Dinner · Belcanto" → "Belcanto"), but a
     // transit kind's remainder is a route, not a place.
@@ -326,7 +347,11 @@ export function buildDayImageQueries(args: {
     if (/^(lunch|dinner|breakfast|coffee|taxi|transfer|transit|check.?in|check.?out|free time|rest day)\b/i.test(n)) {
       continue;
     }
-    queries.push(dest ? `${n} ${dest}` : n);
+    const q = dest ? `${n} ${dest}` : n;
+    if (!queries.includes(q)) {
+      queries.push(q);
+      if (place.part) partByQuery[q] = place.part;
+    }
     if (queries.length >= 2) break;
   }
   const label = (args.dayLabel ?? "").trim();
@@ -334,5 +359,5 @@ export function buildDayImageQueries(args: {
     queries.push(`${dest} ${label}`);
   }
   if (dest) queries.push(dest);
-  return [...new Set(queries)].filter(Boolean);
+  return { queries: [...new Set(queries)].filter(Boolean), partByQuery };
 }

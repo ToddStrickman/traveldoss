@@ -18,6 +18,7 @@ import { extractUrls, prettyDomain } from "@/lib/links";
 import { Pencil, Trash2 } from "lucide-react";
 import { ActivityEditSheet, FlightEditSheet } from "../ActivityEditSheet";
 import { DayPhotoUploader, useDayPhotoUpload } from "./DayPhotoUploader";
+import { AddPhotoDialog } from "./AddPhotoDialog";
 import { useFallbackImages } from "../fallback-images";
 
 /**
@@ -262,8 +263,10 @@ export function ActivityImages({
   fallbackQuery,
   fallbackQueries,
   fallbackLabel,
+  fallbackPartByQuery,
   onImagesChange,
   uploadLabel,
+  emptyHint = "panel",
 }: {
   images?: GalleryImage[];
   /** Single fallback search query (legacy call sites). Prefer
@@ -274,16 +277,22 @@ export function ActivityImages({
   fallbackQueries?: string[];
   /** Optional short label shown alongside the preview badge, e.g. day title. */
   fallbackLabel?: string;
+  /** query → part-of-day, so a sourced preview can read "Day 1 · Afternoon". */
+  fallbackPartByQuery?: Record<string, "morning" | "afternoon" | "evening">;
   /** Owner-only. When provided, "Add photo" affordances upload to
    *  storage and append signed URLs to the persisted image order. */
   onImagesChange?: (next: GalleryImage[]) => void;
   /** Human label for the target (e.g. day title) used in aria/toast copy. */
   uploadLabel?: string;
+  /** Empty-state size: "panel" (day header) or "inline" (activity rows —
+   *  a quiet one-line button instead of the tall panel). */
+  emptyHint?: "panel" | "inline";
 }) {
   const [failed, setFailed] = useState<Set<string>>(new Set());
   const [retryTick, setRetryTick] = useState(0);
   const [lightboxAt, setLightboxAt] = useState<number | null>(null);
   const [dropping, setDropping] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
   const inert = useInertRender();
   const realUsable = useMemo(
     () => (images ?? []).filter((im) => im.src && !failed.has(im.src)),
@@ -326,17 +335,22 @@ export function ActivityImages({
   const slideRefs = useRef<Array<HTMLElement | null>>([]);
   const reduced = useReducedMotion();
 
+  const totalWithAdd = total + (canUpload ? 1 : 0);
+
   // Keep active bounded when images change (e.g. an image errors out).
+  // Bound is totalWithAdd — the "+" tile legitimately occupies index
+  // `total`, and clamping to total-1 made the tile impossible to center:
+  // every goTo(total) was snapped back a frame later, so the add-photo
+  // action was unreachable from the carousel.
   useEffect(() => {
-    if (active > Math.max(0, total - 1)) setActive(Math.max(0, total - 1));
-  }, [total, active]);
+    const max = Math.max(0, totalWithAdd - 1);
+    if (active > max) setActive(max);
+  }, [totalWithAdd, active]);
 
   // Cover Flow drag state — swipe (touch or trackpad drag) shifts the whole
   // stage together, then snaps to a neighbour based on distance/velocity.
   const [dragDx, setDragDx] = useState(0);
   const drag = useRef<{ id: number; x0: number; t0: number; engaged: boolean } | null>(null);
-
-  const totalWithAdd = total + (canUpload ? 1 : 0);
 
   const goTo = useCallback(
     (idx: number) => {
@@ -420,6 +434,32 @@ export function ActivityImages({
   }
   if (total === 0) {
     // Nothing uploaded and sourcing found nothing (or wasn't possible).
+    if (canUpload && emptyHint === "inline") {
+      // Activity rows: a quiet one-liner, not the tall day-level panel.
+      return (
+        <>
+          <button
+            type="button"
+            className="tds-act-addphoto tap"
+            data-print="hide"
+            onClick={(e) => { e.stopPropagation(); setAddOpen(true); }}
+            aria-label={`Add a photo to ${uploadLabel ?? "this activity"}`}
+          >
+            <span aria-hidden>+</span>
+            <span>Add photo</span>
+          </button>
+          <AddPhotoDialog
+            open={addOpen}
+            onClose={() => setAddOpen(false)}
+            uploader={uploader}
+            images={images}
+            onImagesChange={onImagesChange!}
+            targetLabel={uploadLabel ?? "this activity"}
+          />
+          {uploader.input}
+        </>
+      );
+    }
     if (canUpload) {
       return (
         <div
@@ -491,6 +531,7 @@ export function ActivityImages({
           const fallback = isFallback(im);
           const style = single ? undefined : coverFlowStyle(offset, liveDx, reduced);
           const isActive = i === active;
+          const part = fallback && im.sourceQuery ? fallbackPartByQuery?.[im.sourceQuery] : undefined;
           return (
             <CarouselSlide
               key={`${im.src}#${retryTick}`}
@@ -501,8 +542,12 @@ export function ActivityImages({
               eager={eager}
               fallback={fallback}
               fallbackLabel={fallback ? fallbackLabel : undefined}
+              partLabel={part ? part[0].toUpperCase() + part.slice(1) : undefined}
               onError={() => setFailed((prev) => new Set(prev).add(im.src))}
-              onOpen={() => (isActive ? setLightboxAt(i) : goTo(i))}
+              // Every click opens the fullscreen viewer at that photo — a
+              // side slide centers itself on the way in. (Click-to-center
+              // alone read as "the lightbox is broken" on desktop.)
+              onOpen={() => { if (!isActive) goTo(i); setLightboxAt(i); }}
               style={style}
               coverflow={!single}
               isActive={isActive}
@@ -519,9 +564,10 @@ export function ActivityImages({
             data-active={!single && active === total ? "" : undefined}
             style={single ? undefined : coverFlowStyle(total - active, liveDx, reduced)}
             onClick={() => {
-              if (single) { uploader.pick(); return; }
-              if (active === total) uploader.pick();
-              else goTo(total);
+              // The tile leads to the add-photo screen (upload OR paste a
+              // link) instead of jumping straight into the file picker.
+              if (single || active === total) { setAddOpen(true); return; }
+              goTo(total);
             }}
             disabled={uploader.busy}
             aria-label={`Add photos to ${uploadLabel ?? "this day"}`}
@@ -584,6 +630,16 @@ export function ActivityImages({
           onClose={() => setLightboxAt(null)}
         />
       ) : null}
+      {canUpload ? (
+        <AddPhotoDialog
+          open={addOpen}
+          onClose={() => setAddOpen(false)}
+          uploader={uploader}
+          images={images}
+          onImagesChange={onImagesChange!}
+          targetLabel={uploadLabel ?? "this day"}
+        />
+      ) : null}
       {canUpload ? uploader.input : null}
     </div>
   );
@@ -619,6 +675,8 @@ const CarouselSlide = (() => {
     eager: boolean;
     fallback?: boolean;
     fallbackLabel?: string;
+    /** Part-of-day this preview illustrates ("Afternoon"), when known. */
+    partLabel?: string;
     onError: () => void;
     onOpen?: () => void;
     style?: React.CSSProperties;
@@ -626,7 +684,7 @@ const CarouselSlide = (() => {
     isActive?: boolean;
   };
   const Component = (
-    { image, index, total, eager, fallback, fallbackLabel, onError, onOpen, style, coverflow, isActive }: Props,
+    { image, index, total, eager, fallback, fallbackLabel, partLabel, onError, onOpen, style, coverflow, isActive }: Props,
     ref: React.Ref<HTMLElement>,
   ) => {
     const [loaded, setLoaded] = useState(false);
@@ -668,7 +726,7 @@ const CarouselSlide = (() => {
           />
           {fallback ? (
             <span className="tds-carousel-fallback-badge" data-print="hide">
-              Preview{fallbackLabel ? ` · ${fallbackLabel}` : ""} · add your own
+              Preview{fallbackLabel ? ` · ${fallbackLabel}` : ""}{partLabel ? ` · ${partLabel}` : ""} · add your own
             </span>
           ) : null}
         </button>
@@ -1200,7 +1258,18 @@ export function ActivityRow({
             <ActivityName name={activity.name} />
           )}
         </div>
-        <ActivityImages images={activity.images} />
+        <ActivityImages
+          images={activity.images}
+          // Owners can add photos from inside the itinerary — every
+          // activity, not just the day header (upload or paste a link).
+          onImagesChange={
+            editing
+              ? (next) => onBlockChange(index, { images: next } as Partial<Block>)
+              : undefined
+          }
+          uploadLabel={activity.name || "this activity"}
+          emptyHint="inline"
+        />
         <ActivityChips activity={activity} max={3} />
         {activity.note ? (
           <div className="tds-act-meta tds-act-note">

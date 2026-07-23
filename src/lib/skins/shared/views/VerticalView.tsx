@@ -9,7 +9,7 @@ import {
   SlotAlternativesCarousel,
 } from "./parts";
 import { ActivityDndContext, DraggableActivity, DroppableBucket } from "./dnd";
-import { buildDayImageQueries } from "../fallback-images";
+import { buildDayImagePlan } from "../fallback-images";
 import { ShadowItinerary, PlanBCue } from "../ShadowItinerary";
 import { BlankDayScaffold, isScaffoldTriggered } from "../BlankDayScaffold";
 import { useCallback, useState } from "react";
@@ -91,23 +91,36 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
           />
           <PlanBCue count={d.shadows.length} />
           {!dayCollapsed ? (
-            <ActivityImages
-              images={d.day.images}
-              fallbackQueries={buildDayImageQueries({
+            (() => {
+              // Part-aware sourcing plan: each preview knows which part of
+              // the day it illustrates, so its badge can read
+              // "Preview · Day 1 · Afternoon" instead of a bare day label.
+              const plan = buildDayImagePlan({
                 destination: trip.destination,
                 dayLabel: d.day.label,
-                placeNames: [...d.morning, ...d.afternoon, ...d.evening].map(
-                  (x) => x.activity.name,
+                places: ([
+                  ["morning", d.morning],
+                  ["afternoon", d.afternoon],
+                  ["evening", d.evening],
+                ] as const).flatMap(([part, list]) =>
+                  list.map((x) => ({ name: x.activity.name, part })),
                 ),
-              })}
-              fallbackLabel={d.day.label || `Day ${d.day.n}`}
-              uploadLabel={d.day.label || `Day ${d.day.n}`}
-              onImagesChange={
-                editing
-                  ? (next) => onBlockChange(d.dayIndex, { images: next } as Partial<Block>)
-                  : undefined
-              }
-            />
+              });
+              return (
+                <ActivityImages
+                  images={d.day.images}
+                  fallbackQueries={plan.queries}
+                  fallbackPartByQuery={plan.partByQuery}
+                  fallbackLabel={`Day ${d.day.n}`}
+                  uploadLabel={d.day.label || `Day ${d.day.n}`}
+                  onImagesChange={
+                    editing
+                      ? (next) => onBlockChange(d.dayIndex, { images: next } as Partial<Block>)
+                      : undefined
+                  }
+                />
+              );
+            })()
           ) : null}
 
           <div className="tds-day-body">
