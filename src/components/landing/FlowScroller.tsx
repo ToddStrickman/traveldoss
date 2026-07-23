@@ -172,7 +172,29 @@ function MobileFlow() {
           the URL bar collapses — content never leaves a strip of blank
           space under it. */}
       <div className="sticky top-0 h-[100dvh] max-h-[100svh] w-full overflow-hidden">
-        <div className="flex h-full w-full flex-col justify-center gap-4 px-6 pb-20 pt-12 landscape:gap-2 landscape:pt-6 landscape:pb-14">
+        {/* Prominent top progress pill — always visible while the flow is
+            pinned, so the user knows exactly where they are (01/05 → 05/05)
+            and how much scrolling is left. */}
+        <div className="pointer-events-none absolute left-1/2 top-[max(0.75rem,env(safe-area-inset-top))] z-30 flex -translate-x-1/2 items-center gap-3 rounded-full border border-ink/10 bg-paper/70 px-3.5 py-1.5 shadow-[0_1px_0_rgba(255,255,255,0.6)_inset,0_4px_16px_-8px_rgba(0,0,0,0.25)] backdrop-blur-md landscape:top-2 landscape:py-1">
+          <span
+            className="tabular-nums text-[13px] font-semibold leading-none tracking-tight text-ink"
+            aria-live="polite"
+          >
+            <span className="text-seal">{String(active + 1).padStart(2, "0")}</span>
+            <span className="text-ink/30"> / {String(STEPS.length).padStart(2, "0")}</span>
+          </span>
+          <span className="relative block h-1 w-24 overflow-hidden rounded-full bg-ink/10">
+            <span
+              className="absolute inset-y-0 left-0 rounded-full bg-seal transition-[width] duration-300 ease-out"
+              style={{ width: `${((active + 1) / STEPS.length) * 100}%` }}
+            />
+          </span>
+          <span className="text-[9px] font-medium uppercase tracking-[0.35em] text-ink/45">
+            The Flow
+          </span>
+        </div>
+
+        <div className="flex h-full w-full flex-col justify-center gap-4 px-6 pb-20 pt-16 landscape:gap-2 landscape:pt-10 landscape:pb-14">
           <div className="flex items-center gap-3 text-[10px] font-medium uppercase tracking-[0.45em] text-ink/45">
             <span className="text-seal">{step.n}</span>
             <span className="h-px w-8 bg-ink/20" />
