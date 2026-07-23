@@ -968,20 +968,33 @@ button.tds-add-day[data-burst] .tds-add-day-plus {
     width: 32px; height: 32px;
     padding: 0; margin-left: auto;
     background: transparent;
-    border: 1px solid var(--tds-rule);
+    /* Borderless (owner direction): the cloche is the control — the ring
+       read as a badge and dulled the icon. Hover/press feedback below. */
+    border: 0;
     border-radius: 999px;
     color: var(--tds-ink);
     cursor: pointer;
     flex: 0 0 auto;
+    transition: transform .18s cubic-bezier(.34, 1.56, .64, 1), color .18s ease;
   }
+  .tds-collapse-btn:hover { color: var(--tds-accent); }
+  .tds-collapse-btn:active { transform: scale(.9); }
   .tds-collapse-btn:focus-visible {
     outline: none;
     box-shadow: 0 0 0 2px color-mix(in oklab, var(--tds-accent) 55%, transparent);
   }
-  .tds-collapse-btn--part { width: auto; height: 32px; padding: 0 8px; }
+  /* Part variant sits DIRECTLY beside its label ("Morning ⌃") instead of
+     stranded at the right edge — the control shouldn't travel when the
+     section opens and closes. */
+  .tds-collapse-btn--part { width: auto; height: 32px; padding: 0 8px; margin-left: 0; }
   /* On mobile, ensure comfortable touch target. */
   @media (pointer: coarse) {
-    .tds-collapse-btn--part { min-height: 32px; }
+    .tds-collapse-btn--part { min-height: 44px; }
+    .tds-collapse-btn { width: 44px; height: 44px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tds-collapse-btn { transition: none; }
+    .tds-collapse-btn:active { transform: none; }
   }
 
   /* Universal chevron next to the cloche — the affordance signal. */
@@ -1027,9 +1040,10 @@ button.tds-add-day[data-burst] .tds-add-day-plus {
   }
   .tds-cloche-hand--stem { stroke-width: 1; }
 
-  /* Dome + hand: lift as one group when OPEN (default). */
+  /* Dome + hand: lift as one group when OPEN (default). Lift is generous —
+     at 16px the old 6px travel was too subtle to read as "the lid is off". */
   .tds-cloche-dome {
-    transform: translateY(-6px);
+    transform: translateY(-8px);
     transition: transform .5s cubic-bezier(.34, 1.56, .64, 1);
     transform-origin: 16px 16px;
     transform-box: fill-box;
@@ -1086,27 +1100,14 @@ button.tds-add-day[data-burst] .tds-add-day-plus {
   .tds-part--collapsed > .tds-part-body { display: none; }
   .tds-day-section[data-collapsed] > .tds-day-body { display: none; }
 
+  /* The toggle hugs its label — "Morning ⌃" reads as one control and never
+     travels when the section opens or closes (the old layout stranded it at
+     the right edge, then dropped it to a second row when collapsed). */
   .tds-part-header-row {
-    display: flex; align-items: center; gap: 10px;
-    flex-wrap: wrap;
+    display: flex; align-items: center; gap: 2px;
+    margin-bottom: var(--tds-s1);
   }
-  .tds-part-header-row > .tds-part-head { flex: 1 1 auto; }
-  /* When a part is collapsed, drop the cloche toggle onto its own row so it
-     sits UNDER the label (e.g. "Afternoon"). Signals the empty area is
-     expandable instead of stranding the control at the right edge. */
-  .tds-part--collapsed .tds-part-header-row > .tds-part-head { flex-basis: 100%; }
-  .tds-part--collapsed .tds-part-header-row .tds-collapse-btn--part {
-    margin-left: 0;
-    align-self: flex-start;
-    animation: tds-toggle-drop .38s cubic-bezier(.4, 0, .2, 1) both;
-  }
-  @keyframes tds-toggle-drop {
-    from { transform: translateY(-10px); opacity: .35; }
-    to   { transform: translateY(0);     opacity: 1; }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .tds-part--collapsed .tds-part-header-row .tds-collapse-btn--part { animation: none; }
-  }
+  .tds-part-header-row > .tds-part-head { flex: 0 1 auto; margin-bottom: 0; }
 
 /* Collapsed day sections (grid) and board columns (horizontal): the body
    hides; the header — with its map opener and toggle — stays in place. */
