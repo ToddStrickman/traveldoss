@@ -159,12 +159,20 @@ function MobileFlow() {
   return (
     <section
       ref={containerRef}
-      className="relative z-10 block md:hidden"
-      style={{ height: `${STEPS.length * 100}dvh` }}
+      // Height uses svh (small-viewport-height) so the total scroll distance
+      // stays constant while iOS shows/hides its URL bar — dvh would cause
+      // the pin distance to change mid-scroll and feel like a bad snap.
+      // overscroll-behavior-y:contain prevents rubber-band from leaking into
+      // the next section on the last step.
+      className="tds-flow-mobile relative z-10 block md:hidden [overscroll-behavior-y:contain]"
+      style={{ height: `calc(${STEPS.length} * var(--tds-flow-step, 100svh))` }}
       aria-label="How TravelDoss works"
     >
-      <div className="sticky top-0 h-[100dvh] w-full overflow-hidden">
-        <div className="flex h-full w-full flex-col justify-center gap-5 px-6 pb-20 pt-14">
+      {/* Sticky uses dvh so it always fills the visible viewport, even as
+          the URL bar collapses — content never leaves a strip of blank
+          space under it. */}
+      <div className="sticky top-0 h-[100dvh] max-h-[100svh] w-full overflow-hidden">
+        <div className="flex h-full w-full flex-col justify-center gap-4 px-6 pb-20 pt-12 landscape:gap-2 landscape:pt-6 landscape:pb-14">
           <div className="flex items-center gap-3 text-[10px] font-medium uppercase tracking-[0.45em] text-ink/45">
             <span className="text-seal">{step.n}</span>
             <span className="h-px w-8 bg-ink/20" />
@@ -172,28 +180,28 @@ function MobileFlow() {
           </div>
           <h2
             key={`t-${step.n}`}
-            className="text-[11vw] font-normal leading-[0.95] tracking-[-0.02em] text-ink"
+            className="text-[clamp(28px,11vw,44px)] font-normal leading-[0.95] tracking-[-0.02em] text-ink landscape:text-[clamp(22px,5vw,32px)]"
             style={{ fontFamily: "var(--font-display)" }}
           >
             {step.title}
           </h2>
           <p
             key={`b-${step.n}`}
-            className="max-w-md text-[13px] leading-relaxed text-ink-soft"
+            className="max-w-md text-[13px] leading-relaxed text-ink-soft landscape:text-[12px] landscape:leading-snug"
           >
             {step.body}
           </p>
           <Parallax
             key={`v-${step.n}`}
             depth={14}
-            className="relative mt-2 h-[38vh] w-full"
+            className="relative mt-2 h-[38svh] w-full landscape:h-[26svh] landscape:mt-1"
           >
             <Visual variant={step.visual} index={active} />
           </Parallax>
         </div>
 
         {/* Progress rail pinned to the sticky viewport. */}
-        <div className="pointer-events-none absolute bottom-5 left-0 right-0 z-20 flex items-center justify-between px-6 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/45">
+        <div className="pointer-events-none absolute bottom-[max(1rem,env(safe-area-inset-bottom))] left-0 right-0 z-20 flex items-center justify-between px-6 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/45 landscape:bottom-2">
           <span className="inline-flex items-center gap-2">
             <span className="text-seal">{String(active + 1).padStart(2, "0")}</span>
             <span className="text-ink/30">/ {String(STEPS.length).padStart(2, "0")}</span>
