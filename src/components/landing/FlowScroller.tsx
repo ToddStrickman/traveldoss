@@ -78,12 +78,16 @@ function DesktopFlow() {
     <section
       ref={containerRef}
       className="relative z-10 hidden md:block"
-      style={{ height: `${STEPS.length * 58}vh` }}
+      style={{ height: `${STEPS.length * 52}vh` }}
       aria-label="How TravelDoss works"
     >
-      <div className="sticky top-0 h-dvh overflow-hidden">
+      {/* Sticky viewport is intentionally shorter than 100dvh: the panel
+          content (kicker + headline + copy + ~44vh visual) is finite, so a
+          full-viewport sticky left huge dead space above and below. We pin
+          content to a ~720px band centered vertically instead. */}
+      <div className="sticky top-[max(0px,calc((100dvh-min(660px,80dvh))/2))] mx-auto h-[min(660px,80dvh)] overflow-hidden">
         {/* Section label */}
-        <div className="pointer-events-none absolute left-8 right-8 top-6 z-20 flex items-center justify-between text-[10px] font-medium uppercase tracking-[0.4em] text-ink/45 md:left-12 md:right-[340px] lg:left-20 xl:left-32 xl:top-8">
+        <div className="pointer-events-none absolute left-8 right-8 top-4 z-20 flex items-center justify-between text-[10px] font-medium uppercase tracking-[0.4em] text-ink/45 md:left-12 md:right-[340px] lg:left-20 xl:left-32 xl:top-6">
           <span className="inline-flex items-center gap-3">
             <span className="h-px w-8 bg-ink/25" />
             The Flow
@@ -95,7 +99,7 @@ function DesktopFlow() {
         </div>
 
         {/* Horizontal track clipped strictly to the rail-safe area */}
-        <div className="absolute inset-y-0 left-8 right-8 overflow-hidden pt-14 pb-16 md:left-12 md:right-[340px] md:pt-14 md:pb-16 lg:left-20 lg:pt-16 xl:left-32">
+        <div className="absolute inset-y-0 left-8 right-8 overflow-hidden pt-12 pb-14 md:left-12 md:right-[340px] md:pt-12 md:pb-14 lg:left-20 lg:pt-14 xl:left-32">
           <motion.div
             style={{ x, width: `${STEPS.length * 100}%` }}
             className="flex h-full"
@@ -107,7 +111,7 @@ function DesktopFlow() {
         </div>
 
         {/* Bottom progress + counter */}
-        <div className="pointer-events-none absolute bottom-6 left-8 right-8 z-20 md:left-12 md:right-[340px] lg:left-20 xl:bottom-8 xl:left-32">
+        <div className="pointer-events-none absolute bottom-4 left-8 right-8 z-20 md:left-12 md:right-[340px] lg:left-20 xl:bottom-6 xl:left-32">
           <div className="mb-3 flex items-center justify-between text-[10px] font-medium uppercase tracking-[0.4em] text-ink/45">
             <Counter scrollYProgress={scrollYProgress} total={STEPS.length} />
             <span>Your itinerary, unfolding.</span>
@@ -229,10 +233,10 @@ function Counter({
 function Panel({ step, index, total }: { step: Step; index: number; total: number }) {
   return (
     <div
-      className="flex h-full shrink-0 items-start justify-center px-6 pt-6 md:px-6 md:pt-4 lg:px-8"
+      className="flex h-full shrink-0 items-center justify-center px-6 md:px-6 lg:px-8"
       style={{ width: `${100 / total}%` }}
     >
-      <div className="grid h-full w-full max-w-6xl grid-cols-1 items-start gap-8 pt-2 md:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] md:gap-10 md:pt-4 lg:gap-12">
+      <div className="grid h-full w-full max-w-6xl grid-cols-1 items-center gap-8 md:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] md:gap-10 lg:gap-12">
         {/* Copy */}
         <div className="space-y-5 md:space-y-6">
           <div className="flex items-center gap-4 text-[10px] font-medium uppercase tracking-[0.45em] text-ink/45">
