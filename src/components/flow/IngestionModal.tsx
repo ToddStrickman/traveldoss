@@ -1031,8 +1031,12 @@ export function ReviewStage({
     <>
       <div className="relative border-b border-ink/10 px-5 sm:px-8 md:px-10 pb-7 pt-9">
         <div className="flex items-start justify-between gap-8">
-          <div className="flex flex-col gap-3">
-            <div className="td-eyebrow flex items-center gap-3 text-ink/55">
+          {/* min-w-0 + flex-wrap: without them the nowrap breadcrumb row
+              (TravelDoss · template · Review) sets this column's minimum
+              width past narrow viewports — 410px of content in a 375px
+              phone, clipping the copy below mid-word. */}
+          <div className="flex min-w-0 flex-col gap-3">
+            <div className="td-eyebrow flex flex-wrap items-center gap-x-3 gap-y-1 text-ink/55">
               <span className="h-px w-8 bg-ink/25" />
               <Link
                 to="/"
@@ -1043,7 +1047,7 @@ export function ReviewStage({
                 TravelDoss<span className="text-ink/30">®</span>
               </Link>
               <span className="text-ink/30">·</span>
-              {templateName}
+              <span className="min-w-0 truncate">{templateName}</span>
               <span className="text-ink/30">·</span>
               Review
             </div>
@@ -1070,10 +1074,13 @@ export function ReviewStage({
       <div className="px-5 sm:px-8 md:px-10 pt-6">
         <div className="mb-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px] text-ink-soft">
           <span className="td-eyebrow text-ink/45">Summary</span>
+          {/* inline-flex gap keeps a real space between count and label —
+              the bare {" "} collapsed against the tracked uppercase text
+              and read as "2DAY". Pluralized so it reads as language. */}
           {Object.entries(counts).map(([k, n]) => (
-            <span key={k}>
-              <span className="font-mono text-ink">{n}</span>{" "}
-              <span className="uppercase tracking-[0.2em] text-ink/55">{k}</span>
+            <span key={k} className="inline-flex items-baseline gap-1.5">
+              <span className="font-mono text-ink">{n}</span>
+              <span className="uppercase tracking-[0.2em] text-ink/55">{pluralKind(k, n)}</span>
             </span>
           ))}
         </div>
@@ -1111,7 +1118,7 @@ export function ReviewStage({
           className="mb-6 w-full rounded-md border border-ink/15 bg-paper/60 px-3.5 py-2.5 text-[13px] text-ink outline-none focus:border-seal"
         />
 
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+        <DndContext id="tds-review-dnd" sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
           <SortableContext items={items} strategy={verticalListSortingStrategy}>
             <ul className="space-y-2">
               {blocks.map((b, i) => {
@@ -1185,6 +1192,12 @@ export function ReviewStage({
 const fld =
   "w-full rounded border border-ink/15 bg-paper/70 px-2.5 py-1.5 text-[12.5px] text-ink outline-none focus:border-seal placeholder:text-ink/30 transition-elegant";
 
+/** "2 days", "1 flight", "3 galleries" — block-kind labels as language. */
+function pluralKind(kind: string, n: number): string {
+  if (n === 1) return kind;
+  return kind === "gallery" ? "galleries" : `${kind}s`;
+}
+
 // Hoverable badge surfaced on `place` blocks whose parser/enricher
 // confidence is below 0.85. On hover/focus it explains what was
 // auto-filled and prompts the user to inspect the fields below.
@@ -1239,10 +1252,12 @@ function LowConfidenceBadge({
 function Field({
   icon,
   warn,
+  className = "",
   children,
 }: {
   icon?: React.ReactNode;
   warn?: boolean;
+  className?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -1251,7 +1266,7 @@ function Field({
         warn
           ? "border-amber-400/40 bg-amber-400/10"
           : "border-transparent"
-      }`}
+      } ${className}`}
     >
       {icon && (
         <span className="pointer-events-none absolute left-2 flex h-full items-center text-ink/40">
@@ -1393,13 +1408,17 @@ function BlockFields({
       return (
         <div className="space-y-1.5">
           <div className="flex gap-1.5">
+            {/* max-w + flex-none guarantee the day number stays a stub even
+                though fld opens with w-full (conflicting width utilities
+                resolve by stylesheet order, not class order) — the label
+                field takes the rest of the row. */}
             <input
-              className={`${fld} w-20`}
+              className={`${fld} w-20 max-w-20 flex-none`}
               type="number"
               value={block.n}
               onChange={(e) => onChange({ n: Number(e.target.value) } as Partial<Block>)}
             />
-            <Field warn={missing.has("label")}>
+            <Field warn={missing.has("label")} className="min-w-0 flex-1">
               <input
                 className={fld}
                 placeholder="Label (e.g. Bologna)"
