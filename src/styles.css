@@ -489,3 +489,11 @@
   content-visibility: auto;
   contain-intrinsic-size: auto 100%;
 }
+
+/* Mobile FlowScroller: default step is one small-viewport-height (stable
+ * across iOS URL bar transitions). In landscape / short viewports, compress
+ * so the 5-step flow doesn't feel endless on a phone held sideways. */
+.tds-flow-mobile { --tds-flow-step: 100svh; }
+@media (max-height: 500px) and (orientation: landscape) {
+  .tds-flow-mobile { --tds-flow-step: 80svh; }
+}
