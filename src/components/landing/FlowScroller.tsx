@@ -129,69 +129,71 @@ function DesktopFlow() {
 }
 
 function MobileFlow() {
-  // Vertical scroll-snap: the mobile flow becomes its own scroll
-  // container so the reader is guided step-by-step through 01 → 05
-  // before the page continues past the section. overscroll-behavior
-  // stays default so reaching the last step naturally releases scroll
-  // back to the document.
-  const scrollerRef = useRef<HTMLDivElement>(null);
-  const [active, setActive] = useState(0);
+  // Scroll-pin: the section is STEPS.length viewport-heights tall and
+  // holds a sticky 100dvh viewport that swaps step content based on the
+  // section's scrollYProgress. That means the user MUST scroll through
+  // the full 5×100dvh distance to leave the flow — there is no way to
+  // jump past it — while still using the document's native scroll (no
+  // hijacking, honors reduced motion, back/forward, and browser gestures).
+  const containerRef = useRef<HTMLElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end end"],
+  });
 
+  const [active, setActive] = useState(0);
   useEffect(() => {
-    const el = scrollerRef.current;
-    if (!el) return;
-    let raf = 0;
-    const onScroll = () => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => {
-        const i = Math.round(el.scrollTop / el.clientHeight);
-        setActive(Math.min(STEPS.length - 1, Math.max(0, i)));
-      });
-    };
-    el.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      el.removeEventListener("scroll", onScroll);
-      cancelAnimationFrame(raf);
-    };
-  }, []);
+    const unsub = scrollYProgress.on("change", (v) => {
+      // Map progress evenly across STEPS.length buckets.
+      const i = Math.min(
+        STEPS.length - 1,
+        Math.max(0, Math.floor(v * STEPS.length)),
+      );
+      setActive(i);
+    });
+    return () => unsub();
+  }, [scrollYProgress]);
+
+  const step = STEPS[active];
 
   return (
     <section
+      ref={containerRef}
       className="relative z-10 block md:hidden"
+      style={{ height: `${STEPS.length * 100}dvh` }}
       aria-label="How TravelDoss works"
     >
-      <div
-        ref={scrollerRef}
-        className="relative h-[100dvh] snap-y snap-mandatory overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-      >
-        {STEPS.map((step, i) => (
-          <div
-            key={step.n}
-            className="flex h-[100dvh] w-full shrink-0 snap-start snap-always flex-col justify-center gap-5 px-6 pb-16 pt-14"
-          >
-            <div className="flex items-center gap-3 text-[10px] font-medium uppercase tracking-[0.45em] text-ink/45">
-              <span className="text-seal">{step.n}</span>
-              <span className="h-px w-8 bg-ink/20" />
-              <span>{step.kicker}</span>
-            </div>
-            <h2
-              className="text-[11vw] font-normal leading-[0.95] tracking-[-0.02em] text-ink"
-              style={{ fontFamily: "var(--font-display)" }}
-            >
-              {step.title}
-            </h2>
-            <p className="max-w-md text-[13px] leading-relaxed text-ink-soft">
-              {step.body}
-            </p>
-            <Parallax depth={14} className="relative mt-2 h-[38vh] w-full">
-              <Visual variant={step.visual} index={i} />
-            </Parallax>
+      <div className="sticky top-0 h-[100dvh] w-full overflow-hidden">
+        <div className="flex h-full w-full flex-col justify-center gap-5 px-6 pb-20 pt-14">
+          <div className="flex items-center gap-3 text-[10px] font-medium uppercase tracking-[0.45em] text-ink/45">
+            <span className="text-seal">{step.n}</span>
+            <span className="h-px w-8 bg-ink/20" />
+            <span>{step.kicker}</span>
           </div>
-        ))}
+          <h2
+            key={`t-${step.n}`}
+            className="text-[11vw] font-normal leading-[0.95] tracking-[-0.02em] text-ink"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
+            {step.title}
+          </h2>
+          <p
+            key={`b-${step.n}`}
+            className="max-w-md text-[13px] leading-relaxed text-ink-soft"
+          >
+            {step.body}
+          </p>
+          <Parallax
+            key={`v-${step.n}`}
+            depth={14}
+            className="relative mt-2 h-[38vh] w-full"
+          >
+            <Visual variant={step.visual} index={active} />
+          </Parallax>
+        </div>
 
-        {/* Sticky rail: label + progress dots, so orientation stays
-            constant across the five snapped screens. */}
-        <div className="pointer-events-none sticky bottom-4 left-0 right-0 z-20 -mt-14 flex items-center justify-between px-6 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/45">
+        {/* Progress rail pinned to the sticky viewport. */}
+        <div className="pointer-events-none absolute bottom-5 left-0 right-0 z-20 flex items-center justify-between px-6 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/45">
           <span className="inline-flex items-center gap-2">
             <span className="text-seal">{String(active + 1).padStart(2, "0")}</span>
             <span className="text-ink/30">/ {String(STEPS.length).padStart(2, "0")}</span>
