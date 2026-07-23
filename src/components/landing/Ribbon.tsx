@@ -1,15 +1,17 @@
 import { Link } from "@tanstack/react-router";
-import { MapPin, BookOpen, Compass, Bookmark, Settings, UserCircle2 } from "lucide-react";
+import { BookOpen, Compass, UserCircle2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
-const items = [
-  { icon: MapPin, label: "Browse Places", to: "/app" as const },
-  { icon: BookOpen, label: "Templates", to: "/templates" as const },
-  { icon: Compass, label: "Past Trips", to: "/app" as const },
-  { icon: Bookmark, label: "Saved", to: "/app" as const },
-  { icon: Settings, label: "Settings", to: "/app" as const },
+/* The rail lists only destinations that actually exist (owner direction:
+   an option that doesn't exist shouldn't be present). Browse Places /
+   Saved / Settings all dead-ended at /app — four labels, one page. When
+   those pages ship, they earn their icons back. */
+const baseItems = [{ icon: BookOpen, label: "Templates", to: "/templates" as const }];
+const signedInItems = [
+  { icon: Compass, label: "My Trips", to: "/app" as const },
+  ...baseItems,
 ];
 
 function displayNameOf(user: User): string {
@@ -91,7 +93,7 @@ export function Ribbon() {
     >
       <IdentityChip user={user} />
       <nav className="mt-2 flex flex-col gap-0.5 border-t border-ink/10 pt-2">
-        {items.map(({ icon: Icon, label, to }) => (
+        {(user ? signedInItems : baseItems).map(({ icon: Icon, label, to }) => (
           <Link
             key={label}
             to={to}
