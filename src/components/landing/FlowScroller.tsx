@@ -242,10 +242,10 @@ function Counter({
 function Panel({ step, index, total }: { step: Step; index: number; total: number }) {
   return (
     <div
-      className="flex h-full shrink-0 items-center justify-center px-6 md:px-6 lg:px-8"
+      className="flex h-full shrink-0 items-start justify-center px-6 pt-6 md:px-6 md:pt-4 lg:px-8"
       style={{ width: `${100 / total}%` }}
     >
-      <div className="grid h-full w-full max-w-6xl grid-cols-1 items-center gap-8 md:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] md:gap-10 lg:gap-12">
+      <div className="grid h-full w-full max-w-6xl grid-cols-1 items-start gap-8 pt-2 md:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] md:gap-10 md:pt-4 lg:gap-12">
         {/* Copy */}
         <div className="space-y-5 md:space-y-6">
           <div className="flex items-center gap-4 text-[10px] font-medium uppercase tracking-[0.45em] text-ink/45">
