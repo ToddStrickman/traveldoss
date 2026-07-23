@@ -336,7 +336,13 @@ function DossierPage() {
   }, [save, trip.slug]);
 
   const queueSave = useCallback((patch: SavePatch) => {
-    if (!canEdit) return;
+    if (!canEdit) {
+      // The snapshot-sync effect re-sends the full snapshot once canEdit
+      // resolves, so a drop here is recoverable — but it must never be
+      // invisible while debugging "my edit vanished" reports.
+      if (import.meta.env.DEV) console.warn("[autosave] patch held — not editable yet", Object.keys(patch));
+      return;
+    }
     pendingPatch.current = { ...pendingPatch.current, ...patch };
     if (debounce.current) clearTimeout(debounce.current);
     setSaving(true);
@@ -427,8 +433,13 @@ function DossierPage() {
   const lastSyncedRef = useRef(snap);
   useEffect(() => {
     if (lastSyncedRef.current === snap) return;
-    lastSyncedRef.current = snap;
+    // Never consume a snapshot we didn't queue: canEdit is false for a beat
+    // on every load while ownership resolves, and an edit made in that window
+    // used to be marked "synced" here and then dropped forever. Leaving the
+    // ref on the last saved snapshot makes this effect re-fire (canEdit is a
+    // dep) and send the pending work the moment editing rights land.
     if (!canEdit) return;
+    lastSyncedRef.current = snap;
     queueSave({
       blocks: snap.blocks,
       templateId: snap.templateId,

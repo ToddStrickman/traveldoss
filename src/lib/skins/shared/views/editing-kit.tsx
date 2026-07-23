@@ -7,7 +7,7 @@ import type { PartOfDay } from "../itinerary";
 import { EditableText, useEditing } from "../Editable";
 import { MetaChip } from "@/components/studio/MetaChip";
 import { DayDateChip } from "../DayDateChip";
-import { LinkifiedText, PartHeading } from "./parts";
+import { LinkifiedText, PartHeading, useSlotSelectionApi } from "./parts";
 
 // ---------------------------------------------------------------------------
 // EDITABLE HERO — trip title, subtitle, meta rail (dates / travelers / pace /
@@ -315,8 +315,27 @@ type PlaceSeed = Partial<PlaceBlock>;
 
 export function useAddActivity(blocks: Block[]) {
   const { onBlockAdd, onBlocksReplace } = useEditing();
+  const slotSelection = useSlotSelectionApi();
   return useCallback((dayIndex: number, part: PartOfDay, seed: PlaceSeed = {}) => {
     const placeSeed = { name: "", category: "other" as const, ...seed };
+    const dayN = blocks[dayIndex]?.kind === "day"
+      ? (blocks[dayIndex] as Extract<Block, { kind: "day" }>).n
+      : undefined;
+    // A part with existing activities renders as the alternatives carousel,
+    // which shows ONE option at a time — an appended activity lands hidden
+    // behind the active pick and reads as "my activity didn't save". Reveal
+    // it: jump the slot's pick to the new option and say where it went.
+    const reveal = (priorCount: number) => {
+      if (priorCount > 0) slotSelection?.setPick(`${dayIndex}:${part}`, priorCount);
+      const partLabel = part[0].toUpperCase() + part.slice(1);
+      toast.success("Activity added", {
+        description:
+          priorCount > 0
+            ? `Now showing as option ${priorCount + 1} of ${priorCount + 1} — ${partLabel}${dayN ? `, Day ${dayN}` : ""}.`
+            : `${partLabel}${dayN ? `, Day ${dayN}` : ""}.`,
+        duration: 2600,
+      });
+    };
     let dayEnd = blocks.length;
     for (let i = dayIndex + 1; i < blocks.length; i++) {
       if (blocks[i].kind === "day") { dayEnd = i; break; }
@@ -328,18 +347,21 @@ export function useAddActivity(blocks: Block[]) {
     }
     if (sectionIdx !== -1) {
       let insertAfter = sectionIdx;
+      let priorCount = 0;
       for (let i = sectionIdx + 1; i < dayEnd; i++) {
         const b = blocks[i];
         if (b.kind === "section") break;
-        if (b.kind === "place") insertAfter = i;
+        if (b.kind === "place") { insertAfter = i; priorCount += 1; }
       }
       onBlockAdd(insertAfter, "place", placeSeed);
+      reveal(priorCount);
       return;
     }
     const PART_ORDER: Record<PartOfDay, number> = { morning: 0, afternoon: 1, evening: 2 };
     if (!onBlocksReplace) {
       onBlockAdd(dayEnd - 1, "section", { title: part[0].toUpperCase() + part.slice(1), partOfDay: part });
       onBlockAdd(dayEnd, "place", placeSeed);
+      reveal(0);
       return;
     }
     let insertAt = dayEnd;
@@ -355,7 +377,8 @@ export function useAddActivity(blocks: Block[]) {
       { kind: "place", ...placeSeed },
     );
     onBlocksReplace(next);
-  }, [blocks, onBlockAdd, onBlocksReplace]);
+    reveal(0);
+  }, [blocks, onBlockAdd, onBlocksReplace, slotSelection]);
 }
 
 export function useAddDay(blocks: Block[]) {

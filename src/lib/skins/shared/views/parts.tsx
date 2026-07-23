@@ -1480,6 +1480,13 @@ export function SlotSelectionProvider({ children }: { children: ReactNode }) {
   return <SlotSelectionContext.Provider value={api}>{children}</SlotSelectionContext.Provider>;
 }
 
+/** Imperative access to slot picks for code that changes a slot's contents
+ *  (e.g. add-activity needs the carousel to reveal the option it just
+ *  created — an addition the user can't see reads as a failed save). */
+export function useSlotSelectionApi() {
+  return useContext(SlotSelectionContext);
+}
+
 function useSlotSelection(slotKey: string | undefined, total: number) {
   const ctx = useContext(SlotSelectionContext);
   const [fallback, setFallback] = useState(0);
