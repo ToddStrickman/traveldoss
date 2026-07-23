@@ -60,7 +60,10 @@
 }
 .tds-flightstrip-row {
   display: grid;
-  grid-template-columns: 132px minmax(140px, 1fr) minmax(0, 2.4fr);
+  /* Route hugs its content (auto) instead of holding a fixed 1fr share:
+     "JFK → LIS" was keeping dead space while Carrier/Date ellipsized in
+     the fields track beside it. Freed space flows to the data. */
+  grid-template-columns: 132px auto minmax(0, 1fr);
   align-items: center;
   gap: 20px;
   padding: 16px 20px;
@@ -84,15 +87,20 @@
   white-space: nowrap;
 }
 .tds-flightstrip-fields {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
-  gap: 0;
+  /* Wrap-friendly flex, not equal grid shares: each field takes its
+     natural width ("TAP Air Portugal TP204" fits whole), leftover space
+     is shared, and a genuinely tight row wraps to a second line rather
+     than ellipsizing data the traveler needs verbatim. */
+  display: flex;
+  flex-wrap: wrap;
+  row-gap: 6px;
   margin: 0;
 }
 .tds-flightstrip-field {
   padding: 2px 14px;
   border-left: 1px solid var(--tds-rule);
   display: flex; flex-direction: column; gap: 3px;
+  flex: 1 0 auto;
   min-width: 0;
 }
 .tds-flightstrip-field:first-child { border-left: 0; padding-left: 0; }
