@@ -5,7 +5,7 @@ import { suggestLocation, type LocationSuggestion } from "@/lib/itinerary/sugges
 import { useDayMap } from "../day-map-context";
 import { toast } from "sonner";
 import type { Block, TripView, TripMeta } from "../../types";
-import type { PartOfDay } from "../itinerary";
+import { buildItinerary, type PartOfDay } from "../itinerary";
 import { EditableText, useEditing } from "../Editable";
 import { MetaChip } from "@/components/studio/MetaChip";
 import { DayDateChip } from "../DayDateChip";
@@ -284,16 +284,24 @@ export function useAddActivity(blocks: Block[]) {
     // which shows ONE option at a time — an appended activity lands hidden
     // behind the active pick and reads as "my activity didn't save". Reveal
     // it: jump the slot's pick to the new option and say where it went.
-    const reveal = (priorCount: number) => {
-      if (priorCount > 0) slotSelection?.setPick(`${dayIndex}:${part}`, priorCount);
+    // The position MUST come from buildItinerary on the post-insert blocks —
+    // the rendered list excludes shadow-tier places and pulls in sectionless
+    // time-bucketed ones, so a raw block scan points at the wrong option.
+    const reveal = (nextBlocks: Block[], newBlockIndex: number) => {
       const partLabel = part[0].toUpperCase() + part.slice(1);
-      toast.success("Activity added", {
-        description:
-          priorCount > 0
-            ? `Now showing as option ${priorCount + 1} of ${priorCount + 1} — ${partLabel}${dayN ? `, Day ${dayN}` : ""}.`
-            : `${partLabel}${dayN ? `, Day ${dayN}` : ""}.`,
-        duration: 2600,
-      });
+      const where = `${partLabel}${dayN ? `, Day ${dayN}` : ""}`;
+      const day = buildItinerary(nextBlocks).days.find((d) => d.dayIndex === dayIndex);
+      const list = day?.[part] ?? [];
+      const pos = list.findIndex((entry) => entry.index === newBlockIndex);
+      if (pos >= 0 && list.length > 1) {
+        slotSelection?.setPick(`${dayIndex}:${part}`, pos);
+        toast.success("Activity added", {
+          description: `Now showing as option ${pos + 1} of ${list.length} — ${where}.`,
+          duration: 2600,
+        });
+      } else {
+        toast.success("Activity added", { description: `${where}.`, duration: 2600 });
+      }
     };
     let dayEnd = blocks.length;
     for (let i = dayIndex + 1; i < blocks.length; i++) {
@@ -306,21 +314,27 @@ export function useAddActivity(blocks: Block[]) {
     }
     if (sectionIdx !== -1) {
       let insertAfter = sectionIdx;
-      let priorCount = 0;
       for (let i = sectionIdx + 1; i < dayEnd; i++) {
         const b = blocks[i];
         if (b.kind === "section") break;
-        if (b.kind === "place") { insertAfter = i; priorCount += 1; }
+        if (b.kind === "place") insertAfter = i;
       }
       onBlockAdd(insertAfter, "place", placeSeed);
-      reveal(priorCount);
+      const next: Block[] = blocks.slice();
+      next.splice(insertAfter + 1, 0, { kind: "place", ...placeSeed } as Block);
+      reveal(next, insertAfter + 1);
       return;
     }
     const PART_ORDER: Record<PartOfDay, number> = { morning: 0, afternoon: 1, evening: 2 };
     if (!onBlocksReplace) {
       onBlockAdd(dayEnd - 1, "section", { title: part[0].toUpperCase() + part.slice(1), partOfDay: part });
       onBlockAdd(dayEnd, "place", placeSeed);
-      reveal(0);
+      const next: Block[] = blocks.slice();
+      next.splice(dayEnd, 0,
+        { kind: "section", title: part[0].toUpperCase() + part.slice(1), partOfDay: part } as Block,
+        { kind: "place", ...placeSeed } as Block,
+      );
+      reveal(next, dayEnd + 1);
       return;
     }
     let insertAt = dayEnd;
@@ -336,7 +350,7 @@ export function useAddActivity(blocks: Block[]) {
       { kind: "place", ...placeSeed },
     );
     onBlocksReplace(next);
-    reveal(0);
+    reveal(next, insertAt + 1);
   }, [blocks, onBlockAdd, onBlocksReplace, slotSelection]);
 }
 
@@ -618,8 +632,11 @@ function TimeSelect({
   const listRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     if (!open || value.trim()) return;
-    const nine = listRef.current?.querySelector<HTMLElement>('[data-time="09:00"]');
-    nine?.scrollIntoView({ block: "start" });
+    // Scroll the LIST only — scrollIntoView walks every scrollable ancestor
+    // and could yank the page itself when the field gains focus.
+    const list = listRef.current;
+    const nine = list?.querySelector<HTMLElement>('[data-time="09:00"]');
+    if (list && nine) list.scrollTop = nine.offsetTop - list.offsetTop;
   }, [open, value]);
   useEffect(() => {
     if (!open) return;
@@ -745,7 +762,14 @@ export function InlineActivityEditor({
   const queueSuggest = (activityName: string) => {
     if (suggestTimer.current) clearTimeout(suggestTimer.current);
     const trimmed = activityName.trim();
-    if (trimmed.length < 3) { setSuggestion(null); return; }
+    if (trimmed.length < 3) {
+      // Invalidate any in-flight lookup too — without the bump, a slow
+      // response for the OLD name would resurface after this clear and
+      // could be silently saved against a name it no longer matches.
+      suggestSeq.current++;
+      setSuggestion(null);
+      return;
+    }
     suggestTimer.current = setTimeout(() => {
       const seq = ++suggestSeq.current;
       suggest({

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
 import { InViewLazy } from "@/components/landing/InViewLazy";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
@@ -31,7 +31,9 @@ import { ActionDock } from "@/components/landing/ActionDock";
 import { Parallax } from "@/components/motion/Tilt";
 import { SKINS, type SkinModule } from "@/lib/skins/registry";
 import type { Block } from "@/lib/skins/types";
-import { createTripFromIngestion } from "@/lib/trips.functions";
+import { createTripFromIngestion, listTrips } from "@/lib/trips.functions";
+import { getTemporalPhase } from "@/lib/itinerary/temporal";
+import { MobileNavBar } from "@/components/mobile/MobileNavBar";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { SITE_URL } from "@/lib/site";
@@ -94,6 +96,56 @@ function Landing() {
   const [pendingSlug, setPendingSlug] = useState<string | null>(null);
   const create = useServerFn(createTripFromIngestion);
   const navigate = useNavigate();
+
+  // Signed-in visitors get trip-aware CTAs: a LIVE trip outranks an
+  // upcoming one outranks minting something new. Failures degrade to the
+  // signed-out layout — the landing never blocks on this fetch.
+  type TripLite = {
+    slug: string;
+    destination: string;
+    start_date: string | null;
+    end_date: string | null;
+  };
+  const fetchTrips = useServerFn(listTrips);
+  const [myTrips, setMyTrips] = useState<TripLite[] | null>(null);
+  useEffect(() => {
+    if (!signedIn) {
+      setMyTrips(null);
+      return;
+    }
+    let alive = true;
+    fetchTrips()
+      .then((r) => {
+        if (alive) setMyTrips((r.trips ?? []) as TripLite[]);
+      })
+      .catch(() => {
+        if (alive) setMyTrips([]);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [signedIn, fetchTrips]);
+  const tripCtas = useMemo(() => {
+    if (!myTrips) return null;
+    let live: TripLite | null = null;
+    let upcoming: TripLite | null = null;
+    // Local-day string (toISOString is UTC and misclassifies for part of
+    // the day). ">= today" — not ">" — so a trip starting today that the
+    // (UTC-parsed) phase check hasn't flipped to active yet still shows as
+    // Upcoming instead of falling into neither bucket.
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const today = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+    for (const t of myTrips) {
+      const phase = getTemporalPhase(t.start_date, t.end_date);
+      if (phase === "active") {
+        if (!live) live = t;
+      } else if (t.start_date && t.start_date >= today) {
+        if (!upcoming || t.start_date < (upcoming.start_date ?? "")) upcoming = t;
+      }
+    }
+    return { live, upcoming };
+  }, [myTrips]);
 
   // As soon as the server returns a slug, navigate — don't wait on the
   // loader's cosmetic step timing. The loader unmounts on route change.
@@ -293,7 +345,10 @@ function Landing() {
         />
         </Parallax>
 
-        {/* Editorial CTA */}
+        {/* Editorial CTAs. Signed-out: the single template invitation.
+            Signed-in: the journey ladder — a LIVE trip outranks an upcoming
+            one outranks minting anew; buttons only exist when their trip
+            does. All share the numbered surface-card language (no pills). */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -303,20 +358,75 @@ function Landing() {
           // clamp(240px, 24vw, 460px). Subtracting it keeps the VISIBLE gap
           // to the inscription at ~40px on every viewport; a fixed margin
           // reads too loose on small screens and too tight on large ones.
-          className="relative mt-[calc(40px_-_clamp(52px,5.2vw,99px))]"
+          className="relative mt-[calc(40px_-_clamp(52px,5.2vw,99px))] flex flex-col items-center gap-3"
         >
-          <Link
-            to="/templates"
-            className="group surface-card relative inline-flex items-center gap-5 rounded-md py-5 pl-5 pr-3 text-[11px] font-medium uppercase tracking-[0.4em] text-ink transition-elegant hover:text-seal"
-          >
-            <span className="text-seal/70 transition-elegant group-hover:text-seal">01</span>
-            <span>Pick a dossier template</span>
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-sm border border-white/10 bg-paper/40 transition-elegant group-hover:border-seal group-hover:bg-seal group-hover:text-paper">
-              <svg className="h-3.5 w-3.5 transition-transform duration-500 group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M5 12h14M13 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </span>
-          </Link>
+          {(() => {
+            const arrow = (
+              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-sm border border-white/10 bg-paper/40 transition-elegant group-hover:border-seal group-hover:bg-seal group-hover:text-paper">
+                <svg className="h-3.5 w-3.5 transition-transform duration-500 group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M5 12h14M13 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </span>
+            );
+            const ctaCls =
+              "group surface-card relative inline-flex w-full max-w-md items-center gap-5 rounded-md py-5 pl-5 pr-3 text-[11px] font-medium uppercase tracking-[0.4em] text-ink transition-elegant hover:text-seal sm:w-auto sm:min-w-[380px]";
+            const rows: ReactNode[] = [];
+            let n = 0;
+            const num = () => String(++n).padStart(2, "0");
+            if (tripCtas?.live) {
+              rows.push(
+                <Link
+                  key="live"
+                  to="/t/$slug"
+                  params={{ slug: tripCtas.live.slug }}
+                  className={`${ctaCls} td-live-glow`}
+                  aria-label={`Open your live trip to ${tripCtas.live.destination}`}
+                >
+                  <span className="text-seal/70 transition-elegant group-hover:text-seal">{num()}</span>
+                  <span className="flex min-w-0 flex-1 flex-col items-start gap-1 text-left normal-case tracking-normal">
+                    <span className="inline-flex items-center gap-2 text-[9px] font-semibold uppercase tracking-[0.4em] text-seal">
+                      <span aria-hidden className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-seal" />
+                      Live now
+                    </span>
+                    <span className="truncate font-serif text-lg normal-case tracking-normal">{tripCtas.live.destination}</span>
+                  </span>
+                  {arrow}
+                </Link>,
+              );
+            }
+            if (tripCtas?.upcoming) {
+              rows.push(
+                <Link
+                  key="upcoming"
+                  to="/t/$slug"
+                  params={{ slug: tripCtas.upcoming.slug }}
+                  className={ctaCls}
+                  aria-label={`Open your upcoming trip to ${tripCtas.upcoming.destination}`}
+                >
+                  <span className="text-seal/70 transition-elegant group-hover:text-seal">{num()}</span>
+                  <span className="flex min-w-0 flex-1 flex-col items-start gap-1 text-left">
+                    <span className="text-[9px] font-semibold uppercase tracking-[0.4em] text-ink/50">
+                      Upcoming{tripCtas.upcoming.start_date
+                        ? ` · ${new Date(`${tripCtas.upcoming.start_date}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`
+                        : ""}
+                    </span>
+                    <span className="truncate font-serif text-lg normal-case tracking-normal">{tripCtas.upcoming.destination}</span>
+                  </span>
+                  {arrow}
+                </Link>,
+              );
+            }
+            rows.push(
+              <Link key="new" to="/templates" className={ctaCls}>
+                <span className="text-seal/70 transition-elegant group-hover:text-seal">{num()}</span>
+                <span className="flex-1 text-left">
+                  {rows.length > 0 ? "Mint a new dossier" : "Pick a dossier template"}
+                </span>
+                {arrow}
+              </Link>,
+            );
+            return rows;
+          })()}
         </motion.div>
 
         {/* Dictionary definition — the site's quotable, extractable answer to
@@ -400,7 +510,11 @@ function Landing() {
           ))}
         </div>
         </div>
+        {/* Clearance for the fixed mobile nav bar. */}
+        <div aria-hidden className="h-16 md:hidden" />
       </main>
+
+      <MobileNavBar />
 
       <InViewLazy
         load={loadInfiniteDocs}

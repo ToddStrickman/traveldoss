@@ -510,3 +510,28 @@
 @media (max-height: 500px) and (orientation: landscape) {
   .tds-flow-mobile { --tds-flow-step: 80svh; }
 }
+
+/* Live-trip CTA: the same breathing halo language as the Mint CTA — one
+   glow vocabulary across the app for "this is where your eye goes". */
+.td-live-glow {
+  isolation: isolate;
+}
+.td-live-glow::after {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  z-index: -1;
+  border-radius: 12px;
+  pointer-events: none;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in oklab, var(--seal) 38%, transparent),
+    color-mix(in oklab, var(--seal) 16%, transparent) 55%,
+    transparent 78%
+  );
+  filter: blur(9px);
+  animation: td-mint-halo 3s ease-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .td-live-glow::after { animation: none; opacity: 0.4; transform: none; }
+}

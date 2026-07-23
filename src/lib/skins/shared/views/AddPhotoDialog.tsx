@@ -115,11 +115,18 @@ export function AddPhotoDialog({
         className="tds-addphoto-panel"
         data-dropping={dropping || undefined}
         onDragOver={(e) => {
-          if (e.dataTransfer?.types?.includes("Files")) { e.preventDefault(); setDropping(true); }
+          if (e.dataTransfer?.types?.includes("Files")) {
+            e.preventDefault();
+            e.stopPropagation();
+            setDropping(true);
+          }
         }}
         onDragLeave={() => setDropping(false)}
         onDrop={(e) => {
           e.preventDefault();
+          // The host carousel has its own drop handler; without this the
+          // same drop uploads every file twice.
+          e.stopPropagation();
           setDropping(false);
           void uploader.onFiles(e.dataTransfer?.files ?? null);
         }}

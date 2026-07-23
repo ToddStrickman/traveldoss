@@ -2,6 +2,8 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { listTrips } from "@/lib/trips.functions";
+import { getTemporalPhase } from "@/lib/itinerary/temporal";
+import { MobileNavBar } from "@/components/mobile/MobileNavBar";
 import { supabase } from "@/integrations/supabase/client";
 import { LogOut, Plus, ArrowUpRight } from "lucide-react";
 
@@ -129,7 +131,21 @@ function Dashboard() {
                   >
                     <div className="flex items-center justify-between td-eyebrow text-ink/35">
                       <span>№ {String(i + 1).padStart(2, "0")}</span>
-                      <span className="capitalize text-ink/45">{t.status}</span>
+                      {(() => {
+                        // Temporal truth beats workflow status on the card:
+                        // "is this trip happening?" is the traveler's question.
+                        const phase = getTemporalPhase(t.start_date, t.end_date);
+                        if (phase === "active") {
+                          return (
+                            <span className="inline-flex items-center gap-1.5 font-semibold text-seal">
+                              <span aria-hidden className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-seal" />
+                              Live now
+                            </span>
+                          );
+                        }
+                        if (phase === "archive") return <span className="text-ink/45">Past</span>;
+                        return <span className="capitalize text-ink/45">{t.status}</span>;
+                      })()}
                     </div>
                     <h2 className="td-headline mt-5 text-3xl text-ink">
                       {t.destination}
@@ -152,7 +168,11 @@ function Dashboard() {
             </ul>
           )}
         </div>
+        {/* Clearance for the fixed mobile nav bar. */}
+        <div aria-hidden className="h-16 md:hidden" />
       </main>
+
+      <MobileNavBar />
     </div>
   );
 }

@@ -293,6 +293,15 @@ export function ActivityImages({
   const [lightboxAt, setLightboxAt] = useState<number | null>(null);
   const [dropping, setDropping] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
+  // Close the add dialog from HERE when a photo lands: the 0→1 transition
+  // swaps the empty-state branch for the carousel branch, remounting the
+  // dialog — its own busy-transition close never fires across that remount.
+  const imgCount = images?.length ?? 0;
+  const prevImgCount = useRef(imgCount);
+  useEffect(() => {
+    if (imgCount > prevImgCount.current) setAddOpen(false);
+    prevImgCount.current = imgCount;
+  }, [imgCount]);
   const inert = useInertRender();
   const realUsable = useMemo(
     () => (images ?? []).filter((im) => im.src && !failed.has(im.src)),
