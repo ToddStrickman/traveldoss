@@ -13,7 +13,7 @@
  *                                   window.__tdsSaveLog so specs can assert
  *                                   "this edit produced a save intent".
  */
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { FALLBACK_SKIN, getSkin } from "@/lib/skins/registry";
 import type { Block, SkinView, TripMeta, TripView } from "@/lib/skins/types";
@@ -120,9 +120,29 @@ function DossierHarness() {
     };
   }, [search.edit]);
   // ?bar=mint exercises the sample-mode bottom bar + mint sheet without a DB.
-  const sampleBar =
-    typeof window !== "undefined" &&
-    new URLSearchParams(window.location.search).get("bar") === "mint";
+  // ?bar=save shows the owner bar with a fake autosave heartbeat so the
+  // saved-check animation can be reviewed without auth.
+  const barParam =
+    typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search).get("bar")
+      : null;
+  const sampleBar = barParam === "mint";
+  const saveBar = barParam === "save";
+  const [fakeSavedAt, setFakeSavedAt] = useState<string | null>(null);
+  const [fakeSaving, setFakeSaving] = useState(false);
+  useEffect(() => {
+    if (!saveBar) return;
+    const tick = () => {
+      setFakeSaving(true);
+      window.setTimeout(() => {
+        setFakeSaving(false);
+        setFakeSavedAt(new Date().toISOString());
+      }, 900);
+    };
+    tick();
+    const h = window.setInterval(tick, 5000);
+    return () => window.clearInterval(h);
+  }, [saveBar]);
 
   return (
     <>
@@ -150,6 +170,14 @@ function DossierHarness() {
           onTemplateChange={() => {}}
           onMint={() => setMintOpen(true)}
           mintLabel="Mint"
+        />
+      ) : saveBar ? (
+        <StudioBar
+          leadingSlot={<ViewPill variant="inline" value={layout} onChange={setLayout} />}
+          templateId={skin.meta.id}
+          saving={fakeSaving}
+          savedAt={fakeSavedAt}
+          onTemplateChange={() => {}}
         />
       ) : (
         <ViewPill value={layout} onChange={setLayout} />

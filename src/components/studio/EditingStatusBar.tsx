@@ -13,6 +13,7 @@
  */
 import * as React from "react";
 import { SharedDossierCard } from "./SharedDossierCard";
+import { SavedCheck } from "./SavedCheck";
 import { cn } from "@/lib/utils";
 
 type SaveState = {
@@ -23,31 +24,14 @@ type SaveState = {
 
 function SaveStatus({ saving, savedAt, saveError, editing }: SaveState & { editing: boolean }) {
   if (!editing) return null;
-  const label = saveError
-    ? "Offline — waiting"
-    : saving
-      ? "Saving…"
-      : savedAt
-        ? "All changes synced"
-        : "Auto-saves as you type";
   return (
-    <span
-      className={cn(
-        "hidden items-center gap-2 text-[10px] font-medium uppercase tracking-[0.28em] sm:inline-flex",
-        saveError ? "text-red-500" : "text-ink-soft",
-      )}
-      role={saveError ? "alert" : "status"}
-      aria-live="polite"
-    >
-      <span
-        aria-hidden
-        className={cn(
-          "inline-block h-1.5 w-1.5 rounded-full",
-          saveError ? "animate-pulse bg-red-500" : saving ? "animate-pulse bg-seal" : "bg-seal/60",
-        )}
-      />
-      {label}
-    </span>
+    <SavedCheck
+      saving={saving}
+      savedAt={savedAt}
+      saveError={saveError}
+      idleLabel="Auto-saves as you type"
+      className="hidden sm:inline-flex"
+    />
   );
 }
 

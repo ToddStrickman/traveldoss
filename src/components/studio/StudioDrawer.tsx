@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { SavedCheck } from "@/components/studio/SavedCheck";
 import {
   DndContext,
   PointerSensor,
@@ -125,9 +126,8 @@ export function StudioDrawer({
             </option>
           ))}
         </select>
-        <div className="mt-2 flex items-center justify-between text-[10px] uppercase tracking-[0.3em] text-ink/40">
-          <span>{saving ? "Saving…" : savedAt ? `Saved · ${new Date(savedAt).toLocaleTimeString()}` : "Not saved yet"}</span>
-          <span className="h-1.5 w-1.5 rounded-full bg-seal" />
+        <div className="mt-2 flex items-center justify-between">
+          <SavedCheck saving={saving} savedAt={savedAt} idleLabel="Not saved yet" />
         </div>
       </div>
 
