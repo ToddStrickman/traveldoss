@@ -3341,3 +3341,73 @@ button.tds-add-day[data-burst] .tds-add-day-plus {
 @media (prefers-reduced-motion: reduce) {
   .tds-day-photos-btn::after { animation: none; opacity: 0; }
 }
+
+/* ------------------------------------------------------------------ */
+/* TOP SCROLLBAR — dotted route line + paper-plane thumb, shown above   */
+/* horizontal scrollers whenever they overflow.                         */
+/* ------------------------------------------------------------------ */
+.tds-topscroll {
+  position: relative;
+  height: 26px;
+  margin: 2px 0 6px;
+  cursor: pointer;
+  touch-action: none;
+}
+.tds-topscroll-route {
+  position: absolute; left: 0; right: 0; top: 50%;
+  height: 0;
+  border-top: 2px dotted color-mix(in oklab, var(--tds-ink) 28%, transparent);
+  transform: translateY(-50%);
+}
+.tds-topscroll-thumb {
+  position: absolute; top: 0; bottom: 0;
+  display: flex; align-items: center;
+  min-width: 44px;
+  padding: 0;
+  border: 0; background: transparent;
+  color: var(--tds-accent);
+  cursor: grab;
+  touch-action: none;
+}
+.tds-topscroll-thumb:active { cursor: grabbing; }
+/* The thumb's visible body: a soft accent lozenge tracing the route. */
+.tds-topscroll-thumb::before {
+  content: "";
+  position: absolute; left: 0; right: 0; top: 50%;
+  height: 6px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--tds-accent) 30%, transparent);
+  transform: translateY(-50%);
+  transition: background .18s ease, height .18s ease;
+}
+.tds-topscroll-thumb:hover::before,
+.tds-topscroll-thumb:active::before {
+  background: color-mix(in oklab, var(--tds-accent) 55%, transparent);
+  height: 8px;
+}
+.tds-topscroll-thumb:focus-visible {
+  outline: none;
+}
+.tds-topscroll-thumb:focus-visible::before {
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--tds-accent) 55%, transparent);
+}
+.tds-topscroll-plane {
+  position: absolute; right: -4px; top: 50%;
+  width: 18px; height: 18px;
+  transform: translateY(-50%) rotate(8deg);
+  background: var(--tds-bg);
+  border-radius: 999px;
+  padding: 1px;
+  transition: transform .25s cubic-bezier(.34, 1.56, .64, 1);
+}
+.tds-topscroll-thumb:hover .tds-topscroll-plane,
+.tds-topscroll-thumb:active .tds-topscroll-plane {
+  transform: translateY(-50%) rotate(0deg) scale(1.15);
+}
+@media (pointer: coarse) {
+  .tds-topscroll { height: 34px; }
+  .tds-topscroll-plane { width: 22px; height: 22px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tds-topscroll-plane { transition: none; }
+}

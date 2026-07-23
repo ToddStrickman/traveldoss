@@ -1,6 +1,7 @@
 import type { Block, GalleryImage, TripView } from "../../types";
 import { buildItinerary, PART_LABEL } from "../itinerary";
 import { ActivityCell, PART_ICON, CarouselLightbox } from "./parts";
+import { TopScrollbar } from "./TopScrollbar";
 import { ActivityDndContext, DraggableActivity, DroppableBucket } from "./dnd";
 import type { PartOfDay } from "../itinerary";
 import { ShadowItinerary, PlanBCue } from "../ShadowItinerary";
@@ -9,7 +10,7 @@ import { useEditing } from "../Editable";
 import { Pencil, Copy, Check, ChevronDown, ExternalLink, Images } from "lucide-react";
 import { FlightEditSheet } from "../ActivityEditSheet";
 import { AirfareIcon } from "../CategoryIcon";
-import { useCallback, useState, type ReactNode } from "react";
+import { useCallback, useRef, useState, type ReactNode } from "react";
 import { airportTzLabel, flightDuration } from "../airportTz";
 import {
   EditableHero,
@@ -239,6 +240,20 @@ function collectDayPhotos(d: GridDay): GalleryImage[] {
   return out;
 }
 
+/** Desktop table scroll wrapper: owns the ref the route-line scrollbar
+ *  drives; the scrollbar renders only when the table actually overflows. */
+function DayTableScroll({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  return (
+    <div className="tds-grid-desktop-only">
+      <TopScrollbar targetRef={ref} ariaLabel="Scroll this day's schedule" />
+      <div className="tds-table-scroll" ref={ref}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
 /** Small shimmer-swept icon in the grid's day header: signals that this
  *  day carries photos; opens them in the fullscreen lightbox carousel. */
 function DayPhotosButton({ d }: { d: GridDay }) {
@@ -366,8 +381,10 @@ export function GridView({ trip, blocks }: { trip: TripView; blocks: Block[] }) 
           />
           <PlanBCue count={d.shadows.length} />
 
-          {/* Desktop: dense 3-col table. Hidden on mobile via CSS. */}
-          <div className="tds-table-scroll tds-grid-desktop-only">
+          {/* Desktop: dense 3-col table. Hidden on mobile via CSS. The
+              scroll wrapper gets a route-line scrollbar on top whenever the
+              table is wider than the viewport. */}
+          <DayTableScroll>
           <table className="tds-table tds-table-day">
             <thead>
               <tr>
@@ -423,7 +440,7 @@ export function GridView({ trip, blocks }: { trip: TripView; blocks: Block[] }) 
               </tr>
             </tbody>
           </table>
-          </div>
+          </DayTableScroll>
 
           {/* Mobile: stacked cards per part-of-day. */}
           <div className="tds-grid-stack tds-grid-mobile-only">

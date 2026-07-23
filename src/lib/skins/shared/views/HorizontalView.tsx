@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Block, TripView } from "../../types";
 import { buildItinerary, type PartOfDay } from "../itinerary";
 import { ActivityCard, FlightStrip, partOrder } from "./parts";
+import { TopScrollbar } from "./TopScrollbar";
 import { ActivityDndContext, DraggableActivity, DroppableBucket } from "./dnd";
 import { ShadowItinerary, PlanBCue } from "../ShadowItinerary";
 import { BlankDayScaffold, isScaffoldTriggered } from "../BlankDayScaffold";
@@ -101,6 +102,11 @@ export function HorizontalView({ trip, blocks }: { trip: TripView; blocks: Block
           ))}
         </nav>
       ) : null}
+
+      {/* Route-line scrollbar ABOVE the board: the native bar sits at the
+          bottom of a 60vh scroller, so reaching more days used to mean
+          "scroll down to scroll sideways". Appears only on overflow. */}
+      <TopScrollbar targetRef={scrollerRef} ariaLabel="Scroll across days" />
 
       <ActivityDndContext blocks={blocks}>
         <div className="tds-board" role="list" ref={scrollerRef}>
