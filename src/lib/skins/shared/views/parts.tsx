@@ -740,8 +740,9 @@ const CarouselSlide = (() => {
 
 /** Fullscreen lightbox for the day-image carousel. Tap-to-open, prev/next
  *  controls, keyboard navigation, click-to-toggle zoom (1x <-> 2.25x),
- *  drag-to-pan while zoomed, wheel-to-zoom on desktop, Esc to close. */
-function CarouselLightbox({
+ *  drag-to-pan while zoomed, wheel-to-zoom on desktop, Esc to close.
+ *  Exported: the grid view's per-day photos button reuses it. */
+export function CarouselLightbox({
   images,
   startIndex,
   onClose,
@@ -1001,8 +1002,15 @@ function buildDetailRows(a: ActivityBlock): DetailRow[] {
     rows.push({ key: k, label, value, glyph, href });
   };
 
-  // Universal contact / location
-  push("address", "Address", a.address, <GlyphPin />, a.mapsUrl);
+  // Universal contact / location. A suggester-filled address is honestly
+  // labelled — "(suggested)" — so the traveler knows to confirm it.
+  push(
+    "address",
+    "Address",
+    a.address ? (a.addressSuggested ? `(suggested) ${a.address}` : a.address) : undefined,
+    <GlyphPin />,
+    a.mapsUrl,
+  );
   push("phone", "Phone", a.phone, <GlyphPhone />, a.phone ? `tel:${a.phone.replace(/[^+\d]/g, "")}` : undefined);
   // Links never display as raw URLs: resolved title → place name → domain.
   push(

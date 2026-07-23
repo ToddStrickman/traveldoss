@@ -968,20 +968,33 @@ button.tds-add-day[data-burst] .tds-add-day-plus {
     width: 32px; height: 32px;
     padding: 0; margin-left: auto;
     background: transparent;
-    border: 1px solid var(--tds-rule);
+    /* Borderless (owner direction): the cloche is the control — the ring
+       read as a badge and dulled the icon. Hover/press feedback below. */
+    border: 0;
     border-radius: 999px;
     color: var(--tds-ink);
     cursor: pointer;
     flex: 0 0 auto;
+    transition: transform .18s cubic-bezier(.34, 1.56, .64, 1), color .18s ease;
   }
+  .tds-collapse-btn:hover { color: var(--tds-accent); }
+  .tds-collapse-btn:active { transform: scale(.9); }
   .tds-collapse-btn:focus-visible {
     outline: none;
     box-shadow: 0 0 0 2px color-mix(in oklab, var(--tds-accent) 55%, transparent);
   }
-  .tds-collapse-btn--part { width: auto; height: 32px; padding: 0 8px; }
+  /* Part variant sits DIRECTLY beside its label ("Morning ⌃") instead of
+     stranded at the right edge — the control shouldn't travel when the
+     section opens and closes. */
+  .tds-collapse-btn--part { width: auto; height: 32px; padding: 0 8px; margin-left: 0; }
   /* On mobile, ensure comfortable touch target. */
   @media (pointer: coarse) {
-    .tds-collapse-btn--part { min-height: 32px; }
+    .tds-collapse-btn--part { min-height: 44px; }
+    .tds-collapse-btn { width: 44px; height: 44px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tds-collapse-btn { transition: none; }
+    .tds-collapse-btn:active { transform: none; }
   }
 
   /* Universal chevron next to the cloche — the affordance signal. */
@@ -1027,9 +1040,10 @@ button.tds-add-day[data-burst] .tds-add-day-plus {
   }
   .tds-cloche-hand--stem { stroke-width: 1; }
 
-  /* Dome + hand: lift as one group when OPEN (default). */
+  /* Dome + hand: lift as one group when OPEN (default). Lift is generous —
+     at 16px the old 6px travel was too subtle to read as "the lid is off". */
   .tds-cloche-dome {
-    transform: translateY(-6px);
+    transform: translateY(-8px);
     transition: transform .5s cubic-bezier(.34, 1.56, .64, 1);
     transform-origin: 16px 16px;
     transform-box: fill-box;
@@ -1086,27 +1100,14 @@ button.tds-add-day[data-burst] .tds-add-day-plus {
   .tds-part--collapsed > .tds-part-body { display: none; }
   .tds-day-section[data-collapsed] > .tds-day-body { display: none; }
 
+  /* The toggle hugs its label — "Morning ⌃" reads as one control and never
+     travels when the section opens or closes (the old layout stranded it at
+     the right edge, then dropped it to a second row when collapsed). */
   .tds-part-header-row {
-    display: flex; align-items: center; gap: 10px;
-    flex-wrap: wrap;
+    display: flex; align-items: center; gap: 2px;
+    margin-bottom: var(--tds-s1);
   }
-  .tds-part-header-row > .tds-part-head { flex: 1 1 auto; }
-  /* When a part is collapsed, drop the cloche toggle onto its own row so it
-     sits UNDER the label (e.g. "Afternoon"). Signals the empty area is
-     expandable instead of stranding the control at the right edge. */
-  .tds-part--collapsed .tds-part-header-row > .tds-part-head { flex-basis: 100%; }
-  .tds-part--collapsed .tds-part-header-row .tds-collapse-btn--part {
-    margin-left: 0;
-    align-self: flex-start;
-    animation: tds-toggle-drop .38s cubic-bezier(.4, 0, .2, 1) both;
-  }
-  @keyframes tds-toggle-drop {
-    from { transform: translateY(-10px); opacity: .35; }
-    to   { transform: translateY(0);     opacity: 1; }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .tds-part--collapsed .tds-part-header-row .tds-collapse-btn--part { animation: none; }
-  }
+  .tds-part-header-row > .tds-part-head { flex: 0 1 auto; margin-bottom: 0; }
 
 /* Collapsed day sections (grid) and board columns (horizontal): the body
    hides; the header — with its map opener and toggle — stays in place. */
@@ -3219,4 +3220,194 @@ button.tds-add-day[data-burst] .tds-add-day-plus {
 @media (pointer: coarse) {
   .tds-addphoto-urladd { min-height: 44px; }
   .tds-addphoto-urlrow { padding-block: 2px; }
+}
+
+/* ------------------------------------------------------------------ */
+/* INLINE ACTIVITY EDITOR — time dropdown, location, suggestion row.   */
+/* ------------------------------------------------------------------ */
+.tds-timeselect { position: relative; min-width: 0; }
+.tds-timeselect-list {
+  position: absolute; top: calc(100% + 4px); left: 0; z-index: 40;
+  width: 100%; min-width: 96px; max-height: 216px;
+  overflow-y: auto;
+  background: var(--tds-bg);
+  border: 1px solid var(--tds-rule);
+  border-radius: 10px;
+  box-shadow: 0 14px 34px -12px color-mix(in oklab, var(--tds-ink) 45%, transparent);
+  display: flex; flex-direction: column;
+  padding: 4px;
+}
+.tds-timeselect-option {
+  display: block;
+  padding: 8px 12px;
+  min-height: 36px;
+  text-align: left;
+  font: 500 13px/1.2 var(--tds-fontBody, inherit);
+  font-variant-numeric: tabular-nums;
+  color: var(--tds-ink);
+  background: transparent; border: 0; border-radius: 6px;
+  cursor: pointer;
+}
+.tds-timeselect-option:hover,
+.tds-timeselect-option[aria-selected="true"] {
+  background: color-mix(in oklab, var(--tds-accent) 12%, transparent);
+  color: var(--tds-accent);
+}
+.tds-timeselect-empty {
+  padding: 10px 12px;
+  font-size: 11.5px; font-style: italic;
+  color: color-mix(in oklab, var(--tds-ink) 55%, transparent);
+}
+@media (pointer: coarse) {
+  .tds-timeselect-option { min-height: 44px; }
+}
+
+.tds-inline-editor-suggestion {
+  display: flex; align-items: baseline; gap: 6px;
+  padding: 8px 10px; min-height: 36px;
+  text-align: left;
+  border: 1px dashed color-mix(in oklab, var(--tds-accent) 55%, transparent);
+  border-radius: 8px;
+  background: color-mix(in oklab, var(--tds-accent) 6%, transparent);
+  color: var(--tds-ink);
+  cursor: pointer;
+  font: inherit;
+}
+.tds-inline-editor-suggestion:hover {
+  border-style: solid;
+  border-color: var(--tds-accent);
+}
+.tds-inline-editor-suggestion-tag {
+  flex: none;
+  font-size: 10px; letter-spacing: .18em; text-transform: uppercase;
+  color: var(--tds-accent); font-weight: 600;
+}
+.tds-inline-editor-suggestion-text {
+  min-width: 0;
+  font-size: 12.5px; line-height: 1.35;
+}
+@media (pointer: coarse) {
+  .tds-inline-editor-suggestion { min-height: 44px; }
+  .tds-inline-editor-btn { min-height: 44px; }
+  .tds-inline-editor-input { min-height: 44px; font-size: 16px; }
+}
+
+/* ------------------------------------------------------------------ */
+/* GRID DAY-PHOTOS BUTTON — a small chip with a slow shimmer sweep     */
+/* signalling "this day has pictures"; opens the fullscreen lightbox.  */
+/* ------------------------------------------------------------------ */
+.tds-day-photos-btn {
+  position: relative;
+  display: inline-flex; align-items: center; gap: 4px;
+  min-height: 26px;
+  padding: 2px 9px;
+  overflow: hidden;
+  border: 1px solid color-mix(in oklab, var(--tds-accent) 40%, var(--tds-rule));
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--tds-accent) 7%, transparent);
+  color: var(--tds-accent);
+  font-size: 10.5px; font-weight: 600; letter-spacing: .08em;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+.tds-day-photos-btn::after {
+  content: "";
+  position: absolute; inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    115deg,
+    transparent 30%,
+    color-mix(in oklab, var(--tds-accent) 22%, white) 48%,
+    rgba(255, 255, 255, 0.75) 52%,
+    color-mix(in oklab, var(--tds-accent) 22%, white) 56%,
+    transparent 74%
+  );
+  opacity: .5;
+  transform: translateX(-120%);
+  animation: tds-photos-shimmer 4.2s ease-in-out infinite;
+}
+@keyframes tds-photos-shimmer {
+  0%, 55% { transform: translateX(-120%); }
+  85%, 100% { transform: translateX(120%); }
+}
+.tds-day-photos-btn:hover {
+  border-color: var(--tds-accent);
+  background: color-mix(in oklab, var(--tds-accent) 14%, transparent);
+}
+.tds-day-photos-count { font-variant-numeric: tabular-nums; }
+@media (pointer: coarse) {
+  .tds-day-photos-btn { min-height: 44px; padding: 2px 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tds-day-photos-btn::after { animation: none; opacity: 0; }
+}
+
+/* ------------------------------------------------------------------ */
+/* TOP SCROLLBAR — dotted route line + paper-plane thumb, shown above   */
+/* horizontal scrollers whenever they overflow.                         */
+/* ------------------------------------------------------------------ */
+.tds-topscroll {
+  position: relative;
+  height: 26px;
+  margin: 2px 0 6px;
+  cursor: pointer;
+  touch-action: none;
+}
+.tds-topscroll-route {
+  position: absolute; left: 0; right: 0; top: 50%;
+  height: 0;
+  border-top: 2px dotted color-mix(in oklab, var(--tds-ink) 28%, transparent);
+  transform: translateY(-50%);
+}
+.tds-topscroll-thumb {
+  position: absolute; top: 0; bottom: 0;
+  display: flex; align-items: center;
+  min-width: 44px;
+  padding: 0;
+  border: 0; background: transparent;
+  color: var(--tds-accent);
+  cursor: grab;
+  touch-action: none;
+}
+.tds-topscroll-thumb:active { cursor: grabbing; }
+/* The thumb's visible body: a soft accent lozenge tracing the route. */
+.tds-topscroll-thumb::before {
+  content: "";
+  position: absolute; left: 0; right: 0; top: 50%;
+  height: 6px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--tds-accent) 30%, transparent);
+  transform: translateY(-50%);
+  transition: background .18s ease, height .18s ease;
+}
+.tds-topscroll-thumb:hover::before,
+.tds-topscroll-thumb:active::before {
+  background: color-mix(in oklab, var(--tds-accent) 55%, transparent);
+  height: 8px;
+}
+.tds-topscroll-thumb:focus-visible {
+  outline: none;
+}
+.tds-topscroll-thumb:focus-visible::before {
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--tds-accent) 55%, transparent);
+}
+.tds-topscroll-plane {
+  position: absolute; right: -4px; top: 50%;
+  width: 18px; height: 18px;
+  transform: translateY(-50%) rotate(8deg);
+  background: var(--tds-bg);
+  border-radius: 999px;
+  padding: 1px;
+  transition: transform .25s cubic-bezier(.34, 1.56, .64, 1);
+}
+.tds-topscroll-thumb:hover .tds-topscroll-plane,
+.tds-topscroll-thumb:active .tds-topscroll-plane {
+  transform: translateY(-50%) rotate(0deg) scale(1.15);
+}
+@media (pointer: coarse) {
+  .tds-topscroll { height: 34px; }
+  .tds-topscroll-plane { width: 22px; height: 22px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tds-topscroll-plane { transition: none; }
 }

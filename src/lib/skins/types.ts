@@ -30,6 +30,9 @@ export type Block =
       kind: "place";
       name: string;
       address?: string;
+      /** True when `address` came from the app's location suggester rather
+       *  than the traveler — rendered with a "(suggested)" prefix. */
+      addressSuggested?: boolean;
       note?: string;
       /** Optional clock time, e.g. "08:30" — used by all three views. */
       time?: string;

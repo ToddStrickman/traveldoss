@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Block, TripView } from "../../types";
 import { buildItinerary, type PartOfDay } from "../itinerary";
 import { ActivityCard, FlightStrip, partOrder } from "./parts";
+import { TopScrollbar } from "./TopScrollbar";
 import { ActivityDndContext, DraggableActivity, DroppableBucket } from "./dnd";
 import { ShadowItinerary, PlanBCue } from "../ShadowItinerary";
 import { BlankDayScaffold, isScaffoldTriggered } from "../BlankDayScaffold";
@@ -16,6 +17,8 @@ import {
   useAddDay,
   useMoveDay,
   useDeleteDay,
+  buildSuggestContext,
+  type SuggestContext,
 } from "./editing-kit";
 
 type ActivityEntry = { activity: Extract<Block, { kind: "place" }>; index: number };
@@ -100,6 +103,11 @@ export function HorizontalView({ trip, blocks }: { trip: TripView; blocks: Block
         </nav>
       ) : null}
 
+      {/* Route-line scrollbar ABOVE the board: the native bar sits at the
+          bottom of a 60vh scroller, so reaching more days used to mean
+          "scroll down to scroll sideways". Appears only on overflow. */}
+      <TopScrollbar targetRef={scrollerRef} ariaLabel="Scroll across days" />
+
       <ActivityDndContext blocks={blocks}>
         <div className="tds-board" role="list" ref={scrollerRef}>
           {it.days.map((d, dPos) => (
@@ -130,6 +138,7 @@ export function HorizontalView({ trip, blocks }: { trip: TripView; blocks: Block
                   entries={d[part]}
                   editing={editing}
                   onAdd={addActivity}
+                  suggestContext={buildSuggestContext(d, part, trip.destination)}
                 />
               ))}
               {d.unassigned.length > 0 ? (
@@ -162,6 +171,7 @@ function Bucket({
   entries,
   editing,
   onAdd,
+  suggestContext,
 }: {
   dayIndex: number;
   dayN: number;
@@ -169,6 +179,7 @@ function Bucket({
   entries: ActivityEntry[];
   editing: boolean;
   onAdd: (dayIndex: number, part: PartOfDay, seed: Partial<Extract<Block, { kind: "place" }>>) => void;
+  suggestContext?: SuggestContext;
 }) {
   return (
     <DroppableBucket dayIndex={dayIndex} part={part} className="tds-board-bucket">
@@ -188,6 +199,7 @@ function Bucket({
             empty={entries.length === 0}
             size="card"
             onAdd={onAdd}
+            suggestContext={suggestContext}
           />
         ) : null}
       </div>

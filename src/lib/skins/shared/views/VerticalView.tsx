@@ -24,6 +24,7 @@ import {
   useAddDay,
   useMoveDay,
   useDeleteDay,
+  buildSuggestContext,
 } from "./editing-kit";
 
 /** Chronological vertical reading view.
@@ -163,6 +164,7 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
                         part={part}
                         empty={false}
                         onAdd={addActivity}
+                        suggestContext={buildSuggestContext(d, part, trip.destination)}
                       />
                     ) : null}
                   </>
@@ -181,6 +183,7 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
                           part={part}
                           empty
                           onAdd={addActivity}
+                        suggestContext={buildSuggestContext(d, part, trip.destination)}
                         />
                       ) : (
                         <div className="tds-open-slot" aria-label={`${placeholderFor(part)} — drag or add an activity`}>
@@ -196,6 +199,7 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
                         part={part}
                         empty={false}
                         onAdd={addActivity}
+                        suggestContext={buildSuggestContext(d, part, trip.destination)}
                       />
                     ) : null}
                   </div>
