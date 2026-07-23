@@ -85,9 +85,17 @@ for (const vp of VIEWPORTS) {
         await page.goto("/app");
         await page.waitForLoadState("networkidle");
 
+        // The auth gate resolves client-side (supabase session check → an
+        // effect navigates to /login), so give the redirect a moment
+        // instead of sampling the URL synchronously.
+        const redirected = await page
+          .waitForURL(/\/login/, { timeout: 8000 })
+          .then(() => true)
+          .catch(() => false);
+
         await expectNoHorizontalOverflow(page, vp.width);
 
-        if (page.url().includes("/login")) {
+        if (redirected) {
           // Unauthenticated path — assert we landed on a usable sign-in.
           await expect(page.locator("#email")).toBeVisible();
         } else {
@@ -104,10 +112,19 @@ for (const vp of VIEWPORTS) {
       await page.goto("/");
       await page.waitForLoadState("networkidle");
 
-      // The TemplateGallery cards each trigger the modal via `onPick`.
+      // The TemplateGallery is lazily mounted (InViewLazy): it does not
+      // exist in the DOM until its sentinel is scrolled near, so walk the
+      // document down until a card appears. Cards are role="button" divs
+      // (live previews inside contain the skins' own buttons) labeled
+      // "Use the <name> dossier template".
       const card = page
-        .locator("button", { hasText: /use this template/i })
+        .getByRole("button", { name: /use the .+ dossier template/i })
         .first();
+      for (let i = 0; i < 40 && (await card.count()) === 0; i++) {
+        await page.evaluate(() => window.scrollBy(0, window.innerHeight));
+        await page.waitForTimeout(150);
+      }
+      await expect(card, "lazy template gallery mounted after scrolling").toBeVisible();
       await card.scrollIntoViewIfNeeded();
       await card.click();
 
@@ -129,8 +146,8 @@ for (const vp of VIEWPORTS) {
       const tBox = await textarea.boundingBox();
       expect(tBox?.width ?? 0).toBeGreaterThan(vp.width * 0.55);
 
-      // Step tabs must wrap into a single column without overflowing.
-      const tabs = dialog.locator("button", { hasText: /paste|upload|scan/i });
+      // Source tabs (Paste / Upload / Generate) must all be present.
+      const tabs = dialog.locator("button", { hasText: /paste|upload|generate/i });
       const count = await tabs.count();
       expect(count).toBeGreaterThanOrEqual(3);
     });

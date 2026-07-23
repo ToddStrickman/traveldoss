@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 /**
  * FlowScroller mobile scroll-pin behavior.
@@ -30,6 +30,25 @@ const VIEWPORTS = [
   { label: "iphone-se landscape", width: 667, height: 375 },
 ] as const;
 
+/**
+ * The landing mounts its below-the-fold sections lazily (InViewLazy): the
+ * flow section does not exist in the DOM until its sentinel is scrolled
+ * within the mount margin. `scrollIntoViewIfNeeded` on the section would
+ * deadlock — it waits for an element that only mounts on scroll — so walk
+ * the document down one viewport at a time until the section appears.
+ */
+async function revealFlowSection(page: Page) {
+  const section = page.locator('section[aria-label="How TravelDoss works"].md\\:hidden');
+  for (let i = 0; i < 40 && (await section.count()) === 0; i++) {
+    await page.evaluate(() => window.scrollBy(0, window.innerHeight));
+    await page.waitForTimeout(150);
+  }
+  await expect(section, "lazy flow section mounted after scrolling").toHaveCount(1);
+  await section.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(200);
+  return section;
+}
+
 for (const vp of VIEWPORTS) {
   test.describe(`FlowScroller mobile · ${vp.label}`, () => {
     test.use({ viewport: { width: vp.width, height: vp.height } });
@@ -40,28 +59,35 @@ for (const vp of VIEWPORTS) {
       await page.goto("/");
       await page.waitForLoadState("networkidle");
 
-      // Reveal the mobile flow section and grab its geometry.
-      const section = page.locator('section[aria-label="How TravelDoss works"].md\\:hidden');
-      await section.scrollIntoViewIfNeeded();
-      await page.waitForTimeout(200);
+      // Reveal the lazily-mounted mobile flow section and grab its geometry.
+      const section = await revealFlowSection(page);
 
-      const { sectionTop, sectionHeight, stepPx } = await section.evaluate(
+      const { sectionTop, sectionHeight } = await section.evaluate(
         (el) => {
           const rect = (el as HTMLElement).getBoundingClientRect();
           const top = window.scrollY + rect.top;
           const h = (el as HTMLElement).offsetHeight;
-          // Section is STEPS.length step-units tall; one step-unit is h/5.
-          return { sectionTop: top, sectionHeight: h, stepPx: h / 5 };
+          return { sectionTop: top, sectionHeight: h };
         },
       );
 
-      expect(sectionHeight).toBeGreaterThan(vp.height * 4); // 5 × step-unit
+      // 5 step-units of pin distance. ≥ not >: landscape deliberately
+      // compresses steps to 80svh (styles.css .tds-flow-mobile), making
+      // the section exactly 4 viewports tall on a sideways phone.
+      expect(sectionHeight).toBeGreaterThanOrEqual(vp.height * 4);
 
       // Walk each step: land the document scroll ~mid-way through that
       // step's slice of the pin distance, and confirm the correct kicker
       // and counter are showing inside the sticky viewport.
+      //
+      // Progress runs over the PIN distance (section height minus one
+      // viewport — framer offset ["start start", "end end"]), not the raw
+      // section height. Computing targets as fractions of the section
+      // height agrees with the pin math at step 1 and drifts a full step
+      // off by step 3.
+      const pinDistance = sectionHeight - vp.height;
       for (let i = 0; i < KICKERS.length; i++) {
-        const target = sectionTop + stepPx * (i + 0.5);
+        const target = sectionTop + ((i + 0.5) / KICKERS.length) * pinDistance;
         await page.evaluate((y) => window.scrollTo({ top: y, behavior: "instant" as ScrollBehavior }), target);
         // Framer's `useScroll` fires on rAF; give it two frames to settle.
         await page.waitForTimeout(120);
@@ -92,8 +118,7 @@ for (const vp of VIEWPORTS) {
       await page.goto("/");
       await page.waitForLoadState("networkidle");
 
-      const section = page.locator('section[aria-label="How TravelDoss works"].md\\:hidden');
-      await section.scrollIntoViewIfNeeded();
+      const section = await revealFlowSection(page);
 
       const { sectionTop, sectionHeight } = await section.evaluate((el) => {
         const rect = (el as HTMLElement).getBoundingClientRect();
@@ -103,11 +128,13 @@ for (const vp of VIEWPORTS) {
         };
       });
 
-      // Halfway through the pin distance: we should still be seeing a middle
-      // step (03), not something below the section.
+      // Halfway through the pin distance: we should still be seeing the
+      // middle step (03), not something below the section. The pin
+      // distance is section height minus one viewport (framer offset
+      // ["start start", "end end"]).
       await page.evaluate(
         (y) => window.scrollTo({ top: y, behavior: "instant" as ScrollBehavior }),
-        sectionTop + sectionHeight * 0.5,
+        sectionTop + (sectionHeight - vp.height) * 0.5,
       );
       await page.waitForTimeout(150);
       await expect(section.getByText("Quiet machinery", { exact: true })).toBeVisible();
