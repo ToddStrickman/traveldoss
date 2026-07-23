@@ -740,8 +740,9 @@ const CarouselSlide = (() => {
 
 /** Fullscreen lightbox for the day-image carousel. Tap-to-open, prev/next
  *  controls, keyboard navigation, click-to-toggle zoom (1x <-> 2.25x),
- *  drag-to-pan while zoomed, wheel-to-zoom on desktop, Esc to close. */
-function CarouselLightbox({
+ *  drag-to-pan while zoomed, wheel-to-zoom on desktop, Esc to close.
+ *  Exported: the grid view's per-day photos button reuses it. */
+export function CarouselLightbox({
   images,
   startIndex,
   onClose,

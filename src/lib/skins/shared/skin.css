@@ -3291,3 +3291,53 @@ button.tds-add-day[data-burst] .tds-add-day-plus {
   .tds-inline-editor-btn { min-height: 44px; }
   .tds-inline-editor-input { min-height: 44px; font-size: 16px; }
 }
+
+/* ------------------------------------------------------------------ */
+/* GRID DAY-PHOTOS BUTTON — a small chip with a slow shimmer sweep     */
+/* signalling "this day has pictures"; opens the fullscreen lightbox.  */
+/* ------------------------------------------------------------------ */
+.tds-day-photos-btn {
+  position: relative;
+  display: inline-flex; align-items: center; gap: 4px;
+  min-height: 26px;
+  padding: 2px 9px;
+  overflow: hidden;
+  border: 1px solid color-mix(in oklab, var(--tds-accent) 40%, var(--tds-rule));
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--tds-accent) 7%, transparent);
+  color: var(--tds-accent);
+  font-size: 10.5px; font-weight: 600; letter-spacing: .08em;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+.tds-day-photos-btn::after {
+  content: "";
+  position: absolute; inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    115deg,
+    transparent 30%,
+    color-mix(in oklab, var(--tds-accent) 22%, white) 48%,
+    rgba(255, 255, 255, 0.75) 52%,
+    color-mix(in oklab, var(--tds-accent) 22%, white) 56%,
+    transparent 74%
+  );
+  opacity: .5;
+  transform: translateX(-120%);
+  animation: tds-photos-shimmer 4.2s ease-in-out infinite;
+}
+@keyframes tds-photos-shimmer {
+  0%, 55% { transform: translateX(-120%); }
+  85%, 100% { transform: translateX(120%); }
+}
+.tds-day-photos-btn:hover {
+  border-color: var(--tds-accent);
+  background: color-mix(in oklab, var(--tds-accent) 14%, transparent);
+}
+.tds-day-photos-count { font-variant-numeric: tabular-nums; }
+@media (pointer: coarse) {
+  .tds-day-photos-btn { min-height: 44px; padding: 2px 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tds-day-photos-btn::after { animation: none; opacity: 0; }
+}

@@ -1,12 +1,12 @@
-import type { Block, TripView } from "../../types";
+import type { Block, GalleryImage, TripView } from "../../types";
 import { buildItinerary, PART_LABEL } from "../itinerary";
-import { ActivityCell, PART_ICON } from "./parts";
+import { ActivityCell, PART_ICON, CarouselLightbox } from "./parts";
 import { ActivityDndContext, DraggableActivity, DroppableBucket } from "./dnd";
 import type { PartOfDay } from "../itinerary";
 import { ShadowItinerary, PlanBCue } from "../ShadowItinerary";
 import { BlankDayScaffold, isScaffoldTriggered } from "../BlankDayScaffold";
 import { useEditing } from "../Editable";
-import { Pencil, Copy, Check, ChevronDown, ExternalLink } from "lucide-react";
+import { Pencil, Copy, Check, ChevronDown, ExternalLink, Images } from "lucide-react";
 import { FlightEditSheet } from "../ActivityEditSheet";
 import { AirfareIcon } from "../CategoryIcon";
 import { useCallback, useState, type ReactNode } from "react";
@@ -211,6 +211,60 @@ function CopyChip({ value, label }: { value: string; label: string }) {
 // PART_ICON / PART_LABEL come from parts.tsx / itinerary.ts — one icon
 // set for parts of day across every view (icon-parity item).
 
+type GridDay = {
+  dayIndex: number;
+  day: { n: number; label: string; images?: GalleryImage[] };
+  morning: Array<{ activity: { name: string; images?: GalleryImage[] } }>;
+  afternoon: Array<{ activity: { name: string; images?: GalleryImage[] } }>;
+  evening: Array<{ activity: { name: string; images?: GalleryImage[] } }>;
+};
+
+/** Every photo attached to a day, captioned by where it lives — day-level
+ *  images first, then each part's activity photos in itinerary order. */
+function collectDayPhotos(d: GridDay): GalleryImage[] {
+  const out: GalleryImage[] = [];
+  for (const im of d.day.images ?? []) {
+    out.push({ ...im, caption: im.caption ?? `Day ${d.day.n}` });
+  }
+  for (const part of ["morning", "afternoon", "evening"] as const) {
+    for (const { activity } of d[part]) {
+      for (const im of activity.images ?? []) {
+        out.push({
+          ...im,
+          caption: im.caption ?? `Day ${d.day.n} · ${PART_LABEL[part]} — ${activity.name}`,
+        });
+      }
+    }
+  }
+  return out;
+}
+
+/** Small shimmer-swept icon in the grid's day header: signals that this
+ *  day carries photos; opens them in the fullscreen lightbox carousel. */
+function DayPhotosButton({ d }: { d: GridDay }) {
+  const [open, setOpen] = useState(false);
+  const photos = collectDayPhotos(d);
+  if (photos.length === 0) return null;
+  return (
+    <>
+      <button
+        type="button"
+        className="tds-day-photos-btn tap"
+        data-print="hide"
+        onClick={() => setOpen(true)}
+        aria-label={`View ${photos.length} photo${photos.length === 1 ? "" : "s"} from Day ${d.day.n}`}
+        title={`Photos — Day ${String(d.day.n).padStart(2, "0")}`}
+      >
+        <Images size={12} aria-hidden />
+        <span className="tds-day-photos-count">{photos.length}</span>
+      </button>
+      {open ? (
+        <CarouselLightbox images={photos} startIndex={0} onClose={() => setOpen(false)} />
+      ) : null}
+    </>
+  );
+}
+
 /** Operational table view. Desktop: dense 3-col table per day. Mobile:
  *  three stacked "Morning / Afternoon / Evening" cards with iconography —
  *  more decisive framing than a cramped 3-col table at 375px. Editable
@@ -308,6 +362,7 @@ export function GridView({ trip, blocks }: { trip: TripView; blocks: Block[] }) 
             canMoveUp={dPos > 0}
             canMoveDown={dPos < it.days.length - 1}
             onDeleteDay={() => deleteDay(d.dayIndex)}
+            extraChip={<DayPhotosButton d={d} />}
           />
           <PlanBCue count={d.shadows.length} />
 

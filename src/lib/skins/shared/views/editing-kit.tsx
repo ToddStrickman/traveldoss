@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Plus, Sun, ChevronUp, ChevronDown, Trash2, MapPin } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { suggestLocation, type LocationSuggestion } from "@/lib/itinerary/suggest-location.functions";
@@ -173,6 +173,7 @@ export function EditableDayHeader({
   canMoveUp = false,
   canMoveDown = false,
   onDeleteDay,
+  extraChip,
 }: {
   d: { day: { n: number; label: string; date?: string; notes?: string; linkTitles?: Record<string, string> }; dayIndex: number };
   onToggleCollapsed?: () => void;
@@ -184,6 +185,9 @@ export function EditableDayHeader({
   canMoveUp?: boolean;
   canMoveDown?: boolean;
   onDeleteDay?: () => void;
+  /** View-specific affordance rendered in the headline (e.g. the grid's
+   *  day-photos button). Keeps view chrome out of this shared header. */
+  extraChip?: ReactNode;
 }) {
   const { onBlockChange, editing } = useEditing();
   const dayMap = useDayMap();
@@ -220,6 +224,7 @@ export function EditableDayHeader({
             <span>Map</span>
           </button>
         ) : null}
+        {extraChip}
         {editing && onMoveDay ? (
           <DayReorderControls
             onMove={onMoveDay}
