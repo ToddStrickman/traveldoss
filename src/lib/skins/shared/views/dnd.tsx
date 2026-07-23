@@ -79,7 +79,10 @@ export function ActivityDndContext({
 
   if (!editing) return <>{children}</>;
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+    // Stable id: without it dnd-kit derives aria-describedby ids from a
+    // module-level counter, which lands on different numbers server-side
+    // vs client-side and hydration-mismatches every SSR'd editing view.
+    <DndContext id="tds-activity-dnd" sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
       {children}
     </DndContext>
   );

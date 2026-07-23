@@ -132,7 +132,7 @@ export function StudioDrawer({
       </div>
 
       <div className="flex-1 overflow-y-auto px-3 py-3">
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <DndContext id="tds-studio-dnd" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={tagged.map((b) => b.__id)} strategy={verticalListSortingStrategy}>
             <ul className="space-y-2">
               {tagged.map((b, i) => (
