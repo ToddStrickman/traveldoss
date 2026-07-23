@@ -213,7 +213,7 @@ function SkinCard({
       <SkinPreview skin={skin} />
 
       <div className="flex flex-1 flex-col p-7 md:p-8">
-        <div className="flex items-center gap-2 text-[9px] font-medium uppercase tracking-[0.45em] text-ink/40">
+        <div className="flex items-center gap-2 text-[9px] font-medium uppercase tracking-[0.45em] text-ink/55">
           <span
             className="h-1 w-1 rounded-full"
             style={{ background: skin.tokens.accent }}
@@ -236,7 +236,7 @@ function SkinCard({
           {skin.meta.tags.map((tag) => (
             <span
               key={tag}
-              className="inline-block rounded-full border border-ink/10 px-2.5 py-1 text-[9px] font-medium uppercase tracking-[0.2em] text-ink/50"
+              className="inline-block rounded-full border border-ink/10 px-2.5 py-1 text-[9px] font-medium uppercase tracking-[0.2em] text-ink/60"
             >
               {tag}
             </span>

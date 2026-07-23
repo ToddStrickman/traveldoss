@@ -327,7 +327,9 @@ function Landing() {
           transition={{ duration: 0.9, delay: 0.55 }}
           className="mt-12 w-full max-w-xl"
         >
-          <p className="text-center text-[9px] font-medium uppercase tracking-[0.45em] text-ink/30">
+          {/* /45 not /30: this eyebrow carries the page's key question and
+              was the least-legible text on the landing (≈2:1 on the navy). */}
+          <p className="text-center text-[9px] font-medium uppercase tracking-[0.45em] text-ink/45">
             Definition · What is a travel dossier?
           </p>
           <div className="mt-5 border-y border-ink/10 px-2 py-7 text-left sm:px-6">
@@ -369,7 +371,7 @@ function Landing() {
           </div>
         </motion.section>
 
-        <div className="mt-8 flex items-center gap-4 text-[9px] font-medium uppercase tracking-[0.45em] text-ink/35">
+        <div className="mt-8 flex items-center gap-4 text-[9px] font-medium uppercase tracking-[0.45em] text-ink/45">
           <div className="h-px w-10 bg-ink/15" />
           Do your itinerary justice.
           <div className="h-px w-10 bg-ink/15" />
@@ -380,10 +382,13 @@ function Landing() {
             Tailwind's layered md:hidden on the same element. */}
         <div className="md:hidden">
         <div className="scroll-x edge-fade-x mt-10 items-center gap-3 px-1">
+          {/* /app chips are members-only destinations: for signed-out
+              visitors the label promises browsing but delivers the login
+              wall, so they only render once a session is confirmed. */}
           {[
-            { to: "/app" as const, label: "Browse Places" },
+            ...(signedIn ? [{ to: "/app" as const, label: "Browse Places" }] : []),
             { to: "/templates" as const, label: "Dossier Templates" },
-            { to: "/app" as const, label: "Past Trips" },
+            ...(signedIn ? [{ to: "/app" as const, label: "Past Trips" }] : []),
           ].map((c) => (
             <Link
               key={c.label}
