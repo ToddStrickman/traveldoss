@@ -194,7 +194,7 @@ export function SkinPeek({
           type="button"
           disabled={minting}
           onClick={() => onMint(active.meta.id)}
-          className="td-mint-button inline-flex min-h-12 w-full items-center justify-center gap-2.5 rounded-full bg-seal px-5 text-[11px] font-semibold uppercase tracking-[0.32em] text-paper transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal/60 focus-visible:ring-offset-2 focus-visible:ring-offset-paper disabled:cursor-wait disabled:opacity-60"
+          className="td-mint-button td-mint-cta inline-flex min-h-12 w-full items-center justify-center gap-2.5 rounded-full bg-seal px-5 text-[11px] font-semibold uppercase tracking-[0.32em] text-paper transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal/60 focus-visible:ring-offset-2 focus-visible:ring-offset-paper disabled:cursor-wait disabled:opacity-60"
         >
           {minting ? (
             <span
