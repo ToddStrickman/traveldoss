@@ -163,6 +163,9 @@ export type GalleryImage = {
   licenseUrl?: string;
   creator?: string;
   sourcePageUrl?: string;
+  /** The search query that sourced this fallback image — lets the UI map a
+   *  preview photo back to the place (and part of day) it illustrates. */
+  sourceQuery?: string;
 };
 
 export type TripView = {

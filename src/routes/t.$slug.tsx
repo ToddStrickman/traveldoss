@@ -13,6 +13,7 @@ import { ExportMenu } from "@/components/studio/ExportMenu";
 import { PrintScheduleGrid } from "@/components/studio/PrintScheduleGrid";
 import { CompanionToday } from "@/components/studio/CompanionToday";
 import { getTemporalPhase, phaseCopy } from "@/lib/itinerary/temporal";
+import { autofillDayDates, notifyDayDateAutofill, type DayDateAutofill } from "@/lib/itinerary/day-dates";
 import { EditingProvider, arrayMove } from "@/lib/skins/shared/Editable";
 import { moveActivity } from "@/lib/skins/shared/itinerary";
 import { IngestionModal } from "@/components/flow/IngestionModal";
@@ -336,7 +337,13 @@ function DossierPage() {
   }, [save, trip.slug]);
 
   const queueSave = useCallback((patch: SavePatch) => {
-    if (!canEdit) return;
+    if (!canEdit) {
+      // The snapshot-sync effect re-sends the full snapshot once canEdit
+      // resolves, so a drop here is recoverable — but it must never be
+      // invisible while debugging "my edit vanished" reports.
+      if (import.meta.env.DEV) console.warn("[autosave] patch held — not editable yet", Object.keys(patch));
+      return;
+    }
     pendingPatch.current = { ...pendingPatch.current, ...patch };
     if (debounce.current) clearTimeout(debounce.current);
     setSaving(true);
@@ -427,8 +434,13 @@ function DossierPage() {
   const lastSyncedRef = useRef(snap);
   useEffect(() => {
     if (lastSyncedRef.current === snap) return;
-    lastSyncedRef.current = snap;
+    // Never consume a snapshot we didn't queue: canEdit is false for a beat
+    // on every load while ownership resolves, and an edit made in that window
+    // used to be marked "synced" here and then dropped forever. Leaving the
+    // ref on the last saved snapshot makes this effect re-fire (canEdit is a
+    // dep) and send the pending work the moment editing rights land.
     if (!canEdit) return;
+    lastSyncedRef.current = snap;
     queueSave({
       blocks: snap.blocks,
       templateId: snap.templateId,
@@ -599,10 +611,23 @@ function DossierPage() {
         );
       },
       onTripDatesChange: (start: string, end: string) => {
+        // useHistory.set runs the updater synchronously, so the autofill
+        // result is available right after — and dates + filled days land in
+        // ONE history entry, so a single undo reverts the whole action.
+        let fill: DayDateAutofill | null = null;
         setSnap(
-          (s) => ({ ...s, startDate: start, endDate: end }),
+          (s) => {
+            fill = autofillDayDates(s.blocks, start, end);
+            return {
+              ...s,
+              startDate: start,
+              endDate: end,
+              ...(fill.blocks ? { blocks: fill.blocks } : {}),
+            };
+          },
           { coalesceKey: "trip:dates" },
         );
+        notifyDayDateAutofill(fill, start);
       },
       onMetaChange: (patch: Partial<import("@/lib/skins/types").TripMeta>) => {
         setSnap(

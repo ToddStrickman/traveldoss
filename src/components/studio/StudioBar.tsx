@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { Undo2, Redo2, History } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { motion, useReducedMotion } from "motion/react";
+import { SavedCheck } from "@/components/studio/SavedCheck";
 
 export type RefineHistoryEntry = {
   id: string;
@@ -214,29 +215,7 @@ export function StudioBar({
         // Save status is trust-critical: visible on EVERY viewport (the
         // mobile edit banner promises "auto-saves" — the bar must be able
         // to contradict it when saving fails).
-        <span
-          className={cn(
-            "inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.3em]",
-            saveError ? "text-red-400" : "text-ink-soft",
-          )}
-          role={saveError ? "alert" : undefined}
-        >
-          <span>
-            {saveError
-              ? "Not saved — retrying"
-              : saving
-                ? "Saving…"
-                : savedAt
-                  ? `Saved · ${new Date(savedAt).toLocaleTimeString()}`
-                  : "Live"}
-          </span>
-          <span
-            className={cn(
-              "inline-block h-1.5 w-1.5 rounded-full align-middle",
-              saveError ? "animate-pulse bg-red-400" : "bg-seal",
-            )}
-          />
-        </span>
+        <SavedCheck saving={saving} savedAt={savedAt} saveError={saveError} />
       )}
     </motion.div>
   );

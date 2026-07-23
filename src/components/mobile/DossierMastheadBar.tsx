@@ -13,6 +13,7 @@
  */
 import * as React from "react";
 import { Link } from "@tanstack/react-router";
+import { motion, useReducedMotion } from "motion/react";
 import { CalendarDays, Mail } from "lucide-react";
 import { TdSheet } from "@/components/mobile/TdSheet";
 import type { Block } from "@/lib/skins/types";
@@ -89,6 +90,7 @@ export function DossierMastheadBar({
   const [past, setPast] = React.useState(false);
   const [open, setOpen] = React.useState(false);
   const sentinelRef = React.useRef<HTMLDivElement>(null);
+  const reducedMotion = useReducedMotion();
 
   // Title appears once the skin's own hero has scrolled off. The sentinel
   // sits just after the hero region (~55vh into the document).
@@ -207,15 +209,41 @@ export function DossierMastheadBar({
                       : "Auto-saves as you type"
               }
             >
-              <span
-                aria-hidden
-                className={cn(
-                  "inline-block h-1.5 w-1.5 rounded-full",
-                  saveError ? "animate-pulse bg-red-500" : saving ? "animate-pulse bg-seal" : "bg-seal/60",
-                )}
-              />
+              {!saveError && !saving && savedAt ? (
+                // A save just landed (or holds): a small check, redrawn per
+                // save (keyed by savedAt) — the mobile "quick saved" beat.
+                <motion.svg
+                  key={savedAt}
+                  viewBox="0 0 16 16"
+                  className="h-3 w-3 text-seal"
+                  aria-hidden
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  initial={reducedMotion ? false : { scale: 0.6, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ type: "spring", stiffness: 500, damping: 24 }}
+                >
+                  <motion.path
+                    d="M3 8.5 L6.5 12 L13 4.5"
+                    initial={reducedMotion ? false : { pathLength: 0 }}
+                    animate={{ pathLength: 1 }}
+                    transition={{ duration: 0.3, ease: "easeOut" }}
+                  />
+                </motion.svg>
+              ) : (
+                <span
+                  aria-hidden
+                  className={cn(
+                    "inline-block h-1.5 w-1.5 rounded-full",
+                    saveError ? "animate-pulse bg-red-500" : saving ? "animate-pulse bg-seal" : "bg-seal/60",
+                  )}
+                />
+              )}
               <span className="hidden sm:inline">
-                {saveError ? "Offline" : saving ? "Saving" : savedAt ? "Synced" : "Auto"}
+                {saveError ? "Offline" : saving ? "Saving" : savedAt ? "Saved" : "Auto"}
               </span>
             </span>
           ) : null}

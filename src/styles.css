@@ -314,35 +314,46 @@
 }
 .td-mint-button:hover::before { opacity: 1; animation-duration: 1.8s; }
 
-/* ---- Mint CTA prominence: ambient glow + pulse ring ---- */
+/* ---- Mint CTA prominence: a soft halo that breathes OUT from behind ----
+   Owner direction (bug-bash round 2): the eye-guide should emanate from
+   behind the button — complementary, not additive. The button itself
+   keeps a STATIC ambient shadow (no throbbing box on the button); the
+   motion lives in a blurred seal-tinted halo underneath that swells and
+   dissolves outward like a slow beacon. */
 .td-mint-cta {
   box-shadow:
-    0 0 0 0 color-mix(in oklab, var(--seal) 60%, transparent),
     0 10px 28px -10px color-mix(in oklab, var(--seal) 70%, transparent),
-    0 0 22px -4px color-mix(in oklab, var(--seal) 55%, transparent);
-  animation: td-mint-attention 2.6s ease-in-out infinite;
+    0 0 22px -4px color-mix(in oklab, var(--seal) 45%, transparent);
+}
+.td-mint-cta::after {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  z-index: -1; /* behind the face; .td-mint-button isolates its own stack */
+  border-radius: 999px;
+  pointer-events: none;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in oklab, var(--seal) 42%, transparent),
+    color-mix(in oklab, var(--seal) 18%, transparent) 55%,
+    transparent 78%
+  );
+  filter: blur(8px);
+  animation: td-mint-halo 3s ease-out infinite;
 }
 .td-mint-cta:hover {
   box-shadow:
-    0 0 0 6px color-mix(in oklab, var(--seal) 20%, transparent),
     0 18px 40px -12px color-mix(in oklab, var(--seal) 80%, transparent),
     0 0 36px -2px color-mix(in oklab, var(--seal) 70%, transparent);
-  animation: none;
   filter: brightness(1.08);
 }
-@keyframes td-mint-attention {
-  0%, 100% {
-    box-shadow:
-      0 0 0 0 color-mix(in oklab, var(--seal) 55%, transparent),
-      0 10px 28px -10px color-mix(in oklab, var(--seal) 70%, transparent),
-      0 0 22px -4px color-mix(in oklab, var(--seal) 55%, transparent);
-  }
-  50% {
-    box-shadow:
-      0 0 0 8px color-mix(in oklab, var(--seal) 0%, transparent),
-      0 14px 34px -10px color-mix(in oklab, var(--seal) 80%, transparent),
-      0 0 30px -2px color-mix(in oklab, var(--seal) 70%, transparent);
-  }
+.td-mint-cta:hover::after {
+  animation-duration: 1.6s;
+}
+@keyframes td-mint-halo {
+  0%   { transform: scale(0.94); opacity: 0.55; }
+  65%  { transform: scale(1.28); opacity: 0; }
+  100% { transform: scale(1.28); opacity: 0; }
 }
 .td-mint-pulse { animation: td-mint-dot-pulse 1.8s ease-in-out infinite; }
 @keyframes td-mint-dot-pulse {
@@ -350,7 +361,9 @@
   50%      { transform: scale(1.35); opacity: 0.85; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .td-mint-cta, .td-mint-pulse { animation: none !important; }
+  .td-mint-cta::after, .td-mint-pulse { animation: none !important; }
+  /* Motionless viewers still get the eye-guide — as a steady soft halo. */
+  .td-mint-cta::after { opacity: 0.4; transform: none; }
 }
 
 /* ============================================================

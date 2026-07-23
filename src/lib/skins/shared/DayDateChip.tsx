@@ -19,7 +19,7 @@ export function DayDateChip({
   onChange: (next: string) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const display = value && value.trim() ? value.trim() : dayDateLabel(undefined);
+  const display = dayDateLabel(value);
   const placeholder = !value || !value.trim();
 
   if (!editable) {

@@ -184,10 +184,21 @@
 .tds-part-rule {
   display: inline-block; width: 28px; height: 1px; background: var(--tds-accent);
 }
+/* Same Sunrise/Sun/Moon set as the grid — icon parity across views. */
+.tds-part-icon {
+  display: inline-flex; align-items: center;
+  margin-right: -4px; /* the head's 12px gap reads too wide icon-to-label */
+  color: var(--tds-accent);
+}
 .tds-part-label {
   font-size: 10px; letter-spacing: .42em; text-transform: uppercase;
   color: var(--tds-accent); font-weight: 600;
 }
+/* Grid desktop table: part icons inside the column headers. */
+.tds-th-part {
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.tds-th-part svg { color: var(--tds-accent); flex: none; }
 .tds-part-rows { display: flex; flex-direction: column; gap: 2px; }
 
 .tds-act-row {
@@ -3087,4 +3098,125 @@ button.tds-add-day[data-burst] .tds-add-day-plus {
     padding: 12px 12px;
   }
   .tds-boarding-notch { width: 12px; height: 12px; }
+}
+
+/* ------------------------------------------------------------------ */
+/* ADD-PHOTO DIALOG — the screen behind every "Add photo" affordance:  */
+/* upload from device, paste an image address, clipboard paste, drop.  */
+/* ------------------------------------------------------------------ */
+.tds-addphoto-scrim {
+  position: fixed; inset: 0;
+  z-index: 95;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  background: rgba(8, 10, 14, 0.55);
+  animation: tds-lightbox-fade 160ms ease-out both;
+}
+@media (prefers-reduced-motion: reduce) { .tds-addphoto-scrim { animation: none; } }
+.tds-addphoto-panel {
+  width: min(420px, 100%);
+  background: var(--tds-bg, #fff);
+  color: var(--tds-ink, #111);
+  border: 1px solid var(--tds-rule, rgba(0,0,0,0.12));
+  border-radius: 14px;
+  padding: 22px 20px 16px;
+  box-shadow: 0 24px 64px rgba(8, 10, 14, 0.28);
+  display: flex; flex-direction: column; gap: 12px;
+}
+.tds-addphoto-panel[data-dropping] {
+  outline: 2px dashed var(--tds-accent, #c2410c);
+  outline-offset: -8px;
+}
+.tds-addphoto-title {
+  font-family: var(--tds-fontDisplay, inherit);
+  font-size: 20px; line-height: 1.15;
+  margin: 0;
+}
+.tds-addphoto-target {
+  margin: -8px 0 2px;
+  font-size: 11px; letter-spacing: .28em; text-transform: uppercase;
+  color: color-mix(in oklab, var(--tds-ink) 62%, transparent);
+}
+.tds-addphoto-upload {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 46px;
+  border-radius: 10px;
+  border: 1px solid var(--tds-rule, rgba(0,0,0,0.14));
+  background: var(--tds-card, rgba(0,0,0,0.03));
+  color: inherit;
+  font: 600 14px/1 var(--tds-fontBody, inherit);
+  cursor: pointer;
+}
+.tds-addphoto-upload:hover:not(:disabled) { border-color: var(--tds-accent); color: var(--tds-accent); }
+.tds-addphoto-upload:disabled { opacity: .6; cursor: progress; }
+.tds-addphoto-divider {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 10.5px; letter-spacing: .22em; text-transform: uppercase;
+  color: color-mix(in oklab, var(--tds-ink) 48%, transparent);
+}
+.tds-addphoto-divider::before, .tds-addphoto-divider::after {
+  content: ""; height: 1px; flex: 1;
+  background: var(--tds-rule, rgba(0,0,0,0.12));
+}
+.tds-addphoto-urlrow {
+  display: flex; align-items: center; gap: 8px;
+  border: 1px solid var(--tds-rule, rgba(0,0,0,0.14));
+  border-radius: 10px;
+  padding: 4px 6px 4px 12px;
+}
+.tds-addphoto-urlrow:focus-within { border-color: var(--tds-accent); }
+.tds-addphoto-urlicon { color: color-mix(in oklab, var(--tds-ink) 55%, transparent); flex: none; }
+.tds-addphoto-urlinput {
+  flex: 1; min-width: 0;
+  border: 0; outline: 0; background: transparent; color: inherit;
+  /* 16px floor: below it, iOS Safari zooms the page on focus. */
+  font-size: 16px; line-height: 1.3;
+  padding: 8px 0;
+}
+.tds-addphoto-urlinput::placeholder { color: color-mix(in oklab, var(--tds-ink) 38%, transparent); }
+.tds-addphoto-urladd {
+  flex: none;
+  min-height: 38px; padding: 0 14px;
+  border-radius: 8px; border: 0;
+  background: var(--tds-accent, #c2410c);
+  color: var(--tds-bg, #fff);
+  font: 600 13px/1 var(--tds-fontBody, inherit);
+  cursor: pointer;
+}
+.tds-addphoto-urladd:disabled { opacity: .45; cursor: not-allowed; }
+.tds-addphoto-hint {
+  margin: 0;
+  font-size: 12px; line-height: 1.5;
+  color: color-mix(in oklab, var(--tds-ink) 55%, transparent);
+}
+.tds-addphoto-cancel {
+  align-self: center;
+  min-height: 44px; padding: 0 18px;
+  border: 0; background: transparent; color: inherit;
+  font: 500 13px/1 var(--tds-fontBody, inherit);
+  opacity: .7; cursor: pointer;
+}
+.tds-addphoto-cancel:hover { opacity: 1; }
+
+/* Slim add-photo affordance for activity rows: a quiet one-liner, not the
+   tall day-level empty panel. */
+.tds-act-addphoto {
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: 32px;
+  margin-top: 4px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px dashed color-mix(in oklab, var(--tds-ink) 26%, transparent);
+  background: transparent;
+  color: color-mix(in oklab, var(--tds-ink) 60%, transparent);
+  font: 500 11.5px/1 var(--tds-fontBody, inherit);
+  cursor: pointer;
+}
+.tds-act-addphoto:hover { border-color: var(--tds-accent); color: var(--tds-accent); }
+@media (pointer: coarse) { .tds-act-addphoto { min-height: 44px; } }
+@media (pointer: coarse) {
+  .tds-addphoto-urladd { min-height: 44px; }
+  .tds-addphoto-urlrow { padding-block: 2px; }
 }

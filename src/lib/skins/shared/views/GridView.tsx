@@ -1,12 +1,12 @@
 import type { Block, TripView } from "../../types";
-import { buildItinerary } from "../itinerary";
-import { ActivityCell } from "./parts";
+import { buildItinerary, PART_LABEL } from "../itinerary";
+import { ActivityCell, PART_ICON } from "./parts";
 import { ActivityDndContext, DraggableActivity, DroppableBucket } from "./dnd";
 import type { PartOfDay } from "../itinerary";
 import { ShadowItinerary, PlanBCue } from "../ShadowItinerary";
 import { BlankDayScaffold, isScaffoldTriggered } from "../BlankDayScaffold";
 import { useEditing } from "../Editable";
-import { Sunrise, Sun, Moon, Pencil, Copy, Check, ChevronDown, ExternalLink } from "lucide-react";
+import { Pencil, Copy, Check, ChevronDown, ExternalLink } from "lucide-react";
 import { FlightEditSheet } from "../ActivityEditSheet";
 import { AirfareIcon } from "../CategoryIcon";
 import { useCallback, useState, type ReactNode } from "react";
@@ -207,16 +207,8 @@ function CopyChip({ value, label }: { value: string; label: string }) {
   );
 }
 
-const PART_ICON: Record<PartOfDay, typeof Sunrise> = {
-  morning: Sunrise,
-  afternoon: Sun,
-  evening: Moon,
-};
-const PART_LABEL: Record<PartOfDay, string> = {
-  morning: "Morning",
-  afternoon: "Afternoon",
-  evening: "Evening",
-};
+// PART_ICON / PART_LABEL come from parts.tsx / itinerary.ts — one icon
+// set for parts of day across every view (icon-parity item).
 
 /** Operational table view. Desktop: dense 3-col table per day. Mobile:
  *  three stacked "Morning / Afternoon / Evening" cards with iconography —
@@ -323,9 +315,17 @@ export function GridView({ trip, blocks }: { trip: TripView; blocks: Block[] }) 
           <table className="tds-table tds-table-day">
             <thead>
               <tr>
-                <th>Morning</th>
-                <th>Afternoon</th>
-                <th>Evening</th>
+                {(["morning", "afternoon", "evening"] as PartOfDay[]).map((part) => {
+                  const Icon = PART_ICON[part];
+                  return (
+                    <th key={part}>
+                      <span className="tds-th-part">
+                        <Icon size={12} strokeWidth={1.6} aria-hidden />
+                        <span>{PART_LABEL[part]}</span>
+                      </span>
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody>
