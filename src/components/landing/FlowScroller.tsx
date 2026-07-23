@@ -172,14 +172,14 @@ function MobileFlow() {
           </div>
           <h2
             key={`t-${step.n}`}
-            className="text-[11vw] font-normal leading-[0.95] tracking-[-0.02em] text-ink motion-safe:animate-[fadeUp_.5s_ease]"
+            className="text-[11vw] font-normal leading-[0.95] tracking-[-0.02em] text-ink"
             style={{ fontFamily: "var(--font-display)" }}
           >
             {step.title}
           </h2>
           <p
             key={`b-${step.n}`}
-            className="max-w-md text-[13px] leading-relaxed text-ink-soft motion-safe:animate-[fadeUp_.5s_ease_.05s_both]"
+            className="max-w-md text-[13px] leading-relaxed text-ink-soft"
           >
             {step.body}
           </p>
