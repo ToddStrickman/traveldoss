@@ -11,6 +11,12 @@ import { motion, useMotionValue, useMotionTemplate, useSpring, useReducedMotion 
  */
 export function TopoBackground() {
   const reduceMotion = useReducedMotion();
+  // The cursor-tracked layers bake window dimensions into their gradient
+  // strings — values the server can't know. Rendering them before mount
+  // made SSR html and the first client render disagree (a hydration
+  // mismatch on every landing view), so they stay out of the tree until
+  // the browser has measured itself.
+  const [mounted, setMounted] = useState(false);
   const [coarsePointer, setCoarsePointer] = useState(false);
   const [radius, setRadius] = useState(360);
   const [moving, setMoving] = useState(false);
@@ -48,6 +54,7 @@ export function TopoBackground() {
     rgba(0,0,0,0) 100%)`;
 
   useEffect(() => {
+    setMounted(true);
     setCoarsePointer(window.matchMedia("(pointer: coarse)").matches);
 
     // Debug toggle: ?debug-topo in URL, or Shift+D anywhere.
@@ -126,7 +133,7 @@ export function TopoBackground() {
     };
   }, [mx, my, reduceMotion]);
 
-  const trackingEnabled = !reduceMotion && !coarsePointer;
+  const trackingEnabled = mounted && !reduceMotion && !coarsePointer;
 
   // When debug mode flips on, rasterize the real topo SVG over the navy base
   // and measure WCAG contrast between the brightest revealed pixel and the

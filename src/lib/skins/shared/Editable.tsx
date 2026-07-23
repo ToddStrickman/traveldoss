@@ -218,7 +218,9 @@ export function SortableBlocks({
   }
 
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+    // Stable id keeps dnd-kit's generated aria ids identical between SSR
+    // and client — the counter-based default hydration-mismatches.
+    <DndContext id="tds-editable-dnd" sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
       <SortableContext items={items.map((it) => it.id)} strategy={verticalListSortingStrategy}>
         {items.map((it, i) => (
           <SortableShell key={it.id} id={it.id} index={i}>
