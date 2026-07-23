@@ -194,7 +194,7 @@ function MobileFlow() {
           </span>
         </div>
 
-        <div className="flex h-full w-full flex-col justify-center gap-4 px-6 pb-20 pt-12 landscape:gap-2 landscape:pt-6 landscape:pb-14">
+        <div className="flex h-full w-full flex-col justify-center gap-4 px-6 pb-20 pt-16 landscape:gap-2 landscape:pt-10 landscape:pb-14">
           <div className="flex items-center gap-3 text-[10px] font-medium uppercase tracking-[0.45em] text-ink/45">
             <span className="text-seal">{step.n}</span>
             <span className="h-px w-8 bg-ink/20" />
