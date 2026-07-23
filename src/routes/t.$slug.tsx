@@ -13,6 +13,7 @@ import { ExportMenu } from "@/components/studio/ExportMenu";
 import { PrintScheduleGrid } from "@/components/studio/PrintScheduleGrid";
 import { CompanionToday } from "@/components/studio/CompanionToday";
 import { getTemporalPhase, phaseCopy } from "@/lib/itinerary/temporal";
+import { autofillDayDates, notifyDayDateAutofill, type DayDateAutofill } from "@/lib/itinerary/day-dates";
 import { EditingProvider, arrayMove } from "@/lib/skins/shared/Editable";
 import { moveActivity } from "@/lib/skins/shared/itinerary";
 import { IngestionModal } from "@/components/flow/IngestionModal";
@@ -610,10 +611,23 @@ function DossierPage() {
         );
       },
       onTripDatesChange: (start: string, end: string) => {
+        // useHistory.set runs the updater synchronously, so the autofill
+        // result is available right after — and dates + filled days land in
+        // ONE history entry, so a single undo reverts the whole action.
+        let fill: DayDateAutofill | null = null;
         setSnap(
-          (s) => ({ ...s, startDate: start, endDate: end }),
+          (s) => {
+            fill = autofillDayDates(s.blocks, start, end);
+            return {
+              ...s,
+              startDate: start,
+              endDate: end,
+              ...(fill.blocks ? { blocks: fill.blocks } : {}),
+            };
+          },
           { coalesceKey: "trip:dates" },
         );
+        notifyDayDateAutofill(fill, start);
       },
       onMetaChange: (patch: Partial<import("@/lib/skins/types").TripMeta>) => {
         setSnap(

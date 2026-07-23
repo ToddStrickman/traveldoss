@@ -15,11 +15,6 @@ import { LinkifiedText, PartHeading, useSlotSelectionApi } from "./parts";
 // editing works from any layout on mobile and desktop.
 // ---------------------------------------------------------------------------
 
-const INTERESTS = [
-  "food","wine","design","architecture","art","history",
-  "nature","hiking","beaches","nightlife","shopping","kids","wellness","music",
-];
-
 export function EditableHero({
   trip,
   className,
@@ -89,53 +84,10 @@ export function EditableHero({
           editable={editing && !!onMetaChange}
           onChange={(v) => onMetaChange?.({ travelers: typeof v === "string" ? v : "" })}
         />
-        <MetaChip
-          label="Pace"
-          value={meta.pace}
-          emptyLabel="Add pace"
-          editor={{
-            kind: "select",
-            options: [
-              { value: "relaxed", label: "Relaxed" },
-              { value: "balanced", label: "Balanced" },
-              { value: "packed", label: "Packed" },
-            ],
-          }}
-          editable={editing && !!onMetaChange}
-          onChange={(v) =>
-            onMetaChange?.({
-              pace: (typeof v === "string" && v ? v : undefined) as TripMeta["pace"],
-            })
-          }
-        />
-        <MetaChip
-          label="Budget"
-          value={meta.budget}
-          emptyLabel="Add budget"
-          editor={{
-            kind: "select",
-            options: [
-              { value: "shoestring", label: "Shoestring" },
-              { value: "moderate", label: "Moderate" },
-              { value: "elevated", label: "Elevated" },
-              { value: "luxury", label: "Luxury" },
-            ],
-          }}
-          editable={editing && !!onMetaChange}
-          onChange={(v) =>
-            onMetaChange?.({
-              budget: (typeof v === "string" && v ? v : undefined) as TripMeta["budget"],
-            })
-          }
-        />
-        <MetaChip
-          label="Interests"
-          value={meta.interests}
-          emptyLabel="Add interests"
-          editor={{ kind: "tags", options: INTERESTS }}
-          editable={editing && !!onMetaChange}
-          onChange={(v) => onMetaChange?.({ interests: Array.isArray(v) ? v : [] })}
-        />
+        {/* Pace / budget / interests chips removed from the editor (owner
+            ruling, 2026-07-23): they only feed AI generation and offered the
+            traveler nothing here. The fields live on in TripMeta and the AI
+            generation flow. */}
       </div>
     </header>
   );

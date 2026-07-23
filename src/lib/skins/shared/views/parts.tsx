@@ -1405,7 +1405,18 @@ export const partOrder: PartOfDay[] = ["morning", "afternoon", "evening"];
  * invisible — users need to know to fill them in.
  */
 export function dayDateLabel(date?: string): string {
-  return date && date.trim() ? date.trim() : "TBD (MM/DD/YY)";
+  const trimmed = date?.trim();
+  if (!trimmed) return "TBD (MM/DD/YY)";
+  // ISO values (calendar picks, date auto-fill) read as prose, not as a
+  // machine string; free-form text stays exactly as the user wrote it.
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
+  if (m) {
+    const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+    if (!Number.isNaN(d.getTime())) {
+      return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+    }
+  }
+  return trimmed;
 }
 
 /**

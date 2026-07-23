@@ -24,6 +24,7 @@ import { StudioBar } from "@/components/studio/StudioBar";
 import { IngestionModal } from "@/components/flow/IngestionModal";
 import { EditingProvider, arrayMove, type EditingCtx } from "@/lib/skins/shared/Editable";
 import { moveActivity } from "@/lib/skins/shared/itinerary";
+import { autofillDayDates, notifyDayDateAutofill, type DayDateAutofill } from "@/lib/itinerary/day-dates";
 
 export const Route = createFileRoute("/e2e/dossier")({
   beforeLoad: () => {
@@ -103,8 +104,17 @@ function DossierHarness() {
         commit((s) => ({ ...s, blocks: moveActivity(s.blocks, srcIndex, dayIndex, part, beforeIndex) })),
       onTripChange: (field, value) =>
         commit((s) => ({ ...s, trip: { ...s.trip, [field === "destination" ? "destination" : "subtitle"]: value } })),
-      onTripDatesChange: (start, end) =>
-        commit((s) => ({ ...s, trip: { ...s.trip, start_date: start || null, end_date: end || null } })),
+      onTripDatesChange: (start, end) => {
+        let fill: DayDateAutofill | null = null;
+        commit((s) => {
+          fill = autofillDayDates(s.blocks, start, end);
+          return {
+            trip: { ...s.trip, start_date: start || null, end_date: end || null },
+            blocks: fill.blocks ?? s.blocks,
+          };
+        });
+        notifyDayDateAutofill(fill, start);
+      },
       onMetaChange: (patch: Partial<TripMeta>) =>
         commit((s) => ({ ...s, trip: { ...s.trip, meta: { ...(s.trip.meta ?? {}), ...patch } } })),
     };
