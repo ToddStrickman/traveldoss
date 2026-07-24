@@ -1,14 +1,17 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page, type Locator } from "@playwright/test";
 
 /**
- * Mobile-viewport smoke tests for the highest-traffic flows.
+ * Mobile-viewport smoke tests for the highest-traffic flows (current
+ * landing: numbered CTAs, lazy-mounted template gallery, mobile bottom
+ * nav; /app redirects signed-out visitors to /login).
  *
  * Asserts each surface is usable at iPhone-class widths (375 and 414 CSS px):
  *  - sign-in form (`/login`)             — public
- *  - trip list (`/app`)                  — auth-gated; falls back to checking
- *                                          the /login redirect when no creds
+ *  - trip list (`/app`)                  — auth-gated; asserts the /login
+ *                                          redirect (with form) when no creds
+ *  - landing → template card → modal     — public; the gallery lazy-mounts,
+ *                                          so the spec walks the page to it
  *  - trip detail (`/t/$slug`)            — public if `TEST_TRIP_SLUG` is set
- *  - ingestion modal (landing → modal)   — public
  *  - export menu (trip detail, owner)    — owner-only; uses TEST_TRIP_SLUG
  *                                          + storageState when available
  *
@@ -36,13 +39,28 @@ async function expectNoHorizontalOverflow(page: Page, width: number) {
   expect(scrollW, "no horizontal overflow").toBeLessThanOrEqual(width + 1);
 }
 
-async function expectTapTarget(page: Page, locator: ReturnType<Page["locator"]>) {
+async function expectTapTarget(page: Page, locator: Locator) {
   await expect(locator).toBeVisible();
   const box = await locator.boundingBox();
   if (!box) throw new Error("element has no box");
   // Apple HIG: 44pt minimum. Allow rounding fuzz.
   expect(box.height, "tap-target height").toBeGreaterThanOrEqual(40);
   expect(box.width, "tap-target width").toBeGreaterThanOrEqual(40);
+}
+
+/** Below-the-fold landing sections mount via InViewLazy only when scrolled
+ *  near — walk the page a viewport at a time until the target exists. */
+async function scrollUntilMounted(page: Page, locator: Locator, maxScreens = 40) {
+  for (let i = 0; i < maxScreens; i++) {
+    if ((await locator.count()) > 0) {
+      await locator.first().scrollIntoViewIfNeeded();
+      await page.waitForTimeout(300);
+      return;
+    }
+    await page.evaluate(() => window.scrollBy(0, window.innerHeight * 0.9));
+    await page.waitForTimeout(250);
+  }
+  throw new Error("lazy section never mounted while walking the page");
 }
 
 for (const vp of VIEWPORTS) {
@@ -83,39 +101,42 @@ for (const vp of VIEWPORTS) {
       const page = await context.newPage();
       try {
         await page.goto("/app");
-        await page.waitForLoadState("networkidle");
 
-        await expectNoHorizontalOverflow(page, vp.width);
-
-        if (page.url().includes("/login")) {
-          // Unauthenticated path — assert we landed on a usable sign-in.
-          await expect(page.locator("#email")).toBeVisible();
-        } else {
-          // Authenticated path — assert the dashboard primary CTA is reachable.
+        if (AUTH_STATE) {
+          // Authenticated path — the dashboard primary CTA is reachable.
           const mint = page.getByRole("button", { name: /mint a new dossier/i });
           await expectTapTarget(page, mint);
+        } else {
+          // Signed-out path: the auth gate must NAVIGATE to the sign-in
+          // form (never the router error boundary), carrying a redirect
+          // back to /app.
+          await page.waitForURL(/\/login/, { timeout: 15000 });
+          await expect(page.locator("#email")).toBeVisible();
+          expect(page.url()).toContain("redirect=");
+          // Regression guard for the old crash: no error boundary.
+          await expect(page.getByText(/this page didn't load/i)).toHaveCount(0);
         }
+
+        await expectNoHorizontalOverflow(page, vp.width);
       } finally {
         await context.close();
       }
     });
 
-    test("ingestion modal opens and fits the viewport", async ({ page }) => {
+    test("landing template card opens the composer modal and fits the viewport", async ({ page }) => {
       await page.goto("/");
-      await page.waitForLoadState("networkidle");
+      await page.waitForSelector("main", { timeout: 15000 });
 
-      // The TemplateGallery cards each trigger the modal via `onPick`.
-      const card = page
-        .locator("button", { hasText: /use this template/i })
-        .first();
-      await card.scrollIntoViewIfNeeded();
+      // The template gallery lazy-mounts below the fold; its cards are
+      // labeled "Use the {codename} dossier template".
+      const card = page.getByRole("button", { name: /use the .+ dossier template/i }).first();
+      await scrollUntilMounted(page, card);
       await card.click();
 
       const dialog = page.getByRole("dialog");
       await expect(dialog).toBeVisible();
 
-      // Modal must not exceed viewport width and must leave the 8px gutter
-      // configured via `w-[calc(100vw-16px)]`.
+      // Modal must not exceed viewport width and must keep its gutter.
       const box = await dialog.boundingBox();
       expect(box, "dialog has a box").not.toBeNull();
       expect(box!.width).toBeLessThanOrEqual(vp.width);
@@ -123,16 +144,27 @@ for (const vp of VIEWPORTS) {
 
       await expectNoHorizontalOverflow(page, vp.width);
 
-      // Source-step textarea must be visible and reach near-full width.
+      // Composer tabs (Paste / Upload / Generate) all present.
+      const tabs = dialog.locator("button", { hasText: /paste|upload|generate/i });
+      expect(await tabs.count()).toBeGreaterThanOrEqual(3);
+
+      // Paste tab's textarea reaches near-full width.
       const textarea = dialog.locator("textarea").first();
       await expect(textarea).toBeVisible();
       const tBox = await textarea.boundingBox();
       expect(tBox?.width ?? 0).toBeGreaterThan(vp.width * 0.55);
+    });
 
-      // Step tabs must wrap into a single column without overflowing.
-      const tabs = dialog.locator("button", { hasText: /paste|upload|scan/i });
-      const count = await tabs.count();
-      expect(count).toBeGreaterThanOrEqual(3);
+    test("mobile bottom nav is present with a reachable sign-in", async ({ page }) => {
+      await page.goto("/");
+      const nav = page.locator('nav[aria-label="Primary"]');
+      await expect(nav).toBeVisible();
+      // Signed out: the way in must be one thumb-tap away.
+      const signIn = nav.locator('a[href="/login"]');
+      await expectTapTarget(page, signIn);
+      const navBox = await nav.boundingBox();
+      expect(navBox!.y + navBox!.height).toBeLessThanOrEqual(vp.height + 1);
+      await expectNoHorizontalOverflow(page, vp.width);
     });
 
     test.describe("trip detail (requires TEST_TRIP_SLUG)", () => {
