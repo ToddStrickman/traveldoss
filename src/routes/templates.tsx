@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { SITE_URL } from "@/lib/site";
 import { peekPendingComposer } from "@/lib/mint-pending";
+import { MintTermsGate, type MintTermsGateHandle } from "@/components/legal/MintTermsGate";
 
 function TemplatesSkeleton() {
   return (
