@@ -24,6 +24,7 @@ import type { Block } from "@/lib/skins/types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { SITE_URL } from "@/lib/site";
+import { MintTermsGate, type MintTermsGateHandle } from "@/components/legal/MintTermsGate";
 
 export const Route = createFileRoute("/templates_/$id")({
   component: TemplateSpread,
@@ -76,6 +77,7 @@ function TemplateSpread() {
   const [minting, setMinting] = useState(false);
   const [pendingSlug, setPendingSlug] = useState<string | null>(null);
   const [view, setView] = useState<SkinView>("vertical");
+  const termsGateRef = useRef<MintTermsGateHandle>(null);
 
   useEffect(() => {
     if (!pendingSlug) return;
@@ -140,6 +142,9 @@ function TemplateSpread() {
       });
       return;
     }
+    // Clickwrap: block the mint until the current Terms & Privacy are accepted.
+    const ok = await termsGateRef.current?.ensureAccepted();
+    if (!ok) return;
     setModalOpen(false);
     setMinting(true);
     try {
@@ -282,6 +287,7 @@ function TemplateSpread() {
         onGenerate={handleGenerate}
       />
       <GenerationLoader open={minting} label="Composing your dossier" />
+      <MintTermsGate ref={termsGateRef} />
     </div>
   );
 }
