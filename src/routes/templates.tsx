@@ -304,6 +304,7 @@ function TemplatesPage() {
   const [modalSkin, setModalSkin] = useState<SkinModule | null>(null);
   const [minting, setMinting] = useState(false);
   const [pendingSlug, setPendingSlug] = useState<string | null>(null);
+  const termsGateRef = useRef<MintTermsGateHandle>(null);
 
   useEffect(() => {
     if (!pendingSlug) return;
@@ -455,6 +456,9 @@ function TemplatesPage() {
       });
       return;
     }
+    // Clickwrap: block the mint until the current Terms & Privacy are accepted.
+    const ok = await termsGateRef.current?.ensureAccepted();
+    if (!ok) return;
     setModalOpen(false);
     setPicking(modalSkin.meta.id);
     setMinting(true);
@@ -691,6 +695,7 @@ function TemplatesPage() {
       />
 
       <GenerationLoader open={minting} label="Composing your dossier" />
+      <MintTermsGate ref={termsGateRef} />
     </div>
   );
 }
