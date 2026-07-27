@@ -8,12 +8,12 @@
  */
 import {
   forwardRef,
+  useId,
   useImperativeHandle,
   useRef,
   useState,
 } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Link } from "@tanstack/react-router";
 import {
   Dialog,
   DialogContent,
@@ -45,6 +45,9 @@ export const MintTermsGate = forwardRef<MintTermsGateHandle>(function MintTermsG
   const [checked, setChecked] = useState(false);
   const [busy, setBusy] = useState(false);
   const resolverRef = useRef<((ok: boolean) => void) | null>(null);
+  const checkboxId = useId();
+  const descId = useId();
+  const checkboxRef = useRef<HTMLButtonElement>(null);
 
   const resolve = (ok: boolean) => {
     const r = resolverRef.current;
@@ -101,7 +104,15 @@ export const MintTermsGate = forwardRef<MintTermsGateHandle>(function MintTermsG
         if (!next && !busy) resolve(false);
       }}
     >
-      <DialogContent className="sm:max-w-md">
+      <DialogContent
+        className="sm:max-w-md"
+        onOpenAutoFocus={(e) => {
+          // Focus the checkbox first so keyboard users land on the required control
+          // instead of the close button.
+          e.preventDefault();
+          checkboxRef.current?.focus();
+        }}
+      >
         <DialogHeader>
           <DialogTitle>Before we mint your dossier</DialogTitle>
           <DialogDescription>
@@ -110,35 +121,48 @@ export const MintTermsGate = forwardRef<MintTermsGateHandle>(function MintTermsG
           </DialogDescription>
         </DialogHeader>
 
-        <label className="mt-2 flex items-start gap-3 text-sm text-ink">
+        <div className="mt-2 flex items-start gap-3 text-sm text-ink">
           <Checkbox
+            ref={checkboxRef}
+            id={checkboxId}
             checked={checked}
             onCheckedChange={(v) => setChecked(v === true)}
-            aria-label="Agree to the Terms of Service and Privacy Policy"
+            aria-describedby={descId}
             className="mt-0.5"
           />
-          <span>
-            I agree to the{" "}
-            <Link
-              to="/terms"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline decoration-dotted underline-offset-4 hover:text-seal"
-            >
-              Terms of Service
-            </Link>{" "}
-            and{" "}
-            <Link
-              to="/privacy"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline decoration-dotted underline-offset-4 hover:text-seal"
-            >
-              Privacy Policy
-            </Link>
-            .
-          </span>
-        </label>
+          {/* htmlFor keeps clicking the label text toggling the box, while the
+              anchor tags below sit outside the <label> so opening a link never
+              accidentally toggles the checkbox. */}
+          <div id={descId}>
+            <label htmlFor={checkboxId} className="cursor-pointer select-none">
+              I agree to the Terms of Service and Privacy Policy.
+            </label>
+            <div className="mt-1 text-xs text-ink/70">
+              Read:{" "}
+              <a
+                href="/terms"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline decoration-dotted underline-offset-4 hover:text-seal focus-visible:outline-2 focus-visible:outline-seal"
+              >
+                Terms of Service
+                <span className="sr-only"> (opens in a new tab)</span>
+                <span aria-hidden="true"> ↗</span>
+              </a>
+              {" · "}
+              <a
+                href="/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline decoration-dotted underline-offset-4 hover:text-seal focus-visible:outline-2 focus-visible:outline-seal"
+              >
+                Privacy Policy
+                <span className="sr-only"> (opens in a new tab)</span>
+                <span aria-hidden="true"> ↗</span>
+              </a>
+            </div>
+          </div>
+        </div>
 
         <DialogFooter className="mt-4 gap-2 sm:gap-2">
           <Button
