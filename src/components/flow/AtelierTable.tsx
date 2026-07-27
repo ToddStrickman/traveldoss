@@ -30,10 +30,14 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import type { SkinModule } from "@/lib/skins/registry";
 import { InertRender } from "@/lib/skins/shared/views/parts";
 
-/** Ring geometry. Step angle × radius sets how far covers travel per stop. */
+/** Ring geometry. Step angle × radius sets how far covers travel per stop.
+ *  CARD_W is the card's TRUE rendered width — the centered cover displays
+ *  at exactly scale 1 so its rasterized text stays sharp; only side covers
+ *  scale, and only DOWN (upscaling a rasterized 3D layer is what made the
+ *  center look fuzzy). */
 const STEP_DEG = 19;
 const RADIUS = 950;
-const CARD_W = 320;
+const CARD_W = 356;
 /** Covers beyond this many stops from center stay unrendered (cheap DOM). */
 const RENDER_EACH_SIDE = 3;
 
@@ -220,7 +224,7 @@ export function AtelierTable({
                   params={{ id: activeSkin.meta.id }}
                   className="tap inline-flex min-h-11 items-center border border-ink/20 px-5 text-[10px] font-medium uppercase tracking-[0.3em] text-ink/70 transition-colors hover:border-seal hover:text-seal"
                 >
-                  Open the spread
+                  See preview
                 </Link>
                 <button
                   type="button"
@@ -307,7 +311,8 @@ function RingCover({
     const x = Math.sin(th) * RADIUS;
     const z = (Math.cos(th) - 1) * RADIUS;
     const rotY = -off * STEP_DEG * 1.15;
-    const scale = Math.max(0.7, 1.06 - Math.abs(off) * 0.1);
+    // Center = exactly 1 (crisp raster); neighbors only ever scale down.
+    const scale = Math.min(1, Math.max(0.7, 1 - Math.abs(off) * 0.11));
     return `translate3d(${x.toFixed(1)}px, 0px, ${z.toFixed(1)}px) rotateY(${rotY.toFixed(2)}deg) scale(${scale.toFixed(3)})`;
   });
   // Covers further from the lamp sit in shadow — dimmed, never transparent.
@@ -418,7 +423,7 @@ export function MobileCoverRail({
                   className="tap inline-flex min-h-11 flex-1 items-center justify-center border text-[10px] font-medium uppercase tracking-[0.25em]"
                   style={{ borderColor: skin.tokens.rule, color: skin.tokens.inkSoft }}
                 >
-                  Open
+                  Preview
                 </Link>
                 <button
                   type="button"
@@ -448,13 +453,16 @@ export function MobileCoverRail({
 }
 
 /** Measured-scale live preview of a skin, same approach as the grid tiles:
- *  render the real 1400px page and shrink it to the tile. */
+ *  render the real 1400px page and shrink it to the tile. Pass `view` to
+ *  pivot the preview through the product's three layouts. */
 export function SkinCoverTile({
   skin,
   height,
+  view = "vertical",
 }: {
   skin: SkinModule;
   height: number;
+  view?: import("@/lib/skins/types").SkinView;
 }) {
   const { Render, previewFixture, tokens } = skin;
   const tileRef = useRef<HTMLDivElement>(null);
@@ -483,7 +491,7 @@ export function SkinCoverTile({
       >
         {tokens.fontUrl && <link rel="stylesheet" href={tokens.fontUrl} />}
         <InertRender>
-          <Render trip={previewFixture.trip} blocks={previewFixture.blocks} />
+          <Render trip={previewFixture.trip} blocks={previewFixture.blocks} view={view} />
         </InertRender>
       </div>
       <div
