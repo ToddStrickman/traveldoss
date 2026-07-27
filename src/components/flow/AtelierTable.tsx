@@ -1,20 +1,41 @@
 /**
- * AtelierTable — the dossier templates laid out on a dark table, browsed
- * as a 3D coverflow. Desktop-only (the grid + SkinPeek flow stays the
- * mobile experience). The centered dossier shows its live preview large
- * with mint + open actions; side covers are angled and clickable. Arrows,
- * keyboard, click and drag all steer the stack.
+ * AtelierTable — the dossier templates on a rotating table.
+ *
+ * The desktop gallery is a turntable: all covers sit on a circular arc in
+ * 3D, and steering (arrows, dots, keyboard, drag-with-momentum) spins the
+ * ring so covers travel through the intermediate positions with spring
+ * physics — nothing pops or teleports. The whole table also tilts a few
+ * degrees toward the cursor. Distance from center is conveyed by depth,
+ * uniform scale, and a "shadow" dim overlay — never by squishing the
+ * cover's proportions or ghosting it transparent.
+ *
+ * The active dossier's identity (name · personality · Open/Mint) lives in
+ * a caption panel below the table that crossfades on change, so the
+ * covers themselves stay pure objects.
  *
  * Every template is also emitted as a visually-hidden real link so the
- * full set stays crawlable even though only five covers render at once.
+ * full set stays crawlable regardless of ring position.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
+import {
+  AnimatePresence,
+  motion,
+  useMotionValue,
+  useSpring,
+  useTransform,
+  type MotionValue,
+} from "motion/react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import type { SkinModule } from "@/lib/skins/registry";
 import { InertRender } from "@/lib/skins/shared/views/parts";
 
-const VISIBLE_EACH_SIDE = 2;
+/** Ring geometry. Step angle × radius sets how far covers travel per stop. */
+const STEP_DEG = 19;
+const RADIUS = 950;
+const CARD_W = 320;
+/** Covers beyond this many stops from center stay unrendered (cheap DOM). */
+const RENDER_EACH_SIDE = 3;
 
 export function AtelierTable({
   skins,
@@ -25,7 +46,8 @@ export function AtelierTable({
   onPick: (id: string) => void;
   pickingId: string | null;
 }) {
-  const [center, setCenter] = useState(0);
+  const [active, setActive] = useState(0);
+  const navigate = useNavigate();
   const reducedMotion = useMemo(
     () =>
       typeof window !== "undefined" &&
@@ -33,35 +55,71 @@ export function AtelierTable({
     [],
   );
 
+  // The ring's position as a fractional index. `pos` is the target; the
+  // spring is what the cards actually follow — steering spins the ring
+  // through every intermediate position instead of teleporting.
+  const pos = useMotionValue(0);
+  const ring = useSpring(pos, { stiffness: 90, damping: 18, mass: 0.9 });
+
+  // Cursor tilt: the whole table leans a few degrees toward the mouse.
+  const tiltX = useMotionValue(0);
+  const tiltY = useMotionValue(0);
+  const tiltXs = useSpring(tiltX, { stiffness: 60, damping: 16 });
+  const tiltYs = useSpring(tiltY, { stiffness: 60, damping: 16 });
+
+  const goTo = (i: number) => {
+    const clamped = Math.min(skins.length - 1, Math.max(0, i));
+    setActive(clamped);
+    if (reducedMotion) ring.jump(clamped);
+    pos.set(clamped);
+  };
+
   // Filters can shrink the deck under the current index — stay in range.
   useEffect(() => {
-    setCenter((c) => Math.min(c, Math.max(0, skins.length - 1)));
+    if (active > skins.length - 1) goTo(skins.length - 1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [skins.length]);
 
-  const step = (dir: number) =>
-    setCenter((c) => Math.min(skins.length - 1, Math.max(0, c + dir)));
-
-  // Pointer drag: horizontal slide past a threshold advances the stack.
-  const dragX = useRef<number | null>(null);
+  // Drag the table with momentum: while dragging the ring follows the
+  // pointer 1:1; on release, velocity carries it, then it snaps to the
+  // nearest stop.
+  const drag = useRef<{ startX: number; startPos: number; moved: boolean } | null>(null);
   const onPointerDown = (e: React.PointerEvent) => {
-    dragX.current = e.clientX;
+    drag.current = { startX: e.clientX, startPos: pos.get(), moved: false };
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
   };
-  const onPointerUp = (e: React.PointerEvent) => {
-    if (dragX.current === null) return;
-    const dx = e.clientX - dragX.current;
-    dragX.current = null;
-    if (Math.abs(dx) > 60) step(dx < 0 ? 1 : -1);
+  const onPointerMove = (e: React.PointerEvent) => {
+    const d = drag.current;
+    if (!d) return;
+    const dx = e.clientX - d.startX;
+    if (Math.abs(dx) > 4) d.moved = true;
+    pos.set(d.startPos - dx / (CARD_W * 1.05));
+  };
+  const onPointerUp = () => {
+    const d = drag.current;
+    drag.current = null;
+    if (!d) return;
+    const momentum = -pos.getVelocity() * 0.12;
+    goTo(Math.round(pos.get() + momentum));
+  };
+
+  const onStageMouseMove = (e: React.MouseEvent) => {
+    if (reducedMotion) return;
+    const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    tiltY.set(((e.clientX - r.left) / r.width - 0.5) * 6);
+    tiltX.set(-((e.clientY - r.top) / r.height - 0.5) * 4);
+  };
+  const onStageMouseLeave = () => {
+    tiltX.set(0);
+    tiltY.set(0);
   };
 
   if (skins.length === 0) return null;
-  const centered = skins[center];
+  const activeSkin = skins[Math.min(active, skins.length - 1)];
 
   return (
-    <section
-      aria-label="Dossier templates on the atelier table"
-      className="relative"
-    >
-      {/* Crawlable full index — the 3D stage only mounts five covers. */}
+    <section aria-label="Dossier templates on the atelier table" className="relative">
+      {/* Crawlable full index — the ring only mounts nearby covers. */}
       <nav aria-label="All dossier templates" className="sr-only">
         {skins.map((s) => (
           <Link key={s.meta.id} to="/templates/$id" params={{ id: s.meta.id }}>
@@ -73,219 +131,240 @@ export function AtelierTable({
       <div
         role="region"
         aria-roledescription="carousel"
-        aria-label={`Template ${center + 1} of ${skins.length}: ${centered.meta.codename}`}
+        aria-label={`Template ${active + 1} of ${skins.length}: ${activeSkin.meta.codename}`}
         tabIndex={0}
         onKeyDown={(e) => {
-          if (e.key === "ArrowRight") { e.preventDefault(); step(1); }
-          if (e.key === "ArrowLeft") { e.preventDefault(); step(-1); }
+          if (e.key === "ArrowRight") { e.preventDefault(); goTo(active + 1); }
+          if (e.key === "ArrowLeft") { e.preventDefault(); goTo(active - 1); }
         }}
         onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
-        className="relative select-none outline-none focus-visible:ring-2 focus-visible:ring-seal/50"
-        style={{ perspective: "1200px" }}
+        onPointerCancel={onPointerUp}
+        onMouseMove={onStageMouseMove}
+        onMouseLeave={onStageMouseLeave}
+        className="relative cursor-grab select-none outline-none [touch-action:pan-y] active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-seal/50"
+        style={{ perspective: "1500px" }}
       >
-        {/* The table: a receding plane under the stack. */}
+        {/* The table surface: a receding plane with a soft pool of light
+            under the centered dossier. */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-x-[-8%] bottom-0 h-[46%] border-t border-ink/15"
+          className="pointer-events-none absolute inset-x-[-10%] bottom-2 h-[44%]"
           style={{
             background:
-              "linear-gradient(180deg, rgba(10,16,30,0.9) 0%, rgba(6,10,20,0.98) 100%)",
-            transform: "rotateX(55deg)",
+              "radial-gradient(48% 62% at 50% 30%, rgba(235,204,140,0.10) 0%, rgba(10,16,30,0.9) 62%, rgba(6,10,20,0.98) 100%)",
+            transform: "rotateX(58deg)",
             transformOrigin: "bottom",
+            borderTop: "1px solid rgba(235,204,140,0.12)",
           }}
         />
 
-        <div className="relative flex h-[520px] items-center justify-center">
-          {skins.map((skin, i) => {
-            const off = i - center;
-            if (Math.abs(off) > VISIBLE_EACH_SIDE) return null;
-            const isCenter = off === 0;
-            const dir = off < 0 ? 1 : -1;
-            const abs = Math.abs(off);
-            return (
-              <div
-                key={skin.meta.id}
-                className="absolute"
-                style={{
-                  zIndex: 10 - abs,
-                  transform: isCenter
-                    ? "translateX(0) rotateY(0deg) translateZ(0)"
-                    : `translateX(${off * 58}%) translateY(${abs * 14}px) rotateY(${dir * 42}deg) translateZ(${-170 * abs}px)`,
-                  opacity: isCenter ? 1 : 0.55 - abs * 0.12,
-                  transition: reducedMotion
-                    ? undefined
-                    : "transform 0.55s cubic-bezier(0.22,1,0.36,1), opacity 0.55s",
-                  width: isCenter ? "min(46vw, 560px)" : "min(24vw, 300px)",
-                }}
-              >
-                {isCenter ? (
-                  <CenterDossier
-                    skin={skin}
-                    onPick={onPick}
-                    picking={pickingId === skin.meta.id}
-                  />
-                ) : (
-                  /* role="button" on a div, NOT a real <button>: the live
-                     preview inside contains the skin's own buttons, and
-                     button-in-button is invalid HTML — the parser splits
-                     the SSR markup and hydration fails. Same pattern as
-                     the grid's SkinCard. */
-                  <div
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => setCenter(i)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        setCenter(i);
-                      }
-                    }}
-                    aria-label={`Bring ${skin.meta.codename} to the center`}
-                    className="group block w-full cursor-pointer border border-ink/15 text-left transition-colors hover:border-seal/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal/50"
-                    style={{ background: skin.tokens.bg }}
-                  >
-                    <SkinCoverTile skin={skin} height={300} />
-                    <div className="border-t border-black/10 px-4 py-3">
-                      <span
-                        className="text-lg"
-                        style={{
-                          fontFamily: skin.tokens.fontDisplay,
-                          color: skin.tokens.ink,
-                        }}
-                      >
-                        {skin.meta.codename}
-                        <span style={{ color: skin.tokens.accent }}>.</span>
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Steering row */}
-      <div className="mt-4 flex items-center justify-center gap-6">
-        <button
-          type="button"
-          onClick={() => step(-1)}
-          disabled={center === 0}
-          aria-label="Previous template"
-          className="tap inline-flex h-11 w-11 items-center justify-center border border-ink/15 text-ink/70 transition-colors hover:border-seal hover:text-seal disabled:opacity-30"
+        <motion.div
+          className="relative flex h-[500px] items-center justify-center"
+          style={{
+            transformStyle: "preserve-3d",
+            rotateX: tiltXs,
+            rotateY: tiltYs,
+          }}
         >
-          <ArrowLeft className="h-4 w-4" />
-        </button>
-        <div
-          aria-hidden
-          className="flex items-center gap-2"
-        >
-          {skins.map((s, i) => (
-            <button
-              key={s.meta.id}
-              type="button"
-              tabIndex={-1}
-              onClick={() => setCenter(i)}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
-                i === center ? "w-6 bg-seal" : "w-1.5 bg-ink/25 hover:bg-ink/50"
-              }`}
+          {skins.map((skin, i) => (
+            <RingCover
+              key={skin.meta.id}
+              skin={skin}
+              index={i}
+              ring={ring}
+              isActive={i === active}
+              onSelect={() => {
+                if (drag.current?.moved) return;
+                if (i === active) {
+                  navigate({ to: "/templates/$id", params: { id: skin.meta.id } });
+                } else {
+                  goTo(i);
+                }
+              }}
             />
           ))}
+        </motion.div>
+      </div>
+
+      {/* Caption panel: the active dossier introduces itself; covers on the
+          table stay pure objects. Crossfades as the ring settles. */}
+      <div className="mt-6 flex flex-col items-center gap-5">
+        <div className="relative flex min-h-[92px] w-full max-w-xl flex-col items-center text-center">
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={activeSkin.meta.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: reducedMotion ? 0 : 0.28, ease: [0.22, 1, 0.36, 1] }}
+              className="flex flex-col items-center gap-1.5"
+            >
+              <h3
+                className="text-4xl font-normal leading-none tracking-tight text-ink"
+                style={{ fontFamily: "var(--font-display)" }}
+              >
+                {activeSkin.meta.codename}
+                <span className="text-seal">.</span>
+              </h3>
+              <p
+                className="text-[14px] italic text-ink-soft"
+                style={{ fontFamily: "var(--font-display)" }}
+              >
+                "{activeSkin.meta.personality}"
+              </p>
+              <div className="mt-3 flex items-center gap-3">
+                <Link
+                  to="/templates/$id"
+                  params={{ id: activeSkin.meta.id }}
+                  className="tap inline-flex min-h-11 items-center border border-ink/20 px-5 text-[10px] font-medium uppercase tracking-[0.3em] text-ink/70 transition-colors hover:border-seal hover:text-seal"
+                >
+                  Open the spread
+                </Link>
+                <button
+                  type="button"
+                  disabled={pickingId === activeSkin.meta.id}
+                  onClick={() => onPick(activeSkin.meta.id)}
+                  className="tap inline-flex min-h-11 items-center gap-2 border border-seal/50 bg-seal/10 px-5 text-[10px] font-medium uppercase tracking-[0.3em] text-seal transition-colors hover:bg-seal hover:text-paper disabled:cursor-wait disabled:opacity-50"
+                >
+                  {pickingId === activeSkin.meta.id && (
+                    <span
+                      aria-hidden
+                      className="h-3 w-3 animate-spin rounded-full border border-current border-t-transparent"
+                    />
+                  )}
+                  {pickingId === activeSkin.meta.id ? "Minting…" : "Mint this dossier"}
+                </button>
+              </div>
+            </motion.div>
+          </AnimatePresence>
         </div>
-        <button
-          type="button"
-          onClick={() => step(1)}
-          disabled={center === skins.length - 1}
-          aria-label="Next template"
-          className="tap inline-flex h-11 w-11 items-center justify-center border border-ink/15 text-ink/70 transition-colors hover:border-seal hover:text-seal disabled:opacity-30"
-        >
-          <ArrowRight className="h-4 w-4" />
-        </button>
+
+        {/* Steering row */}
+        <div className="flex items-center justify-center gap-6">
+          <button
+            type="button"
+            onClick={() => goTo(active - 1)}
+            disabled={active === 0}
+            aria-label="Previous template"
+            className="tap inline-flex h-11 w-11 items-center justify-center border border-ink/15 text-ink/70 transition-colors hover:border-seal hover:text-seal disabled:opacity-30"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+          <div aria-hidden className="flex items-center gap-2">
+            {skins.map((s, i) => (
+              <button
+                key={s.meta.id}
+                type="button"
+                tabIndex={-1}
+                onClick={() => goTo(i)}
+                className={`h-1.5 rounded-full transition-all duration-300 ${
+                  i === active ? "w-6 bg-seal" : "w-1.5 bg-ink/25 hover:bg-ink/50"
+                }`}
+              />
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => goTo(active + 1)}
+            disabled={active === skins.length - 1}
+            aria-label="Next template"
+            className="tap inline-flex h-11 w-11 items-center justify-center border border-ink/15 text-ink/70 transition-colors hover:border-seal hover:text-seal disabled:opacity-30"
+          >
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        </div>
+        <p className="text-[9px] font-medium uppercase tracking-[0.4em] text-ink/40">
+          Drag the table · click a cover · {skins.length} templates
+        </p>
       </div>
     </section>
   );
 }
 
-function CenterDossier({
+/**
+ * One cover on the ring. Its transform derives from the shared spring:
+ * position on the arc, facing angle, uniform scale, and depth-based
+ * dimming — proportions are never squished and covers never ghost.
+ */
+function RingCover({
   skin,
-  onPick,
-  picking,
+  index,
+  ring,
+  isActive,
+  onSelect,
 }: {
   skin: SkinModule;
-  onPick: (id: string) => void;
-  picking: boolean;
+  index: number;
+  ring: MotionValue<number>;
+  isActive: boolean;
+  onSelect: () => void;
 }) {
-  const navigate = useNavigate();
+  const transform = useTransform(ring, (v) => {
+    const off = index - v;
+    const th = (off * STEP_DEG * Math.PI) / 180;
+    const x = Math.sin(th) * RADIUS;
+    const z = (Math.cos(th) - 1) * RADIUS;
+    const rotY = -off * STEP_DEG * 1.15;
+    const scale = Math.max(0.7, 1.06 - Math.abs(off) * 0.1);
+    return `translate3d(${x.toFixed(1)}px, 0px, ${z.toFixed(1)}px) rotateY(${rotY.toFixed(2)}deg) scale(${scale.toFixed(3)})`;
+  });
+  // Covers further from the lamp sit in shadow — dimmed, never transparent.
+  const shade = useTransform(ring, (v) => Math.min(0.62, Math.abs(index - v) * 0.24));
+  const zIndex = useTransform(ring, (v) => 100 - Math.round(Math.abs(index - v) * 10));
+  const display = useTransform(ring, (v) =>
+    Math.abs(index - v) > RENDER_EACH_SIDE + 0.5 ? "none" : "block",
+  );
+
   return (
-    <article
-      className="border border-ink/20 shadow-[0_30px_60px_-30px_rgba(0,0,0,0.8)]"
-      style={{ background: skin.tokens.bg }}
+    <motion.div
+      className="absolute"
+      style={{
+        width: `${CARD_W}px`,
+        transform,
+        zIndex,
+        display,
+        transformStyle: "preserve-3d",
+        backfaceVisibility: "hidden",
+      }}
     >
-      {/* Click target, not an <a>: the preview holds the skin's own
-          buttons and interactive-in-interactive breaks SSR parsing. The
-          crawlable link to the spread is the "Open" CTA + sr-only nav. */}
       <div
         role="button"
-        tabIndex={0}
-        onClick={() => navigate({ to: "/templates/$id", params: { id: skin.meta.id } })}
+        tabIndex={isActive ? 0 : -1}
+        onClick={onSelect}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
-            navigate({ to: "/templates/$id", params: { id: skin.meta.id } });
+            onSelect();
           }
         }}
-        aria-label={`Open the ${skin.meta.codename} spread`}
-        className="block cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal/60"
+        aria-label={
+          isActive
+            ? `Open the ${skin.meta.codename} spread`
+            : `Bring ${skin.meta.codename} to the center`
+        }
+        className="group relative block w-full cursor-pointer border border-ink/20 shadow-[0_36px_70px_-32px_rgba(0,0,0,0.85)] transition-[border-color] duration-300 hover:border-seal/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal/60"
+        style={{ background: skin.tokens.bg }}
       >
-        <SkinCoverTile skin={skin} height={340} />
-      </div>
-      <div className="flex items-end justify-between gap-4 border-t px-5 py-4" style={{ borderColor: skin.tokens.rule }}>
-        <div className="min-w-0">
-          <h3
-            className="text-3xl leading-none"
+        <SkinCoverTile skin={skin} height={380} />
+        <div className="flex items-center justify-between border-t border-black/10 px-4 py-3">
+          <span
+            className="text-lg"
             style={{ fontFamily: skin.tokens.fontDisplay, color: skin.tokens.ink }}
           >
             {skin.meta.codename}
             <span style={{ color: skin.tokens.accent }}>.</span>
-          </h3>
-          <p
-            className="mt-1.5 truncate text-[13px] italic"
-            style={{ fontFamily: skin.tokens.fontDisplay, color: skin.tokens.inkSoft }}
-          >
-            "{skin.meta.personality}"
-          </p>
+          </span>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <Link
-            to="/templates/$id"
-            params={{ id: skin.meta.id }}
-            className="tap inline-flex min-h-10 items-center border px-3 text-[10px] font-medium uppercase tracking-[0.25em] transition-colors"
-            style={{ borderColor: skin.tokens.rule, color: skin.tokens.inkSoft }}
-          >
-            Open
-          </Link>
-          <button
-            type="button"
-            disabled={picking}
-            onClick={() => onPick(skin.meta.id)}
-            className="tap inline-flex min-h-10 items-center gap-2 border px-3 text-[10px] font-medium uppercase tracking-[0.25em] transition-colors disabled:cursor-wait disabled:opacity-50"
-            style={{
-              borderColor: skin.tokens.accent,
-              color: skin.tokens.accent,
-            }}
-          >
-            {picking && (
-              <span
-                aria-hidden
-                className="h-3 w-3 animate-spin rounded-full border border-current border-t-transparent"
-              />
-            )}
-            {picking ? "Minting…" : "Mint"}
-          </button>
-        </div>
+        {/* Depth dim: black wash that deepens with distance from center. */}
+        <motion.div
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
+          style={{ background: "#05070d", opacity: shade }}
+        />
       </div>
-    </article>
+    </motion.div>
   );
 }
 
