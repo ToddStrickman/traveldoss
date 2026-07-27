@@ -31,5 +31,10 @@ export default defineConfig({
         reuseExistingServer: !process.env.CI,
         timeout: 120_000,
       },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  projects: [
+    { name: "chromium", use: { ...devices["Desktop Chrome"] } },
+    // iOS Safari emulation for the FlowScroller mobile spec, which
+    // pins itself to webkit via test.use({ browserName: "webkit" }).
+    { name: "webkit", use: { ...devices["Desktop Safari"] } },
+  ],
 });
