@@ -466,7 +466,9 @@ export function SkinCoverTile({
 }) {
   const { Render, previewFixture, tokens } = skin;
   const tileRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.3);
+  const [contentH, setContentH] = useState(0);
   useEffect(() => {
     const el = tileRef.current;
     if (!el) return;
@@ -479,13 +481,23 @@ export function SkinCoverTile({
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
+  useEffect(() => {
+    const el = innerRef.current;
+    if (!el) return;
+    const measure = () => setContentH(el.scrollHeight);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [view]);
   return (
     <div
       ref={tileRef}
-      className="relative w-full overflow-hidden"
+      className="relative w-full overflow-y-auto overflow-x-hidden overscroll-contain"
       style={{ height: `${height}px`, background: tokens.bg }}
     >
       <div
+        ref={innerRef}
         className="absolute left-0 top-0 origin-top-left"
         style={{ width: "1400px", transform: `scale(${scale})`, pointerEvents: "none" }}
       >
@@ -494,11 +506,14 @@ export function SkinCoverTile({
           <Render trip={previewFixture.trip} blocks={previewFixture.blocks} view={view} />
         </InertRender>
       </div>
+      {/* Spacer establishes the scrollable height that matches the scaled
+          content, since the rendered inner is absolutely positioned. */}
+      <div aria-hidden style={{ height: `${Math.max(0, contentH * scale)}px` }} />
       <div
         aria-hidden
-        className="absolute inset-0"
+        className="pointer-events-none sticky bottom-0 -mt-24 h-24 w-full"
         style={{
-          background: "linear-gradient(180deg, transparent 60%, rgba(0,0,0,0.35) 100%)",
+          background: "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.35) 100%)",
         }}
       />
     </div>
