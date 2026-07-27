@@ -1,4 +1,4 @@
-import { expect, test, type Page, type Locator } from "@playwright/test";
+import { devices, expect, test, type Page, type Locator } from "@playwright/test";
 
 /**
  * FlowScroller mobile scroll-pin behavior (current landing).
@@ -24,11 +24,26 @@ const KICKERS = [
   "Arrive well",
 ] as const;
 
-const VIEWPORTS = [
-  { label: "iphone-se portrait", width: 375, height: 667 },
-  { label: "iphone-plus portrait", width: 414, height: 896 },
-  { label: "iphone-se landscape", width: 667, height: 375 },
+/**
+ * iPhone-shaped WebKit emulations. We use Playwright's device presets so
+ * every run inherits the real iOS Safari UA, DPR, touch flags, and mobile
+ * viewport meta handling — not just a resized Chromium window. Landscape
+ * is covered via the `.landscape` presets Playwright ships alongside each
+ * portrait device.
+ */
+const DEVICE_PRESETS = [
+  "iPhone SE",
+  "iPhone 13",
+  "iPhone 14 Pro Max",
+  "iPhone SE landscape",
+  "iPhone 13 landscape",
 ] as const;
+
+const EMULATIONS = DEVICE_PRESETS.map((name) => {
+  const preset = devices[name];
+  if (!preset) throw new Error(`Playwright device preset missing: ${name}`);
+  return { label: name, preset } as const;
+});
 
 const SECTION = 'section.tds-flow-mobile[aria-label="How TravelDoss works"]';
 
@@ -59,9 +74,11 @@ async function flowGeometry(page: Page) {
   }, SECTION);
 }
 
-for (const vp of VIEWPORTS) {
-  test.describe(`FlowScroller mobile · ${vp.label}`, () => {
-    test.use({ viewport: { width: vp.width, height: vp.height } });
+for (const { label, preset } of EMULATIONS) {
+  test.describe(`FlowScroller mobile · ${label}`, () => {
+    // Full device emulation: UA, DPR, touch/hasTouch, isMobile, viewport.
+    // Forces the WebKit browser so we exercise iOS Safari, not Chromium.
+    test.use({ ...preset, browserName: "webkit" });
 
     test("each of the 5 steps snaps into view as the user scrolls", async ({ page }) => {
       await page.goto("/");
@@ -103,12 +120,15 @@ for (const vp of VIEWPORTS) {
         const box = await kicker.boundingBox();
         expect(box, `step ${i + 1} kicker has box`).not.toBeNull();
         expect(box!.y).toBeGreaterThanOrEqual(-4);
-        expect(box!.y + box!.height).toBeLessThanOrEqual(vp.height + 4);
+        expect(box!.y + box!.height).toBeLessThanOrEqual(vh + 4);
       }
 
       // Viewport-overflow guard — the flow must never push the page wider.
-      const scrollW = await page.evaluate(() => document.documentElement.scrollWidth);
-      expect(scrollW, "no horizontal overflow").toBeLessThanOrEqual(vp.width + 1);
+      const { scrollW, innerW } = await page.evaluate(() => ({
+        scrollW: document.documentElement.scrollWidth,
+        innerW: window.innerWidth,
+      }));
+      expect(scrollW, "no horizontal overflow").toBeLessThanOrEqual(innerW + 1);
     });
 
     test("user cannot pass the flow until all steps have been scrolled", async ({ page }) => {
