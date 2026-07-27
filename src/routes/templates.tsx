@@ -8,6 +8,7 @@ import { TiltCard } from "@/components/motion/Tilt";
 import { InertRender } from "@/lib/skins/shared/views/parts";
 import { SkinPeek } from "@/components/mobile/SkinPeek";
 import { IngestionModal } from "@/components/flow/IngestionModal";
+import { AtelierTable, MobileCoverRail } from "@/components/flow/AtelierTable";
 import { GenerationLoader } from "@/components/GenerationLoader";
 import { SandHero } from "@/components/landing/SandHero";
 import { TopoBackground } from "@/components/landing/TopoBackground";
@@ -89,8 +90,7 @@ export const Route = createFileRoute("/templates")({
       { title: "Travel Itinerary Templates — TravelDoss" },
       {
         name: "description",
-        content:
-          "Pick from 10 beautiful travel itinerary templates. Each dossier design maps your trip day by day — one URL, one dollar, one month.",
+        content: `Pick from ${SKINS.length} beautiful travel itinerary templates. Each dossier design maps your trip day by day — one URL, one dollar, one month.`,
       },
       {
         property: "og:title",
@@ -98,8 +98,7 @@ export const Route = createFileRoute("/templates")({
       },
       {
         property: "og:description",
-        content:
-          "Ten editorial dossier templates for your trip. One dollar, one URL, one month — composed like a magazine.",
+        content: `${SKINS.length} editorial dossier templates for your trip. One dollar, one URL, one month — composed like a magazine.`,
       },
       { property: "og:url", content: `${SITE_URL}/templates` },
     ],
@@ -224,7 +223,16 @@ function SkinCard({
           className="mt-3 text-4xl font-normal leading-[1.05] tracking-tight text-ink md:text-5xl"
           style={{ fontFamily: "var(--font-display)" }}
         >
-          {skin.meta.codename}
+          {/* A real link to the template's own spread page: crawlable,
+              middle-clickable — the card's JS activation stays for taps. */}
+          <Link
+            to="/templates/$id"
+            params={{ id: skin.meta.id }}
+            onClick={(e) => e.stopPropagation()}
+            className="transition-colors hover:text-seal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal/40"
+          >
+            {skin.meta.codename}
+          </Link>
         </h2>
         <p
           className="mt-3 text-sm italic leading-relaxed text-ink-soft md:text-base"
@@ -276,6 +284,18 @@ function TemplatesPage() {
   const [peekId, setPeekId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [activeTag, setActiveTag] = useState<string | null>(null);
+  // Desktop browse mode: the atelier table (3D coverflow) or the classic
+  // grid. Deterministic initial value ("table") keeps SSR and the first
+  // client render identical; the saved preference applies after mount.
+  const [browse, setBrowse] = useState<"table" | "grid">("table");
+  useEffect(() => {
+    const saved = window.localStorage.getItem("templates:browse");
+    if (saved === "grid" || saved === "table") setBrowse(saved);
+  }, []);
+  const setBrowseMode = (mode: "table" | "grid") => {
+    setBrowse(mode);
+    window.localStorage.setItem("templates:browse", mode);
+  };
   const navigate = useNavigate();
   const { pick: pickParam } = Route.useSearch();
   const create = useServerFn(createTripFromIngestion);
@@ -566,15 +586,58 @@ function TemplatesPage() {
             )}
           </div>
 
-          {/* Result count */}
-          <p className="text-[10px] uppercase tracking-[0.4em] text-ink/60">
-            {filteredSkins.length} dossier template{filteredSkins.length !== 1 ? "s" : ""}
-            {activeTag ? ` · ${activeTag}` : ""}
-            {query ? ` · “${query.trim()}”` : ""}
-          </p>
+          {/* Result count + browse-mode toggle (all sizes: the table has a
+              phone-native sibling, the swipeable cover rail) */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-[10px] uppercase tracking-[0.4em] text-ink/60">
+              {filteredSkins.length} dossier template{filteredSkins.length !== 1 ? "s" : ""}
+              {activeTag ? ` · ${activeTag}` : ""}
+              {query ? ` · “${query.trim()}”` : ""}
+            </p>
+            <div className="flex items-center gap-1.5" role="group" aria-label="Browse mode">
+              {(["table", "grid"] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setBrowseMode(mode)}
+                  aria-pressed={browse === mode}
+                  className={`tap rounded-full border px-3.5 py-2 text-[10px] font-medium uppercase tracking-[0.25em] transition-colors duration-300 ${
+                    browse === mode
+                      ? "border-seal bg-seal/10 text-seal"
+                      : "border-ink/10 text-ink/50 hover:border-ink/30 hover:text-ink"
+                  }`}
+                >
+                  {mode === "table" ? "The table" : "Grid"}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
-        <div className="mt-8 grid grid-cols-1 gap-6 sm:mt-10 sm:gap-8 md:grid-cols-2 lg:grid-cols-3">
+        {browse === "table" && filteredSkins.length > 0 ? (
+          <>
+            <div className="mt-8 hidden md:block">
+              <AtelierTable
+                skins={filteredSkins}
+                onPick={handlePick}
+                pickingId={picking}
+              />
+            </div>
+            <div className="mt-8 md:hidden">
+              <MobileCoverRail
+                skins={filteredSkins}
+                onPick={handlePick}
+                pickingId={picking}
+              />
+            </div>
+          </>
+        ) : null}
+
+        <div
+          className={`mt-8 grid grid-cols-1 gap-6 sm:mt-10 sm:gap-8 md:grid-cols-2 lg:grid-cols-3 ${
+            browse === "table" ? "hidden" : ""
+          }`}
+        >
           {filteredSkins.map((skin) => (
             <SkinCard
               key={skin.meta.id}
