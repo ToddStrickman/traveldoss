@@ -34,7 +34,9 @@ export function ActionDock({
         // Fixed bottom, safe-area aware, centered. Never causes horizontal
         // overflow at 375 (max-w clamped) and stays reachable on desktop.
         "fixed left-1/2 z-40 -translate-x-1/2",
-        "bottom-[max(16px,env(safe-area-inset-bottom))]",
+        // On mobile, lift above the fixed MobileNavBar (~56px + safe area).
+        // On md+ (where MobileNavBar is hidden), sit near the bottom edge.
+        "bottom-[calc(env(safe-area-inset-bottom)+72px)] md:bottom-[max(16px,env(safe-area-inset-bottom))]",
         "flex items-center gap-1.5 rounded-full p-1.5",
         "border border-white/15 bg-white/10 shadow-[0_10px_40px_-12px_rgba(0,0,0,0.6)]",
         "backdrop-blur-[12px] backdrop-saturate-150",
