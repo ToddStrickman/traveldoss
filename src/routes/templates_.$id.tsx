@@ -14,6 +14,8 @@ import {
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { SKINS, getSkin } from "@/lib/skins/registry";
+import type { SkinView } from "@/lib/skins/types";
+import { ViewSwitch } from "@/components/ViewSwitch";
 import { SkinCoverTile } from "@/components/flow/AtelierTable";
 import { IngestionModal } from "@/components/flow/IngestionModal";
 import { GenerationLoader } from "@/components/GenerationLoader";
@@ -73,6 +75,7 @@ function TemplateSpread() {
   const [modalOpen, setModalOpen] = useState(false);
   const [minting, setMinting] = useState(false);
   const [pendingSlug, setPendingSlug] = useState<string | null>(null);
+  const [view, setView] = useState<SkinView>("vertical");
 
   useEffect(() => {
     if (!pendingSlug) return;
@@ -227,8 +230,16 @@ function TemplateSpread() {
         </section>
 
         <section aria-label={`${skin.meta.codename} live preview`}>
+          {/* The three-layout pivot — the product's signature move — so the
+              preview shows how this template composes a trip in every view. */}
+          <ViewSwitch
+            value={view}
+            onChange={setView}
+            tokens={skin.tokens}
+            className="mb-3 inline-flex gap-1 rounded-full p-1"
+          />
           <div className="border border-ink/20 shadow-[0_40px_80px_-40px_rgba(0,0,0,0.8)]">
-            <SkinCoverTile skin={skin} height={560} />
+            <SkinCoverTile skin={skin} height={560} view={view} />
           </div>
         </section>
       </main>
