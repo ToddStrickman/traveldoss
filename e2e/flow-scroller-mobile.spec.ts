@@ -39,8 +39,6 @@ const DEVICE_PRESETS = [
   "iPhone 13 landscape",
 ] as const;
 
-type Preset = (typeof DEVICE_PRESETS)[number];
-
 const EMULATIONS = DEVICE_PRESETS.map((name) => {
   const preset = devices[name];
   if (!preset) throw new Error(`Playwright device preset missing: ${name}`);
