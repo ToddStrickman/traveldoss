@@ -3,9 +3,12 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { CURRENT_TERMS_VERSION } from "@/lib/legal/registry";
+import { stashPendingAcceptance } from "@/lib/legal/pending-acceptance";
 import { ElevateTagline } from "@/components/brand/ElevateTagline";
 import { SITE_URL } from "@/lib/site";
 
@@ -15,7 +18,9 @@ export const Route = createFileRoute("/login")({
   // default is applied at the use site below.
   validateSearch: (search: Record<string, unknown>): { redirect?: string } => ({
     redirect:
-      typeof search.redirect === "string" && search.redirect.startsWith("/") && !search.redirect.startsWith("//")
+      typeof search.redirect === "string" &&
+      search.redirect.startsWith("/") &&
+      !search.redirect.startsWith("//")
         ? search.redirect
         : undefined,
   }),
@@ -45,20 +50,41 @@ function LoginPage() {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [agreeTerms, setAgreeTerms] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  function mapAuthError(err: unknown): { title: string; description?: string; action?: "resend" | "switch" } {
+  function mapAuthError(err: unknown): {
+    title: string;
+    description?: string;
+    action?: "resend" | "switch";
+  } {
     const msg = err instanceof Error ? err.message : String(err ?? "");
     const code = (err as { code?: string } | null)?.code ?? "";
     const lower = msg.toLowerCase();
     if (code === "invalid_credentials" || lower.includes("invalid login")) {
-      return { title: "Wrong email or password", description: "Double-check and try again, or reset your password." };
+      return {
+        title: "Wrong email or password",
+        description: "Double-check and try again, or reset your password.",
+      };
     }
     if (code === "email_not_confirmed" || lower.includes("email not confirmed")) {
-      return { title: "Confirm your email to sign in", description: "We sent you a confirmation link — check your inbox.", action: "resend" };
+      return {
+        title: "Confirm your email to sign in",
+        description: "We sent you a confirmation link — check your inbox.",
+        action: "resend",
+      };
     }
-    if (code === "user_already_exists" || code === "email_exists" || lower.includes("already registered") || lower.includes("already exists")) {
-      return { title: "An account already exists", description: "Sign in with your existing password instead.", action: "switch" };
+    if (
+      code === "user_already_exists" ||
+      code === "email_exists" ||
+      lower.includes("already registered") ||
+      lower.includes("already exists")
+    ) {
+      return {
+        title: "An account already exists",
+        description: "Sign in with your existing password instead.",
+        action: "switch",
+      };
     }
     if (lower.includes("rate limit") || code === "over_email_send_rate_limit") {
       return { title: "Too many attempts", description: "Give it a minute and try again." };
@@ -74,12 +100,26 @@ function LoginPage() {
     setLoading(true);
     try {
       if (mode === "signup") {
+        // Clickwrap: the button is disabled until the box is ticked, but a
+        // submit can still arrive via Enter/autofill edge cases — never let
+        // account creation proceed without the affirmative act.
+        if (!agreeTerms) {
+          toast.error("Please agree to the Terms of Service", {
+            description: "Tick the box above Create account to continue.",
+          });
+          setLoading(false);
+          return;
+        }
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: { emailRedirectTo: window.location.origin + redirect },
         });
         if (error) throw error;
+        // The acceptance click is stashed with its real timestamp and
+        // written to the ledger by TermsGate once a session exists (which
+        // may be after email confirmation) — see lib/legal.
+        stashPendingAcceptance(CURRENT_TERMS_VERSION);
         if (data.session) {
           window.location.assign(redirect);
           return;
@@ -102,7 +142,11 @@ function LoginPage() {
                 label: "Resend email",
                 onClick: () => {
                   void supabase.auth
-                    .resend({ type: "signup", email, options: { emailRedirectTo: window.location.origin + redirect } })
+                    .resend({
+                      type: "signup",
+                      email,
+                      options: { emailRedirectTo: window.location.origin + redirect },
+                    })
                     .then(({ error }) =>
                       error
                         ? toast.error("Couldn't resend", { description: error.message })
@@ -171,7 +215,10 @@ function LoginPage() {
       <div aria-hidden className="td-vignette fixed inset-0 z-0" />
 
       <header className="relative z-10 mx-auto flex max-w-[1600px] items-center justify-between border-b border-ink/10 px-5 py-5 md:px-8 md:py-6">
-        <Link to="/" className="inline-flex items-center gap-3 td-eyebrow text-ink/70 transition-colors hover:text-seal">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-3 td-eyebrow text-ink/70 transition-colors hover:text-seal"
+        >
           <span className="h-px w-6 bg-ink/30" />
           TravelDoss<span className="text-ink/30">®</span>
         </Link>
@@ -188,11 +235,17 @@ function LoginPage() {
           <h1 className="td-headline mt-6 text-6xl text-ink md:text-7xl">
             {mode === "signin" ? (
               <>
-                Welcome <span className="italic text-ink/85">back<span className="text-seal">.</span></span>
+                Welcome{" "}
+                <span className="italic text-ink/85">
+                  back<span className="text-seal">.</span>
+                </span>
               </>
             ) : (
               <>
-                Open a <span className="italic text-ink/85">dossier<span className="text-seal">.</span></span>
+                Open a{" "}
+                <span className="italic text-ink/85">
+                  dossier<span className="text-seal">.</span>
+                </span>
               </>
             )}
           </h1>
@@ -255,10 +308,45 @@ function LoginPage() {
                   className="h-10 rounded-none border-0 border-b border-ink/20 bg-transparent px-0 text-base text-ink shadow-none focus-visible:border-seal focus-visible:ring-0"
                 />
               </div>
+              {mode === "signup" && (
+                <div className="flex items-start gap-3 pt-1">
+                  <Checkbox
+                    id="agree-terms"
+                    checked={agreeTerms}
+                    onCheckedChange={(v) => setAgreeTerms(v === true)}
+                    aria-required="true"
+                    aria-describedby="agree-terms-label"
+                    className="mt-0.5 rounded-none border-ink/30 shadow-none data-[state=checked]:border-seal data-[state=checked]:bg-seal data-[state=checked]:text-paper"
+                  />
+                  <label
+                    htmlFor="agree-terms"
+                    id="agree-terms-label"
+                    className="cursor-pointer text-xs leading-relaxed text-ink/60"
+                  >
+                    I have read and agree to the{" "}
+                    <Link
+                      to="/terms"
+                      target="_blank"
+                      className="text-seal underline decoration-seal/40 underline-offset-4 transition-colors hover:text-seal-soft"
+                    >
+                      Terms of Service
+                    </Link>{" "}
+                    and{" "}
+                    <Link
+                      to="/privacy"
+                      target="_blank"
+                      className="text-seal underline decoration-seal/40 underline-offset-4 transition-colors hover:text-seal-soft"
+                    >
+                      Privacy Policy
+                    </Link>
+                    .
+                  </label>
+                </div>
+              )}
               <Button
                 type="submit"
-                className="mt-2 w-full rounded-none bg-seal py-6 text-[10px] uppercase tracking-[0.4em] text-paper hover:bg-seal-soft"
-                disabled={loading}
+                className="mt-2 w-full rounded-none bg-seal py-6 text-[10px] uppercase tracking-[0.4em] text-paper hover:bg-seal-soft disabled:opacity-40"
+                disabled={loading || (mode === "signup" && !agreeTerms)}
               >
                 {mode === "signin" ? "Sign in" : "Create account"}
               </Button>

@@ -258,6 +258,48 @@ export type Database = {
         }
         Relationships: []
       }
+      terms_acceptances: {
+        Row: {
+          accepted_at: string
+          content_hash: string
+          doc_slug: string
+          id: string
+          ip_address: string | null
+          locale: string | null
+          method: string
+          recorded_at: string
+          user_agent: string | null
+          user_id: string
+          version: string
+        }
+        Insert: {
+          accepted_at?: string
+          content_hash: string
+          doc_slug?: string
+          id?: string
+          ip_address?: string | null
+          locale?: string | null
+          method: string
+          recorded_at?: string
+          user_agent?: string | null
+          user_id: string
+          version: string
+        }
+        Update: {
+          accepted_at?: string
+          content_hash?: string
+          doc_slug?: string
+          id?: string
+          ip_address?: string | null
+          locale?: string | null
+          method?: string
+          recorded_at?: string
+          user_agent?: string | null
+          user_id?: string
+          version?: string
+        }
+        Relationships: []
+      }
       trip_doc_previews: {
         Row: {
           created_at: string
