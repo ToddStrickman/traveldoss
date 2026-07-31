@@ -513,6 +513,14 @@ function DossierPage() {
   useEffect(() => {
     if (!canEdit) return;
     if (!blocks.length) return;
+    // Durable one-time guard. `hardenedFor` is a ref, so it only dedupes
+    // within a single page session — every reload re-ran the full pipeline:
+    // three refine passes, each a complete AI parse plus up to 24 Google
+    // Places lookups (~$3). An owner opening their dossier five times while
+    // planning paid roughly $15 against a single sale. The marker lives in
+    // content.meta, which updateDossier already merges, so this needs no
+    // schema change. A failed pass leaves it unset and retries next load.
+    if ((meta as { hardenedAt?: string } | undefined)?.hardenedAt) return;
     if (hardenedFor.current === trip.id) return;
     hardenedFor.current = trip.id;
     const handle = setTimeout(() => {
@@ -534,11 +542,18 @@ function DossierPage() {
             console.info("[harden] dropped stale result (user edited during pass)");
             return;
           }
+          const hardenedAt = new Date().toISOString();
           setSnap(
-            (s) => ({ ...s, blocks: res.blocks as Block[] }),
+            (s) => ({
+              ...s,
+              blocks: res.blocks as Block[],
+              meta: { ...s.meta, hardenedAt },
+            }),
             { coalesceKey: "harden:initial" },
           );
-          queueSave({ blocks: res.blocks as Block[] });
+          // Persist the marker alongside the blocks so the next load skips
+          // the pass entirely rather than paying for it again.
+          queueSave({ blocks: res.blocks as Block[], meta: { ...meta, hardenedAt } });
         })
         .catch((err) => console.error("[harden] background pass failed", err));
     }, 2500);
