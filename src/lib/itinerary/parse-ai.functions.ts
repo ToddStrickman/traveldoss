@@ -1,14 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { generateText, Output } from "ai";
 import { z, ZodError, type ZodIssue } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Block } from "@/lib/skins/types";
 import { parseDropInWithMeta, stripEmoji } from "@/lib/itinerary/parse";
 import { normalizeParsedShape } from "@/lib/itinerary/normalize-ai";
 import { isCreditsMessage, isRateLimitMessage } from "@/lib/itinerary/ai-errors";
-import type {
-  DebugAttempt,
-  DebugReport,
-} from "@/lib/itinerary/debug-report";
+import type { DebugAttempt, DebugReport } from "@/lib/itinerary/debug-report";
 
 /**
  * AI-powered itinerary parser. Takes raw pasted text (from ChatGPT,
@@ -28,21 +26,19 @@ const BlockSchema = z.object({
     .string()
     .nullable()
     .optional()
-    .describe("The primary destination of the trip, e.g. 'Tokyo' or 'Amalfi Coast'. Null if undecidable."),
+    .describe(
+      "The primary destination of the trip, e.g. 'Tokyo' or 'Amalfi Coast'. Null if undecidable.",
+    ),
   blocks: z
     .array(
       z.object({
-        kind: z
-          .enum(["day", "place", "flight", "paragraph", "note"])
-          .describe("The block type."),
+        kind: z.enum(["day", "place", "flight", "paragraph", "note"]).describe("The block type."),
         // day fields
         n: nullableNumber().describe("Day number (only for kind=day)"),
-        label: nullableString()
-          .describe("Short title for a day, e.g. 'Arrival in Rome'"),
-        dayDate: nullableString()
-          .describe(
-            "Calendar date for the day if the input mentions one ('Oct 14', '10/14/25', '2025-10-14', or a heading parenthetical like 'Day 1 — Arrival (Sat, Nov 21)' → 'Sat, Nov 21'). Null if not stated — DO NOT invent a date.",
-          ),
+        label: nullableString().describe("Short title for a day, e.g. 'Arrival in Rome'"),
+        dayDate: nullableString().describe(
+          "Calendar date for the day if the input mentions one ('Oct 14', '10/14/25', '2025-10-14', or a heading parenthetical like 'Day 1 — Arrival (Sat, Nov 21)' → 'Sat, Nov 21'). Null if not stated — DO NOT invent a date.",
+        ),
         // place fields
         name: nullableString().describe("Name of the place/vendor"),
         tier: z
@@ -53,15 +49,7 @@ const BlockSchema = z.object({
             "'shadow' for any entry the user marked as Alternative / Option / Backup / Plan B — those render in the Shadow Itinerary section. Otherwise 'primary' or null.",
           ),
         category: z
-          .enum([
-            "transit",
-            "restaurant",
-            "walk",
-            "event",
-            "accommodation",
-            "culture",
-            "",
-          ])
+          .enum(["transit", "restaurant", "walk", "event", "accommodation", "culture", ""])
           .nullable()
           .optional()
           .describe(
@@ -73,14 +61,12 @@ const BlockSchema = z.object({
         hours: nullableString(),
         time: nullableString().describe("Clock time like '14:30' if mentioned"),
         reservation: nullableString(),
-        note: nullableString()
-          .describe(
-            "ONE concise editorial sentence (<15 words) combining the source context with a factual insight about the vendor. Empty if the model has no insight.",
-          ),
-        confidence: nullableNumber()
-          .describe(
-            "Self-rated confidence in the enriched fields (address/phone/website/hours/note) for this place, on a 0–1 scale. Use <0.85 whenever you are not certain the vendor identification or enrichment is correct. Null for non-place blocks.",
-          ),
+        note: nullableString().describe(
+          "ONE concise editorial sentence (<15 words) combining the source context with a factual insight about the vendor. Empty if the model has no insight.",
+        ),
+        confidence: nullableNumber().describe(
+          "Self-rated confidence in the enriched fields (address/phone/website/hours/note) for this place, on a 0–1 scale. Use <0.85 whenever you are not certain the vendor identification or enrichment is correct. Null for non-place blocks.",
+        ),
         // accommodation
         checkIn: nullableString(),
         checkOut: nullableString(),
@@ -198,95 +184,111 @@ CONFIDENCE: For every place block, set confidence on a 0–1 scale reflecting ce
 
 Return ONLY the structured object. No prose around it.`;
 
-export const parseItineraryAi = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) =>
-    z
-      .object({
-        text: z.string().min(8).max(50_000),
-        source: z.enum(["text", "transcript", "ai"]).default("text"),
-      })
-      .parse(input),
-  )
-  .handler(async ({ data }) => {
-    const key = process.env.LOVABLE_API_KEY;
-    if (!key) {
-      throw new Error(
-        "AI parser is not configured. Missing LOVABLE_API_KEY on the server.",
-      );
+const ParseInputSchema = z.object({
+  text: z.string().min(8).max(50_000),
+  source: z.enum(["text", "transcript", "ai"]).default("text"),
+});
+
+export type ParseItineraryInput = z.infer<typeof ParseInputSchema>;
+
+/**
+ * Core parse implementation — callable directly from other SERVER code.
+ *
+ * Server-to-server callers (refineItineraryAiCore, importBookingEmail) MUST
+ * use this rather than the `parseItineraryAi` server fn below. Invoking a
+ * server fn from server code runs its *client* middleware chain, and
+ * `attachSupabaseAuth` reads the Supabase session from localStorage — which is
+ * undefined on the server — so no Bearer header would be attached and
+ * `requireSupabaseAuth` would reject the nested call. Those callers are
+ * themselves authenticated entry points, so the spend stays gated.
+ */
+export async function parseItineraryAiCore(data: ParseItineraryInput) {
+  const key = process.env.LOVABLE_API_KEY;
+  if (!key) {
+    throw new Error("AI parser is not configured. Missing LOVABLE_API_KEY on the server.");
+  }
+
+  // Strip emojis BEFORE the model sees them. Cheaper tokens; no echo risk.
+  const cleanText = stripEmoji(data.text);
+
+  const { createLovableAiGatewayProvider } = await import("@/lib/ai-gateway.server");
+  const gateway = createLovableAiGatewayProvider(key);
+
+  const attempts: DebugAttempt[] = [];
+  let parsed: z.infer<typeof BlockSchema>;
+  try {
+    parsed = await parseBlocksWithAi(gateway, cleanText, data.source, attempts);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (isCreditsMessage(msg)) {
+      throw new Error("AI credits exhausted. Add credits in Workspace → Usage.");
+    }
+    if (isRateLimitMessage(msg)) {
+      throw new Error("AI is busy. Wait a few seconds and retry.");
     }
 
-    // Strip emojis BEFORE the model sees them. Cheaper tokens; no echo risk.
-    const cleanText = stripEmoji(data.text);
+    console.error("[parse-ai] structured parse failed; using local parser", err);
+    const fallback = parseDropInWithMeta(cleanText, data.source);
+    await enrichPlacesViaWebSearch(fallback.blocks, fallback.destination, gateway).catch(
+      (enrichErr: unknown) => console.error("[parse-ai] fallback enrichment failed:", enrichErr),
+    );
+    const debugReport: DebugReport = {
+      source: "parse-ai",
+      createdAt: new Date().toISOString(),
+      model: "google/gemini-2.5-flash",
+      outcome: "local-fallback",
+      attempts,
+      finalParsed: fallback,
+      finalError: msg,
+    };
+    return { ...fallback, debugReport };
+  }
 
-    const { createLovableAiGatewayProvider } = await import("@/lib/ai-gateway.server");
-    const gateway = createLovableAiGatewayProvider(key);
+  // Translate the model's nullable schema into the app's Block[] (omit
+  // null/empty fields so the UI doesn't render stray "—" placeholders).
+  const blocks: Block[] = parsed.blocks
+    .map((b) => toBlock(b))
+    .filter((b): b is Block => b !== null);
 
-    const attempts: DebugAttempt[] = [];
-    let parsed: z.infer<typeof BlockSchema>;
-    try {
-      parsed = await parseBlocksWithAi(gateway, cleanText, data.source, attempts);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      if (isCreditsMessage(msg)) {
-        throw new Error("AI credits exhausted. Add credits in Workspace → Usage.");
-      }
-      if (isRateLimitMessage(msg)) {
-        throw new Error("AI is busy. Wait a few seconds and retry.");
-      }
+  // ── Web-search enrichment fallback ────────────────────────────────
+  // For any place the model returned without address/phone/website,
+  // hit Google Places (Text Search v1) to fill them in. Then run a
+  // single batched Gemini call to write a <15-word editorial note
+  // for every freshly enriched place that still lacks one.
+  await enrichPlacesViaWebSearch(blocks, parsed.destination ?? null, gateway).catch(
+    (err: unknown) => {
+      // Enrichment must never break parsing — log and move on.
+      console.error("[parse-ai] enrichment fallback failed:", err);
+    },
+  );
 
-      console.error("[parse-ai] structured parse failed; using local parser", err);
-      const fallback = parseDropInWithMeta(cleanText, data.source);
-      await enrichPlacesViaWebSearch(fallback.blocks, fallback.destination, gateway).catch(
-        (enrichErr: unknown) => console.error("[parse-ai] fallback enrichment failed:", enrichErr),
-      );
-      const debugReport: DebugReport = {
+  const result = {
+    destination: parsed.destination ?? null,
+    blocks,
+  };
+  // Only attach a debug report if there were retries / mismatches worth
+  // surfacing. A clean first-attempt parse produces no attempts entries.
+  const debugReport: DebugReport | null = attempts.length
+    ? {
         source: "parse-ai",
         createdAt: new Date().toISOString(),
         model: "google/gemini-2.5-flash",
-        outcome: "local-fallback",
+        outcome: "success-after-retry",
         attempts,
-        finalParsed: fallback,
-        finalError: msg,
-      };
-      return { ...fallback, debugReport };
-    }
+        finalParsed: result,
+      }
+    : null;
+  return debugReport ? { ...result, debugReport } : result;
+}
 
-    // Translate the model's nullable schema into the app's Block[] (omit
-    // null/empty fields so the UI doesn't render stray "—" placeholders).
-    const blocks: Block[] = parsed.blocks
-      .map((b) => toBlock(b))
-      .filter((b): b is Block => b !== null);
-
-    // ── Web-search enrichment fallback ────────────────────────────────
-    // For any place the model returned without address/phone/website,
-    // hit Google Places (Text Search v1) to fill them in. Then run a
-    // single batched Gemini call to write a <15-word editorial note
-    // for every freshly enriched place that still lacks one.
-    await enrichPlacesViaWebSearch(blocks, parsed.destination ?? null, gateway).catch(
-      (err: unknown) => {
-        // Enrichment must never break parsing — log and move on.
-        console.error("[parse-ai] enrichment fallback failed:", err);
-      },
-    );
-
-    const result = {
-      destination: parsed.destination ?? null,
-      blocks,
-    };
-    // Only attach a debug report if there were retries / mismatches worth
-    // surfacing. A clean first-attempt parse produces no attempts entries.
-    const debugReport: DebugReport | null = attempts.length
-      ? {
-          source: "parse-ai",
-          createdAt: new Date().toISOString(),
-          model: "google/gemini-2.5-flash",
-          outcome: "success-after-retry",
-          attempts,
-          finalParsed: result,
-        }
-      : null;
-    return debugReport ? { ...result, debugReport } : result;
-  });
+/**
+ * Authenticated HTTP entry point. Spends Lovable AI credits AND Google Places
+ * credits (up to PER_RUN_CAP lookups), so it must never be callable anonymously.
+ */
+export const parseItineraryAi = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => ParseInputSchema.parse(input))
+  .handler(async ({ data }) => parseItineraryAiCore(data));
 
 /* ─── helpers ───────────────────────────────────────────────────────── */
 
@@ -314,6 +316,10 @@ async function parseBlocksWithAi(
         model: gateway("google/gemini-2.5-flash"),
         system: `${SYSTEM_PROMPT}\n\nReturn ONLY a JSON object matching the requested schema. Missing optional fields may be omitted. No prose, no markdown, no code fences.${repairNote}`,
         prompt: basePrompt,
+        // Output tokens are ~83% of AI cost and this call was previously
+        // unbounded. 8192 comfortably fits a 30-day itinerary (the hard
+        // duration cap) while making a runaway generation impossible.
+        maxOutputTokens: 8192,
       });
       lastRaw = result.text.trim();
       let parsedJson: unknown;
@@ -356,9 +362,7 @@ async function parseBlocksWithAi(
       console.error(`[parse-ai] attempt ${attempt}/${MAX_ATTEMPTS} threw:`, err);
       if (lastRaw) {
         try {
-          const reparsed: unknown = normalizeParsedShape(
-            JSON.parse(extractJsonObject(lastRaw)),
-          );
+          const reparsed: unknown = normalizeParsedShape(JSON.parse(extractJsonObject(lastRaw)));
           const safe = BlockSchema.safeParse(reparsed);
           if (safe.success) return safe.data;
           logZodDiagnostics("parse-ai", attempt, MAX_ATTEMPTS, safe.error, reparsed, lastRaw);
@@ -395,7 +399,9 @@ async function parseBlocksWithAi(
     }
   }
 
-  throw new Error(`AI parser could not produce valid blocks after ${MAX_ATTEMPTS} attempts (${lastIssue}).`);
+  throw new Error(
+    `AI parser could not produce valid blocks after ${MAX_ATTEMPTS} attempts (${lastIssue}).`,
+  );
 }
 
 function extractJsonObject(text: string): string {
@@ -479,8 +485,7 @@ function toBlock(raw: RawBlock): Block | null {
       });
     case "place":
       if (!raw.name) return null;
-      const category =
-        raw.category && (raw.category as string) !== "" ? raw.category : undefined;
+      const category = raw.category && (raw.category as string) !== "" ? raw.category : undefined;
       // Strip any emojis the model might have echoed despite the prompt.
       const cleanName = stripEmoji(raw.name).trim();
       if (!cleanName) return null;
@@ -567,9 +572,7 @@ async function enrichPlacesViaWebSearch(
 
   const targets = blocks.filter(
     (b): b is PlaceBlock =>
-      b.kind === "place" &&
-      !!b.name &&
-      (!b.address || !b.phone || !b.website || b.lat == null),
+      b.kind === "place" && !!b.name && (!b.address || !b.phone || !b.website || b.lat == null),
   );
   if (targets.length === 0) return;
 
@@ -603,8 +606,8 @@ async function enrichPlacesViaWebSearch(
     (p, i) => enrichedFlags[i] && (!p.note || p.note.trim() === ""),
   );
   if (noteCandidates.length > 0) {
-    await fillEditorialNotes(noteCandidates, destination, gateway).catch(
-      (err: unknown) => console.error("[parse-ai] note synthesis failed:", err),
+    await fillEditorialNotes(noteCandidates, destination, gateway).catch((err: unknown) =>
+      console.error("[parse-ai] note synthesis failed:", err),
     );
   }
 }
@@ -620,20 +623,17 @@ async function fillFromGooglePlaces(
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 3_000);
   try {
-    const res = await fetch(
-      "https://places.googleapis.com/v1/places:searchText",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Goog-Api-Key": apiKey,
-          "X-Goog-FieldMask":
-            "places.displayName,places.formattedAddress,places.internationalPhoneNumber,places.websiteUri,places.regularOpeningHours,places.location",
-        },
-        body: JSON.stringify({ textQuery: query, pageSize: 1 }),
-        signal: ctrl.signal,
+    const res = await fetch("https://places.googleapis.com/v1/places:searchText", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": apiKey,
+        "X-Goog-FieldMask":
+          "places.displayName,places.formattedAddress,places.internationalPhoneNumber,places.websiteUri,places.regularOpeningHours,places.location",
       },
-    );
+      body: JSON.stringify({ textQuery: query, pageSize: 1 }),
+      signal: ctrl.signal,
+    });
     if (!res.ok) return false;
     const json = (await res.json()) as {
       places?: Array<{
@@ -720,6 +720,9 @@ async function fillEditorialNotes(
       "You write single-sentence editorial notes for a luxury travel itinerary. Each note must be UNDER 15 WORDS, factual, and add genuine insight (atmosphere, specialty, what to expect). No fluff, no marketing copy. Return null if you have no real knowledge of the venue — never fabricate.",
     prompt: `Destination: ${destination ?? "unknown"}\n\nWrite one note per entry below. Reply with the JSON object only.\n\n${list}`,
     experimental_output: Output.object({ schema: NotesSchema }),
+    // At most PER_RUN_CAP (24) notes of under 15 words each — 1500 is
+    // generous. Previously unbounded.
+    maxOutputTokens: 1500,
   });
 
   for (const { index, note } of result.experimental_output.notes) {

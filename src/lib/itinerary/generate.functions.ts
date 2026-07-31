@@ -4,6 +4,7 @@ import { z, ZodError, type ZodIssue } from "zod";
 import type { DebugAttempt, DebugReport } from "@/lib/itinerary/debug-report";
 import { resolveTripDates, type ResolvedDates } from "@/lib/itinerary/trip-brief";
 import { isCreditsMessage } from "@/lib/itinerary/ai-errors";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 /**
  * AI itinerary generator.
@@ -191,7 +192,12 @@ OUTPUT FORMAT for the itinerary string (Mode B):
 
 Return ONLY the structured object.`;
 
+/**
+ * Authenticated HTTP entry point. Spends Lovable AI credits (1–14 model calls)
+ * and Firecrawl credits via the nested research pass. Never anonymous.
+ */
 export const generateItineraryAi = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => InputSchema.parse(input))
   .handler(async ({ data }) => {
     const key = process.env.LOVABLE_API_KEY;
@@ -229,14 +235,12 @@ export const generateItineraryAi = createServerFn({ method: "POST" })
     let citations: { n: number; title: string; url: string }[] = [];
     if (data.useLiveResearch && researchTarget) {
       try {
-        const { researchDestination } = await import("./research.functions");
-        const r = await researchDestination({
-          data: {
-            destination: researchTarget,
-            startDate: humanWindow(resolved) ?? data.startDate,
-            duration: `${resolved.durationDays} days`,
-            interests: data.interests,
-          },
+        const { researchDestinationCore } = await import("./research.functions");
+        const r = await researchDestinationCore({
+          destination: researchTarget,
+          startDate: humanWindow(resolved) ?? data.startDate,
+          duration: `${resolved.durationDays} days`,
+          interests: data.interests,
         });
         researchNotes = r.notes;
         citations = r.citations;

@@ -106,7 +106,11 @@ export const listBookingEmails = createServerFn({ method: "POST" })
     if (!listRes.ok) {
       return {
         emails: [],
-        error: `Gmail list failed (${listRes.status}): ${await listRes.text().catch(() => "")}`.slice(0, 240),
+        error:
+          `Gmail list failed (${listRes.status}): ${await listRes.text().catch(() => "")}`.slice(
+            0,
+            240,
+          ),
       };
     }
     const list = (await listRes.json()) as {
@@ -203,16 +207,16 @@ export const importBookingEmail = createServerFn({ method: "POST" })
       payload?: GmailPayload;
     };
     const body = extractBody(msg.payload);
-    const subject =
-      headerValue(msg.payload?.headers, "Subject") || "Booking confirmation";
+    const subject = headerValue(msg.payload?.headers, "Subject") || "Booking confirmation";
     if (!body || body.length < 30) {
       throw new Error("Email body was empty or too short to parse.");
     }
 
     // 2. Parse with the existing AI itinerary parser (reuse system prompt).
-    const { parseItineraryAi } = await import("@/lib/itinerary/parse-ai.functions");
-    const parsed = await parseItineraryAi({
-      data: { text: `${subject}\n\n${body}`.slice(0, 50_000), source: "text" },
+    const { parseItineraryAiCore } = await import("@/lib/itinerary/parse-ai.functions");
+    const parsed = await parseItineraryAiCore({
+      text: `${subject}\n\n${body}`.slice(0, 50_000),
+      source: "text",
     });
 
     // 3. Create a Google Doc and write the parsed blocks into it.
@@ -291,9 +295,7 @@ export const importBookingEmail = createServerFn({ method: "POST" })
 
 export const listTripDocPreviews = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
-    z.object({ tripId: z.string().uuid() }).parse(input),
-  )
+  .inputValidator((input) => z.object({ tripId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { data: rows, error } = await supabase
