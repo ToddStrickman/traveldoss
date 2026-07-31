@@ -188,6 +188,14 @@ export type TripMeta = {
   pace?: "relaxed" | "balanced" | "packed";
   budget?: "shoestring" | "moderate" | "elevated" | "luxury";
   interests?: string[];
+  /**
+   * ISO timestamp of the one-time background hardening pass. Its presence is
+   * what stops that pass re-running on every dossier load — each run costs
+   * three AI refine passes plus up to 24 Google Places lookups. Not user
+   * content: the AI schemas (MetaSchema in refine/harden) omit it, so it is
+   * stripped before any model sees it.
+   */
+  hardenedAt?: string;
 };
 
 export type SkinTokens = {

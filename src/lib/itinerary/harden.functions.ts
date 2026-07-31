@@ -1,7 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import type { Block } from "@/lib/skins/types";
-import { refineItineraryAi } from "@/lib/itinerary/refine.functions";
+import { refineItineraryAiCore } from "@/lib/itinerary/refine.functions";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 /**
  * Background hardening pipeline. Runs once per dossier load, after the
@@ -47,7 +48,13 @@ const ALLOWED_CATEGORIES = new Set([
 ]);
 const ALLOWED_TIERS = new Set(["primary", "shadow"]);
 
+/**
+ * Authenticated HTTP entry point. The most expensive operation in the product:
+ * three refine passes, each of which runs a full AI parse plus up to
+ * PER_RUN_CAP Google Places lookups. Must never be callable anonymously.
+ */
 export const hardenItineraryAi = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => InputSchema.parse(input))
   .handler(async ({ data }) => {
     const ctx = {
@@ -61,8 +68,10 @@ export const hardenItineraryAi = createServerFn({ method: "POST" })
     // Stage 1 — SEARCH
     console.info("[harden] stage 1/4 search");
     try {
-      const r = await refineItineraryAi({
-        data: { ...ctx, blocks, reason: "Background search pass" },
+      const r = await refineItineraryAiCore({
+        ...ctx,
+        blocks,
+        reason: "Background search pass",
       });
       if (r?.blocks?.length) blocks = r.blocks as Block[];
     } catch (err) {
@@ -72,12 +81,10 @@ export const hardenItineraryAi = createServerFn({ method: "POST" })
     // Stage 2 — LOGIC CONFIRMATION
     console.info("[harden] stage 2/4 logic confirmation");
     try {
-      const r = await refineItineraryAi({
-        data: {
-          ...ctx,
-          blocks,
-          reason: "Logic confirmation: verify day order, times, categories",
-        },
+      const r = await refineItineraryAiCore({
+        ...ctx,
+        blocks,
+        reason: "Logic confirmation: verify day order, times, categories",
       });
       if (r?.blocks?.length) blocks = r.blocks as Block[];
     } catch (err) {
@@ -91,13 +98,10 @@ export const hardenItineraryAi = createServerFn({ method: "POST" })
     // Stage 4 — FINAL COMPLETENESS PASS
     console.info("[harden] stage 4/4 final completeness");
     try {
-      const r = await refineItineraryAi({
-        data: {
-          ...ctx,
-          blocks,
-          reason:
-            "Final completeness: fill every allowable field that can be inferred",
-        },
+      const r = await refineItineraryAiCore({
+        ...ctx,
+        blocks,
+        reason: "Final completeness: fill every allowable field that can be inferred",
       });
       if (r?.blocks?.length) blocks = rehardenBlocks(r.blocks as Block[]);
     } catch (err) {
@@ -120,19 +124,10 @@ function rehardenBlocks(blocks: Block[]): Block[] {
     }
     if (typeof next.time === "string") {
       const m = next.time.match(/(\d{1,2}):(\d{2})/);
-      next.time = m
-        ? `${m[1].padStart(2, "0")}:${m[2]}`
-        : undefined;
+      next.time = m ? `${m[1].padStart(2, "0")}:${m[2]}` : undefined;
       if (!next.time) delete next.time;
     }
-    for (const k of [
-      "name",
-      "address",
-      "phone",
-      "website",
-      "note",
-      "hours",
-    ] as const) {
+    for (const k of ["name", "address", "phone", "website", "note", "hours"] as const) {
       const v = next[k];
       if (typeof v === "string") {
         const t = v.trim();

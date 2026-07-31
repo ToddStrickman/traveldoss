@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { generateText, Output } from "ai";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 /**
  * Live research step for the itinerary generator.
@@ -59,9 +60,9 @@ async function firecrawlSearch(query: string, limit = 5): Promise<FirecrawlHit[]
       console.error("[research] firecrawl", res.status, await res.text().catch(() => ""));
       return [];
     }
-    const json = (await res.json().catch(() => null)) as
-      | { data?: { web?: FirecrawlHit[] } | FirecrawlHit[] }
-      | null;
+    const json = (await res.json().catch(() => null)) as {
+      data?: { web?: FirecrawlHit[] } | FirecrawlHit[];
+    } | null;
     if (!json) return [];
     const arr = Array.isArray(json.data)
       ? (json.data as FirecrawlHit[])
@@ -91,88 +92,105 @@ function dedupeByUrl(hits: FirecrawlHit[]): FirecrawlHit[] {
 
 export type ResearchCitation = { n: number; title: string; url: string };
 
-export const researchDestination = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => Input.parse(input))
-  .handler(async ({ data }) => {
-    const when = data.startDate ? ` ${data.startDate}` : "";
-    const interests = data.interests?.length ? data.interests.join(", ") : "";
-    const queries = [
-      `${data.destination} top things to do${when}`,
-      `${data.destination} events and exhibitions${when}`,
-      `${data.destination} restaurants currently recommended`,
-      interests ? `${data.destination} ${interests}${when}` : null,
-    ].filter(Boolean) as string[];
+export type ResearchInput = z.infer<typeof Input>;
 
-    const results = await Promise.all(queries.map((q) => firecrawlSearch(q, 4)));
-    const hits = dedupeByUrl(results.flat()).slice(0, 12);
+/**
+ * Core research implementation — callable directly from other SERVER code
+ * (generateItineraryAi). See `parseItineraryAiCore` for why server-to-server
+ * callers must not route through the wrapped server fn.
+ */
+export async function researchDestinationCore(data: ResearchInput) {
+  const when = data.startDate ? ` ${data.startDate}` : "";
+  const interests = data.interests?.length ? data.interests.join(", ") : "";
+  const queries = [
+    `${data.destination} top things to do${when}`,
+    `${data.destination} events and exhibitions${when}`,
+    `${data.destination} restaurants currently recommended`,
+    interests ? `${data.destination} ${interests}${when}` : null,
+  ].filter(Boolean) as string[];
 
-    if (!hits.length) {
-      return {
-        notes: "",
-        citations: [] as ResearchCitation[],
-        sourceCount: 0,
-      };
-    }
+  // limit 3 (not 4) because we keep only 12 hits below: 4 queries × 4 = 16
+  // scraped pages, of which 4 were billed and then discarded. 4 × 3 = 12
+  // lands exactly on the cap with nothing paid for and thrown away.
+  const results = await Promise.all(queries.map((q) => firecrawlSearch(q, 3)));
+  const hits = dedupeByUrl(results.flat()).slice(0, 12);
 
-    const citations: ResearchCitation[] = hits.map((h, i) => ({
-      n: i + 1,
-      title: (h.title ?? h.url).slice(0, 200),
-      url: h.url,
-    }));
+  if (!hits.length) {
+    return {
+      notes: "",
+      citations: [] as ResearchCitation[],
+      sourceCount: 0,
+    };
+  }
 
-    // Compact context for synthesis. Keep payload small — model only
-    // needs enough to recognise overlap between sources.
-    const corpus = hits
-      .map((h, i) => {
-        const md = (h.markdown ?? "").replace(/\s+/g, " ").slice(0, 800);
-        const desc = (h.description ?? "").slice(0, 240);
-        return `[${i + 1}] ${h.title ?? h.url}\nURL: ${h.url}\n${desc}\n${md}`;
-      })
-      .join("\n\n---\n\n");
+  const citations: ResearchCitation[] = hits.map((h, i) => ({
+    n: i + 1,
+    title: (h.title ?? h.url).slice(0, 200),
+    url: h.url,
+  }));
 
-    const lovableKey = process.env.LOVABLE_API_KEY;
-    if (!lovableKey) {
-      // Still return raw hits so the generator can at least cite them.
-      return {
-        notes: hits
-          .map((h, i) => `- [${i + 1}] ${h.title ?? h.url} — ${h.description ?? ""}`)
-          .join("\n"),
-        citations,
-        sourceCount: hits.length,
-      };
-    }
+  // Compact context for synthesis. Keep payload small — model only
+  // needs enough to recognise overlap between sources.
+  const corpus = hits
+    .map((h, i) => {
+      const md = (h.markdown ?? "").replace(/\s+/g, " ").slice(0, 800);
+      const desc = (h.description ?? "").slice(0, 240);
+      return `[${i + 1}] ${h.title ?? h.url}\nURL: ${h.url}\n${desc}\n${md}`;
+    })
+    .join("\n\n---\n\n");
 
-    try {
-      const { createLovableAiGatewayProvider } = await import("@/lib/ai-gateway.server");
-      const gateway = createLovableAiGatewayProvider(lovableKey);
-      const synthesis = await generateText({
-        model: gateway("google/gemini-2.5-flash"),
-        system: `You are a research analyst preparing a verified brief for a luxury travel advisor.
+  const lovableKey = process.env.LOVABLE_API_KEY;
+  if (!lovableKey) {
+    // Still return raw hits so the generator can at least cite them.
+    return {
+      notes: hits
+        .map((h, i) => `- [${i + 1}] ${h.title ?? h.url} — ${h.description ?? ""}`)
+        .join("\n"),
+      citations,
+      sourceCount: hits.length,
+    };
+  }
+
+  try {
+    const { createLovableAiGatewayProvider } = await import("@/lib/ai-gateway.server");
+    const gateway = createLovableAiGatewayProvider(lovableKey);
+    const synthesis = await generateText({
+      model: gateway("google/gemini-2.5-flash"),
+      system: `You are a research analyst preparing a verified brief for a luxury travel advisor.
 You will receive numbered web sources for a destination and travel window.
 Cross-reference the sources, ignore promotional fluff, and produce 8-14 concise bullet facts (≤22 words each) that appear in MORE THAN ONE source OR are clearly time-sensitive (opening hours, dates, closures, ticket requirements, current exhibitions).
 Every bullet MUST end with one or more bracketed citation indices like [1] or [2,5]. NEVER invent a number outside the provided source list.
 Group bullets under: "Right now (time-sensitive)", "Attractions", "Food & drink", "Logistics".
 Return ONLY the structured object.`,
-        prompt: `Destination: ${data.destination}${when ? `\nTravel window: ${when.trim()}` : ""}${
-          interests ? `\nTraveler interests: ${interests}` : ""
-        }\n\nSources:\n\n${corpus}`,
-        experimental_output: Output.object({
-          schema: z.object({
-            brief: z.string().describe("Markdown brief with grouped bullets and [n] citations."),
-          }),
+      prompt: `Destination: ${data.destination}${when ? `\nTravel window: ${when.trim()}` : ""}${
+        interests ? `\nTraveler interests: ${interests}` : ""
+      }\n\nSources:\n\n${corpus}`,
+      experimental_output: Output.object({
+        schema: z.object({
+          brief: z.string().describe("Markdown brief with grouped bullets and [n] citations."),
         }),
-      });
-      const notes = synthesis.experimental_output.brief.trim();
-      return { notes, citations, sourceCount: hits.length };
-    } catch (err) {
-      console.error("[research] synthesis failed", err);
-      // Degrade to a raw list — still useful, still cited.
-      return {
-        notes: hits
-          .map((h, i) => `- [${i + 1}] ${h.title ?? h.url} — ${(h.description ?? "").slice(0, 160)}`)
-          .join("\n"),
-        citations,
-        sourceCount: hits.length,
-      };
-    }
-  });
+      }),
+      // 8–14 bullets of ≤22 words is well under 600 tokens; 1200 leaves
+      // headroom without letting a runaway synthesis bill unbounded output.
+      maxOutputTokens: 1200,
+    });
+    const notes = synthesis.experimental_output.brief.trim();
+    return { notes, citations, sourceCount: hits.length };
+  } catch (err) {
+    console.error("[research] synthesis failed", err);
+    // Degrade to a raw list — still useful, still cited.
+    return {
+      notes: hits
+        .map((h, i) => `- [${i + 1}] ${h.title ?? h.url} — ${(h.description ?? "").slice(0, 160)}`)
+        .join("\n"),
+      citations,
+      sourceCount: hits.length,
+    };
+  }
+}
+
+/** Authenticated HTTP entry point. Spends Firecrawl credits (up to 16 scrapes). */
+export const researchDestination = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => Input.parse(input))
+  .handler(async ({ data }) => researchDestinationCore(data));

@@ -1,7 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import type { Block } from "@/lib/skins/types";
-import { parseItineraryAi } from "@/lib/itinerary/parse-ai.functions";
+import { parseItineraryAiCore } from "@/lib/itinerary/parse-ai.functions";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 /**
  * Silent refine pass. Re-renders the current itinerary through the AI
@@ -30,21 +31,32 @@ const InputSchema = z.object({
   reason: z.string().max(200).optional(),
 });
 
-export const refineItineraryAi = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => InputSchema.parse(input))
-  .handler(async ({ data }) => {
-    const blocks = data.blocks as Block[];
-    const brief = serializeForRefine({
-      blocks,
-      destination: data.destination,
-      startDate: data.startDate,
-      endDate: data.endDate,
-      meta: data.meta,
-      reason: data.reason,
-    });
-    const result = await parseItineraryAi({ data: { text: brief, source: "ai" } });
-    return { blocks: result.blocks, destination: result.destination ?? null };
+export type RefineItineraryInput = z.infer<typeof InputSchema>;
+
+/**
+ * Core refine implementation — callable directly from other SERVER code
+ * (hardenItineraryAi runs three of these). See `parseItineraryAiCore` for why
+ * server-to-server callers must not go through the wrapped server fn.
+ */
+export async function refineItineraryAiCore(data: RefineItineraryInput) {
+  const blocks = data.blocks as Block[];
+  const brief = serializeForRefine({
+    blocks,
+    destination: data.destination,
+    startDate: data.startDate,
+    endDate: data.endDate,
+    meta: data.meta,
+    reason: data.reason,
   });
+  const result = await parseItineraryAiCore({ text: brief, source: "ai" });
+  return { blocks: result.blocks, destination: result.destination ?? null };
+}
+
+/** Authenticated HTTP entry point. Spends AI + Google Places credits. */
+export const refineItineraryAi = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => InputSchema.parse(input))
+  .handler(async ({ data }) => refineItineraryAiCore(data));
 
 function serializeForRefine(args: {
   blocks: Block[];
@@ -109,9 +121,7 @@ function serializeForRefine(args: {
       case "flight": {
         const seg = `${b.from ?? b.fromCity ?? "?"} → ${b.to ?? b.toCity ?? "?"}`;
         const when = `${b.date ?? ""} ${b.departTime ?? ""}`.trim();
-        lines.push(
-          `- Flight ${b.airline ?? ""} ${b.flightNumber ?? ""} ${seg} ${when}`.trim(),
-        );
+        lines.push(`- Flight ${b.airline ?? ""} ${b.flightNumber ?? ""} ${seg} ${when}`.trim());
         break;
       }
     }

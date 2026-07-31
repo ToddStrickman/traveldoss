@@ -29,10 +29,26 @@ function AuthLayout() {
   // crash by the router, so anonymous visitors to /app were getting the
   // "This page didn't load" error boundary instead of the login form.
   // Carry the intended destination so login returns them here after.
+  //
+  // Fires exactly ONCE per signed-out transition. `currentHref` is a dep, so
+  // without the ref this effect re-ran the moment its own navigation changed
+  // the location — re-reading the new href (already `/login?redirect=…`) and
+  // nesting it again, forever. Reproduced on production: a signed-out visit
+  // to /app produced a 54-level `?redirect=%252F…` chain and a ~9.5KB URL.
+  // That sits squarely in the sign-in path, and Safari's stricter URL limits
+  // make it a hard failure rather than an ugly one.
+  const redirectedRef = useRef(false);
   useEffect(() => {
-    if (session === null) {
-      void navigate({ to: "/login", search: { redirect: currentHref }, replace: true });
+    if (session !== null) {
+      // Signed in (or still resolving) — re-arm for a future sign-out.
+      redirectedRef.current = false;
+      return;
     }
+    if (redirectedRef.current) return;
+    // Belt and braces: never fold a login URL into itself.
+    if (currentHref.startsWith("/login")) return;
+    redirectedRef.current = true;
+    void navigate({ to: "/login", search: { redirect: currentHref }, replace: true });
   }, [session, navigate, currentHref]);
 
   if (session === undefined || session === null) {
@@ -72,6 +88,10 @@ function TermsGate({ currentHref, children }: { currentHref: string; children: R
   const statusFn = useServerFn(getTermsStatus);
   const recordFn = useServerFn(recordTermsAcceptance);
   const flushStarted = useRef(false);
+  // Same unbounded-nesting hazard as the sign-in redirect above: `currentHref`
+  // is an effect dep, so navigating to /terms/update re-fires this effect with
+  // the new href and folds it into the next `?redirect=`. Latch it.
+  const sentToInterstitial = useRef(false);
 
   const { data: status, isError } = useQuery({
     queryKey: ["terms-status"],
@@ -81,7 +101,13 @@ function TermsGate({ currentHref, children }: { currentHref: string; children: R
   });
 
   useEffect(() => {
-    if (!status || status.accepted) return;
+    if (!status || status.accepted) {
+      // Re-arm so a later version bump can send them again.
+      sentToInterstitial.current = false;
+      return;
+    }
+    if (sentToInterstitial.current) return;
+    if (currentHref.startsWith("/terms/update")) return;
 
     const pending = readPendingAcceptance();
     const stashCoversCurrent =
@@ -106,6 +132,7 @@ function TermsGate({ currentHref, children }: { currentHref: string; children: R
           // Fall back to the interstitial rather than looping the flush.
           clearPendingAcceptance();
           flushStarted.current = false;
+          sentToInterstitial.current = true;
           void navigate({
             to: "/terms/update",
             search: { redirect: currentHref },
@@ -113,6 +140,7 @@ function TermsGate({ currentHref, children }: { currentHref: string; children: R
           });
         });
     } else {
+      sentToInterstitial.current = true;
       void navigate({
         to: "/terms/update",
         search: { redirect: currentHref },
