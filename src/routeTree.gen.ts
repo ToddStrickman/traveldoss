@@ -25,6 +25,7 @@ import { Route as TSlugRouteImport } from './routes/t.$slug'
 import { Route as E2eReviewRouteImport } from './routes/e2e.review'
 import { Route as E2eKanbanRouteImport } from './routes/e2e.kanban'
 import { Route as E2eDossierRouteImport } from './routes/e2e.dossier'
+import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
@@ -111,6 +112,11 @@ const E2eDossierRoute = E2eDossierRouteImport.update({
   path: '/e2e/dossier',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/auth/callback',
+  path: '/auth/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedAppRoute = AuthenticatedAppRouteImport.update({
   id: '/app',
   path: '/app',
@@ -159,6 +165,7 @@ export interface FileRoutesByFullPath {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/app': typeof AuthenticatedAppRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/e2e/dossier': typeof E2eDossierRoute
   '/e2e/kanban': typeof E2eKanbanRoute
   '/e2e/review': typeof E2eReviewRoute
@@ -182,6 +189,7 @@ export interface FileRoutesByTo {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/app': typeof AuthenticatedAppRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/e2e/dossier': typeof E2eDossierRoute
   '/e2e/kanban': typeof E2eKanbanRoute
   '/e2e/review': typeof E2eReviewRoute
@@ -207,6 +215,7 @@ export interface FileRoutesById {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_authenticated/app': typeof AuthenticatedAppRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/e2e/dossier': typeof E2eDossierRoute
   '/e2e/kanban': typeof E2eKanbanRoute
   '/e2e/review': typeof E2eReviewRoute
@@ -232,6 +241,7 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/app'
+    | '/auth/callback'
     | '/e2e/dossier'
     | '/e2e/kanban'
     | '/e2e/review'
@@ -255,6 +265,7 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/app'
+    | '/auth/callback'
     | '/e2e/dossier'
     | '/e2e/kanban'
     | '/e2e/review'
@@ -279,6 +290,7 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/_authenticated/app'
+    | '/auth/callback'
     | '/e2e/dossier'
     | '/e2e/kanban'
     | '/e2e/review'
@@ -303,6 +315,7 @@ export interface RootRouteChildren {
   TermsRoute: typeof TermsRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  AuthCallbackRoute: typeof AuthCallbackRoute
   E2eDossierRoute: typeof E2eDossierRoute
   E2eKanbanRoute: typeof E2eKanbanRoute
   E2eReviewRoute: typeof E2eReviewRoute
@@ -428,6 +441,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof E2eDossierRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/app': {
       id: '/_authenticated/app'
       path: '/app'
@@ -499,6 +519,7 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
+  AuthCallbackRoute: AuthCallbackRoute,
   E2eDossierRoute: E2eDossierRoute,
   E2eKanbanRoute: E2eKanbanRoute,
   E2eReviewRoute: E2eReviewRoute,
