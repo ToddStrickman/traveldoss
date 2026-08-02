@@ -111,3 +111,89 @@ export async function preparePhotoFile(file: File): Promise<PreparedFile> {
   if (file.type === "application/pdf" || /\.pdf$/i.test(file.name)) return preparePdf(file);
   return prepareRaster(file);
 }
+
+/* ---------------------------------------------------------------------------
+ * Responsive variants
+ *
+ * The carousel slide is at most ~640 CSS px wide on a phone and ~900 on a
+ * laptop, so shipping the 2560px master to it wastes megabytes and makes the
+ * first paint slow. We encode a small ladder of compressed WebP variants for
+ * display (srcset picks the right one per device/DPR) and keep the full-size
+ * master untouched for the zoomable lightbox.
+ * --------------------------------------------------------------------------- */
+
+/** Display widths, in CSS px. 2x DPR of a 640px slide lands on 1280. */
+const VARIANT_WIDTHS = [480, 800, 1280, 1920];
+/** WebP is visually clean well below JPEG's bitrate at this quality. */
+const VARIANT_QUALITY = 0.82;
+
+export type PhotoVariant = { file: File; width: number };
+export type PreparedPhoto = {
+  /** Best-quality file — used by the fullscreen/zoom viewer. */
+  full: PreparedFile;
+  /** Compressed, progressively wider display copies (ascending width). */
+  variants: PhotoVariant[];
+};
+
+function supportsWebp() {
+  const c = document.createElement("canvas");
+  c.width = c.height = 1;
+  return c.toDataURL("image/webp").startsWith("data:image/webp");
+}
+
+async function encodeAt(
+  source: CanvasImageSource,
+  sw: number,
+  sh: number,
+  width: number,
+  name: string,
+  webp: boolean,
+): Promise<PhotoVariant | null> {
+  const height = Math.max(1, Math.round((sh / sw) * width));
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(source, 0, 0, width, height);
+  const type = webp ? "image/webp" : "image/jpeg";
+  const blob = await new Promise<Blob | null>((res) =>
+    canvas.toBlob((b) => res(b), type, VARIANT_QUALITY),
+  );
+  if (!blob) return null;
+  const ext = webp ? "webp" : "jpg";
+  return {
+    file: new File([blob], `${baseName(name)}-${width}.${ext}`, { type }),
+    width,
+  };
+}
+
+/**
+ * Normalise a picked file into a full-quality master plus compressed
+ * responsive variants. Variants are best-effort: if encoding fails, callers
+ * simply fall back to the master, so uploads never break because of them.
+ */
+export async function preparePhotoSet(file: File): Promise<PreparedPhoto> {
+  const full = await preparePhotoFile(file);
+  let variants: PhotoVariant[] = [];
+  try {
+    const source = await decodeImage(full.file);
+    const sw = "width" in source ? source.width : 0;
+    const sh = "height" in source ? source.height : 0;
+    if (sw > 0 && sh > 0) {
+      const webp = supportsWebp();
+      const longEdge = Math.max(sw, sh);
+      // Never upscale, and skip a variant that is within 10% of the master.
+      const widths = VARIANT_WIDTHS.filter((w) => w <= sw && w < longEdge * 0.9);
+      const encoded = await Promise.all(
+        widths.map((w) => encodeAt(source as CanvasImageSource, sw, sh, w, full.file.name, webp)),
+      );
+      variants = encoded.filter((v): v is PhotoVariant => v !== null && v.file.size < full.file.size);
+    }
+  } catch {
+    variants = [];
+  }
+  return { full, variants };
+}

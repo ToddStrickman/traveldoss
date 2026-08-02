@@ -3,7 +3,7 @@ import { ImagePlus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { GalleryImage } from "../../types";
-import { PHOTO_ACCEPT, preparePhotoFile } from "./photo-prepare";
+import { PHOTO_ACCEPT, preparePhotoSet } from "./photo-prepare";
 
 /** ~10-year read URL. Private bucket + signed URL keeps files owner-scoped
  *  while giving the dossier a stable src to render. */
@@ -57,30 +57,47 @@ export function useDayPhotoUpload({
           return true;
         });
         const added: GalleryImage[] = [];
+        const signedUpload = async (file: File) => {
+          const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
+          const path = `${uid}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${slugify(file.name.replace(/\.[^.]+$/, ""))}.${ext}`;
+          const up = await supabase.storage.from("dossier-photos").upload(path, file, {
+            cacheControl: "31536000",
+            upsert: false,
+            contentType: file.type || undefined,
+          });
+          if (up.error) throw new Error(up.error.message);
+          const signed = await supabase.storage
+            .from("dossier-photos")
+            .createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
+          if (signed.error || !signed.data?.signedUrl) {
+            throw new Error(signed.error?.message ?? "Could not sign URL");
+          }
+          return signed.data.signedUrl;
+        };
         for (const picked of list) {
           // Per-file: one unreadable pick must never discard the ones that worked.
           try {
             // Normalise first: PDFs become page-1 images, huge camera photos are
             // downscaled to a crisp 2560px long edge, HEIC/odd types re-encoded.
-            const prepared = await preparePhotoFile(picked);
-            const file = prepared.file;
-            if (prepared.note) toast.info(prepared.note);
-            const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
-            const path = `${uid}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${slugify(file.name.replace(/\.[^.]+$/, ""))}.${ext}`;
-            const up = await supabase.storage.from("dossier-photos").upload(path, file, {
-              cacheControl: "31536000",
-              upsert: false,
-              contentType: file.type || undefined,
-            });
-            if (up.error) throw new Error(up.error.message);
-            const signed = await supabase.storage
-              .from("dossier-photos")
-              .createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
-            if (signed.error || !signed.data?.signedUrl) {
-              throw new Error(signed.error?.message ?? "Could not sign URL");
+            // Then derive compressed responsive copies for display while the
+            // full-quality master stays available for zoom/lightbox.
+            const { full, variants } = await preparePhotoSet(picked);
+            if (full.note) toast.info(full.note);
+            const fullUrl = await signedUpload(full.file);
+            const sources: { src: string; width: number }[] = [];
+            for (const v of variants) {
+              // Best-effort: a failed variant just means the master is served.
+              try {
+                sources.push({ src: await signedUpload(v.file), width: v.width });
+              } catch {
+                /* ignore */
+              }
             }
             added.push({
-              src: signed.data.signedUrl,
+              // Smallest usable copy is the default src; srcset upgrades it.
+              src: sources[0]?.src ?? fullUrl,
+              sources: sources.length > 0 ? sources : undefined,
+              fullSrc: fullUrl,
               alt: `${label} — uploaded photo`,
             });
           } catch (fileErr) {
