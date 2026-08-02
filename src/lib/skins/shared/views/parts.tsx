@@ -838,7 +838,8 @@ export function CarouselLightbox({
     const offsets = n > 2 ? [1, -1, 2, -2] : [1, -1];
     const preloaded: HTMLImageElement[] = [];
     for (const off of offsets) {
-      const src = images[(idx + off + n) % n]?.src;
+      const neighbour = images[(idx + off + n) % n];
+      const src = neighbour?.fullSrc ?? neighbour?.src;
       if (!src) continue;
       const img = new Image();
       img.decoding = "async";
@@ -850,12 +851,13 @@ export function CarouselLightbox({
 
   if (n === 0) return null;
   const baseImage = images[idx];
-  const currentSrc = overrides[idx] ?? baseImage.src;
+  // The viewer zooms to 4x, so always show the full-quality master here.
+  const currentSrc = overrides[idx] ?? baseImage.fullSrc ?? baseImage.src;
   const currentStatus = status[idx] ?? "loading";
   const setIdxStatus = (s: "loading" | "ok" | "error") =>
     setStatus((prev) => (prev[idx] === s ? prev : { ...prev, [idx]: s }));
   const retry = () => {
-    const base = baseImage.src;
+    const base = baseImage.fullSrc ?? baseImage.src;
     const sep = base.includes("?") ? "&" : "?";
     setOverrides((prev) => ({ ...prev, [idx]: `${base}${sep}retry=${Date.now()}` }));
     setIdxStatus("loading");
