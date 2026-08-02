@@ -160,6 +160,14 @@ export type GalleryImage = {
   src: string;
   alt: string;
   caption?: string;
+  /**
+   * Compressed responsive copies of `src`, ascending by pixel width. Rendered
+   * as a `srcset` so phones download a small file and retina laptops a larger
+   * one. Absent for sourced/linked images.
+   */
+  sources?: { src: string; width: number }[];
+  /** Best-quality original, used by the zoomable fullscreen viewer. */
+  fullSrc?: string;
   focalPoint?: { x: number; y: number }; // 0..1, default 0.5/0.5
   provider?: "openverse" | "wikimedia" | "pexels" | "pixabay";
   license?: string;
