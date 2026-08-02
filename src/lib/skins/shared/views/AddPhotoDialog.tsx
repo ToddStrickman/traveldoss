@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { AlertCircle, ImagePlus, Link2, Loader2, Upload } from "lucide-react";
+import { AlertCircle, Crop, ImagePlus, Link2, Loader2, Maximize2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import type { GalleryImage } from "../../types";
 import type { useDayPhotoUpload } from "./DayPhotoUploader";
