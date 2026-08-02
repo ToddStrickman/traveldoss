@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { AlertCircle, ImagePlus, Link2, Loader2, Upload } from "lucide-react";
+import { AlertCircle, Crop, ImagePlus, Link2, Loader2, Maximize2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import type { GalleryImage } from "../../types";
 import type { useDayPhotoUpload } from "./DayPhotoUploader";
@@ -188,6 +188,38 @@ export function AddPhotoDialog({
             {dropping ? "Release anywhere in this panel" : "or drag files here — JPEG, PNG, HEIC, WebP or PDF"}
           </span>
         </button>
+
+        {/* Crop/fit choice, applied before upload so the crop is identical on
+            every device instead of being decided by object-fit per viewport. */}
+        <div className="tds-addphoto-fit" role="radiogroup" aria-label="How photos fit the frame">
+          <button
+            type="button"
+            role="radio"
+            aria-checked={uploader.fit === "frame"}
+            className="tds-addphoto-fitopt tap"
+            onClick={() => uploader.chooseFit("frame")}
+            disabled={uploader.busy}
+          >
+            <Crop size={13} aria-hidden />
+            <span>Fill the frame</span>
+          </button>
+          <button
+            type="button"
+            role="radio"
+            aria-checked={uploader.fit === "original"}
+            className="tds-addphoto-fitopt tap"
+            onClick={() => uploader.chooseFit("original")}
+            disabled={uploader.busy}
+          >
+            <Maximize2 size={13} aria-hidden />
+            <span>Keep whole photo</span>
+          </button>
+        </div>
+        <p className="tds-addphoto-fithint">
+          {uploader.fit === "frame"
+            ? "Centre-cropped to the carousel window, so it looks the same on phone and desktop."
+            : "Uploaded uncropped — tall or wide photos may show edges trimmed in the carousel."}
+        </p>
 
         {uploader.progress && (
           <div className="tds-addphoto-progress" role="status" aria-live="polite">

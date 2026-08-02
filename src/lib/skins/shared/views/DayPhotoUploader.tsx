@@ -3,7 +3,7 @@ import { ImagePlus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { GalleryImage } from "../../types";
-import { PHOTO_ACCEPT, preparePhotoSet } from "./photo-prepare";
+import { PHOTO_ACCEPT, preparePhotoSet, type PhotoFit } from "./photo-prepare";
 
 /** ~10-year read URL. Private bucket + signed URL keeps files owner-scoped
  *  while giving the dossier a stable src to render. */
@@ -48,6 +48,14 @@ export function useDayPhotoUpload({
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<PhotoUploadProgress | null>(null);
   const [failures, setFailures] = useState<PhotoUploadFailure[]>([]);
+  /** How picked photos meet the carousel window; read inside onFiles via a ref
+   *  so changing it never re-creates the handler mid-upload. */
+  const [fit, setFit] = useState<PhotoFit>("frame");
+  const fitRef = useRef<PhotoFit>("frame");
+  const chooseFit = useCallback((next: PhotoFit) => {
+    fitRef.current = next;
+    setFit(next);
+  }, []);
 
   const pick = useCallback(() => inputRef.current?.click(), []);
   const clearFailures = useCallback(() => setFailures([]), []);
@@ -111,7 +119,7 @@ export function useDayPhotoUpload({
             // downscaled to a crisp 2560px long edge, HEIC/odd types re-encoded.
             // Then derive compressed responsive copies for display while the
             // full-quality master stays available for zoom/lightbox.
-            const { full, variants } = await preparePhotoSet(picked);
+            const { full, variants } = await preparePhotoSet(picked, { fit: fitRef.current });
             if (full.note) toast.info(full.note);
             step(i, "uploading", 0.35, picked.name);
             const fullUrl = await signedUpload(full.file);
@@ -175,7 +183,7 @@ export function useDayPhotoUpload({
     />
   );
 
-  return { busy, pick, onFiles, input, progress, failures, clearFailures };
+  return { busy, pick, onFiles, input, progress, failures, clearFailures, fit, chooseFit };
 }
 
 /** Owner-only per-day photo picker button (empty-state / standalone use). */
