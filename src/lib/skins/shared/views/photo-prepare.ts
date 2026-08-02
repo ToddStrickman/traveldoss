@@ -113,6 +113,51 @@ export async function preparePhotoFile(file: File): Promise<PreparedFile> {
 }
 
 /* ---------------------------------------------------------------------------
+ * Frame fit
+ *
+ * The carousel slide is a fixed 16 / 11 window on every breakpoint, so a
+ * portrait phone photo would otherwise be heavily cropped by `object-fit:
+ * cover` at render time — differently per viewport. Cropping once, up front,
+ * makes what the owner uploads exactly what every traveler sees.
+ * --------------------------------------------------------------------------- */
+
+/** Must stay in sync with `.tds-carousel-slide { aspect-ratio: 16 / 11 }`. */
+export const CAROUSEL_ASPECT = 16 / 11;
+
+/** "frame" = centre-crop to the carousel window; "original" = keep full frame. */
+export type PhotoFit = "frame" | "original";
+
+/** Centre-crop a prepared file to `aspect`. Best-effort: returns the input on failure. */
+export async function cropToAspect(prepared: PreparedFile, aspect: number): Promise<PreparedFile> {
+  try {
+    const source = await decodeImage(prepared.file);
+    const sw = "width" in source ? source.width : 0;
+    const sh = "height" in source ? source.height : 0;
+    if (sw <= 0 || sh <= 0) return prepared;
+    const current = sw / sh;
+    // Already within 2% of the frame → no re-encode, no quality loss.
+    if (Math.abs(current - aspect) / aspect < 0.02) return prepared;
+    let cw = sw;
+    let ch = sh;
+    if (current > aspect) cw = Math.round(sh * aspect);
+    else ch = Math.round(sw / aspect);
+    const sx = Math.round((sw - cw) / 2);
+    const sy = Math.round((sh - ch) / 2);
+    const canvas = document.createElement("canvas");
+    canvas.width = cw;
+    canvas.height = ch;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return prepared;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(source as CanvasImageSource, sx, sy, cw, ch, 0, 0, cw, ch);
+    return { file: await canvasToFile(canvas, prepared.file.name), note: prepared.note };
+  } catch {
+    return prepared;
+  }
+}
+
+/* ---------------------------------------------------------------------------
  * Responsive variants
  *
  * The carousel slide is at most ~640 CSS px wide on a phone and ~900 on a
@@ -175,8 +220,12 @@ async function encodeAt(
  * responsive variants. Variants are best-effort: if encoding fails, callers
  * simply fall back to the master, so uploads never break because of them.
  */
-export async function preparePhotoSet(file: File): Promise<PreparedPhoto> {
-  const full = await preparePhotoFile(file);
+export async function preparePhotoSet(
+  file: File,
+  opts?: { fit?: PhotoFit },
+): Promise<PreparedPhoto> {
+  let full = await preparePhotoFile(file);
+  if ((opts?.fit ?? "frame") === "frame") full = await cropToAspect(full, CAROUSEL_ASPECT);
   let variants: PhotoVariant[] = [];
   try {
     const source = await decodeImage(full.file);
