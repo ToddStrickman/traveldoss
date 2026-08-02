@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ImagePlus, Link2, Loader2 } from "lucide-react";
+import { AlertCircle, ImagePlus, Link2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import type { GalleryImage } from "../../types";
 import type { useDayPhotoUpload } from "./DayPhotoUploader";
@@ -53,12 +53,13 @@ export function AddPhotoDialog({
     };
   }, [open, onClose, uploader]);
 
-  // Close once an upload lands so the user sees their photo in the carousel.
+  // Close once an upload lands so the user sees their photo in the carousel —
+  // unless something failed, in which case the reasons stay on screen.
   const wasBusy = useRef(false);
   useEffect(() => {
-    if (wasBusy.current && !uploader.busy) onClose();
+    if (wasBusy.current && !uploader.busy && uploader.failures.length === 0) onClose();
     wasBusy.current = uploader.busy;
-  }, [uploader.busy, onClose]);
+  }, [uploader.busy, uploader.failures.length, onClose]);
 
   const addFromUrl = useCallback(async () => {
     const candidate = url.trim();
@@ -141,7 +142,7 @@ export function AddPhotoDialog({
         <button
           type="button"
           className="tds-addphoto-upload tap"
-          onClick={uploader.pick}
+          onClick={() => { uploader.clearFailures(); uploader.pick(); }}
           disabled={uploader.busy}
         >
           {uploader.busy
@@ -149,6 +150,58 @@ export function AddPhotoDialog({
             : <ImagePlus size={16} aria-hidden />}
           <span>{uploader.busy ? "Uploading…" : "Upload from device"}</span>
         </button>
+
+        {uploader.progress && (
+          <div className="tds-addphoto-progress" role="status" aria-live="polite">
+            <div className="tds-addphoto-progress-head">
+              <span className="tds-addphoto-progress-label">
+                {uploader.progress.phase === "preparing"
+                  ? "Preparing"
+                  : uploader.progress.phase === "uploading"
+                    ? "Uploading"
+                    : "Finishing"}{" "}
+                {uploader.progress.fileName}
+                {uploader.progress.total > 1
+                  ? ` (${uploader.progress.index} of ${uploader.progress.total})`
+                  : ""}
+              </span>
+              <span className="tds-addphoto-progress-pct">{uploader.progress.pct}%</span>
+            </div>
+            <div
+              className="tds-addphoto-progress-track"
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={uploader.progress.pct}
+              aria-label="Upload progress"
+            >
+              <div className="tds-addphoto-progress-bar" style={{ width: `${uploader.progress.pct}%` }} />
+            </div>
+          </div>
+        )}
+
+        {uploader.failures.length > 0 && (
+          <div className="tds-addphoto-errors" role="alert">
+            <p className="tds-addphoto-errors-title">
+              <AlertCircle size={14} aria-hidden />
+              <span>
+                {uploader.failures.length === 1
+                  ? "One file couldn't be added"
+                  : `${uploader.failures.length} files couldn't be added`}
+              </span>
+            </p>
+            <ul className="tds-addphoto-errors-list">
+              {uploader.failures.map((f, i) => (
+                <li key={`${f.name}-${i}`}>
+                  <strong>{f.name}</strong> — {f.reason}
+                </li>
+              ))}
+            </ul>
+            <button type="button" className="tds-addphoto-errors-dismiss tap" onClick={uploader.clearFailures}>
+              Dismiss
+            </button>
+          </div>
+        )}
 
         <div className="tds-addphoto-divider" aria-hidden><span>or paste a link</span></div>
 
