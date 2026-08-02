@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { AlertCircle, ImagePlus, Link2, Loader2 } from "lucide-react";
+import { AlertCircle, ImagePlus, Link2, Loader2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import type { GalleryImage } from "../../types";
 import type { useDayPhotoUpload } from "./DayPhotoUploader";
@@ -30,6 +30,33 @@ export function AddPhotoDialog({
   const [checking, setChecking] = useState(false);
   const [dropping, setDropping] = useState(false);
   const panelRef = useRef<HTMLDivElement | null>(null);
+  // dragenter/dragleave fire per child element; count depth so moving over
+  // inner text doesn't flicker the highlight off.
+  const dragDepth = useRef(0);
+  const beginDrag = useCallback((e: React.DragEvent) => {
+    if (!e.dataTransfer?.types?.includes("Files")) return;
+    e.preventDefault();
+    e.stopPropagation();
+    dragDepth.current += 1;
+    setDropping(true);
+  }, []);
+  const endDrag = useCallback(() => {
+    dragDepth.current = Math.max(0, dragDepth.current - 1);
+    if (dragDepth.current === 0) setDropping(false);
+  }, []);
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      // The host carousel has its own drop handler; without this the same
+      // drop uploads every file twice.
+      e.stopPropagation();
+      dragDepth.current = 0;
+      setDropping(false);
+      uploader.clearFailures();
+      void uploader.onFiles(e.dataTransfer?.files ?? null);
+    },
+    [uploader],
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -119,36 +146,47 @@ export function AddPhotoDialog({
         ref={panelRef}
         className="tds-addphoto-panel"
         data-dropping={dropping || undefined}
+        onDragEnter={beginDrag}
         onDragOver={(e) => {
           if (e.dataTransfer?.types?.includes("Files")) {
             e.preventDefault();
             e.stopPropagation();
-            setDropping(true);
+            if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
           }
         }}
-        onDragLeave={() => setDropping(false)}
-        onDrop={(e) => {
-          e.preventDefault();
-          // The host carousel has its own drop handler; without this the
-          // same drop uploads every file twice.
-          e.stopPropagation();
-          setDropping(false);
-          void uploader.onFiles(e.dataTransfer?.files ?? null);
-        }}
+        onDragLeave={endDrag}
+        onDrop={handleDrop}
       >
         <p className="tds-addphoto-title">Add a photo</p>
         <p className="tds-addphoto-target">{targetLabel}</p>
 
+        {/* One affordance, both gestures: tap/click opens the native picker
+            (camera or library on phones), drag-and-drop lands files straight
+            in. The <button> keeps it keyboard- and screen-reader-operable. */}
         <button
           type="button"
-          className="tds-addphoto-upload tap"
+          className="tds-addphoto-dropzone tap"
+          data-dropping={dropping || undefined}
           onClick={() => { uploader.clearFailures(); uploader.pick(); }}
           disabled={uploader.busy}
         >
-          {uploader.busy
-            ? <Loader2 size={16} aria-hidden className="tds-photo-uploader-spin" />
-            : <ImagePlus size={16} aria-hidden />}
-          <span>{uploader.busy ? "Uploading…" : "Upload from device"}</span>
+          <span className="tds-addphoto-dropzone-icon" aria-hidden>
+            {uploader.busy
+              ? <Loader2 size={22} className="tds-photo-uploader-spin" />
+              : dropping
+                ? <Upload size={22} />
+                : <ImagePlus size={22} />}
+          </span>
+          <span className="tds-addphoto-dropzone-main">
+            {uploader.busy
+              ? "Uploading…"
+              : dropping
+                ? "Drop to upload"
+                : "Tap to choose photos"}
+          </span>
+          <span className="tds-addphoto-dropzone-sub">
+            {dropping ? "Release anywhere in this panel" : "or drag files here — JPEG, PNG, HEIC, WebP or PDF"}
+          </span>
         </button>
 
         {uploader.progress && (
