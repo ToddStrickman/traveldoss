@@ -735,6 +735,12 @@ const CarouselSlide = (() => {
         >
           <img
             src={image.src}
+            srcSet={
+              image.sources && image.sources.length > 0
+                ? image.sources.map((s) => `${s.src} ${s.width}w`).join(", ")
+                : undefined
+            }
+            sizes={image.sources && image.sources.length > 0 ? "(min-width: 768px) 60vw, 92vw" : undefined}
             alt={image.alt}
             loading={eager ? "eager" : "lazy"}
             decoding="async"
