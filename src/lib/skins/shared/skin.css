@@ -3483,3 +3483,30 @@ button.tds-add-day[data-burst] .tds-add-day-plus {
   opacity: .75; cursor: pointer;
 }
 .tds-addphoto-errors-dismiss:hover { opacity: 1; }
+
+/* Add-photo drop zone: single affordance for tap-to-pick and drag-and-drop. */
+.tds-addphoto-dropzone {
+  display: grid; gap: 4px; justify-items: center; align-content: center;
+  min-height: 116px; padding: 16px 14px;
+  border-radius: 12px;
+  border: 1.5px dashed color-mix(in oklab, var(--tds-ink) 26%, transparent);
+  background: var(--tds-card, color-mix(in oklab, var(--tds-ink) 3%, transparent));
+  color: inherit; cursor: pointer;
+  transition: border-color .16s ease, background-color .16s ease;
+}
+@media (prefers-reduced-motion: reduce) { .tds-addphoto-dropzone { transition: none; } }
+.tds-addphoto-dropzone:hover:not(:disabled),
+.tds-addphoto-dropzone[data-dropping] {
+  border-color: var(--tds-accent, #c2410c);
+  background: color-mix(in oklab, var(--tds-accent, #c2410c) 8%, transparent);
+}
+.tds-addphoto-dropzone:disabled { cursor: progress; }
+.tds-addphoto-dropzone-icon {
+  display: grid; place-items: center; height: 28px;
+  color: color-mix(in oklab, var(--tds-accent, var(--tds-ink)) 78%, var(--tds-ink));
+}
+.tds-addphoto-dropzone-main { font: 600 14px/1.2 var(--tds-fontBody, inherit); }
+.tds-addphoto-dropzone-sub {
+  font-size: 12px; line-height: 1.4; text-align: center;
+  color: color-mix(in oklab, var(--tds-soft, var(--tds-ink)) 78%, var(--tds-ink));
+}
