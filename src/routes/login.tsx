@@ -177,8 +177,18 @@ function LoginPage() {
     }
     setLoading(true);
     try {
+      // OAuth must return to a PUBLIC route. Pointing redirect_uri at /app
+      // (protected) races the session write: the auth gate sees no session and
+      // bounces back to /login, which reads as "Google login doesn't work".
+      // Stash the intended path and let /auth/callback forward after the
+      // session is confirmed.
+      try {
+        sessionStorage.setItem("td:post-auth-redirect", redirect);
+      } catch {
+        // Private-mode storage failure is non-fatal: callback defaults to /app.
+      }
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin + redirect,
+        redirect_uri: `${window.location.origin}/auth/callback`,
       });
       if (result.error) {
         const raw = result.error.message ?? "";
