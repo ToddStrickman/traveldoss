@@ -593,6 +593,20 @@ export function ActivityImages({
 
       {!single && (
         <>
+          {canUpload ? (
+            // Always-visible add affordance in the carousel chrome: never
+            // covered by neighbouring Cover Flow slides.
+            <button
+              type="button"
+              className="tds-carousel-addbtn tap"
+              data-print="hide"
+              onClick={(e) => { e.stopPropagation(); setAddOpen(true); }}
+              disabled={uploader.busy}
+            >
+              <span aria-hidden>+</span>
+              <span>{uploader.busy ? "Uploading…" : "Add photo"}</span>
+            </button>
+          ) : null}
           <button
             type="button"
             className="tds-carousel-nav tds-carousel-nav--prev tap"
