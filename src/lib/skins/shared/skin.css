@@ -3411,3 +3411,28 @@ button.tds-add-day[data-burst] .tds-add-day-plus {
 @media (prefers-reduced-motion: reduce) {
   .tds-topscroll-plane { transition: none; }
 }
+
+/* ── Always-visible add-photo control in the carousel chrome ───────────── */
+.tds-carousel-addbtn {
+  position: absolute;
+  top: 8px; right: 8px;
+  z-index: 120;
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: 32px; padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(12, 14, 18, 0.62);
+  color: #fff;
+  font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+  transition: background 160ms ease, transform 160ms ease;
+}
+.tds-carousel-addbtn:hover:not(:disabled) { background: rgba(12, 14, 18, 0.82); }
+.tds-carousel-addbtn:disabled { opacity: 0.6; cursor: default; }
+@media (max-width: 640px) {
+  .tds-carousel-addbtn { min-height: 36px; padding: 0 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tds-carousel-addbtn { transition: none; }
+}

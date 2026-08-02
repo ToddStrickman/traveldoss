@@ -9,6 +9,7 @@ import React, {
   useState,
   type ReactNode,
 } from "react";
+import { createPortal } from "react-dom";
 import type { Block } from "../../types";
 import { CategoryIcon, AirfareIcon, categoryLabel } from "../CategoryIcon";
 import { EditableText, useEditing } from "../Editable";
@@ -573,10 +574,9 @@ export function ActivityImages({
             data-active={!single && active === total ? "" : undefined}
             style={single ? undefined : coverFlowStyle(total - active, liveDx, reduced)}
             onClick={() => {
-              // The tile leads to the add-photo screen (upload OR paste a
-              // link) instead of jumping straight into the file picker.
-              if (single || active === total) { setAddOpen(true); return; }
-              goTo(total);
+              // One tap = the add-photo screen, wherever the tile sits in the
+              // stage. (Requiring a centering tap first read as "broken".)
+              setAddOpen(true);
             }}
             disabled={uploader.busy}
             aria-label={`Add photos to ${uploadLabel ?? "this day"}`}
@@ -593,6 +593,20 @@ export function ActivityImages({
 
       {!single && (
         <>
+          {canUpload ? (
+            // Always-visible add affordance in the carousel chrome: never
+            // covered by neighbouring Cover Flow slides.
+            <button
+              type="button"
+              className="tds-carousel-addbtn tap"
+              data-print="hide"
+              onClick={(e) => { e.stopPropagation(); setAddOpen(true); }}
+              disabled={uploader.busy}
+            >
+              <span aria-hidden>+</span>
+              <span>{uploader.busy ? "Uploading…" : "Add photo"}</span>
+            </button>
+          ) : null}
           <button
             type="button"
             className="tds-carousel-nav tds-carousel-nav--prev tap"
@@ -883,7 +897,7 @@ export function CarouselLightbox({
     if (swipe.current?.id === e.pointerId) swipe.current = null;
   };
 
-  return (
+  const overlay = (
     <div
       className="tds-lightbox"
       role="dialog"
@@ -994,6 +1008,11 @@ export function CarouselLightbox({
       {baseImage.caption ? <div className="tds-lightbox-caption">{baseImage.caption}</div> : null}
     </div>
   );
+
+  // Portal to <body> so the viewer fills the actual viewport instead of being
+  // trapped inside the carousel's transformed stage.
+  if (typeof document === "undefined") return overlay;
+  return createPortal(overlay, document.body);
 }
 
 type DetailRow = {
