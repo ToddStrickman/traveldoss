@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { ImagePlus, Link2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import type { GalleryImage } from "../../types";
@@ -97,7 +98,10 @@ export function AddPhotoDialog({
 
   if (!open) return null;
 
-  return (
+  // Escapes to <body>: the carousel's Cover Flow stage (transform/will-change
+  // ancestors) otherwise turns `position: fixed` into an offscreen panel, so
+  // clicking "Add photo" looked like nothing happened.
+  const dialog = (
     <div
       className="tds-addphoto-scrim"
       role="dialog"
@@ -182,4 +186,7 @@ export function AddPhotoDialog({
       </div>
     </div>
   );
+
+  if (typeof document === "undefined") return dialog;
+  return createPortal(dialog, document.body);
 }
