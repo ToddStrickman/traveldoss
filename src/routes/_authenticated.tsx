@@ -19,7 +19,24 @@ function AuthLayout() {
 
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
-    supabase.auth.getSession().then(({ data }) => setSession(data.session));
+    // getSession() only reads localStorage — a session whose server-side record
+    // is gone (session_not_found) still looks valid, so children mount and
+    // their protected server fns 401 with "No authorization header provided".
+    // Validate against the Auth server once and drop a dead session.
+    void (async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) {
+        setSession(null);
+        return;
+      }
+      const { error } = await supabase.auth.getUser();
+      if (error) {
+        await supabase.auth.signOut();
+        setSession(null);
+        return;
+      }
+      setSession(data.session);
+    })();
     return () => sub.subscription.unsubscribe();
   }, []);
 
