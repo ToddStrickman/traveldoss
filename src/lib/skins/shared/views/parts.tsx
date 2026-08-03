@@ -618,7 +618,6 @@ export function ActivityImages({
           <div className="tds-carousel-chrome" data-print="hide">
             <p className="tds-carousel-counter" aria-live="polite">
               {Math.min(active + 1, total)} / {total}
-              <span className="tds-sr-only"> photos</span>
             </p>
             {canUpload && realCount > 0 ? (
               <button
