@@ -593,20 +593,6 @@ export function ActivityImages({
 
       {!single && (
         <>
-          {canUpload ? (
-            // Always-visible add affordance in the carousel chrome: never
-            // covered by neighbouring Cover Flow slides.
-            <button
-              type="button"
-              className="tds-carousel-addbtn tap"
-              data-print="hide"
-              onClick={(e) => { e.stopPropagation(); setAddOpen(true); }}
-              disabled={uploader.busy}
-            >
-              <span aria-hidden>+</span>
-              <span>{uploader.busy ? "Uploading…" : "Add photo"}</span>
-            </button>
-          ) : null}
           <button
             type="button"
             className="tds-carousel-nav tds-carousel-nav--prev tap"
@@ -627,9 +613,42 @@ export function ActivityImages({
           >
             <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
           </button>
-          <div className="tds-carousel-counter" aria-live="polite" data-print="hide">
-            {Math.min(active + 1, total)} / {total}
+          {/* One flex strip owns the top chrome, so the counter and the add
+              control can never overlap at any width. */}
+          <div className="tds-carousel-chrome" data-print="hide">
+            <p className="tds-carousel-counter" aria-live="polite">
+              {Math.min(active + 1, total)} / {total}
+              <span className="tds-sr-only"> photos</span>
+            </p>
+            {canUpload && realCount > 0 ? (
+              <button
+                type="button"
+                className="tds-carousel-addbtn tap"
+                onClick={(e) => { e.stopPropagation(); setAddOpen(true); }}
+                disabled={uploader.busy}
+                aria-label={`Add photos to ${uploadLabel ?? "this day"}`}
+              >
+                <span aria-hidden>+</span>
+                <span>{uploader.busy ? "Uploading…" : "Add photo"}</span>
+              </button>
+            ) : null}
           </div>
+          {canUpload && realCount === 0 ? (
+            // Placeholder-only carousel (nothing uploaded, sourcing supplied
+            // previews): the primary action belongs in the centre of the frame.
+            <div className="tds-carousel-cta" data-print="hide">
+              <button
+                type="button"
+                className="tds-carousel-cta-btn tap"
+                onClick={(e) => { e.stopPropagation(); setAddOpen(true); }}
+                disabled={uploader.busy}
+              >
+                <span aria-hidden>+</span>
+                <span>{uploader.busy ? "Uploading…" : "Add your photos"}</span>
+              </button>
+              <p className="tds-carousel-cta-hint">These are previews — replace them with your own.</p>
+            </div>
+          ) : null}
           <div className="tds-carousel-dots" role="tablist" aria-label="Choose photo" data-print="hide">
             {usable.map((_, i) => (
               <button
