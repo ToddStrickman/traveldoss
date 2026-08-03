@@ -3425,10 +3425,8 @@ button.tds-add-day[data-burst] .tds-add-day-plus {
 
 /* ── Always-visible add-photo control in the carousel chrome ───────────── */
 .tds-carousel-addbtn {
-  position: absolute;
-  top: 8px; right: 8px;
-  z-index: 120;
   display: inline-flex; align-items: center; gap: 6px;
+  flex: none;
   min-height: 32px; padding: 0 10px;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.4);
@@ -3438,6 +3436,46 @@ button.tds-add-day[data-burst] .tds-add-day-plus {
   backdrop-filter: blur(6px);
   cursor: pointer;
   transition: background 160ms ease, transform 160ms ease;
+}
+
+/* Centre-of-frame call to action: shown only while every slide is a sourced
+   placeholder (nothing uploaded yet, or sourcing failed). Grid-centred over
+   the stage, so it stays put at every breakpoint. */
+.tds-carousel-cta {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 8px;
+  padding: 12px;
+  text-align: center;
+  pointer-events: none;
+  z-index: 125;
+}
+.tds-carousel-cta > * { pointer-events: auto; }
+.tds-carousel-cta-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  min-height: 44px; padding: 0 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  background: rgba(12, 14, 18, 0.74);
+  color: #fff;
+  font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase;
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+}
+.tds-carousel-cta-btn:hover:not(:disabled) { background: rgba(12, 14, 18, 0.9); }
+.tds-carousel-cta-btn:disabled { opacity: 0.6; cursor: default; }
+.tds-carousel-cta-hint {
+  margin: 0;
+  max-width: 26ch;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11px; line-height: 1.4;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.5);
+  pointer-events: none;
 }
 .tds-carousel-addbtn:hover:not(:disabled) { background: rgba(12, 14, 18, 0.82); }
 .tds-carousel-addbtn:disabled { opacity: 0.6; cursor: default; }
