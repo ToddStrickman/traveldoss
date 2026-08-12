@@ -321,13 +321,19 @@ function Landing() {
 
       <Ribbon />
 
-      {/* Under Construction banner */}
-      <div className="relative z-20 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 bg-seal/10 px-4 py-2 text-center text-[10px] font-medium uppercase tracking-[0.2em] text-seal backdrop-blur-sm border-b border-seal/10 sm:text-[11px] sm:tracking-[0.3em]">
-        <span className="inline-flex items-center gap-2">
+      {/* Under Construction + consent banner.
+          Sticky on mobile (the bottom edge belongs to MobileNavBar) so the
+          Terms / Privacy links stay one tap away while scrolling the landing;
+          static in flow from md: up, where the desktop rail owns z-30. */}
+      <div
+        className="sticky top-0 z-30 flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 border-b border-seal/10 bg-paper/85 px-4 py-1.5 text-center text-[10px] font-medium uppercase tracking-[0.2em] text-seal backdrop-blur-md md:relative md:z-20 md:bg-seal/10 md:py-2 md:text-[11px] md:tracking-[0.3em]"
+        style={{ paddingTop: "calc(0.375rem + env(safe-area-inset-top, 0px))" }}
+      >
+        <span className="inline-flex items-center gap-2 whitespace-nowrap">
           <span className="inline-block h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-seal" />
           Under Construction — Things may change.
         </span>
-        <span className="normal-case tracking-normal text-[11px] text-ink/70">
+        <span className="text-[11px] normal-case leading-snug tracking-normal text-ink/70">
           By using TravelDoss, you agree to the{" "}
           <LegalDocDialog
             slug="terms"
