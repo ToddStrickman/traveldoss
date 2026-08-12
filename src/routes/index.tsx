@@ -35,6 +35,7 @@ import { createTripFromIngestion, listTrips } from "@/lib/trips.functions";
 import { getTemporalPhase } from "@/lib/itinerary/temporal";
 import { MobileNavBar } from "@/components/mobile/MobileNavBar";
 import { SiteFooter } from "@/components/legal/SiteFooter";
+import { LegalDocDialog } from "@/components/legal/LegalDocDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { SITE_URL } from "@/lib/site";
@@ -321,9 +322,26 @@ function Landing() {
       <Ribbon />
 
       {/* Under Construction banner */}
-      <div className="relative z-20 flex items-center justify-center gap-2 bg-seal/10 px-4 py-2 text-center text-[10px] font-medium uppercase tracking-[0.2em] text-seal backdrop-blur-sm border-b border-seal/10 sm:text-[11px] sm:tracking-[0.3em]">
-        <span className="inline-block h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-seal" />
-        <span className="truncate">Under Construction — Things may change.</span>
+      <div className="relative z-20 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 bg-seal/10 px-4 py-2 text-center text-[10px] font-medium uppercase tracking-[0.2em] text-seal backdrop-blur-sm border-b border-seal/10 sm:text-[11px] sm:tracking-[0.3em]">
+        <span className="inline-flex items-center gap-2">
+          <span className="inline-block h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-seal" />
+          Under Construction — Things may change.
+        </span>
+        <span className="normal-case tracking-normal text-[11px] text-ink/70">
+          By using TravelDoss, you agree to the{" "}
+          <LegalDocDialog
+            slug="terms"
+            label="Terms and Conditions"
+            className="tap underline decoration-seal/60 underline-offset-2 transition-colors hover:text-seal"
+          />{" "}
+          as well as the{" "}
+          <LegalDocDialog
+            slug="privacy"
+            label="Privacy Policy"
+            className="tap underline decoration-seal/60 underline-offset-2 transition-colors hover:text-seal"
+          />
+          .
+        </span>
       </div>
 
       {/* Center stage */}
