@@ -35,6 +35,7 @@ import { createTripFromIngestion, listTrips } from "@/lib/trips.functions";
 import { getTemporalPhase } from "@/lib/itinerary/temporal";
 import { MobileNavBar } from "@/components/mobile/MobileNavBar";
 import { SiteFooter } from "@/components/legal/SiteFooter";
+import { LegalDocDialog } from "@/components/legal/LegalDocDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { SITE_URL } from "@/lib/site";
