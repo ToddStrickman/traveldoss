@@ -32,6 +32,33 @@ export type Database = {
         }
         Relationships: []
       }
+      contact_messages: {
+        Row: {
+          category: string
+          created_at: string
+          email: string
+          id: string
+          message: string
+          name: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          email: string
+          id?: string
+          message: string
+          name?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          email?: string
+          id?: string
+          message?: string
+          name?: string | null
+        }
+        Relationships: []
+      }
       drive_watch_channels: {
         Row: {
           channel_id: string

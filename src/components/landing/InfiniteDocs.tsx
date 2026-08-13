@@ -1,6 +1,7 @@
 import { SKINS, type SkinModule } from "@/lib/skins/registry";
 import { Link } from "@tanstack/react-router";
 import { InertRender } from "@/lib/skins/shared/views/parts";
+import { PRICE_LABEL } from "@/lib/site";
 
 function SkinMiniPreview({ skin }: { skin: SkinModule }) {
   const { Render, previewFixture, tokens } = skin;
@@ -50,7 +51,7 @@ function DocThumb({ skin }: { skin: SkinModule }) {
           Dossier Template
         </span>
         <span className="text-[8px] font-medium uppercase tracking-[0.4em] text-ink/35">
-          $5 · 30d
+          {`${PRICE_LABEL} · 30d`}
         </span>
       </div>
       <h4
