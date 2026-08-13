@@ -2,7 +2,7 @@
 
 > Create beautiful travel dossiers for unforgettable journeys. TravelDoss is a travel itinerary planner: paste or write your trip and it becomes a day-by-day dossier with every place pinned, categorized, and routed on a live map — viewable as a live URL, exportable as a PDF, and usable fully offline.
 
-TravelDoss is a trip-planning tool for leisure travelers. A "travel dossier" is a polished, magazine-style trip document: your full itinerary organized day by day, with lodging, food, sights, and transport each extracted, pinned on a live routed map, and styled by an editorial template. You pick a template, paste or write your trip (plain text, an email, or an AI chat output), and TravelDoss generates the dossier. Each trip lives at its own private URL for a month for $1, can be exported to PDF with clickable links, and stays available offline once opened.
+TravelDoss is a trip-planning tool for leisure travelers. A "travel dossier" is a polished, magazine-style trip document: your full itinerary organized day by day, with lodging, food, sights, and transport each extracted, pinned on a live routed map, and styled by an editorial template. You pick a template, paste or write your trip (plain text, an email, or an AI chat output), and TravelDoss generates the dossier. Each trip lives at its own private URL for a month for $5, can be exported to PDF with clickable links, and stays available offline once opened.
 
 Common questions TravelDoss answers:
 - How do I turn a ChatGPT or Gemini itinerary into a real trip plan with a map? Paste it into TravelDoss; every place is extracted and routed by day.

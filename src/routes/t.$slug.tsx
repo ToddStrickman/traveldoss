@@ -858,7 +858,7 @@ function ExpiredDossier({ slug, destination }: { slug: string; destination: stri
         </h1>
         <p className="mt-4 text-sm text-ink-soft">
           This dossier's publishing window has ended. The owner can re-publish
-          it for another $1.
+          it for another $5.
         </p>
         <p className="mt-6 text-[10px] uppercase tracking-[0.4em] text-ink/35">
           /t/{slug}

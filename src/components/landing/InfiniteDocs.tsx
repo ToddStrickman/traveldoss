@@ -50,7 +50,7 @@ function DocThumb({ skin }: { skin: SkinModule }) {
           Dossier Template
         </span>
         <span className="text-[8px] font-medium uppercase tracking-[0.4em] text-ink/35">
-          $1 · 30d
+          $5 · 30d
         </span>
       </div>
       <h4
