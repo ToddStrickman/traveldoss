@@ -381,9 +381,9 @@ function Landing() {
           <SandHero
             className="h-[44vw] max-h-[460px] min-h-[240px] w-[min(94vw,1100px)] md:h-[24vw]"
             accessibleText="Travel Doss."
-            // Wordmark face (Zaslia) — the grain sampler rasterizes this
+            // Wordmark face (Outfit) — the grain sampler rasterizes this
             // family, so the sand inscription carries the new letterforms.
-            fontFamily="Zaslia"
+            fontFamily="Outfit"
           />
         </Parallax>
 
