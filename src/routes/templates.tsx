@@ -91,7 +91,7 @@ export const Route = createFileRoute("/templates")({
       { title: "Travel Itinerary Templates — TravelDoss" },
       {
         name: "description",
-        content: `Pick from ${SKINS.length} beautiful travel itinerary templates. Each dossier design maps your trip day by day — one URL, one dollar, one month.`,
+        content: `Pick from ${SKINS.length} beautiful travel itinerary templates. Each dossier design maps your trip day by day — one URL, five dollars, one month.`,
       },
       {
         property: "og:title",
@@ -99,7 +99,7 @@ export const Route = createFileRoute("/templates")({
       },
       {
         property: "og:description",
-        content: `${SKINS.length} editorial dossier templates for your trip. One dollar, one URL, one month — composed like a magazine.`,
+        content: `${SKINS.length} editorial dossier templates for your trip. Five dollars, one URL, one month — composed like a magazine.`,
       },
       { property: "og:url", content: `${SITE_URL}/templates` },
     ],

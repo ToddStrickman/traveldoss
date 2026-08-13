@@ -2,7 +2,7 @@
  * Projection for the PUBLIC dossier payload (`getDossierBySlug`). Two rules,
  * both audit findings:
  *
- * 1. Expired trips must not ship their content: the $1 re-publish gate was
+ * 1. Expired trips must not ship their content: the $5 re-publish gate was
  *    purely cosmetic — the loader returned the full blocks blob and any
  *    visitor could read it from the payload. Expired responses carry only
  *    what the expired page and social <head> need.

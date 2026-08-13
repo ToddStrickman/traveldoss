@@ -20,7 +20,7 @@ export const listTemplatesPublic = createServerFn({ method: "GET" }).handler(asy
 
 /**
  * Mints a new trip with the chosen skin (template_id).
- * v1 monetization (step 4) wraps this behind a $1 Stripe checkout —
+ * v1 monetization (step 4) wraps this behind a $5 Stripe checkout —
  * for now it creates the trip directly so the gallery is navigable.
  */
 export const pickTemplate = createServerFn({ method: "POST" })
