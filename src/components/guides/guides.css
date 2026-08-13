@@ -237,3 +237,45 @@
 .tdg-guide-render .tds-carousel-fallback-badge {
   display: none;
 }
+
+/* ---- home wordmark: pencil-thin navy/tan mark, top-right ---- */
+.tdg-homemark {
+  --tdg-tan: #d9c3a1;
+  position: absolute;
+  z-index: 6;
+  top: max(0.85rem, env(safe-area-inset-top));
+  right: clamp(0.85rem, 3vw, 2rem);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 44px;
+  padding: 0 0.9rem;
+  border: 1px solid color-mix(in oklab, var(--tdg-tan) 45%, transparent);
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--tdg-shell) 78%, transparent);
+  backdrop-filter: blur(6px);
+  font-size: 0.66rem;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--tdg-tan);
+  white-space: nowrap;
+  transition:
+    color 0.25s ease,
+    border-color 0.25s ease;
+}
+.tdg-homemark-rule {
+  width: 1.4rem;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.75;
+}
+.tdg-homemark:hover,
+.tdg-homemark:focus-visible {
+  color: color-mix(in oklab, var(--tdg-tan) 70%, #fff);
+  border-color: color-mix(in oklab, var(--tdg-tan) 75%, transparent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .tdg-homemark {
+    transition: none;
+  }
+}

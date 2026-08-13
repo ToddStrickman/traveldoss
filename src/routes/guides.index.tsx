@@ -5,6 +5,7 @@ import { PUBLISHED_GUIDES } from "@/content/guides";
 import { GuideCardGrid } from "@/components/guides/GuideCardGrid";
 import "@/components/guides/guides.css";
 import { Ribbon } from "@/components/landing/Ribbon";
+import { GuidesHomeMark } from "@/components/guides/GuidesHomeMark";
 import { MobileNavBar } from "@/components/mobile/MobileNavBar";
 import { SiteFooter } from "@/components/legal/SiteFooter";
 import { SITE_URL } from "@/lib/site";
@@ -83,6 +84,7 @@ function GuidesIndex() {
 
       <main>
         <section className="tdg-stage">
+          <GuidesHomeMark />
           {enhance && (
             <ClientOnly fallback={null}>
               <Suspense fallback={null}>
