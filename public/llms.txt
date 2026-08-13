@@ -13,6 +13,14 @@ Common questions TravelDoss answers:
 
 - [Home](/): What TravelDoss is and how it turns a pasted itinerary into a beautiful mapped dossier.
 - [Travel itinerary templates](/templates): The gallery of 10 editorial dossier designs to choose from.
+- [Insider Guides](/guides): Ten destination dossiers researched with the world's best travel publishers, cut to only what counts. Read one, press "Make this yours," and it becomes an editable trip of your own.
+
+## Insider Guides
+
+Each Insider Guide is a complete, real dossier for one destination: a day-by-day plan with lodging, food, sights, and transport already extracted, pinned, and routed. Guides are free to read. Copying one into your own editable dossier costs $5 for a month at its own private URL.
+
+- [Albania: The Last Cheap Coast in Europe](/guides/albania): 10 days on the Albanian Riviera and through the mountains — Tirana, Berat, Gjirokaster, Ksamil, and the Llogara pass.
+- [Savannah: Twelve Squares and a Cocktail](/guides/savannah): A long weekend in Savannah, Georgia — the historic squares, the food, and the to-go cup rules.
 
 ## Optional
 
