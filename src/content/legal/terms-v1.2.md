@@ -4,9 +4,7 @@
 
 ## 1. Acceptance of these Terms
 
-Welcome to **TravelDoss**
-
-Email: toddstrickman@gmail.com ("**TravelDoss**," "**we**," "**our**," or "**us**").
+Welcome to **TravelDoss** ("**TravelDoss**," "**we**," "**our**," or "**us**").
 
 These Terms of Service ("**Terms**") govern your access to and use of the TravelDoss website, applications, software, AI-powered services, travel dossier generation tools, and any related products or services (collectively, the "**Service**").
 
@@ -369,3 +367,5 @@ These Terms, together with the [Privacy Policy](/privacy) and any additional pol
 Questions regarding these Terms may be directed to:
 
 **TravelDoss**
+
+Email: toddstrickman@gmail.com
