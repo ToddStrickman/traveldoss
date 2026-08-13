@@ -49,7 +49,7 @@ export const mexicoCity: GuideDef = {
     },
     {
       kind: "paragraph",
-      text: "The numbers say what locals have known for a decade: restaurant search interest at a ten-year high, Michelin stars from Polanco tasting rooms down to a taco stand, two of the World's 50 Best, and a design scene that runs from Barragán's pink walls to the Sunday chaos of Lagunilla's antiques. Mexico City is the new Paris with better lunch. It rewards planners — altitude, distance, and reservation lead times all punish the improviser. Five days, based in Roma or Condesa. Book the big three (Pujol, Contramar, Casa Barragán) before you book anything else.",
+      text: "The numbers say what locals have known for a decade: restaurant search interest at a ten-year high, Michelin stars across the Polanco tasting rooms (and, for two years, a taco stand), two of the World's 50 Best, and a design scene that runs from Barragán's pink walls to the Sunday chaos of Lagunilla's antiques. Mexico City is the new Paris with better lunch. It rewards planners — altitude, distance, and reservation lead times all punish the improviser. Five days, based in Roma or Condesa. Book the big three (Pujol, Contramar, Casa Barragán) before you book anything else.",
     },
     {
       kind: "day",
@@ -68,7 +68,7 @@ export const mexicoCity: GuideDef = {
       name: "Contramar",
       time: "Lunch",
       category: "restaurant",
-      note: "Tuna tostadas and the pink-and-white fish that made the room famous. Reservations open ~2 weeks out and evaporate; otherwise walk in at the 12:30 opening.",
+      note: "Tuna tostadas and the pink-and-white fish that made the room famous. Reservations open about a month out on OpenTable and evaporate; otherwise walk in at the 12:30 opening.",
     },
     {
       kind: "place",
@@ -141,7 +141,7 @@ export const mexicoCity: GuideDef = {
       name: "Casa Luis Barragán",
       time: "Afternoon",
       category: "culture",
-      note: "Guided visits only, slots release monthly and sell out; book four to six weeks ahead.",
+      note: "Timed visits only — guided or the newer self-guided format; tickets release in batches on the official site and sell out fast. Book four to six weeks ahead.",
     },
     {
       kind: "place",
@@ -229,7 +229,7 @@ export const mexicoCity: GuideDef = {
     },
     {
       kind: "note",
-      text: "The taco tier, at every hour: El Califa de León (the Michelin-starred stand — gaonera, queue), Taquería Orinoco (al pastor until 3:30am), El Vilsito (mechanic shop by day, pastor temple by night). Bars to close: Handshake — currently the best bar in the world on the official list — then Salón Rosetta above Reygadas' mansion, Tlécan for agave in Roma.",
+      text: "The taco tier, at every hour: El Califa de León (the stand that won — then lost — its Michelin star; the gaonera and the queue don't care), Taquería Orinoco (al pastor until 3:30am), El Vilsito (mechanic shop by day, pastor temple by night). Bars to close: Handshake — currently the best bar in the world on the official list — then Salón Rosetta above Reygadas' mansion, Tlécan for agave in Roma.",
     },
     {
       kind: "note",
@@ -241,7 +241,7 @@ export const mexicoCity: GuideDef = {
     },
     {
       kind: "note",
-      text: "The practical part — Uber/DiDi everywhere, never street hails; keep the phone off the curb; Centro empties late — leave with it. The safety math in visitor neighborhoods (Roma, Condesa, Polanco, Coyoacán) resembles any large US city: petty theft, not violence, is the realistic risk. Book in this order: Pujol (3 months) → Casa Barragán (4–6 weeks) → Casa Azul (2–4 weeks) → Contramar (2 weeks) → flights around what you got.",
+      text: "The practical part — Uber/DiDi everywhere, never street hails; keep the phone off the curb; Centro empties late — leave with it. The safety math in visitor neighborhoods (Roma, Condesa, Polanco, Coyoacán) resembles any large US city: petty theft, not violence, is the realistic risk. Book in this order: Pujol (3 months) → Casa Barragán (4–6 weeks) → Casa Azul (2–4 weeks) → Contramar (1 month) → flights around what you got.",
     },
   ],
 };

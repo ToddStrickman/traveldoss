@@ -192,7 +192,7 @@ export const okinawa: GuideDef = {
       kind: "place",
       name: "Queen Zamami ferry",
       category: "transit",
-      note: "Return the car in Naha; from Tomari Port, 50 minutes. Book the fast boat online days ahead in season.",
+      note: "Return the car in Naha; from Tomari Port, 50 minutes. Book the fast boat days ahead in season — online booking is suspended for autumn 2026 sailings, so reserve by phone or through your hotel.",
     },
     {
       kind: "place",
@@ -236,7 +236,7 @@ export const okinawa: GuideDef = {
     },
     {
       kind: "note",
-      text: "The practical part — Fly Tokyo→Naha (~3 hours, LCCs from ~$50) or Osaka. A car is essential everywhere except Naha city — pre-book, bring an International Driving Permit, and respect Route 58 traffic on weekends. Ferries: Zamami high-speed ¥3,200-ish, slow ferry half that; timetables shift seasonally. Blue Seal beni-imo ice cream is mandatory once.",
+      text: "The practical part — Fly Tokyo→Naha (~3 hours, LCCs from ~$50) or Osaka. A car is essential everywhere except Naha city — pre-book, bring an International Driving Permit, and respect Route 58 traffic on weekends. Ferries: Zamami high-speed ¥3,950, slow ferry ¥2,900; timetables shift seasonally. Blue Seal beni-imo ice cream is mandatory once.",
     },
   ],
 };

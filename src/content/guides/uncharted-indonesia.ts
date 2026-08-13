@@ -60,7 +60,7 @@ export const unchartedIndonesia: GuideDef = {
       n: 1,
       label: "Days 1–2 — West Sumba (base: Cap Karoso, Kodi coast)",
       notes:
-        "Same-day connection from Bali to Tambolaka — a one-hour prop flight, four daily. Then an hour's drive to the Kodi coast and Cap Karoso: a brutalist-tropical design hotel with its own three-hectare farm, artists in residence, and a beach club on an empty Indian Ocean break. Travel + Leisure It List, Michelin Guide, and the trade press says Condé Nast Traveler readers just voted it Indonesia's best resort. It earns it.",
+        "Same-day connection from Bali to Tambolaka — a one-hour prop flight, four daily. Then an hour's drive to the Kodi coast and Cap Karoso: a brutalist-tropical design hotel with its own three-hectare farm, artists in residence, and a beach club on an empty Indian Ocean break. Travel + Leisure It List and the Michelin Guide both got here before the crowds did. It earns it.",
     },
     {
       kind: "place",
@@ -108,7 +108,7 @@ export const unchartedIndonesia: GuideDef = {
       n: 3,
       label: "Days 3–4 — Nihi Sumba",
       notes:
-        "Transfer down-coast (2.5–3 hours of honest Sumba road) for two nights at Nihi Sumba — Robb Report's #7 hotel on earth (2025), Condé Nast Traveler Gold List 2023, readers' #1 in Indonesia 2024. Two nights is not indulgence; it's arithmetic — the resort runs multi-night minimums in season, and one night here is a rounding error you'd regret anyway.",
+        "Transfer down-coast (2.5–3 hours of honest Sumba road) for three nights at Nihi Sumba — Robb Report's #7 hotel on earth (2025), Condé Nast Traveler Gold List 2023, readers' #1 in Indonesia 2024. Three nights is the floor, not indulgence — the resort runs a three-night minimum (five-plus in peak season), and anything less here is a rounding error you'd regret anyway.",
     },
     {
       kind: "place",
@@ -218,7 +218,7 @@ export const unchartedIndonesia: GuideDef = {
     },
     {
       kind: "note",
-      text: "The practical part — Fly the long haul in the pointy end if you like — to Bali. From there, every leg is a prop plane with one cabin class and a shifting schedule; no premium product exists east of Denpasar, and pretending otherwise just misprices the trip. Reconfirm everything, and never book an international connection tight against a Komodo boat return. Komodo NP now runs daily visitor quotas and app-based booking with fees that keep changing — have your operator confirm current rates. Vet any boat that isn't top-tier for life rafts and radios; the budget fleet has a record. Sumba ground transport is car-with-driver (~$60/day) and cash-only villages — carry small notes. Both islands carry malaria risk outside the resorts: talk to a travel clinic, cover evenings. Nearest serious hospitals are in Bali; insure accordingly.",
+      text: "The practical part — Fly the long haul in the pointy end if you like — to Bali. From there, every leg is a prop plane with one cabin class and a shifting schedule; no premium product exists east of Denpasar, and pretending otherwise just misprices the trip. Reconfirm everything, and never book an international connection tight against a Komodo boat return. Komodo NP now runs daily visitor quotas and app-based booking with fees that keep changing — have your operator confirm current rates. Vet any boat that isn't top-tier for life rafts and radios; the budget fleet has a record. Sumba ground transport is car-with-driver (~$60/day) and cash-only villages — carry small notes. Both islands are malaria-risk areas — standard guidance recommends antimalarial tablets for Sumba and Flores, resorts included: see a travel clinic before you fly, and cover evenings. Nearest serious hospitals are in Bali; insure accordingly.",
     },
   ],
 };

@@ -243,7 +243,7 @@ export const albania: GuideDef = {
       name: "Blue Eye spring",
       time: "Opening hour",
       category: "walk",
-      note: "En route south: go at opening or not at all; by 10am it's a queue. Swimming is officially banned, which locals treat as advisory. You didn't hear that here.",
+      note: "En route south: go at opening or not at all; by 10am it's a queue. Swimming is banned — and, as of this season, actually enforced. Rangers patrol. Look, don't leap.",
     },
     {
       kind: "place",
