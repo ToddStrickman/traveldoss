@@ -27,10 +27,10 @@ export const LEGAL_DOCS: Record<LegalDocSlug, LegalDocMeta> = {
   terms: {
     slug: "terms",
     title: "Terms of Service",
-    version: "1.1",
-    publishedAt: "2026-08-12",
-    effectiveAt: "2026-08-12",
-    contentHash: "fnv1a64-2111cf19a2dadc27",
+    version: "1.2",
+    publishedAt: "2026-08-13",
+    effectiveAt: "2026-08-13",
+    contentHash: "fnv1a64-c2e3579958f00dee",
   },
   privacy: {
     slug: "privacy",

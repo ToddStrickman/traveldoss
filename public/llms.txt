@@ -1,3 +1,4 @@
+<!-- NOTE: price appears in prose below; keep in sync with PRICE_CENTS in src/lib/site.ts -->
 # TravelDoss
 
 > Create beautiful travel dossiers for unforgettable journeys. TravelDoss is a travel itinerary planner: paste or write your trip and it becomes a day-by-day dossier with every place pinned, categorized, and routed on a live map — viewable as a live URL, exportable as a PDF, and usable fully offline.
