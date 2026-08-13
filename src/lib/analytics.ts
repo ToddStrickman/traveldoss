@@ -81,3 +81,8 @@ export const trackContactSubmitted = (category: string, messageLength: number) =
 
 export const trackContactFailed = (category: string, reason: string) =>
   capture("contact_message_failed", { category, reason });
+
+/* ---------------- Access audit trail events (see docs/analytics/tracking-plan.md) */
+
+export const trackAccessTrailOpened = (tripSlug: string, eventCount: number) =>
+  capture("access_trail_opened", { trip_slug: tripSlug, event_count: eventCount });

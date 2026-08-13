@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { StudioBar } from "@/components/studio/StudioBar";
 import { ViewSwitch } from "@/components/ViewSwitch";
 import { ExportMenu } from "@/components/studio/ExportMenu";
+import { AccessAuditTrail } from "@/components/studio/AccessAuditTrail";
 import { PrintScheduleGrid } from "@/components/studio/PrintScheduleGrid";
 import { CompanionToday } from "@/components/studio/CompanionToday";
 import { getTemporalPhase, phaseCopy } from "@/lib/itinerary/temporal";
@@ -820,6 +821,7 @@ function DossierPage() {
           <ExportMenu slug={trip.slug} trip={view} blocks={blocks} isOwner={isOwner} />
         </div>
       )}
+      {isOwner && <AccessAuditTrail slug={trip.slug} />}
       <PrintScheduleGrid trip={view} blocks={blocks} />
       <IngestionModal
         open={mintOpen}
