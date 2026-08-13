@@ -219,7 +219,7 @@ export function SandHero({
         <span
           aria-hidden
           className="flex h-full w-full items-center justify-center text-center text-[18vw] font-normal leading-[0.95] tracking-[-0.03em] text-ink md:text-[9vw]"
-          style={{ fontFamily: "var(--font-display)" }}
+          style={{ fontFamily: fontFamily ? `"${fontFamily}", Georgia, serif` : "var(--font-display)" }}
         >
           {accessibleText}
         </span>
