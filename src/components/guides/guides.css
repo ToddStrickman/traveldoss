@@ -1,0 +1,229 @@
+/* Insider Guides surfaces. Scoped under .tdg so the dark editorial palette
+   from the approved design spec never leaks into the paper-toned app shell.
+   All values are tokens: components reference the vars, never raw hexes. */
+.tdg {
+  --tdg-bg: #05070c;
+  --tdg-shell: #0b1220;
+  --tdg-card: #101828;
+  --tdg-ink: #eaf2f6;
+  --tdg-sub: #aebccb;
+  --tdg-line: rgba(234, 242, 246, 0.12);
+  --tdg-accent: #5fd3f3;
+  --tdg-accent-2: #9b8cff;
+  background: var(--tdg-bg);
+  color: var(--tdg-ink);
+}
+
+.tdg-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid var(--tdg-line);
+  border-radius: 999px;
+  padding: 0.35rem 0.85rem;
+  font-size: 0.62rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--tdg-sub) 88%, var(--tdg-ink));
+  background: var(--tdg-shell);
+}
+.tdg-eyebrow i {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: var(--tdg-accent);
+  display: inline-block;
+}
+
+.tdg-display {
+  font-family: var(--font-display, Georgia, "Times New Roman", serif);
+  font-weight: 400;
+  font-size: clamp(2.4rem, 5.6vw, 4.6rem);
+  line-height: 1.03;
+  letter-spacing: -0.02em;
+  max-width: 34rem;
+  text-shadow: 0 2px 40px rgba(5, 7, 12, 0.8);
+}
+.tdg-display em {
+  font-style: italic;
+  color: var(--tdg-accent);
+}
+.tdg-dek {
+  font-family: var(--font-display, Georgia, serif);
+  font-style: italic;
+  font-size: clamp(1rem, 2vw, 1.2rem);
+  line-height: 1.5;
+  color: color-mix(in oklab, var(--tdg-sub) 92%, var(--tdg-ink));
+  max-width: 32rem;
+}
+
+/* ---- hero stage: fixed block size so the lazy canvas causes zero CLS ---- */
+.tdg-stage {
+  position: relative;
+  height: 78vh;
+  min-height: 30rem;
+  max-height: 46rem;
+  overflow: hidden;
+  isolation: isolate;
+}
+.tdg-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+.tdg-canvas canvas {
+  display: block;
+}
+.tdg-hud {
+  position: relative;
+  z-index: 2;
+  padding: clamp(2rem, 6vh, 4rem) 1.25rem 0;
+  pointer-events: none;
+}
+.tdg-hud > * {
+  pointer-events: auto;
+}
+@media (min-width: 768px) {
+  .tdg-hud {
+    padding-left: 7.5rem;
+    padding-right: 3rem;
+  }
+}
+.tdg-hint {
+  position: absolute;
+  z-index: 2;
+  bottom: 1.1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.6rem;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--tdg-sub) 85%, var(--tdg-ink));
+  white-space: nowrap;
+}
+
+/* ---- glass destination card ---- */
+.tdg-gcard {
+  position: absolute;
+  z-index: 3;
+  right: clamp(1rem, 4vw, 4rem);
+  bottom: 3.5rem;
+  width: min(23rem, calc(100vw - 2rem));
+  border-radius: 1.9rem;
+  padding: 0.45rem;
+  background: rgba(234, 242, 246, 0.05);
+  border: 1px solid var(--tdg-line);
+  box-shadow: 0 40px 90px -30px rgba(0, 0, 0, 0.7);
+  opacity: 0;
+  transform: translateY(1.5rem);
+  transition:
+    opacity 0.5s cubic-bezier(0.19, 1, 0.22, 1),
+    transform 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+}
+.tdg-gcard[data-open="true"] {
+  opacity: 1;
+  transform: none;
+}
+@media (max-width: 767px) {
+  .tdg-gcard {
+    left: 1rem;
+    right: 1rem;
+    width: auto;
+    bottom: 3rem;
+  }
+}
+.tdg-gcard-inner {
+  position: relative;
+  border-radius: calc(1.9rem - 0.45rem);
+  padding: 1.4rem 1.4rem 1.1rem;
+  background: linear-gradient(160deg, rgba(16, 24, 40, 0.82), rgba(8, 12, 22, 0.88));
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+}
+.tdg-gcard h3 {
+  font-family: var(--font-display, Georgia, serif);
+  font-size: 1.7rem;
+  letter-spacing: -0.02em;
+  margin: 0.5rem 0 0.3rem;
+}
+.tdg-chip {
+  font-size: 0.58rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--tdg-sub) 90%, var(--tdg-ink));
+  border: 1px solid var(--tdg-line);
+  border-radius: 999px;
+  padding: 0.28rem 0.6rem;
+}
+.tdg-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  min-height: 44px;
+  width: 100%;
+  background: var(--tdg-ink);
+  color: #0a0f1c;
+  border: none;
+  border-radius: 999px;
+  padding: 0.55rem 0.7rem 0.55rem 1.3rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+}
+.tdg-btn:hover {
+  transform: translateY(-1px);
+}
+.tdg-close {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  border: 1px solid var(--tdg-line);
+  background: rgba(234, 242, 246, 0.06);
+  color: var(--tdg-ink);
+  cursor: pointer;
+}
+
+/* ---- SEO card grid (always in the DOM, server-rendered) ---- */
+.tdg-card {
+  display: block;
+  border: 1px solid var(--tdg-line);
+  border-radius: 1.4rem;
+  background: var(--tdg-shell);
+  padding: 1.3rem 1.4rem 1.5rem;
+  transition:
+    border-color 0.4s ease,
+    transform 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+}
+.tdg-card:hover {
+  border-color: color-mix(in oklab, var(--tdg-accent) 45%, transparent);
+  transform: translateY(-2px);
+}
+.tdg-card h2,
+.tdg-card h3 {
+  font-family: var(--font-display, Georgia, serif);
+  font-size: 1.45rem;
+  letter-spacing: -0.015em;
+  margin-bottom: 0.4rem;
+}
+.tdg-card p {
+  font-family: var(--font-display, Georgia, serif);
+  font-style: italic;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: color-mix(in oklab, var(--tdg-sub) 92%, var(--tdg-ink));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tdg-card,
+  .tdg-btn,
+  .tdg-gcard {
+    transition: none;
+  }
+}
