@@ -19,9 +19,11 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as DisclaimerRouteImport } from './routes/disclaimer'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as GuidesIndexRouteImport } from './routes/guides.index'
 import { Route as TermsUpdateRouteImport } from './routes/terms_.update'
 import { Route as TemplatesIdRouteImport } from './routes/templates_.$id'
 import { Route as TSlugRouteImport } from './routes/t.$slug'
+import { Route as GuidesSlugRouteImport } from './routes/guides.$slug'
 import { Route as E2eReviewRouteImport } from './routes/e2e.review'
 import { Route as E2eKanbanRouteImport } from './routes/e2e.kanban'
 import { Route as E2eDossierRouteImport } from './routes/e2e.dossier'
@@ -82,6 +84,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GuidesIndexRoute = GuidesIndexRouteImport.update({
+  id: '/guides/',
+  path: '/guides/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TermsUpdateRoute = TermsUpdateRouteImport.update({
   id: '/terms_/update',
   path: '/terms/update',
@@ -95,6 +102,11 @@ const TemplatesIdRoute = TemplatesIdRouteImport.update({
 const TSlugRoute = TSlugRouteImport.update({
   id: '/t/$slug',
   path: '/t/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GuidesSlugRoute = GuidesSlugRouteImport.update({
+  id: '/guides/$slug',
+  path: '/guides/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const E2eReviewRoute = E2eReviewRouteImport.update({
@@ -169,9 +181,11 @@ export interface FileRoutesByFullPath {
   '/e2e/dossier': typeof E2eDossierRoute
   '/e2e/kanban': typeof E2eKanbanRoute
   '/e2e/review': typeof E2eReviewRoute
+  '/guides/$slug': typeof GuidesSlugRoute
   '/t/$slug': typeof TSlugRoute
   '/templates/$id': typeof TemplatesIdRoute
   '/terms/update': typeof TermsUpdateRoute
+  '/guides/': typeof GuidesIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/public/hooks/cleanup-pending-doc-exports': typeof ApiPublicHooksCleanupPendingDocExportsRoute
@@ -193,9 +207,11 @@ export interface FileRoutesByTo {
   '/e2e/dossier': typeof E2eDossierRoute
   '/e2e/kanban': typeof E2eKanbanRoute
   '/e2e/review': typeof E2eReviewRoute
+  '/guides/$slug': typeof GuidesSlugRoute
   '/t/$slug': typeof TSlugRoute
   '/templates/$id': typeof TemplatesIdRoute
   '/terms/update': typeof TermsUpdateRoute
+  '/guides': typeof GuidesIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/public/hooks/cleanup-pending-doc-exports': typeof ApiPublicHooksCleanupPendingDocExportsRoute
@@ -219,9 +235,11 @@ export interface FileRoutesById {
   '/e2e/dossier': typeof E2eDossierRoute
   '/e2e/kanban': typeof E2eKanbanRoute
   '/e2e/review': typeof E2eReviewRoute
+  '/guides/$slug': typeof GuidesSlugRoute
   '/t/$slug': typeof TSlugRoute
   '/templates_/$id': typeof TemplatesIdRoute
   '/terms_/update': typeof TermsUpdateRoute
+  '/guides/': typeof GuidesIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/public/hooks/cleanup-pending-doc-exports': typeof ApiPublicHooksCleanupPendingDocExportsRoute
@@ -245,9 +263,11 @@ export interface FileRouteTypes {
     | '/e2e/dossier'
     | '/e2e/kanban'
     | '/e2e/review'
+    | '/guides/$slug'
     | '/t/$slug'
     | '/templates/$id'
     | '/terms/update'
+    | '/guides/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/public/hooks/cleanup-pending-doc-exports'
@@ -269,9 +289,11 @@ export interface FileRouteTypes {
     | '/e2e/dossier'
     | '/e2e/kanban'
     | '/e2e/review'
+    | '/guides/$slug'
     | '/t/$slug'
     | '/templates/$id'
     | '/terms/update'
+    | '/guides'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/public/hooks/cleanup-pending-doc-exports'
@@ -294,9 +316,11 @@ export interface FileRouteTypes {
     | '/e2e/dossier'
     | '/e2e/kanban'
     | '/e2e/review'
+    | '/guides/$slug'
     | '/t/$slug'
     | '/templates_/$id'
     | '/terms_/update'
+    | '/guides/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/public/hooks/cleanup-pending-doc-exports'
@@ -319,9 +343,11 @@ export interface RootRouteChildren {
   E2eDossierRoute: typeof E2eDossierRoute
   E2eKanbanRoute: typeof E2eKanbanRoute
   E2eReviewRoute: typeof E2eReviewRoute
+  GuidesSlugRoute: typeof GuidesSlugRoute
   TSlugRoute: typeof TSlugRoute
   TemplatesIdRoute: typeof TemplatesIdRoute
   TermsUpdateRoute: typeof TermsUpdateRoute
+  GuidesIndexRoute: typeof GuidesIndexRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   ApiPublicHooksCleanupPendingDocExportsRoute: typeof ApiPublicHooksCleanupPendingDocExportsRoute
@@ -399,6 +425,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/guides/': {
+      id: '/guides/'
+      path: '/guides'
+      fullPath: '/guides/'
+      preLoaderRoute: typeof GuidesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/terms_/update': {
       id: '/terms_/update'
       path: '/terms/update'
@@ -418,6 +451,13 @@ declare module '@tanstack/react-router' {
       path: '/t/$slug'
       fullPath: '/t/$slug'
       preLoaderRoute: typeof TSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/guides/$slug': {
+      id: '/guides/$slug'
+      path: '/guides/$slug'
+      fullPath: '/guides/$slug'
+      preLoaderRoute: typeof GuidesSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/e2e/review': {
@@ -523,9 +563,11 @@ const rootRouteChildren: RootRouteChildren = {
   E2eDossierRoute: E2eDossierRoute,
   E2eKanbanRoute: E2eKanbanRoute,
   E2eReviewRoute: E2eReviewRoute,
+  GuidesSlugRoute: GuidesSlugRoute,
   TSlugRoute: TSlugRoute,
   TemplatesIdRoute: TemplatesIdRoute,
   TermsUpdateRoute: TermsUpdateRoute,
+  GuidesIndexRoute: GuidesIndexRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   ApiPublicHooksCleanupPendingDocExportsRoute:

@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { BookOpen, Compass, Home, UserCircle2 } from "lucide-react";
+import { Briefcase, BookOpen, Compass, Home, UserCircle2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -36,8 +36,9 @@ export function MobileNavBar() {
   const items = [
     { to: "/" as const, label: "Home", icon: Home, active: path === "/" },
     { to: "/templates" as const, label: "Templates", icon: BookOpen, active: path.startsWith("/templates") },
+    { to: "/guides" as const, label: "Guides", icon: Compass, active: path.startsWith("/guides") },
     ...(signedIn
-      ? [{ to: "/app" as const, label: "Trips", icon: Compass, active: path.startsWith("/app") }]
+      ? [{ to: "/app" as const, label: "Trips", icon: Briefcase, active: path.startsWith("/app") }]
       : []),
     ...(signedIn === false
       ? [{ to: "/login" as const, label: "Sign in", icon: UserCircle2, active: path.startsWith("/login"), accent: true }]

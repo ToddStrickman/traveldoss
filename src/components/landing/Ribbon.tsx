@@ -1,5 +1,5 @@
-import { Link } from "@tanstack/react-router";
-import { BookOpen, Compass, UserCircle2 } from "lucide-react";
+import { Link, useRouterState } from "@tanstack/react-router";
+import { Briefcase, BookOpen, Compass, UserCircle2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
@@ -8,9 +8,12 @@ import type { User } from "@supabase/supabase-js";
    an option that doesn't exist shouldn't be present). Browse Places /
    Saved / Settings all dead-ended at /app — four labels, one page. When
    those pages ship, they earn their icons back. */
-const baseItems = [{ icon: BookOpen, label: "Templates", to: "/templates" as const }];
+const baseItems = [
+  { icon: BookOpen, label: "Templates", to: "/templates" as const },
+  { icon: Compass, label: "Insider Guides", to: "/guides" as const },
+];
 const signedInItems = [
-  { icon: Compass, label: "My Trips", to: "/app" as const },
+  { icon: Briefcase, label: "My Trips", to: "/app" as const },
   ...baseItems,
 ];
 
@@ -70,6 +73,7 @@ function IdentityChip({ user }: { user: User | null }) {
 
 export function Ribbon() {
   const [user, setUser] = useState<User | null>(null);
+  const path = useRouterState({ select: (s) => s.location.pathname });
 
   useEffect(() => {
     let alive = true;
@@ -93,11 +97,17 @@ export function Ribbon() {
     >
       <IdentityChip user={user} />
       <nav className="mt-2 flex flex-col gap-0.5 border-t border-ink/10 pt-2">
-        {(user ? signedInItems : baseItems).map(({ icon: Icon, label, to }) => (
+        {(user ? signedInItems : baseItems).map(({ icon: Icon, label, to }) => {
+          const active = path.startsWith(to);
+          return (
           <Link
             key={label}
             to={to}
-            className="group relative flex h-11 w-11 items-center justify-center text-ink/45 transition-colors duration-300 hover:text-seal focus-visible:text-seal"
+            aria-current={active ? "page" : undefined}
+            className={
+              "group relative flex h-11 w-11 items-center justify-center transition-colors duration-300 hover:text-seal focus-visible:text-seal " +
+              (active ? "text-seal" : "text-ink/45")
+            }
             aria-label={label}
           >
             <Icon className="h-4 w-4" strokeWidth={1.25} aria-hidden="true" />
@@ -105,7 +115,8 @@ export function Ribbon() {
               {label}
             </span>
           </Link>
-        ))}
+          );
+        })}
       </nav>
     </aside>
   );
