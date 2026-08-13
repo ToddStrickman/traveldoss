@@ -73,3 +73,11 @@ export const trackGuideFaqOpen = (slug: string, q: string) =>
 
 export const trackGuideCta = (slug: string, cta: "make_this_yours" | "start_from_scratch") =>
   capture("guide_cta_clicked", { slug, cta });
+
+/* ---------------- Contact form events (see docs/analytics/tracking-plan.md) */
+
+export const trackContactSubmitted = (category: string, messageLength: number) =>
+  capture("contact_message_submitted", { category, message_length: messageLength });
+
+export const trackContactFailed = (category: string, reason: string) =>
+  capture("contact_message_failed", { category, reason });

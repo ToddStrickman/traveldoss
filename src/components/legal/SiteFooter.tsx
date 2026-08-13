@@ -36,6 +36,9 @@ export function SiteFooter({ mobileNavClearance = false }: { mobileNavClearance?
           <Link to="/guides" className="td-eyebrow text-ink/45 transition-colors hover:text-seal">
             Insider Guides
           </Link>
+          <Link to="/contact" className="td-eyebrow text-ink/45 transition-colors hover:text-seal">
+            Contact
+          </Link>
           <Link to="/terms" className="td-eyebrow text-ink/45 transition-colors hover:text-seal">
             Terms of Service
           </Link>
