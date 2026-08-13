@@ -18,7 +18,7 @@ import { createTripFromIngestion } from "@/lib/trips.functions";
 import type { Block } from "@/lib/skins/types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { SITE_URL } from "@/lib/site";
+import { PRICE_WORDS, SITE_URL } from "@/lib/site";
 import { peekPendingComposer } from "@/lib/mint-pending";
 import { MintTermsGate, type MintTermsGateHandle } from "@/components/legal/MintTermsGate";
 
@@ -93,7 +93,7 @@ export const Route = createFileRoute("/templates")({
       { title: "Travel Itinerary Templates — TravelDoss" },
       {
         name: "description",
-        content: `Pick from ${SKINS.length} beautiful travel itinerary templates. Each dossier design maps your trip day by day — one URL, five dollars, one month.`,
+        content: `Pick from ${SKINS.length} beautiful travel itinerary templates. Each dossier design maps your trip day by day — one URL, ${PRICE_WORDS}, one month.`,
       },
       {
         property: "og:title",
