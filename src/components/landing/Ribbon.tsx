@@ -98,7 +98,7 @@ export function Ribbon() {
       <IdentityChip user={user} />
       <nav className="mt-2 flex flex-col gap-0.5 border-t border-ink/10 pt-2">
         {(user ? signedInItems : baseItems).map(({ icon: Icon, label, to }) => {
-          const active = to === "/" ? path === "/" : path.startsWith(to);
+          const active = path.startsWith(to);
           return (
           <Link
             key={label}
