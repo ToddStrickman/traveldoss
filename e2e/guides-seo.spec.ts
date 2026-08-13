@@ -58,6 +58,10 @@ test.describe("guide page — server HTML", () => {
     expect(html).toContain("Albania: The Insider Guide");
     // FAQ answers live in the DOM (details/summary), not behind JS.
     expect(html).toContain("When is the best time to visit the Albanian Riviera?");
+    // The editorial extras render in the guide chrome (the shared views drop
+    // paragraph/note blocks): lede + "The brief" roundups must reach crawlers.
+    expect(html).toContain("The secret is half out");
+    expect(html).toContain("Where to stay");
 
     const graph = jsonLdBlocks(html)
       .flatMap((b) => (b as { "@graph"?: { "@type": string }[] })["@graph"] ?? [])
@@ -68,25 +72,39 @@ test.describe("guide page — server HTML", () => {
     expect(graph).toContain("TouristTrip");
   });
 
-  test("unpublished stub is noindex and carries no guide structured data", async ({ request }) => {
-    const html = await (await request.get("/guides/paris")).text();
-    expect(html).toContain("noindex");
-    // The site-wide Organization/WebSite JSON-LD is fine; what must be absent
-    // is guide-shaped data (Article/FAQPage) for a page with no content.
-    const graph = jsonLdBlocks(html)
-      .flatMap((b) => (b as { "@graph"?: { "@type": string }[] })["@graph"] ?? [])
-      .map((n) => n["@type"]);
-    expect(graph).not.toContain("Article");
-    expect(graph).not.toContain("FAQPage");
+  test("every guide page is indexable with guide structured data", async ({ request }) => {
+    // All ten guides are published; none may carry noindex or ship without
+    // its Article/FAQPage graph. (Unpublished stubs, if ever reintroduced,
+    // get noindex + no guide JSON-LD via the published flag.)
+    for (const slug of ["paris", "japan-golden-route", "okinawa"]) {
+      const html = await (await request.get(`/guides/${slug}`)).text();
+      expect(html).not.toContain('content="noindex');
+      const graph = jsonLdBlocks(html)
+        .flatMap((b) => (b as { "@graph"?: { "@type": string }[] })["@graph"] ?? [])
+        .map((n) => n["@type"]);
+      expect(graph).toContain("Article");
+      expect(graph).toContain("FAQPage");
+    }
   });
 });
 
-test("sitemap lists /guides and published guides, never stubs", async ({ request }) => {
+test("sitemap lists /guides and all ten published guides", async ({ request }) => {
   const xml = await (await request.get("/sitemap.xml")).text();
   expect(xml).toContain("/guides</loc>");
-  expect(xml).toContain("/guides/albania</loc>");
-  expect(xml).toContain("/guides/savannah</loc>");
-  expect(xml).not.toContain("/guides/paris</loc>");
+  for (const slug of [
+    "albania",
+    "crete",
+    "uncharted-indonesia",
+    "okinawa",
+    "savannah",
+    "japan-golden-route",
+    "amalfi-coast",
+    "lisbon",
+    "mexico-city",
+    "paris",
+  ]) {
+    expect(xml).toContain(`/guides/${slug}</loc>`);
+  }
 });
 
 test("anonymous clone CTA routes through login with a redirect back", async ({ page }) => {

@@ -169,6 +169,12 @@ function GuidePage() {
   }, [guide.slug]);
 
   const skin = getSkin(guide.skinId) ?? FALLBACK_SKIN;
+  // The shared views render day/place blocks but drop paragraph/quote/note
+  // "extras" (see buildItinerary) — so the guide chrome carries them: ledes
+  // under the header, the note roundups as "The brief" after the dossier.
+  // Without this, the editorial meat never reaches readers or crawlers.
+  const ledes = guide.blocks.filter((b) => b.kind === "paragraph");
+  const briefNotes = guide.blocks.filter((b) => b.kind === "note");
   const trip: TripView = {
     destination: guide.destination,
     subtitle: guide.dek,
@@ -237,10 +243,49 @@ function GuidePage() {
           )}
         </header>
 
+        {guide.published && ledes.length > 0 && (
+          <section
+            aria-label="Overview"
+            className="mx-auto max-w-[1100px] px-5 pb-10 md:px-8 md:pl-[7.5rem]"
+          >
+            {ledes.map((p) => (
+              <p
+                key={p.text.slice(0, 40)}
+                className="mt-4 max-w-3xl text-base leading-relaxed text-[color-mix(in_oklab,var(--tdg-sub)_92%,var(--tdg-ink))]"
+              >
+                {p.text}
+              </p>
+            ))}
+          </section>
+        )}
+
         {guide.published && (
-          <div className="bg-paper text-ink">
+          /* tdg-guide-render scopes reader-mode CSS: owner-facing affordances
+             (empty date chips, "add your own" photo badges) hide on guides. */
+          <div className="tdg-guide-render bg-paper text-ink">
             <skin.Render trip={trip} blocks={guide.blocks} view="vertical" />
           </div>
+        )}
+
+        {guide.published && briefNotes.length > 0 && (
+          <section
+            aria-labelledby="guide-brief"
+            className="mx-auto max-w-[1100px] px-5 pt-14 md:px-8 md:pl-[7.5rem]"
+          >
+            <h2 id="guide-brief" className="tdg-display !text-3xl">
+              The brief
+            </h2>
+            <div className="mt-6 grid gap-4 md:grid-cols-2">
+              {briefNotes.map((n) => (
+                <p
+                  key={n.text.slice(0, 40)}
+                  className="rounded-2xl border border-[var(--tdg-line)] bg-[var(--tdg-card)] p-5 text-sm leading-relaxed text-[color-mix(in_oklab,var(--tdg-sub)_92%,var(--tdg-ink))]"
+                >
+                  {n.text}
+                </p>
+              ))}
+            </div>
+          </section>
         )}
 
         {guide.published && (

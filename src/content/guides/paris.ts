@@ -1,0 +1,286 @@
+import type { GuideDef } from "./types";
+
+/**
+ * Insider Guide № 10 — Paris. Editorial copy is preserved verbatim from the
+ * founder-approved source; "verify before publish" notes live in
+ * docs/guides-verification.md, never in rendered content.
+ */
+export const paris: GuideDef = {
+  slug: "paris",
+  destination: "Paris",
+  title: "Paris: The Insider Guide",
+  seoTitle: "Paris Itinerary — 5 Days: The Insider Guide | TravelDoss",
+  dek: "Paris doesn't need another list. It needs an editor.",
+  metaDescription:
+    "A 5-day Paris itinerary by arrondissement: Notre-Dame reborn, the Louvre once, and the eating 11th — plus where to stay and when to go.",
+  days: "5 days",
+  season: "April–June · September–October",
+  no: "№ 10",
+  chips: ["5 days", "Arrondissement-first", "Spring · Fall"],
+  skinId: "vesper",
+  accent: "#EFE0C0",
+  lat: 48.86,
+  lon: 2.35,
+  publishedAt: "2026-08-13",
+  updatedAt: "2026-08-13",
+  published: true,
+  faq: [
+    {
+      q: "How many days do you need in Paris?",
+      a: "Four full days minimum; five adds Belleville and Père Lachaise or Versailles without museum-cramming. Two museums a day, maximum.",
+    },
+    {
+      q: "What's the best arrondissement to stay in?",
+      a: "The Marais (3rd/4th) for first-timers — central, walkable, alive at night. The 1st–2nd for quiet luxury; the 9th for value and food proximity. Not the tower's shadow.",
+    },
+    {
+      q: "Is the Louvre worth it?",
+      a: "Once, with a timed morning or Friday-evening slot and a two-hour, one-wing plan. If that sounds like surviving rather than loving, book the Orsay instead and thank yourself.",
+    },
+  ],
+  sources:
+    "Sources: Paris je t'aime (Notre-Dame status), AFAR (reopening), Paris by Mouth (winter 2025 fifty; baguette Grand Prix), David Lebovitz, Le Fooding (natural wine '25), CNT 2025 restaurant selection, Michelin Guide (Keys, Table), France Travel Wiki (2026 ticketing/pricing), European Traveler (Orsay strategy), Al Jazeera/France24 (Seine swimming '25).",
+  blocks: [
+    {
+      kind: "hero",
+      eyebrow: "Insider Guide № 10",
+      title: "Paris: The Insider Guide",
+      subtitle: "Paris doesn't need another list. It needs an editor.",
+    },
+    {
+      kind: "paragraph",
+      text: "The post-Olympics city is the best version of Paris in a generation: Notre-Dame reopened and luminous, the Seine swimmable for the first time in a century, and the food energy decisively in the 10th and 11th — not Saint-Germain. What Paris punishes now is improvisation: the Louvre rations entry, the Pompidou is dark until 2030, and the tables worth having open their books exactly three weeks out. This guide's job is ruthlessness: what to book, what to skip by name, and how to never cross the city twice in one day.",
+    },
+    {
+      kind: "paragraph",
+      text: "Five days, organized by arrondissement cluster. Two museums a day, maximum. Eat east.",
+    },
+    {
+      kind: "day",
+      n: 1,
+      label: "Day 1 — The islands & the Marais",
+    },
+    {
+      kind: "place",
+      name: "Notre-Dame at the 7:50 opening",
+      time: "Dawn",
+      category: "culture",
+      note: "Free; reserve a slot on the official app — or Thursday evening, when it's open late and the light through the new glass is the argument. The towers reopened in 2025; book those ahead.",
+    },
+    {
+      kind: "place",
+      name: "Sainte-Chapelle, first slot",
+      time: "Morning",
+      category: "culture",
+      note: "The glass without the shoulders.",
+    },
+    {
+      kind: "place",
+      name: "Île Saint-Louis",
+      time: "Afternoon",
+      category: "walk",
+      note: "Ice cream.",
+    },
+    {
+      kind: "place",
+      name: "Musée Picasso",
+      time: "Afternoon",
+      category: "culture",
+    },
+    {
+      kind: "place",
+      name: "Place des Vosges",
+      time: "Afternoon",
+      category: "culture",
+    },
+    {
+      kind: "place",
+      name: "Le Grand Mazarin",
+      time: "Evening",
+      category: "restaurant",
+      note: "Dinner on the Marais–Bastille edge; Le Grand Mazarin's bar for a nightcap.",
+    },
+    {
+      kind: "day",
+      n: 2,
+      label: "Day 2 — Louvre & Palais-Royal",
+    },
+    {
+      kind: "place",
+      name: "The Louvre, once, correctly",
+      time: "Morning or Friday night",
+      category: "culture",
+      note: "Timed morning slot or the Friday nocturne, one wing, two hours, and no Mona Lisa scrum. Closed Tuesdays; non-EU pricing rose in 2026 — book weeks ahead.",
+    },
+    {
+      kind: "place",
+      name: "Palais-Royal gardens and Galerie Vivienne",
+      time: "Afternoon",
+      category: "walk",
+      note: "The covered-passage hour.",
+    },
+    {
+      kind: "place",
+      name: "Rue Montorgueil",
+      time: "Evening",
+      category: "restaurant",
+      note: "For the market-street evening.",
+    },
+    {
+      kind: "day",
+      n: 3,
+      label: "Day 3 — The Left Bank, then eat east",
+    },
+    {
+      kind: "place",
+      name: "Musée d'Orsay, first slot or Thursday evening",
+      time: "Morning",
+      category: "culture",
+      note: "If you'd rather love a museum than survive one, this is the better first date than the Louvre.",
+    },
+    {
+      kind: "place",
+      name: "Rodin's garden",
+      time: "Afternoon",
+      category: "culture",
+    },
+    {
+      kind: "place",
+      name: "Luxembourg chairs by the fountain",
+      time: "Afternoon",
+      category: "walk",
+    },
+    {
+      kind: "note",
+      text: "Then cross the river for dinner — the Left Bank is for walking now, not eating.",
+    },
+    {
+      kind: "day",
+      n: 4,
+      label: "Day 4 — The canal & the eating arrondissements",
+    },
+    {
+      kind: "place",
+      name: "Du Pain et des Idées",
+      time: "Morning",
+      category: "restaurant",
+      note: "Pain des amis, escargot pistache; closed weekends.",
+    },
+    {
+      kind: "place",
+      name: "Canal Saint-Martin",
+      time: "Midday",
+      category: "walk",
+      note: "Flânerie.",
+    },
+    {
+      kind: "place",
+      name: "Marché d'Aligre",
+      time: "Midday",
+      category: "restaurant",
+      note: "The real market, not Enfants Rouges' queue.",
+    },
+    {
+      kind: "place",
+      name: "Septime",
+      time: "Evening",
+      category: "restaurant",
+      note: "The 11th by night. Books out three weeks ahead, online at 10am Paris time sharp. This is where Paris eats now.",
+    },
+    {
+      kind: "place",
+      name: "Clamato",
+      time: "Evening",
+      category: "restaurant",
+      tier: "shadow",
+      note: "Septime's walk-in seafood annex — arrive at opening.",
+    },
+    {
+      kind: "place",
+      name: "Le Servan",
+      time: "Evening",
+      category: "restaurant",
+      tier: "shadow",
+    },
+    {
+      kind: "place",
+      name: "Clown Bar",
+      time: "Evening",
+      category: "restaurant",
+      tier: "shadow",
+    },
+    {
+      kind: "place",
+      name: "Bistrot Paul Bert",
+      time: "Evening",
+      category: "restaurant",
+      tier: "shadow",
+      note: "For the eternal steak-frites-soufflé.",
+    },
+    {
+      kind: "place",
+      name: "La Buvette or Le Verre Volé",
+      time: "Evening",
+      category: "restaurant",
+      note: "For natural wine.",
+    },
+    {
+      kind: "day",
+      n: 5,
+      label: "Day 5 — Heights: pick your hill",
+    },
+    {
+      kind: "place",
+      name: "Montmartre before 9:30am only",
+      time: "Morning",
+      category: "walk",
+      note: "Sacré-Cœur at dawn, the vineyard lanes, out before the buses.",
+    },
+    {
+      kind: "place",
+      name: "Belleville",
+      time: "Morning",
+      category: "walk",
+      tier: "shadow",
+      note: "Or the swap: Parc de Belleville's skyline (the view without the crowd), street art, Père Lachaise on the way down, lunch at Le Baratin, the chefs' canteen.",
+    },
+    {
+      kind: "place",
+      name: "Fondation Louis Vuitton or Palais Garnier",
+      time: "Afternoon",
+      category: "culture",
+      note: "For the afternoon.",
+    },
+    {
+      kind: "place",
+      name: "Table by Bruno Verjus",
+      time: "Dinner",
+      category: "restaurant",
+      note: "Farewell splurge — the three stars worth it over stuffier palaces.",
+    },
+    {
+      kind: "note",
+      text: "The skip list, by name: the Champs-Élysées, Moulin Rouge dinners, midday Montmartre, the Eiffel summit queue (see it from Trocadéro at dawn instead), the Pompidou (closed to ~2030 — Musée d'Art Moderne next door is free), and Enfants Rouges at Sunday noon.",
+    },
+    {
+      kind: "note",
+      text: "The zero-queue museums nobody uses: Jacquemart-André, Vie Romantique, the Orangerie's Water Lilies in 90 flat minutes.",
+    },
+    {
+      kind: "note",
+      text: "The 2025 novelty that stuck: summer swimming in the Seine — Bras Marie, Grenelle, Bercy. Free.",
+    },
+    {
+      kind: "note",
+      text: "Where to stay — Cheval Blanc Paris: three Michelin Keys, Seine-facing, the current benchmark. Le Bristol: three Keys, the service standard by which palaces measure themselves. La Réserve: three Keys, forty rooms, the most private-mansion of the palaces. Le Grand Mazarin: Michelin-Key boutique in the Marais, walkable to this guide's whole east side. La Fantaisie (9th): CNT Hot List boutique in SoPi, surrounded by restaurant gold. Value: Hôtel des Grands Boulevards (2nd) or Dame des Arts (5th) — real design under €350. Arrondissement logic: sleep 1er–4e or the 9e; eat in the 10e–11e; never sleep by the Eiffel Tower.",
+    },
+    {
+      kind: "note",
+      text: "When to go — Late May–June and September–early October — now booking like high season, three months out. August honestly: calm and cheap, but the good 10th/11th kitchens close two to three weeks — fine for museums, bad for eating. Fashion weeks (early March, late September) spike rates.",
+    },
+    {
+      kind: "note",
+      text: "The practical part — Book in this order: Septime-tier tables (3 weeks, 10am Paris time) → Louvre/Orsay/Sainte-Chapelle slots → everything else. Sunday–Monday closures cluster: save the 7/7 classics for those nights. The Métro beats every taxi before 9am. Heritage Days (third September weekend) open buildings that never open — plan around them if the dates align.",
+    },
+  ],
+};

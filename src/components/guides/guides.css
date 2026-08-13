@@ -227,3 +227,13 @@
     transition: none;
   }
 }
+
+/* Reader mode for the dossier render inside a guide page: guides are
+   immutable editorial artifacts, so owner-facing fill-me-in affordances
+   never show. Scoped by attribute hooks the shared views already emit. */
+.tdg-guide-render .tds-day-date-chip[data-placeholder="true"] {
+  display: none;
+}
+.tdg-guide-render .tds-carousel-fallback-badge {
+  display: none;
+}

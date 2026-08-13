@@ -20,7 +20,15 @@ Common questions TravelDoss answers:
 Each Insider Guide is a complete, real dossier for one destination: a day-by-day plan with lodging, food, sights, and transport already extracted, pinned, and routed. Guides are free to read. Copying one into your own editable dossier costs $5 for a month at its own private URL.
 
 - [Albania: The Insider Guide](/guides/albania): 7 days — Tirana, Berat, the Ionian Riviera from Dhërmi to Qeparo, Gjirokastër, with the Corfu ferry as the exit. Best late May–June or September.
+- [Crete: The Insider Guide](/guides/crete): 6 days open-jaw, Chania to Heraklion — Chania's food town, Balos and Elafonisi, Loutro and the south coast, Peza wine country. Best May–June or September–October.
+- [Uncharted Indonesia](/guides/uncharted-indonesia): 9 days east of Bali — Sumba's wild-luxury resorts and villages, then a private phinisi charter through Komodo's dragons, mantas, and pink beaches. Best April–November.
+- [Okinawa: The Insider Guide](/guides/okinawa): 6 days — Naha's craft-and-market city, the wild aquamarine north, and a Zamami island overnight most itineraries mistake for a day trip. Best April–June or October–November.
 - [Savannah: The Insider Guide](/guides/savannah): 3–4 days — the squares at 8am, Starland's food scene, Bonaventure and the moss-and-marsh islands. Best late October–November.
+- [Japan's Golden Route: The Insider Guide](/guides/japan-golden-route): 8 days, rail-first — Tokyo on an inverted clock, dawn shrines, machiya-bar Kyoto, the Nara finish. Best late October–December or January–February.
+- [Amalfi Coast: The Insider Guide](/guides/amalfi-coast): 6 days, one base, moving by ferry — Positano early, the boat day, Ravello, Path of the Gods, Capri done right. Best May–June or late September.
+- [Lisbon: The Insider Guide](/guides/lisbon): 5 days — Marvila, Príncipe Real, Campo de Ourique, the nata verdict, and the Sintra-or-Arrábida call. Best May–June or September–October.
+- [Mexico City: The Insider Guide](/guides/mexico-city): 5 days, food-first — Roma and Condesa, Centro murals, Barragán, Coyoacán, and dawn Teotihuacán. Best November–April.
+- [Paris: The Insider Guide](/guides/paris): 5 days by arrondissement — Notre-Dame at dawn, the Louvre once, dinners in the 11th, the skip list by name. Best April–June or September–October.
 
 ## Optional
 
