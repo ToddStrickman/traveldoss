@@ -23,6 +23,7 @@ import { Route as GuidesIndexRouteImport } from './routes/guides.index'
 import { Route as TermsUpdateRouteImport } from './routes/terms_.update'
 import { Route as TemplatesIdRouteImport } from './routes/templates_.$id'
 import { Route as TSlugRouteImport } from './routes/t.$slug'
+import { Route as GuidesSlugRouteImport } from './routes/guides.$slug'
 import { Route as E2eReviewRouteImport } from './routes/e2e.review'
 import { Route as E2eKanbanRouteImport } from './routes/e2e.kanban'
 import { Route as E2eDossierRouteImport } from './routes/e2e.dossier'
@@ -103,6 +104,11 @@ const TSlugRoute = TSlugRouteImport.update({
   path: '/t/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GuidesSlugRoute = GuidesSlugRouteImport.update({
+  id: '/guides/$slug',
+  path: '/guides/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const E2eReviewRoute = E2eReviewRouteImport.update({
   id: '/e2e/review',
   path: '/e2e/review',
@@ -175,6 +181,7 @@ export interface FileRoutesByFullPath {
   '/e2e/dossier': typeof E2eDossierRoute
   '/e2e/kanban': typeof E2eKanbanRoute
   '/e2e/review': typeof E2eReviewRoute
+  '/guides/$slug': typeof GuidesSlugRoute
   '/t/$slug': typeof TSlugRoute
   '/templates/$id': typeof TemplatesIdRoute
   '/terms/update': typeof TermsUpdateRoute
@@ -200,6 +207,7 @@ export interface FileRoutesByTo {
   '/e2e/dossier': typeof E2eDossierRoute
   '/e2e/kanban': typeof E2eKanbanRoute
   '/e2e/review': typeof E2eReviewRoute
+  '/guides/$slug': typeof GuidesSlugRoute
   '/t/$slug': typeof TSlugRoute
   '/templates/$id': typeof TemplatesIdRoute
   '/terms/update': typeof TermsUpdateRoute
@@ -227,6 +235,7 @@ export interface FileRoutesById {
   '/e2e/dossier': typeof E2eDossierRoute
   '/e2e/kanban': typeof E2eKanbanRoute
   '/e2e/review': typeof E2eReviewRoute
+  '/guides/$slug': typeof GuidesSlugRoute
   '/t/$slug': typeof TSlugRoute
   '/templates_/$id': typeof TemplatesIdRoute
   '/terms_/update': typeof TermsUpdateRoute
@@ -254,6 +263,7 @@ export interface FileRouteTypes {
     | '/e2e/dossier'
     | '/e2e/kanban'
     | '/e2e/review'
+    | '/guides/$slug'
     | '/t/$slug'
     | '/templates/$id'
     | '/terms/update'
@@ -279,6 +289,7 @@ export interface FileRouteTypes {
     | '/e2e/dossier'
     | '/e2e/kanban'
     | '/e2e/review'
+    | '/guides/$slug'
     | '/t/$slug'
     | '/templates/$id'
     | '/terms/update'
@@ -305,6 +316,7 @@ export interface FileRouteTypes {
     | '/e2e/dossier'
     | '/e2e/kanban'
     | '/e2e/review'
+    | '/guides/$slug'
     | '/t/$slug'
     | '/templates_/$id'
     | '/terms_/update'
@@ -331,6 +343,7 @@ export interface RootRouteChildren {
   E2eDossierRoute: typeof E2eDossierRoute
   E2eKanbanRoute: typeof E2eKanbanRoute
   E2eReviewRoute: typeof E2eReviewRoute
+  GuidesSlugRoute: typeof GuidesSlugRoute
   TSlugRoute: typeof TSlugRoute
   TemplatesIdRoute: typeof TemplatesIdRoute
   TermsUpdateRoute: typeof TermsUpdateRoute
@@ -440,6 +453,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/guides/$slug': {
+      id: '/guides/$slug'
+      path: '/guides/$slug'
+      fullPath: '/guides/$slug'
+      preLoaderRoute: typeof GuidesSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/e2e/review': {
       id: '/e2e/review'
       path: '/e2e/review'
@@ -543,6 +563,7 @@ const rootRouteChildren: RootRouteChildren = {
   E2eDossierRoute: E2eDossierRoute,
   E2eKanbanRoute: E2eKanbanRoute,
   E2eReviewRoute: E2eReviewRoute,
+  GuidesSlugRoute: GuidesSlugRoute,
   TSlugRoute: TSlugRoute,
   TemplatesIdRoute: TemplatesIdRoute,
   TermsUpdateRoute: TermsUpdateRoute,
