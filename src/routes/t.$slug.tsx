@@ -30,7 +30,7 @@ import { toast } from "sonner";
 import { useHistory, useUndoRedoShortcuts } from "@/hooks/use-history";
 import { useItineraryRefiner } from "@/hooks/use-itinerary-refiner";
 import { hardenItineraryAi } from "@/lib/itinerary/harden.functions";
-import { SITE_URL } from "@/lib/site";
+import { PRICE_LABEL, SITE_URL } from "@/lib/site";
 
 type RefineHistoryEntry = {
   id: string;
@@ -858,7 +858,7 @@ function ExpiredDossier({ slug, destination }: { slug: string; destination: stri
         </h1>
         <p className="mt-4 text-sm text-ink-soft">
           This dossier's publishing window has ended. The owner can re-publish
-          it for another $5.
+          it for another {PRICE_LABEL}.
         </p>
         <p className="mt-6 text-[10px] uppercase tracking-[0.4em] text-ink/35">
           /t/{slug}
