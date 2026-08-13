@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ClientOnly } from "@tanstack/react-router";
 import { Suspense, lazy, useEffect, useState } from "react";
-import { GUIDES } from "@/content/guides";
+import { PUBLISHED_GUIDES } from "@/content/guides";
 import { GuideCardGrid } from "@/components/guides/GuideCardGrid";
 import "@/components/guides/guides.css";
 import { Ribbon } from "@/components/landing/Ribbon";
@@ -41,8 +41,8 @@ export const Route = createFileRoute("/guides/")({
           url: `${SITE_URL}/guides`,
           mainEntity: {
             "@type": "ItemList",
-            numberOfItems: GUIDES.length,
-            itemListElement: GUIDES.map((g, i) => ({
+            numberOfItems: PUBLISHED_GUIDES.length,
+            itemListElement: PUBLISHED_GUIDES.map((g, i) => ({
               "@type": "ListItem",
               position: i + 1,
               name: g.title,
@@ -87,7 +87,7 @@ function GuidesIndex() {
             <ClientOnly fallback={null}>
               <Suspense fallback={null}>
                 <GuideGlobe
-                  guides={GUIDES}
+                  guides={PUBLISHED_GUIDES}
                   onCardOpen={(slug, via) => trackGuideCardOpen(slug, via)}
                   onOpenGuide={(slug) => navigate({ to: "/guides/$slug", params: { slug } })}
                 />
@@ -117,7 +117,7 @@ function GuidesIndex() {
         <section className="mx-auto max-w-[1200px] px-5 py-12 md:px-8 md:py-16 md:pl-[7.5rem]">
           <h2 className="tdg-eyebrow">All Insider Guides</h2>
           <div className="mt-6">
-            <GuideCardGrid guides={GUIDES} />
+            <GuideCardGrid guides={PUBLISHED_GUIDES} />
           </div>
           <p className="mt-8 max-w-2xl text-sm leading-relaxed text-[color-mix(in_oklab,var(--tdg-sub)_92%,var(--tdg-ink))]">
             Every guide is a real dossier: the same layout your own trip gets.{" "}

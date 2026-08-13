@@ -591,6 +591,26 @@ function Landing() {
         minHeight={600}
       />
 
+      {/* Insider Guides teaser — the internal-link doorway to the SEO surface. */}
+      <section aria-labelledby="guides-teaser" className="border-t border-ink/10">
+        <div className="mx-auto max-w-[1600px] px-5 py-14 md:px-8 md:py-20">
+          <p className="td-eyebrow">New · Insider Guides</p>
+          <h2 id="guides-teaser" className="td-headline mt-4 text-3xl text-ink md:text-4xl">
+            Trips worth <em>copying.</em>
+          </h2>
+          <p className="mt-4 max-w-xl text-sm leading-relaxed text-ink/60">
+            Destination dossiers researched with the world's top publishers, cut to only what
+            counts. Read one, make it yours, and it becomes your trip.
+          </p>
+          <Link
+            to="/guides"
+            className="tap mt-6 inline-flex min-h-[44px] items-center gap-2 border border-ink/15 px-5 text-[10px] font-medium uppercase tracking-[0.3em] text-ink/70 transition-colors hover:border-seal hover:text-seal"
+          >
+            Browse the Insider Guides →
+          </Link>
+        </div>
+      </section>
+
       <SiteFooter mobileNavClearance />
 
       {modalMounted && (

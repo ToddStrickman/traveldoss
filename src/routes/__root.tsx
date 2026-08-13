@@ -137,7 +137,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
                 "Travel itinerary planner that turns pasted or written trip plans into a beautiful day-by-day dossier — every place pinned, categorized, and routed on a live map, offline-ready.",
               offers: {
                 "@type": "Offer",
-                price: "1.00",
+                // Keep in lockstep with the landing price chip ("$5 · 30d")
+                // and llms.txt — structured data must never contradict copy.
+                price: "5.00",
                 priceCurrency: "USD",
                 description: "One dossier, one URL, live for one month.",
               },

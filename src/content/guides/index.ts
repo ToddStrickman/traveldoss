@@ -147,11 +147,10 @@ export const getGuide = (slug: string): GuideDef | undefined => GUIDES_BY_SLUG[s
 /** Guides with converted content — the only ones that get indexed. */
 export const PUBLISHED_GUIDES: GuideDef[] = GUIDES.filter((g) => g.published);
 
-/** Up to `n` sibling guides for the "More Insider Guides" rail. */
+/** Up to `n` sibling guides for the "More Insider Guides" rail. Published
+ *  only — a sibling card must never lead to an empty dossier. */
 export function siblingGuides(slug: string, n = 3): GuideDef[] {
-  const others = GUIDES.filter((g) => g.slug !== slug);
-  const published = others.filter((g) => g.published);
-  return [...published, ...others.filter((g) => !g.published)].slice(0, n);
+  return PUBLISHED_GUIDES.filter((g) => g.slug !== slug).slice(0, n);
 }
 
 export type { GuideDef, GuideFaq } from "./types";

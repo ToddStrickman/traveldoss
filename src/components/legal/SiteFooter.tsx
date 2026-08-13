@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { GUIDES } from "@/content/guides";
+import { PUBLISHED_GUIDES } from "@/content/guides";
 
 /**
  * Quiet site colophon: hairline rule, brand mark, and the legal links.
@@ -15,7 +15,7 @@ export function SiteFooter({ mobileNavClearance = false }: { mobileNavClearance?
       >
         <h2 className="td-eyebrow text-ink/40">Insider Guides</h2>
         <ul role="list" className="mt-4 grid grid-cols-2 gap-x-6 gap-y-3 md:grid-cols-5">
-          {GUIDES.map((g) => (
+          {PUBLISHED_GUIDES.map((g) => (
             <li key={g.slug}>
               <Link
                 to="/guides/$slug"

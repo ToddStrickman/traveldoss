@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { GUIDES, GUIDES_BY_SLUG, getGuide, siblingGuides } from "./index";
+import { GUIDES, GUIDES_BY_SLUG, getGuide, siblingGuides } from "@/content/guides";
 
 describe("insider guides registry", () => {
   it("has ten guides with unique slugs", () => {

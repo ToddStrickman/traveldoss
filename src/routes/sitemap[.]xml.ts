@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import type {} from "@tanstack/react-start";
 import { SITE_URL } from "@/lib/site";
-import { GUIDES } from "@/content/guides";
+import { PUBLISHED_GUIDES } from "@/content/guides";
 
 const BASE_URL = SITE_URL;
 
@@ -20,10 +20,12 @@ export const Route = createFileRoute("/sitemap.xml")({
           { path: "/", changefreq: "weekly", priority: "1.0" },
           { path: "/templates", changefreq: "weekly", priority: "0.9" },
           { path: "/guides", changefreq: "weekly", priority: "0.9" },
-          ...GUIDES.map((g) => ({
+          // Unpublished stubs are noindex — a sitemap must never advertise
+          // URLs that ask not to be indexed.
+          ...PUBLISHED_GUIDES.map((g) => ({
             path: `/guides/${g.slug}`,
             changefreq: "monthly" as const,
-            priority: g.published ? "0.8" : "0.4",
+            priority: "0.8",
             lastmod: g.updatedAt,
           })),
           { path: "/terms", changefreq: "yearly", priority: "0.3" },
