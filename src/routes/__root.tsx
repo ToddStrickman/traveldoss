@@ -12,7 +12,7 @@ import {
 import appCss from "../styles.css?url";
 import { Toaster } from "@/components/ui/sonner";
 import { registerServiceWorker } from "@/lib/pwa/register-sw";
-import { SITE_URL } from "@/lib/site";
+import { PRICE_CENTS, SITE_URL } from "@/lib/site";
 
 function NotFoundComponent() {
   return (
@@ -139,7 +139,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
                 "@type": "Offer",
                 // Keep in lockstep with the landing price chip ("$5 · 30d")
                 // and llms.txt — structured data must never contradict copy.
-                price: "5.00",
+                price: (PRICE_CENTS / 100).toFixed(2),
                 priceCurrency: "USD",
                 description: "One dossier, one URL, live for one month.",
               },
