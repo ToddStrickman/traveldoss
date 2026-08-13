@@ -1,21 +1,20 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Briefcase, BookOpen, Compass, UserCircle2 } from "lucide-react";
+import { Briefcase, BookOpen, Compass, Home, UserCircle2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
 /* The rail lists only destinations that actually exist (owner direction:
-   an option that doesn't exist shouldn't be present). Browse Places /
-   Saved / Settings all dead-ended at /app — four labels, one page. When
-   those pages ship, they earn their icons back. */
-const baseItems = [
-  { icon: BookOpen, label: "Templates", to: "/templates" as const },
-  { icon: Compass, label: "Insider Guides", to: "/guides" as const },
-];
-const signedInItems = [
-  { icon: Briefcase, label: "My Trips", to: "/app" as const },
-  ...baseItems,
-];
+   an option that doesn't exist shouldn't be present). Its look is the
+   approved Insider Guides rail: floating pill, hairline border, blur,
+   inverted-circle active state, pill tooltips. Guests see every item —
+   "My Trips" simply routes them through login (owner direction 2026-08-13:
+   full guest access; the clone/mint CTAs are the only auth touchpoints). */
+const NAV_ITEMS = [
+  { icon: Home, label: "Home", to: "/" as const, exact: true },
+  { icon: BookOpen, label: "Templates", to: "/templates" as const, exact: false },
+  { icon: Compass, label: "Insider Guides", to: "/guides" as const, exact: false },
+] as const;
 
 function displayNameOf(user: User): string {
   const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
@@ -38,6 +37,15 @@ function initialsOf(user: User): string {
   return (local.slice(0, 2) || "?").toUpperCase();
 }
 
+/** Pill tooltip shown to the right of a rail item. */
+function Tip({ children }: { children: string }) {
+  return (
+    <span className="pointer-events-none absolute left-full ml-4 whitespace-nowrap rounded-full bg-ink px-3.5 py-1.5 text-[9px] font-medium uppercase tracking-[0.3em] text-paper opacity-0 transition-all duration-300 group-hover:opacity-100 group-focus-visible:opacity-100">
+      {children}
+    </span>
+  );
+}
+
 /** Rail-top identity tile shared by both states. Same 44×44 footprint so
  *  the rail geometry never shifts between signed-out and signed-in. */
 function IdentityChip({ user }: { user: User | null }) {
@@ -50,7 +58,7 @@ function IdentityChip({ user }: { user: User | null }) {
       to={to}
       aria-label={ariaLabel}
       className={
-        "group relative flex h-11 w-11 items-center justify-center border text-[11px] font-semibold tracking-[0.14em] transition-colors " +
+        "group relative flex h-11 w-11 items-center justify-center rounded-full border text-[11px] font-semibold tracking-[0.14em] transition-colors " +
         (signedOut
           ? "border-seal/60 text-seal shadow-[0_0_0_2px_color-mix(in_oklab,var(--seal,#b8452e)_18%,transparent)] hover:border-seal hover:shadow-[0_0_0_3px_color-mix(in_oklab,var(--seal,#b8452e)_28%,transparent)] focus-visible:shadow-[0_0_0_3px_color-mix(in_oklab,var(--seal,#b8452e)_35%,transparent)]"
           : "td-shimmer border-ink/20 text-ink hover:border-seal hover:text-seal")
@@ -62,11 +70,7 @@ function IdentityChip({ user }: { user: User | null }) {
       ) : (
         <span aria-hidden="true">{initialsOf(user)}</span>
       )}
-      <span
-        className="pointer-events-none absolute left-full ml-4 whitespace-nowrap border border-ink/15 bg-paper px-3 py-1.5 text-[9px] font-medium uppercase tracking-[0.3em] text-ink opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100"
-      >
-        {tooltip}
-      </span>
+      <Tip>{tooltip}</Tip>
     </Link>
   );
 }
@@ -89,34 +93,41 @@ export function Ribbon() {
     };
   }, []);
 
+  const items = [
+    ...NAV_ITEMS.map((i) => ({ ...i, active: i.exact ? path === i.to : path.startsWith(i.to) })),
+    {
+      icon: Briefcase,
+      label: user ? "My Trips" : "My Trips · sign in",
+      to: (user ? "/app" : "/login") as "/app" | "/login",
+      active: path.startsWith("/app"),
+    },
+  ];
+
   return (
     <aside
-      className="fixed left-6 top-1/2 z-30 hidden -translate-y-1/2 flex-col items-stretch gap-1 border border-ink/10 bg-paper/60 p-2 backdrop-blur-sm md:flex"
+      className="fixed left-5 top-1/2 z-30 hidden -translate-y-1/2 flex-col items-stretch gap-1 rounded-[2rem] border border-ink/10 bg-paper/70 p-2 shadow-[0_24px_60px_-30px_rgba(0,0,0,0.4)] backdrop-blur-xl md:flex"
       aria-label="Workspace navigation"
       aria-live="polite"
     >
       <IdentityChip user={user} />
-      <nav className="mt-2 flex flex-col gap-0.5 border-t border-ink/10 pt-2">
-        {(user ? signedInItems : baseItems).map(({ icon: Icon, label, to }) => {
-          const active = path.startsWith(to);
-          return (
+      <nav className="mt-2 flex flex-col gap-1 border-t border-ink/10 pt-2">
+        {items.map(({ icon: Icon, label, to, active }) => (
           <Link
             key={label}
             to={to}
             aria-current={active ? "page" : undefined}
             className={
-              "group relative flex h-11 w-11 items-center justify-center transition-colors duration-300 hover:text-seal focus-visible:text-seal " +
-              (active ? "text-seal" : "text-ink/45")
+              "group relative flex h-11 w-11 items-center justify-center rounded-full transition-all duration-300 " +
+              (active
+                ? "bg-ink text-paper shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]"
+                : "text-ink/45 hover:text-seal focus-visible:text-seal")
             }
             aria-label={label}
           >
             <Icon className="h-4 w-4" strokeWidth={1.25} aria-hidden="true" />
-            <span className="pointer-events-none absolute left-full ml-4 whitespace-nowrap border border-ink/15 bg-paper px-3 py-1.5 text-[9px] font-medium uppercase tracking-[0.3em] text-ink opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100">
-              {label}
-            </span>
+            <Tip>{label}</Tip>
           </Link>
-          );
-        })}
+        ))}
       </nav>
     </aside>
   );

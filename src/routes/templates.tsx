@@ -12,6 +12,8 @@ import { AtelierTable, MobileCoverRail } from "@/components/flow/AtelierTable";
 import { GenerationLoader } from "@/components/GenerationLoader";
 import { SandHero } from "@/components/landing/SandHero";
 import { TopoBackground } from "@/components/landing/TopoBackground";
+import { Ribbon } from "@/components/landing/Ribbon";
+import { MobileNavBar } from "@/components/mobile/MobileNavBar";
 import { createTripFromIngestion } from "@/lib/trips.functions";
 import type { Block } from "@/lib/skins/types";
 import { supabase } from "@/integrations/supabase/client";
@@ -509,7 +511,8 @@ function TemplatesPage() {
         </span>
       </header>
 
-      <main className="relative z-10 mx-auto max-w-[1600px] px-4 pb-16 sm:px-6 sm:pb-24 md:px-12">
+      {/* md:pl-28 clears the fixed Ribbon rail (its right edge sits ~82px in). */}
+      <main className="relative z-10 mx-auto max-w-[1600px] px-4 pb-16 sm:px-6 sm:pb-24 md:pl-28 md:pr-12">
         <button
           onClick={() => window.history.back()}
           className="tap mt-6 inline-flex min-h-11 items-center gap-2 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/60 transition-colors hover:text-seal sm:mt-8"
@@ -670,7 +673,12 @@ function TemplatesPage() {
             </div>
           )}
         </div>
+        {/* Clearance for the floating mobile nav pill. */}
+        <div aria-hidden className="h-20 md:hidden" />
       </main>
+
+      <Ribbon />
+      <MobileNavBar />
       {peekId ? (
         <SkinPeek
           skins={filteredSkins.length > 0 ? filteredSkins : SKINS}
