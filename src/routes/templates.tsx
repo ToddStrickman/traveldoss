@@ -8,7 +8,11 @@ import { TiltCard } from "@/components/motion/Tilt";
 import { InertRender } from "@/lib/skins/shared/views/parts";
 import { SkinPeek } from "@/components/mobile/SkinPeek";
 import { IngestionModal } from "@/components/flow/IngestionModal";
-import { AtelierTable, MobileCoverRail } from "@/components/flow/AtelierTable";
+import {
+  AtelierTable,
+  MobileCoverRail,
+  VerticalCoverStack,
+} from "@/components/flow/AtelierTable";
 import { GenerationLoader } from "@/components/GenerationLoader";
 import { SandHero } from "@/components/landing/SandHero";
 import { TopoBackground } from "@/components/landing/TopoBackground";
@@ -282,20 +286,27 @@ function SkinCard({
   );
 }
 
+/** The three ways to browse the selection area. */
+type BrowseMode = "grid" | "horizontal" | "vertical";
+
 function TemplatesPage() {
   const [picking, setPicking] = useState<string | null>(null);
   const [peekId, setPeekId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [activeTag, setActiveTag] = useState<string | null>(null);
-  // Desktop browse mode: the atelier table (3D coverflow) or the classic
-  // grid. Deterministic initial value ("table") keeps SSR and the first
-  // client render identical; the saved preference applies after mount.
-  const [browse, setBrowse] = useState<"table" | "grid">("table");
+  // Browse mode: horizontal cover rail / coverflow, a vertical stack of the
+  // same covers, or the classic grid. Deterministic initial value keeps SSR
+  // and the first client render identical; the saved preference applies
+  // after mount.
+  const [browse, setBrowse] = useState<BrowseMode>("horizontal");
   useEffect(() => {
     const saved = window.localStorage.getItem("templates:browse");
-    if (saved === "grid" || saved === "table") setBrowse(saved);
+    // "table" is the pre-three-view name for the horizontal rail.
+    if (saved === "table") setBrowse("horizontal");
+    else if (saved === "grid" || saved === "horizontal" || saved === "vertical")
+      setBrowse(saved);
   }, []);
-  const setBrowseMode = (mode: "table" | "grid") => {
+  const setBrowseMode = (mode: BrowseMode) => {
     setBrowse(mode);
     window.localStorage.setItem("templates:browse", mode);
   };
@@ -607,32 +618,10 @@ function TemplatesPage() {
                 </span>
               ) : null}
             </p>
-            {/* Segmented control — full width on phones, 44px targets. */}
-            <div
-              className="grid grid-cols-2 gap-1 rounded-full border border-ink/10 p-1 md:inline-flex md:w-auto"
-              role="group"
-              aria-label="Browse mode"
-            >
-              {(["table", "grid"] as const).map((mode) => (
-                <button
-                  key={mode}
-                  type="button"
-                  onClick={() => setBrowseMode(mode)}
-                  aria-pressed={browse === mode}
-                  className={`tap inline-flex min-h-11 items-center justify-center rounded-full px-4 text-[10px] font-medium uppercase tracking-[0.25em] transition-colors duration-300 motion-reduce:transition-none ${
-                    browse === mode
-                      ? "bg-seal/12 text-seal"
-                      : "text-ink/50 hover:text-ink"
-                  }`}
-                >
-                  {mode === "table" ? "The table" : "Grid"}
-                </button>
-              ))}
-            </div>
           </div>
         </div>
 
-        {browse === "table" && filteredSkins.length > 0 ? (
+        {browse === "horizontal" && filteredSkins.length > 0 ? (
           <>
             <div className="mt-8 hidden md:block">
               <AtelierTable
@@ -651,9 +640,19 @@ function TemplatesPage() {
           </>
         ) : null}
 
+        {browse === "vertical" && filteredSkins.length > 0 ? (
+          <div className="mt-8">
+            <VerticalCoverStack
+              skins={filteredSkins}
+              onPick={handlePick}
+              pickingId={picking}
+            />
+          </div>
+        ) : null}
+
         <div
           className={`mt-8 grid grid-cols-1 gap-6 sm:mt-10 sm:gap-8 md:grid-cols-2 lg:grid-cols-3 ${
-            browse === "table" ? "hidden" : ""
+            browse === "grid" || filteredSkins.length === 0 ? "" : "hidden"
           }`}
         >
           {filteredSkins.map((skin) => (
@@ -683,6 +682,35 @@ function TemplatesPage() {
             </div>
           )}
         </div>
+        {/* View switcher — sits at the very bottom of the selection area so
+            the covers stay the first thing you touch. */}
+        {filteredSkins.length > 0 ? (
+          <div
+            className="mt-8 grid grid-cols-3 gap-1 rounded-full border border-ink/10 p-1 sm:mx-auto sm:w-[420px]"
+            role="group"
+            aria-label="Browse mode"
+          >
+            {(
+              [
+                ["grid", "Grid"],
+                ["horizontal", "Horizontal"],
+                ["vertical", "Vertical"],
+              ] as const
+            ).map(([mode, label]) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => setBrowseMode(mode)}
+                aria-pressed={browse === mode}
+                className={`tap inline-flex min-h-11 items-center justify-center rounded-full px-2 text-[10px] font-medium uppercase tracking-[0.2em] transition-colors duration-300 motion-reduce:transition-none ${
+                  browse === mode ? "bg-seal/12 text-seal" : "text-ink/50 hover:text-ink"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        ) : null}
         {/* Clearance for the floating mobile nav pill. */}
         <div aria-hidden className="h-28 md:hidden" />
       </main>

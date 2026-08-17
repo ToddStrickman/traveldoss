@@ -392,6 +392,115 @@ export function MobileCoverRail({
   onPick: (id: string) => void;
   pickingId: string | null;
 }) {
+  return (
+    <MobileCoverRailInner skins={skins} onPick={onPick} pickingId={pickingId} />
+  );
+}
+
+/** One dossier cover with its title, personality line, and actions.
+ *  Shared by the horizontal rail and the vertical stack. */
+function CoverCard({
+  skin,
+  onPick,
+  pickingId,
+  className = "",
+}: {
+  skin: SkinModule;
+  onPick: (id: string) => void;
+  pickingId: string | null;
+  className?: string;
+}) {
+  const busy = pickingId === skin.meta.id;
+  return (
+    <article
+      className={`rounded-[10px] border border-ink/15 ${className}`}
+      style={{ background: skin.tokens.bg }}
+    >
+      <div className="td-cover relative h-[300px] w-full overflow-hidden rounded-t-[10px]">
+        <DossierCoverArt skin={skin} />
+      </div>
+      <div className="border-t px-4 py-3" style={{ borderColor: skin.tokens.rule }}>
+        <h3
+          className="text-2xl leading-none"
+          style={{ fontFamily: skin.tokens.fontDisplay, color: skin.tokens.ink }}
+        >
+          {skin.meta.codename}
+          <span style={{ color: skin.tokens.accent }}>.</span>
+        </h3>
+        <p
+          className="mt-1.5 truncate text-[12px] italic"
+          style={{ fontFamily: skin.tokens.fontDisplay, color: skin.tokens.inkSoft }}
+        >
+          "{skin.meta.personality}"
+        </p>
+        <div className="mt-3 flex items-center gap-2">
+          <Link
+            to="/templates/$id"
+            params={{ id: skin.meta.id }}
+            className="tap inline-flex min-h-11 flex-1 items-center justify-center border text-[10px] font-medium uppercase tracking-[0.25em]"
+            style={{ borderColor: skin.tokens.rule, color: skin.tokens.inkSoft }}
+          >
+            Preview
+          </Link>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => onPick(skin.meta.id)}
+            className="tap inline-flex min-h-11 flex-1 items-center justify-center gap-2 border text-[10px] font-medium uppercase tracking-[0.25em] disabled:cursor-wait disabled:opacity-50"
+            style={{ borderColor: skin.tokens.accent, color: skin.tokens.accent }}
+          >
+            {busy && (
+              <span
+                aria-hidden
+                className="h-3 w-3 animate-spin rounded-full border border-current border-t-transparent"
+              />
+            )}
+            {busy ? "Minting…" : "Mint"}
+          </button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+/** Vertical view — the same covers stacked in one scrolling column. */
+export function VerticalCoverStack({
+  skins,
+  onPick,
+  pickingId,
+}: {
+  skins: SkinModule[];
+  onPick: (id: string) => void;
+  pickingId: string | null;
+}) {
+  if (skins.length === 0) return null;
+  return (
+    <section
+      aria-label="Dossier templates, stacked covers"
+      className="mx-auto flex max-w-[420px] flex-col gap-5"
+    >
+      {skins.map((skin) => (
+        <CoverCard
+          key={skin.meta.id}
+          skin={skin}
+          onPick={onPick}
+          pickingId={pickingId}
+          className="w-full"
+        />
+      ))}
+    </section>
+  );
+}
+
+function MobileCoverRailInner({
+  skins,
+  onPick,
+  pickingId,
+}: {
+  skins: SkinModule[];
+  onPick: (id: string) => void;
+  pickingId: string | null;
+}) {
   const railRef = useRef<HTMLDivElement>(null);
   const [center, setCenter] = useState(0);
 
@@ -441,58 +550,13 @@ export function MobileCoverRail({
         className="scroll-x -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-[11vw] pb-2"
       >
         {skins.map((skin) => (
-          <article
+          <CoverCard
             key={skin.meta.id}
-            className="w-[78vw] max-w-[340px] shrink-0 snap-center rounded-[10px] border border-ink/15"
-            style={{ background: skin.tokens.bg }}
-          >
-            <div className="td-cover relative h-[300px] w-full overflow-hidden rounded-t-[10px]">
-              <DossierCoverArt skin={skin} />
-            </div>
-            <div
-              className="border-t px-4 py-3"
-              style={{ borderColor: skin.tokens.rule }}
-            >
-              <h3
-                className="text-2xl leading-none"
-                style={{ fontFamily: skin.tokens.fontDisplay, color: skin.tokens.ink }}
-              >
-                {skin.meta.codename}
-                <span style={{ color: skin.tokens.accent }}>.</span>
-              </h3>
-              <p
-                className="mt-1.5 truncate text-[12px] italic"
-                style={{ fontFamily: skin.tokens.fontDisplay, color: skin.tokens.inkSoft }}
-              >
-                "{skin.meta.personality}"
-              </p>
-              <div className="mt-3 flex items-center gap-2">
-                <Link
-                  to="/templates/$id"
-                  params={{ id: skin.meta.id }}
-                  className="tap inline-flex min-h-11 flex-1 items-center justify-center border text-[10px] font-medium uppercase tracking-[0.25em]"
-                  style={{ borderColor: skin.tokens.rule, color: skin.tokens.inkSoft }}
-                >
-                  Preview
-                </Link>
-                <button
-                  type="button"
-                  disabled={pickingId === skin.meta.id}
-                  onClick={() => onPick(skin.meta.id)}
-                  className="tap inline-flex min-h-11 flex-1 items-center justify-center gap-2 border text-[10px] font-medium uppercase tracking-[0.25em] disabled:cursor-wait disabled:opacity-50"
-                  style={{ borderColor: skin.tokens.accent, color: skin.tokens.accent }}
-                >
-                  {pickingId === skin.meta.id && (
-                    <span
-                      aria-hidden
-                      className="h-3 w-3 animate-spin rounded-full border border-current border-t-transparent"
-                    />
-                  )}
-                  {pickingId === skin.meta.id ? "Minting…" : "Mint"}
-                </button>
-              </div>
-            </div>
-          </article>
+            skin={skin}
+            onPick={onPick}
+            pickingId={pickingId}
+            className="w-[78vw] max-w-[340px] shrink-0 snap-center"
+          />
         ))}
       </div>
       {skins.length > 1 ? (
