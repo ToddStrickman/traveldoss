@@ -670,7 +670,17 @@ export function IngestionModal({
                 </button>
               </div>
               <h2 className="td-headline text-[1.9rem] font-normal leading-[1.05] tracking-[-0.022em] text-ink sm:text-[2.25rem]">
-                <span style={{ color: "var(--tds-ruby)" }}>Compose</span> your trip
+                Compose your{" "}
+                <span
+                  className="italic"
+                  style={{
+                    fontFamily: "var(--font-serif)",
+                    color: "var(--seal)",
+                    letterSpacing: "-0.01em",
+                  }}
+                >
+                  trip
+                </span>
                 <span className="text-seal">.</span>
               </h2>
             </div>
