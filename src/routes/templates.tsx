@@ -700,6 +700,7 @@ function TemplatesPage() {
         }}
         template={modalSkin}
         onGenerate={handleGenerate}
+        onTemplateChange={setModalSkin}
       />
 
       <GenerationLoader open={minting} label="Composing your dossier" />
