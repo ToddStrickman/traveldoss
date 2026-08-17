@@ -681,7 +681,17 @@ export function IngestionModal({
                 >
                   trip
                 </span>
-                <span className="text-seal">.</span>
+                {/* Devil in the details: the full stop burns brighter than the
+                 * gold it follows — lifted champagne, still on-palette. */}
+                <span
+                  aria-hidden
+                  style={{
+                    color: "color-mix(in oklab, var(--seal) 58%, var(--ink))",
+                    textShadow: "0 0 10px color-mix(in oklab, var(--seal) 45%, transparent)",
+                  }}
+                >
+                  .
+                </span>
               </h2>
             </div>
             <div className="hidden shrink-0 text-right md:block">
