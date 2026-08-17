@@ -381,9 +381,13 @@ function Landing() {
           <SandHero
             className="h-[44vw] max-h-[460px] min-h-[240px] w-[min(94vw,1100px)] md:h-[24vw]"
             accessibleText="Travel Doss."
-            // Wordmark face (Mathevas) — the grain sampler rasterizes this
-            // family, so the sand inscription carries the new letterforms.
-            fontFamily="Mathevas"
+            // Wordmark face (Butler Stencil Medium) — the grain sampler
+            // rasterizes this family, so the sand inscription carries the
+            // stencil letterforms.
+            fontFamily="Butler Stencil"
+            // Butler Stencil ships no italic; a synthetic oblique would
+            // smear the stencil breaks, so both words stay upright.
+            lines={[{ text: "Travel" }, { text: "Doss", accent: "." }]}
           />
         </Parallax>
 
