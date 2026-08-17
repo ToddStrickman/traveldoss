@@ -10,6 +10,14 @@ export interface HeadlineLine {
   italic?: boolean;
   /** Trailing glyph rendered in the accent (champagne gold) palette. */
   accent?: string;
+  /**
+   * Number of leading characters drawn at `leadScale` — a brush-script
+   * swash capital. The face's cap "T" is barely taller than its lowercase,
+   * so the wordmark needs the initial enlarged to read as a capital.
+   */
+  leadChars?: number;
+  /** Font-size multiple for the leading characters. Default 1 (no swash). */
+  leadScale?: number;
 }
 
 export interface SampledPoint {
@@ -43,11 +51,22 @@ interface SampleOptions {
    * every line so a two-line headline reads as a left-aligned inscription.
    */
   align?: "center" | "left";
+  /**
+   * Line-height multiple. Default 0.98. Brush/script faces carry a lot of
+   * empty em above and below the ink, so they want a tighter value to keep
+   * the two words of the wordmark visually joined.
+   */
+  lineGap?: number;
 }
 
 const RASTER_FONT_PX = 220;   // large enough that grid sampling stays crisp
 const GRID_STEP = 2;          // raster px between samples ≈ grain spacing
 const LINE_GAP = 0.98;        // line-height multiple, matches leading-[0.95]
+/**
+ * Alpha floor for "this pixel is ink". Low enough that the tapered, dry ends
+ * of brush strokes still become grains — that feathering IS the brush.
+ */
+const INK_ALPHA = 62;
 
 /** Wait for the display font so we never sample the fallback serif. */
 export async function ensureFontLoaded(family: string, weight = 400): Promise<void> {
