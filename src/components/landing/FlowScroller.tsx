@@ -196,6 +196,27 @@ function MobileFlow() {
     };
   }, []);
 
+  // Snap targets are measured, not guessed: the pin distance depends on the
+  // real viewport height, which on iOS never equals exactly 100svh. Computing
+  // the tops in JS keeps the native snap points and goToStep() in perfect
+  // agreement, so a flick rests square on a panel instead of ~100px off it.
+  const [snapTops, setSnapTops] = useState<number[]>([]);
+  useEffect(() => {
+    const measure = () => {
+      const el = containerRef.current;
+      if (!el) return;
+      const pin = Math.max(1, el.offsetHeight - window.innerHeight);
+      setSnapTops(STEPS.map((_, i) => (pin * (i + 0.5)) / STEPS.length));
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    window.addEventListener("orientationchange", measure);
+    return () => {
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("orientationchange", measure);
+    };
+  }, []);
+
   const goToStep = (i: number) => {
     const el = containerRef.current;
     if (!el) return;
@@ -253,11 +274,7 @@ function MobileFlow() {
           <div
             key={s.n}
             className="absolute left-0 h-px w-px [scroll-snap-align:start]"
-            style={{
-              top: `calc(${i + 0.5} * var(--tds-flow-step, 100svh) - ${
-                ((i + 0.5) / STEPS.length) * 100
-              }svh)`,
-            }}
+            style={{ top: snapTops[i] ?? 0 }}
           />
         ))}
       </div>
