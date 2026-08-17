@@ -8,6 +8,7 @@ import type { GuideDef } from "./types";
 export const okinawa: GuideDef = {
   slug: "okinawa",
   destination: "Okinawa",
+  displayName: "Okinawa Unhurried",
   title: "Okinawa: The Insider Guide",
   seoTitle: "Okinawa Itinerary — 6 Days: The Insider Guide | TravelDoss",
   dek: "Champuru — the mixed-up island. Japan at island speed.",

@@ -4,6 +4,7 @@ import type { GuideDef } from "./types";
 export const savannah: GuideDef = {
   slug: "savannah",
   destination: "Savannah",
+  displayName: "Savannah After Dark",
   title: "Savannah: The Insider Guide",
   seoTitle: "Savannah Itinerary — 3 Days: The Insider Guide | TravelDoss",
   dek: "The Gothic postcard is real. Come for the second act.",

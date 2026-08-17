@@ -22,7 +22,7 @@ export function GuideCardGrid({ guides }: { guides: GuideDef[] }) {
               <i style={{ background: g.accent }} />
               Insider Guide {g.no}
             </span>
-            <h2 className="mt-3">{g.destination}</h2>
+            <h2 className="mt-3">{g.displayName}</h2>
             <p>{g.dek}</p>
             <span className="mt-4 flex flex-wrap gap-2">
               {g.chips.map((c) => (

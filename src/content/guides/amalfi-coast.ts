@@ -8,6 +8,7 @@ import type { GuideDef } from "./types";
 export const amalfiCoast: GuideDef = {
   slug: "amalfi-coast",
   destination: "Amalfi Coast",
+  displayName: "Amalfi Without the Jam",
   title: "Amalfi Coast: The Insider Guide",
   seoTitle: "Amalfi Coast Itinerary — 6 Days: The Insider Guide | TravelDoss",
   dek: "The most beautiful traffic jam in Europe — and how to never sit in it.",

@@ -7,9 +7,10 @@ import type { GuideDef } from "./types";
  */
 export const unchartedIndonesia: GuideDef = {
   slug: "uncharted-indonesia",
-  destination: "Uncharted Indonesia",
-  title: "Uncharted Indonesia",
-  seoTitle: "Uncharted Indonesia Itinerary — 9 Days: The Insider Guide | TravelDoss",
+  destination: "Indonesia",
+  displayName: "Indonesia Uncharted",
+  title: "Indonesia Uncharted: The Insider Guide",
+  seoTitle: "Indonesia Itinerary — 9 Days: The Insider Guide | TravelDoss",
   dek: "East of Bali: the wild-luxury arc.",
   metaDescription:
     "A 9-day Indonesia itinerary east of Bali: Sumba's wild-luxury resorts, a Komodo phinisi charter, dragons and mantas — plus where to stay and when to go.",
@@ -44,7 +45,7 @@ export const unchartedIndonesia: GuideDef = {
     {
       kind: "hero",
       eyebrow: "Insider Guide № 03",
-      title: "Uncharted Indonesia",
+      title: "Indonesia Uncharted: The Insider Guide",
       subtitle: "East of Bali: the wild-luxury arc.",
     },
     {

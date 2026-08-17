@@ -8,6 +8,7 @@ import type { GuideDef } from "./types";
 export const crete: GuideDef = {
   slug: "crete",
   destination: "Crete",
+  displayName: "Crete, Uncut",
   title: "Crete: The Insider Guide",
   seoTitle: "Crete Itinerary — 6 Days: The Insider Guide | TravelDoss",
   dek: "Greece's great food island — and the wild west is its kitchen.",
