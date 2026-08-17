@@ -224,7 +224,7 @@ function RailArrow({
       onClick={onClick}
       disabled={disabled}
       aria-label={side === "left" ? "Previous template" : "Next template"}
-      className={`absolute top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-ink/15 bg-paper/80 text-ink/70 backdrop-blur-md transition-elegant hover:border-seal hover:text-seal disabled:opacity-25 ${
+      className={`td-rail-arrow absolute top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-ink/15 bg-paper/80 text-ink/70 backdrop-blur-md hover:border-seal hover:text-seal disabled:opacity-25 ${
         side === "left" ? "left-1 sm:left-3" : "right-1 sm:right-3"
       }`}
     >
