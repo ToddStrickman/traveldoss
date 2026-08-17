@@ -161,15 +161,17 @@ export function sampleHeadline(opts: SampleOptions): SampledText {
   canvas.height = rasterH;
 
   // Pass 1: body glyphs in red channel, accent glyphs in green channel, so a
-  // single readback distinguishes the two palettes.
+  // single readback distinguishes the two palettes. The blue channel tags the
+  // line index ((i + 1) * LINE_TAG) so sampling can apply per-line thresholds.
   ctx.clearRect(0, 0, rasterW, rasterH);
   ctx.textBaseline = "alphabetic";
   lines.forEach((line, i) => {
     const m = lineMetrics[i];
     const track = line.tracking ?? 0;
+    const tag = (i + 1) * LINE_TAG;
     const x = align === "left" ? 0 : (rasterW - m.totalW) / 2;
     const baseline = RASTER_FONT_PX * 0.9 + overshoot + i * lineHeight;
-    ctx.fillStyle = "rgb(255,0,0)";
+    ctx.fillStyle = `rgb(255,0,${tag})`;
     if (m.lead) {
       ctx.font = fontFor(!!line.italic, m.leadPx);
       drawTracked(m.lead, x, baseline, track * m.leadPx);
@@ -177,7 +179,7 @@ export function sampleHeadline(opts: SampleOptions): SampledText {
     ctx.font = fontFor(!!line.italic);
     drawTracked(m.rest, x + m.leadW, baseline, track * RASTER_FONT_PX);
     if (line.accent) {
-      ctx.fillStyle = "rgb(0,255,0)";
+      ctx.fillStyle = `rgb(0,255,${tag})`;
       drawTracked(line.accent, x + m.bodyW, baseline, track * RASTER_FONT_PX);
     }
   });
@@ -188,38 +190,59 @@ export function sampleHeadline(opts: SampleOptions): SampledText {
     if (px < 0 || py < 0 || px >= rasterW || py >= rasterH) return 0;
     return data[(py * rasterW + px) * 4 + 3];
   };
+  /** Line index a raster pixel belongs to, from its blue tag (-1 = none). */
+  const lineAt = (px: number, py: number): number => {
+    if (px < 0 || py < 0 || px >= rasterW || py >= rasterH) return -1;
+    const b = data[(py * rasterW + px) * 4 + 2];
+    if (b < LINE_TAG / 2) return -1;
+    return Math.round(b / LINE_TAG) - 1;
+  };
+  /** Per-line ink floor / density / edge boost, resolved once. */
+  const lineOpts = lines.map((line) => ({
+    inkAlpha: line.inkAlpha ?? INK_ALPHA,
+    step: Math.max(1, GRID_STEP * (line.density ?? 1)),
+    edgeBoost: line.edgeBoost ?? 0,
+  }));
 
   // Fit the raster inside BOTH world bounds — a two-line headline in a
   // short hero band is height-constrained, not width-constrained.
   const scale = Math.min(worldWidth / rasterW, worldHeight / rasterH);
   const candidates: SampledPoint[] = [];
 
-  for (let py = 0; py < rasterH; py += GRID_STEP) {
-    for (let px = 0; px < rasterW; px += GRID_STEP) {
-      const idx = (py * rasterW + px) * 4;
-      const a = data[idx + 3];
-      if (a < 90) continue;
+  // Walk the raster once per line at that line's own step, so a crisp line can
+  // be sampled denser and thresholded harder than its neighbors.
+  lines.forEach((_line, li) => {
+    const { inkAlpha, step: gridStep, edgeBoost } = lineOpts[li];
+    for (let fy = 0; fy < rasterH; fy += gridStep) {
+      const py = fy | 0;
+      for (let fx = 0; fx < rasterW; fx += gridStep) {
+        const px = fx | 0;
+        const idx = (py * rasterW + px) * 4;
+        const a = data[idx + 3];
+        if (a < inkAlpha) continue;
+        if (lineAt(px, py) !== li) continue;
 
-      // Edgeness: how many of the 4 neighbors (one step out) are empty.
-      const step = GRID_STEP * 2;
-      let empty = 0;
-      if (alphaAt(px - step, py) < 90) empty++;
-      if (alphaAt(px + step, py) < 90) empty++;
-      if (alphaAt(px, py - step) < 90) empty++;
-      if (alphaAt(px, py + step) < 90) empty++;
+        // Edgeness: how many of the 4 neighbors (one step out) are empty.
+        const probe = Math.max(2, Math.round(gridStep * 2));
+        let empty = 0;
+        if (alphaAt(px - probe, py) < inkAlpha) empty++;
+        if (alphaAt(px + probe, py) < inkAlpha) empty++;
+        if (alphaAt(px, py - probe) < inkAlpha) empty++;
+        if (alphaAt(px, py + probe) < inkAlpha) empty++;
 
-      // Sub-grid jitter so grains never sit on a visible lattice.
-      const jx = (rand() - 0.5) * GRID_STEP;
-      const jy = (rand() - 0.5) * GRID_STEP;
+        // Sub-grid jitter so grains never sit on a visible lattice.
+        const jx = (rand() - 0.5) * gridStep;
+        const jy = (rand() - 0.5) * gridStep;
 
-      candidates.push({
-        x: (px + jx - rasterW / 2) * scale,
-        y: -(py + jy - rasterH / 2) * scale, // canvas y-down → world y-up
-        edgeness: empty / 4,
-        accent: data[idx + 1] > data[idx], // green channel wins → accent glyph
-      });
+        candidates.push({
+          x: (px + jx - rasterW / 2) * scale,
+          y: -(py + jy - rasterH / 2) * scale, // canvas y-down → world y-up
+          edgeness: Math.min(1, empty / 4 + edgeBoost),
+          accent: data[idx + 1] > data[idx], // green channel wins → accent glyph
+        });
+      }
     }
-  }
+  });
 
   // Uniform decimation to the particle budget (Fisher–Yates prefix).
   if (candidates.length > maxPoints) {
