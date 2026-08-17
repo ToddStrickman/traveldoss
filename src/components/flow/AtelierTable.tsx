@@ -29,6 +29,7 @@ import {
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import type { SkinModule } from "@/lib/skins/registry";
 import { InertRender } from "@/lib/skins/shared/views/parts";
+import { DossierCoverArt } from "./DossierCover";
 
 /** Ring geometry. Step angle × radius sets how far covers travel per stop.
  *  CARD_W is the card's TRUE rendered width — the centered cover displays
@@ -352,7 +353,10 @@ function RingCover({
         className="group relative block w-full cursor-pointer border border-ink/20 shadow-[0_36px_70px_-32px_rgba(0,0,0,0.85)] transition-[border-color] duration-300 hover:border-seal/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal/60"
         style={{ background: skin.tokens.bg }}
       >
-        <SkinCoverTile skin={skin} height={380} />
+        {/* The cover is a dossier object, not a shrunken demo itinerary. */}
+        <div className="td-cover relative h-[380px] w-full overflow-hidden">
+          <DossierCoverArt skin={skin} selected={isActive} size="lg" />
+        </div>
         <div className="flex items-center justify-between border-t border-black/10 px-4 py-3">
           <span
             className="text-lg"
