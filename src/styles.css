@@ -19,6 +19,18 @@
   font-display: swap;
 }
 
+/* Butler Stencil (Medium) — the display wordmark face for the landing-page
+   sand inscription. Medium reads better than Light at hero scale: the stencil
+   breaks stay legible and the strokes carry enough mass for the grain
+   sampler. Self-hosted (public/fonts); Butler FREE EULA in the same folder. */
+@font-face {
+  font-family: "Butler Stencil";
+  src: url("/fonts/butler-stencil-medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
 /*
  * Travel DOSS design system
  * Editorial / dossier feel: warm off-white paper, deep navy ink, burnt orange seal.
