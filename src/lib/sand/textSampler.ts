@@ -88,6 +88,11 @@ const LINE_GAP = 0.88;        // line-height multiple — stencil face carries
  * of brush strokes still become grains — that feathering IS the brush.
  */
 const INK_ALPHA = 62;
+/**
+ * Blue-channel step used to tag which line a raster pixel belongs to.
+ * 30 keeps up to 8 lines distinguishable well under 255.
+ */
+const LINE_TAG = 30;
 
 /** Wait for the display font so we never sample the fallback serif. */
 export async function ensureFontLoaded(family: string, weight = 400): Promise<void> {
