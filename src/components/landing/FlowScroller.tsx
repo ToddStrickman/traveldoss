@@ -151,10 +151,15 @@ function MobileFlow() {
   const reduce = useReducedMotion();
   useEffect(() => {
     const unsub = scrollYProgress.on("change", (v) => {
-      // Map progress evenly across STEPS.length buckets.
+      // Snap rest positions sit at bucket CENTRES, so the indicator picks the
+      // nearest centre rather than flooring the bucket. Flooring made the
+      // pill flip a step early on viewports where the settled scroll lands a
+      // hair under a bucket edge (short landscape phones, tablets where
+      // --tds-flow-step is 80svh); nearest-centre matches the panel actually
+      // parked in the viewport at every size.
       const i = Math.min(
         STEPS.length - 1,
-        Math.max(0, Math.floor(v * STEPS.length)),
+        Math.max(0, Math.round(v * STEPS.length - 0.5)),
       );
       setActive(i);
     });
@@ -202,16 +207,44 @@ function MobileFlow() {
   // agreement, so a flick rests square on a panel instead of ~100px off it.
   const [snapTops, setSnapTops] = useState<number[]>([]);
   useEffect(() => {
+    let raf = 0;
+    let ro: ResizeObserver | null = null;
     const measure = () => {
       const el = containerRef.current;
       if (!el) return;
       const pin = Math.max(1, el.offsetHeight - window.innerHeight);
-      setSnapTops(STEPS.map((_, i) => (pin * (i + 0.5)) / STEPS.length));
+      const next = STEPS.map((_, i) => (pin * (i + 0.5)) / STEPS.length);
+      setSnapTops((prev) =>
+        prev.length === next.length && prev.every((v, i) => v === next[i])
+          ? prev
+          : next,
+      );
     };
-    measure();
+    // The section mounts lazily, so the first effect tick can run before the
+    // ref is attached and laid out. Retry on animation frames until it has a
+    // real height, then keep it in sync: the height depends on the
+    // --tds-flow-step breakpoint (100svh → 80svh in short landscape) and on
+    // content reflow, so a resize listener alone leaves stale snap points
+    // after rotation.
+    const attach = () => {
+      const el = containerRef.current;
+      if (!el || el.offsetHeight <= window.innerHeight) {
+        raf = requestAnimationFrame(attach);
+        return;
+      }
+      measure();
+      // Section height changes with the breakpoint and with content reflow.
+      ro = new ResizeObserver(measure);
+      ro.observe(el);
+    };
+    attach();
+    window.visualViewport?.addEventListener("resize", measure);
     window.addEventListener("resize", measure);
     window.addEventListener("orientationchange", measure);
     return () => {
+      cancelAnimationFrame(raf);
+      ro?.disconnect();
+      window.visualViewport?.removeEventListener("resize", measure);
       window.removeEventListener("resize", measure);
       window.removeEventListener("orientationchange", measure);
     };
