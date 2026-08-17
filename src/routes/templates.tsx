@@ -282,6 +282,9 @@ function SkinCard({
   );
 }
 
+/** The three ways to browse the selection area. */
+type BrowseMode = "grid" | "horizontal" | "vertical";
+
 function TemplatesPage() {
   const [picking, setPicking] = useState<string | null>(null);
   const [peekId, setPeekId] = useState<string | null>(null);
