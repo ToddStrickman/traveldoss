@@ -42,7 +42,11 @@ const DEVICE_PRESETS = [
 const EMULATIONS = DEVICE_PRESETS.map((name) => {
   const preset = devices[name];
   if (!preset) throw new Error(`Playwright device preset missing: ${name}`);
-  return { label: name, preset } as const;
+  // browserName/defaultBrowserType can't be set inside a describe group
+  // (Playwright forces a new worker), so we strip them and run this spec
+  // under the `webkit` project instead: `--project=webkit`.
+  const { defaultBrowserType: _d, ...rest } = preset;
+  return { label: name, preset: rest } as const;
 });
 
 const SECTION = 'section.tds-flow-mobile[aria-label="How TravelDoss works"]';
@@ -77,8 +81,8 @@ async function flowGeometry(page: Page) {
 for (const { label, preset } of EMULATIONS) {
   test.describe(`FlowScroller mobile · ${label}`, () => {
     // Full device emulation: UA, DPR, touch/hasTouch, isMobile, viewport.
-    // Forces the WebKit browser so we exercise iOS Safari, not Chromium.
-    test.use({ ...preset, browserName: "webkit" });
+    // Browser engine comes from the `webkit` project (iOS Safari).
+    test.use({ ...preset });
 
     test("each of the 5 steps snaps into view as the user scrolls", async ({ page }) => {
       await page.goto("/");
