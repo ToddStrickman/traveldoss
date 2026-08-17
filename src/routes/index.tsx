@@ -385,9 +385,8 @@ function Landing() {
             // rasterizes this family, so the sand inscription carries the
             // stencil letterforms.
             fontFamily="Butler Stencil"
-            // Butler Stencil ships no italic; a synthetic oblique would
-            // smear the stencil breaks, so both words stay upright.
-            lines={[{ text: "Travel" }, { text: "Doss", accent: "." }]}
+            // "Doss" stays italic (synthetic oblique on Butler Stencil).
+            lines={[{ text: "Travel" }, { text: "Doss", italic: true, accent: "." }]}
           />
         </Parallax>
 
