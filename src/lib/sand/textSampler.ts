@@ -10,6 +10,14 @@ export interface HeadlineLine {
   italic?: boolean;
   /** Trailing glyph rendered in the accent (champagne gold) palette. */
   accent?: string;
+  /**
+   * Number of leading characters drawn at `leadScale` — a brush-script
+   * swash capital. The face's cap "T" is barely taller than its lowercase,
+   * so the wordmark needs the initial enlarged to read as a capital.
+   */
+  leadChars?: number;
+  /** Font-size multiple for the leading characters. Default 1 (no swash). */
+  leadScale?: number;
 }
 
 export interface SampledPoint {
@@ -43,11 +51,22 @@ interface SampleOptions {
    * every line so a two-line headline reads as a left-aligned inscription.
    */
   align?: "center" | "left";
+  /**
+   * Line-height multiple. Default 0.98. Brush/script faces carry a lot of
+   * empty em above and below the ink, so they want a tighter value to keep
+   * the two words of the wordmark visually joined.
+   */
+  lineGap?: number;
 }
 
 const RASTER_FONT_PX = 220;   // large enough that grid sampling stays crisp
 const GRID_STEP = 2;          // raster px between samples ≈ grain spacing
 const LINE_GAP = 0.98;        // line-height multiple, matches leading-[0.95]
+/**
+ * Alpha floor for "this pixel is ink". Low enough that the tapered, dry ends
+ * of brush strokes still become grains — that feathering IS the brush.
+ */
+const INK_ALPHA = 62;
 
 /** Wait for the display font so we never sample the fallback serif. */
 export async function ensureFontLoaded(family: string, weight = 400): Promise<void> {
@@ -62,26 +81,46 @@ export async function ensureFontLoaded(family: string, weight = 400): Promise<vo
 }
 
 export function sampleHeadline(opts: SampleOptions): SampledText {
-  const { lines, fontFamily, fontWeight = 400, worldWidth, worldHeight, maxPoints, rand, align = "center" } = opts;
+  const {
+    lines, fontFamily, fontWeight = 400, worldWidth, worldHeight, maxPoints, rand,
+    align = "center", lineGap = LINE_GAP,
+  } = opts;
 
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d", { willReadFrequently: true });
   if (!ctx) return { points: [], width: 0, height: 0 };
 
-  const fontFor = (italic: boolean) =>
-    `${italic ? "italic " : ""}${fontWeight} ${RASTER_FONT_PX}px "${fontFamily}", Georgia, serif`;
+  const fontFor = (italic: boolean, px = RASTER_FONT_PX) =>
+    `${italic ? "italic " : ""}${fontWeight} ${px}px "${fontFamily}", Georgia, serif`;
+
+  /** Split a line into its swash-capital head and its normal-size tail. */
+  const split = (line: HeadlineLine) => {
+    const n = line.leadChars ?? 0;
+    const scale = line.leadScale ?? 1;
+    if (n <= 0 || scale === 1) return { lead: "", leadPx: RASTER_FONT_PX, rest: line.text };
+    return {
+      lead: line.text.slice(0, n),
+      leadPx: RASTER_FONT_PX * scale,
+      rest: line.text.slice(n),
+    };
+  };
 
   // Measure each line (body + optional accent glyph) to size the canvas.
   const lineMetrics = lines.map((line) => {
+    const { lead, leadPx, rest } = split(line);
+    ctx.font = fontFor(!!line.italic, leadPx);
+    const leadW = lead ? ctx.measureText(lead).width : 0;
     ctx.font = fontFor(!!line.italic);
-    const bodyW = ctx.measureText(line.text).width;
+    const bodyW = leadW + ctx.measureText(rest).width;
     const accentW = line.accent ? ctx.measureText(line.accent).width : 0;
-    return { bodyW, accentW, totalW: bodyW + accentW };
+    return { lead, leadPx, leadW, rest, bodyW, accentW, totalW: bodyW + accentW };
   });
 
-  const lineHeight = RASTER_FONT_PX * LINE_GAP;
+  const lineHeight = RASTER_FONT_PX * lineGap;
   const rasterW = Math.ceil(Math.max(...lineMetrics.map((m) => m.totalW)) + 40);
-  const rasterH = Math.ceil(lineHeight * lines.length + RASTER_FONT_PX * 0.4);
+  // The swash capital overshoots the em box, so reserve headroom for it.
+  const overshoot = Math.max(0, ...lineMetrics.map((m) => m.leadPx - RASTER_FONT_PX));
+  const rasterH = Math.ceil(lineHeight * lines.length + RASTER_FONT_PX * 0.4 + overshoot);
   canvas.width = rasterW;
   canvas.height = rasterH;
 
@@ -92,10 +131,14 @@ export function sampleHeadline(opts: SampleOptions): SampledText {
   lines.forEach((line, i) => {
     const m = lineMetrics[i];
     const x = align === "left" ? 0 : (rasterW - m.totalW) / 2;
-    const baseline = RASTER_FONT_PX * 0.9 + i * lineHeight;
-    ctx.font = fontFor(!!line.italic);
+    const baseline = RASTER_FONT_PX * 0.9 + overshoot + i * lineHeight;
     ctx.fillStyle = "rgb(255,0,0)";
-    ctx.fillText(line.text, x, baseline);
+    if (m.lead) {
+      ctx.font = fontFor(!!line.italic, m.leadPx);
+      ctx.fillText(m.lead, x, baseline);
+    }
+    ctx.font = fontFor(!!line.italic);
+    ctx.fillText(m.rest, x + m.leadW, baseline);
     if (line.accent) {
       ctx.fillStyle = "rgb(0,255,0)";
       ctx.fillText(line.accent, x + m.bodyW, baseline);
