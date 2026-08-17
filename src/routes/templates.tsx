@@ -287,15 +287,19 @@ function TemplatesPage() {
   const [peekId, setPeekId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [activeTag, setActiveTag] = useState<string | null>(null);
-  // Desktop browse mode: the atelier table (3D coverflow) or the classic
-  // grid. Deterministic initial value ("table") keeps SSR and the first
-  // client render identical; the saved preference applies after mount.
-  const [browse, setBrowse] = useState<"table" | "grid">("table");
+  // Browse mode: horizontal cover rail / coverflow, a vertical stack of the
+  // same covers, or the classic grid. Deterministic initial value keeps SSR
+  // and the first client render identical; the saved preference applies
+  // after mount.
+  const [browse, setBrowse] = useState<BrowseMode>("horizontal");
   useEffect(() => {
     const saved = window.localStorage.getItem("templates:browse");
-    if (saved === "grid" || saved === "table") setBrowse(saved);
+    // "table" is the pre-three-view name for the horizontal rail.
+    if (saved === "table") setBrowse("horizontal");
+    else if (saved === "grid" || saved === "horizontal" || saved === "vertical")
+      setBrowse(saved);
   }, []);
-  const setBrowseMode = (mode: "table" | "grid") => {
+  const setBrowseMode = (mode: BrowseMode) => {
     setBrowse(mode);
     window.localStorage.setItem("templates:browse", mode);
   };
