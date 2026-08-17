@@ -194,7 +194,7 @@ function MobileFlow() {
           </span>
         </div>
 
-        <div className="flex h-full w-full flex-col justify-center gap-4 px-6 pb-20 pt-16 md:px-28 landscape:gap-2 landscape:pt-10 landscape:pb-14">
+        <div className="flex h-full w-full flex-col justify-center gap-4 px-6 pb-20 pt-16 md:pl-28 md:pr-[340px] landscape:gap-2 landscape:pt-10 landscape:pb-14">
           <div className="flex items-center gap-3 text-[10px] font-medium uppercase tracking-[0.45em] text-ink/45">
             <span className="text-seal">{step.n}</span>
             <span className="h-px w-8 bg-ink/20" />
@@ -223,7 +223,7 @@ function MobileFlow() {
         </div>
 
         {/* Progress rail pinned to the sticky viewport. */}
-        <div className="pointer-events-none absolute bottom-[max(1rem,env(safe-area-inset-bottom))] left-0 right-0 z-20 flex items-center justify-between px-6 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/45 md:px-28 landscape:bottom-2">
+        <div className="pointer-events-none absolute bottom-[max(1rem,env(safe-area-inset-bottom))] left-0 right-0 z-20 flex items-center justify-between px-6 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/45 md:pl-28 md:pr-[340px] landscape:bottom-2">
           <span className="inline-flex items-center gap-2">
             <span className="text-seal">{String(active + 1).padStart(2, "0")}</span>
             <span className="text-ink/30">/ {String(STEPS.length).padStart(2, "0")}</span>
