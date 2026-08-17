@@ -1,118 +1,95 @@
-# Plan — Left rail identity + Cover Flow carousel
+# Compose flow: template gate, top bar, mode bar
 
-Two workstreams, independent files, ships together.
+## What's wrong today
 
-**Cross-cutting requirement (applies to both parts):**
-Every change must be verified on **mobile (375px) and desktop (≥1280px)** before shipping. During implementation and QA, explicitly double-check:
-- **Spacing / rhythm** at both breakpoints — no clipped text, no horizontal page scroll on mobile, no collisions with the fixed bottom bar on mobile or the top masthead on desktop, consistent gutters at 375 / 768 / 1280 / 1680.
-- **Input parity** — every interactive target must respond correctly to **click (mouse)** *and* **touch (finger)**. That means:
-  - Hit targets ≥44×44 on mobile, ≥24×24 on desktop (house rule).
-  - Use pointer events (not mouse-only) so touch and stylus behave identically to click.
-  - No hover-only affordances on mobile: any control revealed on `:hover` must also be reachable on `(pointer: coarse)` (persistent or focus-visible).
-  - Tap vs. swipe disambiguation: a tap must not be swallowed by a swipe handler (movement threshold before drag engages).
-  - Focus rings visible for keyboard on desktop; not required to render on touch.
+Tapping Compose in the mobile bar calls `openDock("paste")`, which silently
+defaults the template to the first entry in the skin registry and drops you
+straight into the intake modal. You never choose a dossier design — which is the
+whole point of the product. The modal itself opens with a tall letterhead block
+(eyebrow, headline, sub-line) that eats most of a 393px-wide screen before the
+three intake options even appear, and those options are stacked full-width
+cards, so on a phone the actual paste box sits below the fold.
 
----
+## The flow to build
 
-## Part 1 — Left rail (`Ribbon`): session-aware identity
+One modal, two stages. Compose always begins with the template choice, and any
+entry point that already knows the template skips straight past it.
 
-**File:** `src/components/landing/Ribbon.tsx`
+```text
+Mobile bar / dock "Compose"
+        |
+        v
+  [1] Pick a dossier         <- horizontal filmstrip of templates, one tap
+        |                       (skipped when a template card was clicked)
+        v
+  [2] Compose your trip      <- top bar + mode bar + input
+        |
+        v
+     Generation
+```
 
-Note: the rail itself is `md:flex` (desktop-only surface). No mobile visual change — but verify that removing the `LogIn` "Enter" item doesn't leave a mobile drawer or menu missing a sign-in path; if it does, keep an equivalent entry there.
+- The mobile bar's Compose and the desktop dock's Compose open stage 1.
+- Clicking a template card on the homepage or the /templates gallery keeps
+  today's behavior: it jumps straight to stage 2 with that template chosen.
+- Stage 1 is a swipeable row of template cards (codename + a small preview), one
+  tap to advance. No confirm button, no second screen.
+- The chosen template's codename in the top bar stays tappable in stage 2, so
+  changing your mind costs one tap and never loses typed input.
 
-### Signed-out
-- Replace the static `TD` tile with a **Sign-in chip** linking to `/login`.
-- Same 44×44 footprint (preserves rail geometry + tap/click target).
-- Lucide `UserCircle2` glyph; tooltip "Sign in" (reuse the existing right-side tooltip pattern).
-- Remove the redundant `LogIn` "Enter" nav item — the top chip owns it now.
+## Stage 2 layout
 
-### Signed-in
-- Read session with `supabase.auth.getUser()` on mount + subscribe to `onAuthStateChange` (unsubscribe on unmount).
-- Display name: `user_metadata.full_name || user_metadata.name || email`.
-- Initials: first letter of first + last name token; fall back to first two chars of the email local-part. Uppercase.
-- Top tile becomes a **profile chip** showing initials, links to `/app`. Tooltip = full name.
+**Top bar** — the current letterhead collapses into a compact sticky bar pinned
+to the top of the modal: `TravelDoss® · <Template>` on the left, the Ref code on
+the right (desktop only, as now), and the headline on one line beneath it:
 
-### A11y & input
-- Tooltip lives in a hidden `<span>`, accessible name stays clean.
-- `aria-live="polite"` on the rail so signed-out → signed-in swap is announced.
-- Tooltip revealed on hover **and** `focus-visible` (keyboard users see it too).
-- No layout shift between states.
+> **Compose** your trip.
 
----
+"Compose" renders in a new brand red; the rest stays ink. The long sub-line
+("One entry — paste, upload, or describe…") is cut — the mode bar says the same
+thing with less ink. The bar stays visible while the modal body scrolls, so you
+always know which dossier you're composing.
 
-## Part 2 — Per-activity image carousel (Cover Flow)
+**Mode bar** — the region directly under the top bar (the yellow box in the
+reference) becomes a single horizontal three-segment bar: Paste · Upload ·
+Generate, each with its icon, the active segment filled. The stacked full-width
+cards go away, which lifts the paste box and the Compose Dossier button into
+thumb reach on a phone. Each mode's one-line hint sits under the bar, so no
+information is lost.
 
-This is the images-per-day/place carousel rendered by `ActivityImages` in
-`src/lib/skins/shared/views/parts.tsx` — **not** the dossier thumbnail or hero.
-Must feel first-class on both mobile touch and desktop mouse/keyboard.
+## The red
 
-**Files:** `src/lib/skins/shared/views/parts.tsx`, `src/lib/skins/shared/skin.css`
+A new brand token, not the app's existing error red. A deep ruby that sits with
+navy and tan rather than shouting at it, added as a semantic token so it is
+available app-wide but used only for this accent for now. It will be checked for
+contrast against the modal's paper surface in both light and dark, and against
+the ten skin palettes, so accessibility stays at 100.
 
-### Layout model
-- Stage: `position: relative`, height `clamp(220px, 44vw, 380px)`, `perspective: 1400px`, `overflow: hidden`.
-- Each slide is absolutely positioned, centered, transformed from its offset (`offset = index − active`):
-  - `translateX = offset * 62%` of stage width (plus live drag delta while swiping)
-  - `scale = offset === 0 ? 1 : 0.74`
-  - `rotateY = clamp(offset, −1, 1) * −18deg`
-  - `opacity = offset === 0 ? 1 : 0.55` (0 when `|offset| > 2`)
-  - `filter = offset === 0 ? none : blur(1.5px) saturate(0.85)`
-  - `z-index = 100 − |offset|`
-- Slides beyond `|offset| > 2` still render but `opacity:0; pointer-events:none`.
-- Neighbor peek ~14% each side signals more photos exist.
+## Technical notes
 
-### Spacing double-checks
-- **Mobile (375px):** stage padding matches surrounding day-card gutter (no edge bleed); neighbor peek visible without overflowing viewport; arrows do not overlap the mobile bottom bar or day-card title.
-- **Desktop (≥1280px):** stage width capped so the active slide reads at comfortable viewing distance; arrows sit inside the stage, not colliding with the sidebar rail or export pill.
-
-### Motion
-- Single transition on `transform, opacity, filter` at `520ms cubic-bezier(0.22, 1, 0.36, 1)`.
-- `prefers-reduced-motion`: transitions stripped, `rotateY: 0`, blur removed; scale kept.
-
-### Interaction — click AND touch parity
-- **Arrows:** `goTo(active ± 1)` on click/tap. 44×44 hit target, 32×32 visible chip.
-  - Desktop: fade in on hover/focus-within (200ms), `opacity: 0` at rest.
-  - Touch (`(pointer: coarse)`): persistent `opacity: 0.9` — never hover-only.
-- **Neighbor tap/click:** `goTo(that index)` (via `onOpen={i === active ? openLightbox : goTo}`).
-- **Active tap/click:** opens lightbox.
-- **Keyboard:** `ArrowLeft` / `ArrowRight` / `Home` / `End` on the stage (already wired).
-- **Swipe (touch + trackpad drag):** pointer events on the stage; track live `dx` and translate all slides together; on release snap to `active ± 1` if `|dx| > 15%` of stage width or velocity > `0.35 px/ms`.
-- **Tap vs. swipe:** engage drag only after >8px of movement so a stationary tap always registers as a click on the underlying slide.
-- Focus ring on the active slide only.
-
-### Add-photo tile
-- Participates as the rightmost slot with the same Cover Flow transforms.
-- Active + tap/click → `uploader.pick()`.
-- Non-active tap/click → `goTo(index)`.
-- Same 44×44 minimum on mobile.
-
-### Loading / fallbacks
-- Eager-load extended from `|offset| ≤ 1` to `|offset| ≤ 2`.
-- Existing skeleton shimmer, fallback badges, and error/retry states preserved.
-- `IntersectionObserver` removed — `active` is authoritative.
-
-### Single-image path
-- When `total === 1`, keep today's static card. Cover Flow only kicks in for 2+ slots.
-
----
+- `src/components/flow/IngestionModal.tsx`: extend the existing `stage` state
+  (`"source" | "review"`) with a `"template"` stage; render the filmstrip from
+  the `SKINS` registry. Selecting a skin advances to `"source"` and reports the
+  choice up so the parent's mint call uses it.
+- `src/routes/index.tsx`: `openDock()` stops pre-seeding `SKINS[0]` and opens
+  the modal on the template stage; `openWithTemplate()` is unchanged. The parent
+  needs an `onTemplateChange` handler so the modal's pick lands in `picked`
+  before `handleGenerate` runs. Same wiring for `src/routes/templates.tsx`.
+- Letterhead becomes a `sticky top-0` bar with a backdrop blur inside the
+  scrolling `DialogContent`; the `sr-only` `DialogTitle` text updates to
+  "Compose your trip".
+- Mode bar keeps the existing `role="tablist"` semantics and `TABS` array —
+  only the presentation changes from stacked cards to segments, so keyboard
+  behavior and the accessible names are preserved. Segments stay >=44px tall.
+- New `--tds-ruby` (+ `--color-ruby` mapping in `@theme inline`) in
+  `src/styles.css`; no hardcoded hex in components.
+- Analytics (house Rule 9): `compose_opened` with an `entry` property
+  (`mobile_bar` / `dock` / `template_card`), `template_picked` at stage 1, and
+  `template_switched` when the top-bar chip is used to change it. Documented in
+  `docs/analytics/tracking-plan.md` in the same change.
+- Reserved space for the filmstrip previews so CLS stays 0; `npx vitest run`
+  (or `bun test`) and `tsc --noEmit` before finishing.
 
 ## Out of scope
-- ActionDock, ExportMenu, top masthead bar, template gallery, dossier thumbnails, hero imagery.
-- Auth flow — Part 1 only reads existing session.
-- Lightbox internals.
 
-## Files touched
-- `src/components/landing/Ribbon.tsx`
-- `src/lib/skins/shared/views/parts.tsx`
-- `src/lib/skins/shared/skin.css`
-
-## Verification (mandatory both viewports)
-- `npx vitest run` + `tsc --noEmit` (house rule).
-- Manual pass at **375px mobile** and **1280px+ desktop**, on a dossier with 4+ day photos:
-  - Cover Flow layout renders, neighbors peek, arrows positioned correctly at both sizes.
-  - Neighbor **click** (mouse) and **tap** (touch) both centre that slide; active click/tap opens lightbox.
-  - Swipe on mobile viewport snaps cleanly; a stationary tap opens lightbox instead of scrubbing.
-  - Arrows fade in on desktop hover; are persistently visible on touch.
-  - Keyboard arrows navigate on desktop.
-  - `prefers-reduced-motion` honored.
-  - No horizontal page scroll at 375px; no collisions with fixed bars at either size.
-  - Ribbon identity chip swaps cleanly on desktop; no mobile regressions.
+The site-wide header, the review stage, and the desktop dock's Paste/Import
+shortcuts (they keep going straight to their tab once a template exists).
