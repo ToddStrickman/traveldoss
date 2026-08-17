@@ -369,7 +369,7 @@ function MobileFlow() {
     };
   }, []);
 
-  const goToStep = (i: number) => {
+  const goToStep = (i: number, via: "button" | "keyboard" | "swipe" = "swipe") => {
     const el = containerRef.current;
     if (!el) return;
     const clamped = Math.min(STEPS.length - 1, Math.max(0, i));
@@ -380,11 +380,20 @@ function MobileFlow() {
     // aiming at bucket starts would land the track halfway between panels.
     const pin = Math.max(1, el.offsetHeight - window.innerHeight);
     const target = top + (pin * (clamped + 0.5)) / STEPS.length;
+    if (clamped !== active) {
+      capture("flow_step_navigated", {
+        step: clamped + 1,
+        from_step: active + 1,
+        via,
+        surface: "mobile",
+      });
+    }
     window.scrollTo({
       top: target,
       behavior: reduce ? "auto" : "smooth",
     });
   };
+  useStepKeys(containerRef, active, goToStep);
 
   // Swipe-friendly gesture: a horizontal flick advances or rewinds one step,
   // matching the lateral page-turn animation. Vertical drags are left alone
@@ -403,7 +412,7 @@ function MobileFlow() {
     const dy = t.clientY - start.y;
     if (Math.abs(dx) < 44 || Math.abs(dx) < Math.abs(dy) * 1.4) return;
     if (Date.now() - start.t > 800) return;
-    goToStep(active + (dx < 0 ? 1 : -1));
+    goToStep(active + (dx < 0 ? 1 : -1), "swipe");
   };
 
   return (
@@ -484,6 +493,13 @@ function MobileFlow() {
                 ↓
               </span>
             </span>
+          </div>
+          {/* Explicit prev/next controls: reserved 44px row so nothing shifts. */}
+          <div className="mt-2 flex h-11 items-center justify-end">
+            <StepControls
+              active={active}
+              onGo={(i) => goToStep(i, "button")}
+            />
           </div>
         </div>
 
