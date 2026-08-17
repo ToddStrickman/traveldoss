@@ -201,9 +201,14 @@ function MobileFlow() {
     if (!el) return;
     const clamped = Math.min(STEPS.length - 1, Math.max(0, i));
     const top = el.getBoundingClientRect().top + window.scrollY;
-    const stepH = el.offsetHeight / STEPS.length;
+    // Steps rest at the CENTRE of their progress bucket — that's where the
+    // ribbon parks on an exact panel boundary. Progress runs over the PIN
+    // distance (section height minus one viewport), not the full height, so
+    // aiming at bucket starts would land the track halfway between panels.
+    const pin = Math.max(1, el.offsetHeight - window.innerHeight);
+    const target = top + (pin * (clamped + 0.5)) / STEPS.length;
     window.scrollTo({
-      top: top + clamped * stepH + 2,
+      top: target,
       behavior: reduce ? "auto" : "smooth",
     });
   };
