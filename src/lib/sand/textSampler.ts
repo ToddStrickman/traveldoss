@@ -24,6 +24,20 @@ export interface HeadlineLine {
    * default, so the wordmark wants a small negative value to read as one word.
    */
   tracking?: number;
+  /**
+   * Alpha floor for "this pixel is ink" on THIS line, 0–255. Higher = only
+   * the solid core of a stroke becomes sand, which keeps stencil breaks open
+   * and edges crisp — the synthetic oblique smears its antialiasing, so the
+   * italic line wants a higher floor than the upright one.
+   */
+  inkAlpha?: number;
+  /**
+   * Sampling-step multiple for this line. < 1 samples denser (more grains per
+   * stroke → thin stencil shapes survive at small render sizes).
+   */
+  density?: number;
+  /** Added to this line's edgeness (0–1), so contours resolve sooner. */
+  edgeBoost?: number;
 }
 
 export interface SampledPoint {
