@@ -589,7 +589,7 @@ function Landing() {
         <div aria-hidden className="h-16 md:hidden" />
       </main>
 
-      <MobileNavBar />
+      <MobileNavBar onCompose={() => openDock("paste")} />
 
       <InViewLazy
         load={loadInfiniteDocs}
