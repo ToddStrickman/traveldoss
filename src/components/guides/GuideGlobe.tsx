@@ -315,7 +315,7 @@ export default function GuideGlobe({ guides, onCardOpen, onOpenGuide }: Props) {
             <i style={{ background: active?.accent }} />
             Insider Guide {active?.no ?? ""}
           </span>
-          <h3>{active?.destination ?? ""}</h3>
+          <h3>{active?.displayName ?? ""}</h3>
           <p className="tdg-dek">{active?.dek ?? ""}</p>
           <span className="my-4 flex flex-wrap gap-2">
             {(active?.chips ?? []).map((c) => (

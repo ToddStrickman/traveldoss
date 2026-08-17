@@ -14,6 +14,8 @@ export type GuideDef = {
   slug: string;
   /** "Albania" — used in breadcrumbs, titles and JSON-LD. */
   destination: string;
+  /** "Indonesia Uncharted" — playful display name, place first. Cards + globe. */
+  displayName: string;
   /** H1 on the guide page. */
   title: string;
   /** <title> per spec §4. */
