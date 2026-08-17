@@ -523,7 +523,7 @@ function TemplatesPage() {
 
         <h1 className="sr-only">Pick your dossier template.</h1>
         <SandHero
-          className="mt-6 h-[60vw] max-h-[360px] min-h-[220px] w-full md:mt-14 md:h-[18vw] md:w-[min(96vw,780px)]"
+          className="mt-4 h-[44vw] max-h-[250px] min-h-[170px] w-full md:mt-14 md:h-[18vw] md:max-h-[360px] md:w-[min(96vw,780px)]"
           lines={[
             { text: "Pick your" },
             { text: "dossier template", italic: true, accent: "." },
@@ -531,17 +531,17 @@ function TemplatesPage() {
           accessibleText="Pick your dossier template."
           align="left"
         />
-        <p className="mt-5 max-w-xl text-[15px] leading-relaxed text-ink-soft sm:text-sm md:text-base">
+        <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-ink-soft sm:text-sm md:text-base">
           Select an elegant dossier template from the studio. Furnish it with automation, AI, or manually. Finally, <em className="italic">mint</em> it — it will go live for the duration of your trip.
         </p>
-        <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-[9px] font-medium uppercase tracking-[0.35em] text-ink/40 sm:text-[10px] sm:tracking-[0.4em]">
+        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-[9px] font-medium uppercase tracking-[0.35em] text-ink/40 sm:text-[10px] sm:tracking-[0.4em]">
           <span>{SKINS.length} templates</span>
           <span aria-hidden className="h-px w-3 bg-ink/20 sm:w-4" />
           <span>New designs added often</span>
         </div>
 
         {/* Search + Filter */}
-        <div className="mt-8 flex flex-col gap-5 sm:mt-10 sm:gap-6">
+        <div className="mt-6 flex flex-col gap-4 sm:mt-10 sm:gap-6">
           {/* Search bar */}
           <div className="relative w-full max-w-md">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/30" />
@@ -596,23 +596,33 @@ function TemplatesPage() {
 
           {/* Result count + browse-mode toggle (all sizes: the table has a
               phone-native sibling, the swipeable cover rail) */}
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-[10px] uppercase tracking-[0.4em] text-ink/60">
+          <div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center md:justify-between">
+            <p className="min-w-0 text-[10px] uppercase tracking-[0.4em] text-ink/60">
               {filteredSkins.length} dossier template{filteredSkins.length !== 1 ? "s" : ""}
-              {activeTag ? ` · ${activeTag}` : ""}
-              {query ? ` · “${query.trim()}”` : ""}
+              {activeTag || query ? (
+                <span className="text-seal">
+                  {` · ${(activeTag ? 1 : 0) + (query.trim() ? 1 : 0)} filter${
+                    (activeTag ? 1 : 0) + (query.trim() ? 1 : 0) !== 1 ? "s" : ""
+                  } active`}
+                </span>
+              ) : null}
             </p>
-            <div className="flex items-center gap-1.5" role="group" aria-label="Browse mode">
+            {/* Segmented control — full width on phones, 44px targets. */}
+            <div
+              className="grid grid-cols-2 gap-1 rounded-full border border-ink/10 p-1 md:inline-flex md:w-auto"
+              role="group"
+              aria-label="Browse mode"
+            >
               {(["table", "grid"] as const).map((mode) => (
                 <button
                   key={mode}
                   type="button"
                   onClick={() => setBrowseMode(mode)}
                   aria-pressed={browse === mode}
-                  className={`tap rounded-full border px-3.5 py-2 text-[10px] font-medium uppercase tracking-[0.25em] transition-colors duration-300 ${
+                  className={`tap inline-flex min-h-11 items-center justify-center rounded-full px-4 text-[10px] font-medium uppercase tracking-[0.25em] transition-colors duration-300 motion-reduce:transition-none ${
                     browse === mode
-                      ? "border-seal bg-seal/10 text-seal"
-                      : "border-ink/10 text-ink/50 hover:border-ink/30 hover:text-ink"
+                      ? "bg-seal/12 text-seal"
+                      : "text-ink/50 hover:text-ink"
                   }`}
                 >
                   {mode === "table" ? "The table" : "Grid"}
@@ -674,7 +684,7 @@ function TemplatesPage() {
           )}
         </div>
         {/* Clearance for the floating mobile nav pill. */}
-        <div aria-hidden className="h-20 md:hidden" />
+        <div aria-hidden className="h-28 md:hidden" />
       </main>
 
       <Ribbon />
