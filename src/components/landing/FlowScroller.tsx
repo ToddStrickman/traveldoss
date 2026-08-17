@@ -8,6 +8,7 @@ import {
 } from "motion/react";
 import { Link } from "@tanstack/react-router";
 import { Parallax } from "@/components/motion/Tilt";
+import { capture } from "@/lib/analytics";
 
 type Step = {
   n: string;
@@ -64,6 +65,86 @@ export function FlowScroller() {
   );
 }
 
+/**
+ * Prev/next controls for the flow ribbon. Keyboard users get real buttons
+ * (>=44px), left/right arrow keys anywhere inside the section, and a polite
+ * live region announcing the step they landed on.
+ */
+function StepControls({
+  active,
+  onGo,
+  className = "",
+}: {
+  active: number;
+  onGo: (i: number) => void;
+  className?: string;
+}) {
+  const atStart = active === 0;
+  const atEnd = active === STEPS.length - 1;
+  const base =
+    "inline-flex h-11 w-11 items-center justify-center rounded-full border border-ink/15 bg-paper/80 text-ink shadow-[0_1px_0_rgba(255,255,255,0.6)_inset] backdrop-blur-md transition-opacity hover:bg-paper focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-seal disabled:opacity-35";
+  return (
+    <div className={`pointer-events-auto flex items-center gap-2 ${className}`}>
+      <button
+        type="button"
+        className={base}
+        onClick={() => onGo(active - 1)}
+        disabled={atStart}
+        aria-label="Previous step"
+      >
+        <span aria-hidden="true" className="text-base leading-none">
+          ←
+        </span>
+      </button>
+      <button
+        type="button"
+        className={base}
+        onClick={() => onGo(active + 1)}
+        disabled={atEnd}
+        aria-label="Next step"
+      >
+        <span aria-hidden="true" className="text-base leading-none">
+          →
+        </span>
+      </button>
+      <p className="sr-only" aria-live="polite">
+        {`Step ${active + 1} of ${STEPS.length}: ${STEPS[active]?.title ?? ""}`}
+      </p>
+    </div>
+  );
+}
+
+/** Left/right arrow keys move a step while the flow section is on screen. */
+function useStepKeys(
+  ref: React.RefObject<HTMLElement | null>,
+  active: number,
+  onGo: (i: number, via: "keyboard") => void,
+) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const t = e.target as HTMLElement | null;
+      if (
+        t &&
+        (t.isContentEditable ||
+          ["INPUT", "TEXTAREA", "SELECT"].includes(t.tagName))
+      )
+        return;
+      const el = ref.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      // Only claim the arrow keys while the pinned flow fills the viewport.
+      if (r.top > window.innerHeight * 0.5 || r.bottom < window.innerHeight * 0.5)
+        return;
+      e.preventDefault();
+      onGo(active + (e.key === "ArrowRight" ? 1 : -1), "keyboard");
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [ref, active, onGo]);
+}
+
 function DesktopFlow() {
   const containerRef = useRef<HTMLElement>(null);
 
@@ -71,6 +152,41 @@ function DesktopFlow() {
     target: containerRef,
     offset: ["start start", "end end"],
   });
+
+  const reduce = useReducedMotion();
+  const [active, setActive] = useState(0);
+  useEffect(() => {
+    const unsub = scrollYProgress.on("change", (v) => {
+      const i = Math.min(
+        STEPS.length - 1,
+        Math.max(0, Math.round(v * (STEPS.length - 1))),
+      );
+      setActive(i);
+    });
+    return () => unsub();
+  }, [scrollYProgress]);
+
+  // Desktop progress maps linearly across the pin distance, so step i rests at
+  // i/(N-1) of it — the same position the ribbon uses for its x transform.
+  const goToStep = (i: number, via: "button" | "keyboard" = "button") => {
+    const el = containerRef.current;
+    if (!el) return;
+    const clamped = Math.min(STEPS.length - 1, Math.max(0, i));
+    if (clamped === active) return;
+    const top = el.getBoundingClientRect().top + window.scrollY;
+    const pin = Math.max(1, el.offsetHeight - window.innerHeight);
+    capture("flow_step_navigated", {
+      step: clamped + 1,
+      from_step: active + 1,
+      via,
+      surface: "desktop",
+    });
+    window.scrollTo({
+      top: top + (pin * clamped) / (STEPS.length - 1),
+      behavior: reduce ? "auto" : "smooth",
+    });
+  };
+  useStepKeys(containerRef, active, goToStep);
 
   // Track translates horizontally across the steps.
   // We show N panels; translate from 0 to -(N-1)/N * 100%.
@@ -120,7 +236,10 @@ function DesktopFlow() {
         <div className="pointer-events-none absolute bottom-4 left-8 right-8 z-20 md:left-12 md:right-[340px] lg:left-20 xl:bottom-6 xl:left-32">
           <div className="mb-3 flex items-center justify-between text-[10px] font-medium uppercase tracking-[0.4em] text-ink/45">
             <Counter scrollYProgress={scrollYProgress} total={STEPS.length} />
-            <span>Your itinerary, unfolding.</span>
+            <span className="flex items-center gap-4">
+              <span>Your itinerary, unfolding.</span>
+              <StepControls active={active} onGo={goToStep} />
+            </span>
           </div>
           <div className="relative h-px w-full bg-ink/10">
             <motion.div
