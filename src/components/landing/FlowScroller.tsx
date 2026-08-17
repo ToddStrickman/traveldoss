@@ -166,6 +166,60 @@ function MobileFlow() {
     return () => unsub();
   }, [scrollYProgress]);
 
+  // Scroll snapping: the document scroller only gets snap points while the
+  // flow is on screen, so the rest of the page keeps free scrolling. Each
+  // step has an invisible snap target one step-height apart, which lines up
+  // exactly with the progress buckets above — so a flick always lands on a
+  // step, never between two.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const root = document.documentElement;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        root.style.scrollSnapType = entry.isIntersecting ? "y proximity" : "";
+      },
+      { threshold: 0 },
+    );
+    io.observe(el);
+    return () => {
+      io.disconnect();
+      root.style.scrollSnapType = "";
+    };
+  }, []);
+
+  const goToStep = (i: number) => {
+    const el = containerRef.current;
+    if (!el) return;
+    const clamped = Math.min(STEPS.length - 1, Math.max(0, i));
+    const top = el.getBoundingClientRect().top + window.scrollY;
+    const stepH = el.offsetHeight / STEPS.length;
+    window.scrollTo({
+      top: top + clamped * stepH + 2,
+      behavior: reduce ? "auto" : "smooth",
+    });
+  };
+
+  // Swipe-friendly gesture: a horizontal flick advances or rewinds one step,
+  // matching the lateral page-turn animation. Vertical drags are left alone
+  // so native scrolling (and snapping) still works.
+  const touch = useRef<{ x: number; y: number; t: number } | null>(null);
+  const onTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    touch.current = { x: t.clientX, y: t.clientY, t: Date.now() };
+  };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    const start = touch.current;
+    touch.current = null;
+    if (!start) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+    if (Math.abs(dx) < 44 || Math.abs(dx) < Math.abs(dy) * 1.4) return;
+    if (Date.now() - start.t > 800) return;
+    goToStep(active + (dx < 0 ? 1 : -1));
+  };
+
   const step = STEPS[active];
 
   return (
@@ -180,10 +234,25 @@ function MobileFlow() {
       style={{ height: `calc(${STEPS.length} * var(--tds-flow-step, 100svh))` }}
       aria-label="How TravelDoss works"
     >
+      {/* Invisible snap targets — one per step. */}
+      <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+        {STEPS.map((s, i) => (
+          <div
+            key={s.n}
+            className="absolute left-0 h-px w-px [scroll-snap-align:start]"
+            style={{ top: `calc(${i} * var(--tds-flow-step, 100svh) + 2px)` }}
+          />
+        ))}
+      </div>
+
       {/* Sticky uses dvh so it always fills the visible viewport, even as
           the URL bar collapses — content never leaves a strip of blank
           space under it. */}
-      <div className="sticky top-0 h-[100dvh] max-h-[100svh] w-full overflow-hidden">
+      <div
+        className="sticky top-0 h-[100dvh] max-h-[100svh] w-full overflow-hidden"
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+      >
         {/* Prominent top progress pill — always visible while the flow is
             pinned, so the user knows exactly where they are (01/05 → 05/05)
             and how much scrolling is left. */}
