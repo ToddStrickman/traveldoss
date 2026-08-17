@@ -16,3 +16,12 @@
 Dossier views and exports themselves are recorded in the `trip_access_events`
 table server-side (`getDossierBySlug`, `logTripExport`), not in PostHog: the
 audit ledger must be complete and adblock-proof.
+
+## Compose flow (intake modal)
+
+| Event | When | Properties |
+| --- | --- | --- |
+| `compose_opened` | The intake modal opens | `entry` (`mobile_bar` \| `dock` \| `template_card`), `template_id` (null when the template stage opens first) |
+| `template_previewed` | A cover settles in the centre of the stage-1 carousel (throttled, so a swipe does not spray events) | `template_id` |
+| `template_picked` | A cover is chosen in stage 1 | `template_id`, `index` |
+| `template_switched` | The top-bar template chip is used to change the dossier mid-compose | `from_template_id`, `template_id` |

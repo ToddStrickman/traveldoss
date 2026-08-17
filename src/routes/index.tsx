@@ -41,6 +41,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { SITE_URL } from "@/lib/site";
 import { clearPendingComposer, peekPendingComposer } from "@/lib/mint-pending";
+import { trackComposeOpened } from "@/lib/analytics";
 
 export const Route = createFileRoute("/")({
   component: Landing,
@@ -70,6 +71,8 @@ export const Route = createFileRoute("/")({
 function Landing() {
   const [picked, setPicked] = useState<SkinModule | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  // True when the modal should open on the dossier picker (stage one).
+  const [needsTemplate, setNeedsTemplate] = useState(false);
   // Session-aware Login pill: signed-in visitors already have the rail
   // identity chip (with matching shimmer), so the hero pill is redundant
   // — and worse, tapping it bounces off /login's already-signed-in
@@ -246,15 +249,17 @@ function Landing() {
   function openWithTemplate(skin: SkinModule) {
     setInitialTab("paste");
     setPicked(skin);
+    setNeedsTemplate(false);
+    trackComposeOpened("template_card", skin.meta.id);
     setModalOpen(true);
   }
 
-  // Dock actions default to the first skin in the registry so visitors
-  // can enter the compose flow without picking a template first — they
-  // can still switch templates from inside the modal / studio later.
-  function openDock(tab: "paste" | "transcript") {
+  // Compose from the dock or the mobile bar always starts on the dossier
+  // picker — the whole point of the product is the design you choose.
+  function openDock(tab: "paste" | "transcript", entry: "dock" | "mobile_bar" = "dock") {
     setInitialTab(tab);
-    setPicked((prev) => prev ?? SKINS[0] ?? null);
+    setNeedsTemplate(true);
+    trackComposeOpened(entry, picked?.meta.id ?? null);
     setModalOpen(true);
   }
 
@@ -585,7 +590,7 @@ function Landing() {
         <div aria-hidden className="h-16 md:hidden" />
       </main>
 
-      <MobileNavBar onCompose={() => openDock("paste")} />
+      <MobileNavBar onCompose={() => openDock("paste", "mobile_bar")} />
 
       <InViewLazy
         load={loadInfiniteDocs}
@@ -633,6 +638,8 @@ function Landing() {
             template={picked}
             onGenerate={handleGenerate}
             initialTab={initialTab}
+            needsTemplate={needsTemplate}
+            onTemplateChange={setPicked}
           />
         </Suspense>
       )}

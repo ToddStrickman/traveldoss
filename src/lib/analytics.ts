@@ -86,3 +86,20 @@ export const trackContactFailed = (category: string, reason: string) =>
 
 export const trackAccessTrailOpened = (tripSlug: string, eventCount: number) =>
   capture("access_trail_opened", { trip_slug: tripSlug, event_count: eventCount });
+
+/* ---------------- Compose flow events (see docs/analytics/tracking-plan.md) */
+
+export const trackComposeOpened = (
+  entry: "mobile_bar" | "dock" | "template_card",
+  templateId: string | null,
+) => capture("compose_opened", { entry, template_id: templateId });
+
+/** Fired when a cover settles in the centre of the stage-1 carousel. */
+export const trackTemplatePreviewed = (templateId: string) =>
+  capture("template_previewed", { template_id: templateId });
+
+export const trackTemplatePicked = (templateId: string, index: number) =>
+  capture("template_picked", { template_id: templateId, index });
+
+export const trackTemplateSwitched = (fromId: string | null, toId: string) =>
+  capture("template_switched", { from_template_id: fromId, template_id: toId });

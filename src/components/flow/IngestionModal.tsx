@@ -114,6 +114,8 @@ const TABS: {
 
 import { tripRef } from "@/lib/trip-ref";
 import { ElevateTagline } from "@/components/brand/ElevateTagline";
+import { TemplateCarousel } from "./TemplateCarousel";
+import { trackTemplatePicked, trackTemplateSwitched } from "@/lib/analytics";
 import {
   clearPendingComposer,
   peekPendingComposer,
@@ -132,6 +134,8 @@ export function IngestionModal({
   tripId,
   tripCreatedAt,
   initialTab,
+  needsTemplate,
+  onTemplateChange,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -147,6 +151,10 @@ export function IngestionModal({
   tripCreatedAt?: string | null;
   /** Which source tab to focus when the modal opens. Defaults to "paste". */
   initialTab?: Tab;
+  /** Open on the dossier-picking stage — the design comes first. */
+  needsTemplate?: boolean;
+  /** Reports the stage-1 pick (and later switches) up to the parent. */
+  onTemplateChange?: (skin: SkinModule) => void;
 }) {
   const [tab, setTab] = useState<Tab>(initialTab ?? "paste");
   // When the parent re-opens the modal with a new initialTab, honor it.
@@ -176,7 +184,13 @@ export function IngestionModal({
   const [text, setText] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
   const ref = tripRef(tripId ?? undefined, tripCreatedAt ?? undefined);
-  const [stage, setStage] = useState<"source" | "review">("source");
+  const [stage, setStage] = useState<"template" | "source" | "review">("source");
+  // Compose always begins with the dossier choice, unless the caller already
+  // knows the template (a template card was clicked).
+  useEffect(() => {
+    if (!open) return;
+    setStage(needsTemplate ? "template" : "source");
+  }, [open, needsTemplate]);
   const [reviewBlocks, setReviewBlocks] = useState<Block[]>([]);
   const [reviewLabel, setReviewLabel] = useState("Reading your dossier…");
   const [reviewDestination, setReviewDestination] = useState<string | null>(null);
@@ -600,8 +614,23 @@ export function IngestionModal({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-h-[92dvh] w-[calc(100vw-16px)] max-w-3xl overflow-y-auto border-white/10 bg-paper/95 p-0 text-ink shadow-[0_40px_120px_-30px_rgba(0,0,0,0.6)] sm:w-full sm:rounded-xl max-sm:bottom-0 max-sm:top-auto max-sm:left-0 max-sm:h-[100dvh] max-sm:max-h-[100dvh] max-sm:w-full max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-none max-sm:data-[state=open]:slide-in-from-bottom-10 max-sm:data-[state=open]:zoom-in-100 motion-reduce:data-[state=open]:animate-none motion-reduce:data-[state=closed]:animate-none">
-        <DialogTitle className="sr-only">Bring your trip in</DialogTitle>
-        {stage === "review" ? (
+        <DialogTitle className="sr-only">
+          {stage === "template" ? "Pick your dossier" : "Compose your trip"}
+        </DialogTitle>
+        {stage === "template" ? (
+          <TemplateCarousel
+            activeId={template?.meta.id ?? null}
+            onPick={(skin, index) => {
+              if (template && template.meta.id !== skin.meta.id) {
+                trackTemplateSwitched(template.meta.id, skin.meta.id);
+              } else {
+                trackTemplatePicked(skin.meta.id, index);
+              }
+              onTemplateChange?.(skin);
+              setStage("source");
+            }}
+          />
+        ) : stage === "review" ? (
           <ReviewStage
             blocks={reviewBlocks}
             destination={reviewDestination}
@@ -615,12 +644,12 @@ export function IngestionModal({
           />
         ) : (
           <>
-        {/* Letterhead */}
-        <div className="relative border-b border-ink/10 px-5 sm:px-8 md:px-10 pb-8 pt-10">
-          <div className="flex items-start justify-between gap-8">
-            <div className="flex flex-col gap-4">
-              <div className="td-eyebrow flex items-center gap-3 text-ink/55">
-                <span className="h-px w-8 bg-ink/25" />
+        {/* Top bar — compact, sticky, so you always know which dossier
+            you're composing while the body scrolls. */}
+        <div className="sticky top-0 z-20 border-b border-ink/10 bg-paper/90 px-5 pb-4 pt-4 backdrop-blur-md sm:px-8 md:px-10">
+          <div className="flex items-start justify-between gap-6">
+            <div className="flex min-w-0 flex-col gap-2">
+              <div className="td-eyebrow flex items-center gap-2.5 text-ink/55">
                 <Link
                   to="/"
                   onClick={() => onOpenChange(false)}
@@ -630,27 +659,25 @@ export function IngestionModal({
                   TravelDoss<span className="text-ink/30">®</span>
                 </Link>
                 <span className="text-ink/30">·</span>
-                {template ? template.meta.codename : "Dossier Template"}
+                <button
+                  type="button"
+                  onClick={() => setStage("template")}
+                  className="tap inline-flex items-center gap-1.5 rounded-full border border-ink/15 bg-paper/50 px-2.5 py-1 text-ink/75 transition-elegant hover:border-seal hover:text-seal"
+                  title="Change dossier template"
+                >
+                  {template ? template.meta.codename : "Pick a dossier"}
+                  <span aria-hidden className="text-ink/35">⇄</span>
+                </button>
               </div>
-              <h2 className="td-headline text-[2.75rem] font-normal leading-[1.02] tracking-[-0.022em] text-ink">
-                Bring your trip
-                <span className="italic text-ink/75"> in</span>
+              <h2 className="td-headline text-[1.9rem] font-normal leading-[1.05] tracking-[-0.022em] text-ink sm:text-[2.25rem]">
+                <span style={{ color: "var(--tds-ruby)" }}>Compose</span> your trip
                 <span className="text-seal">.</span>
               </h2>
-              <p
-                className="max-w-md text-[15px] leading-[1.55] text-ink-soft"
-                style={{ fontFamily: "var(--font-display)" }}
-              >
-                One entry —{" "}
-                <span className="italic text-ink/70">paste, upload, or describe.</span>{" "}
-                We'll only ask for what we can't infer.
-              </p>
             </div>
             <div className="hidden shrink-0 text-right md:block">
               <div className="td-eyebrow text-ink/40">Ref.</div>
               <div className="mt-1.5 font-mono text-[11px] tracking-[0.28em] text-ink/70">{ref}</div>
-              <div className="td-rule mx-auto my-3 w-20" />
-              <ElevateTagline className="mt-1.5 text-[15px] text-ink/75" as="div" />
+              <ElevateTagline className="mt-2 text-[13px] text-ink/70" as="div" />
             </div>
           </div>
         </div>
@@ -714,11 +741,12 @@ export function IngestionModal({
             </div>
           ) : (
             <div className="flex flex-col gap-4">
-              {/* Mode cards */}
+              {/* Mode bar — one horizontal segmented control, so the input
+                  and Compose button stay inside the thumb zone on a phone. */}
               <div
                 role="tablist"
                 aria-label="Composer mode"
-                className="grid grid-cols-1 gap-0 overflow-hidden rounded-md border border-ink/10 bg-paper/30 sm:grid-cols-3"
+                className="grid grid-cols-3 gap-0 overflow-hidden rounded-md border border-ink/10 bg-paper/30"
               >
                 {TABS.map((opt, i) => {
                   const on = tab === opt.id;
@@ -729,28 +757,24 @@ export function IngestionModal({
                       role="tab"
                       aria-selected={on}
                       onClick={() => setTab(opt.id)}
-                      className={`group relative flex flex-col items-start gap-2 px-5 py-5 text-left transition-elegant ${
-                        i > 0 ? "border-t border-ink/10 sm:border-t sm:border-l-0 lg:border-t-0 lg:border-l" : ""
-                      } ${on ? "bg-paper/60" : "hover:bg-paper/40"}`}
+                      className={`relative flex min-h-11 items-center justify-center gap-2 px-2 py-3 text-center transition-elegant ${
+                        i > 0 ? "border-l border-ink/10" : ""
+                      } ${on ? "bg-paper/70" : "hover:bg-paper/40"}`}
                     >
                       <Icon
-                        className={`h-4 w-4 ${on ? "text-seal" : "text-ink/55"}`}
+                        className={`h-4 w-4 shrink-0 ${on ? "text-seal" : "text-ink/55"}`}
                         strokeWidth={1.5}
                         aria-hidden
                       />
-                      <div
-                        className="text-[19px] leading-tight text-ink"
+                      <span
+                        className={`text-[15px] leading-none ${on ? "text-ink" : "text-ink/70"}`}
                         style={{ fontFamily: "var(--font-display)" }}
                       >
-                        {opt.word}{" "}
-                        <span className="italic text-ink/85">{opt.accent}</span>
-                      </div>
-                      <div className="text-[12px] leading-[1.5] text-ink-soft">
-                        {opt.sub}
-                      </div>
+                        {opt.word}
+                      </span>
                       <span
                         aria-hidden
-                        className={`absolute inset-x-5 bottom-2 h-px origin-left transition-elegant ${
+                        className={`absolute inset-x-3 bottom-1.5 h-px origin-left transition-elegant ${
                           on ? "scale-x-100 bg-seal/70" : "scale-x-0 bg-seal/0"
                         }`}
                       />
@@ -758,6 +782,9 @@ export function IngestionModal({
                   );
                 })}
               </div>
+              <p className="text-[12px] leading-[1.5] text-ink-soft">
+                {TABS.find((t) => t.id === tab)?.sub}
+              </p>
               <div className="flex items-center justify-end">
                 <button
                   type="button"
