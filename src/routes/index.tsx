@@ -386,7 +386,13 @@ function Landing() {
             // stencil letterforms.
             fontFamily="Butler Stencil"
             // "Doss" stays italic (synthetic oblique on Butler Stencil).
-            lines={[{ text: "Travel" }, { text: "Doss", italic: true, accent: "." }]}
+            // Tracking tightens the stencil's loose default fit so the two
+            // words read as one wordmark; the oblique "Doss" needs slightly
+            // less negative tracking to avoid glyph collisions.
+            lines={[
+              { text: "Travel", tracking: -0.022 },
+              { text: "Doss", italic: true, accent: ".", tracking: -0.014 },
+            ]}
           />
         </Parallax>
 
