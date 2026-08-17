@@ -392,17 +392,63 @@ export function MobileCoverRail({
   onPick: (id: string) => void;
   pickingId: string | null;
 }) {
+  const railRef = useRef<HTMLDivElement>(null);
+  const [center, setCenter] = useState(0);
+
+  // Track the centred cover so the dots below reflect the thumb's position.
+  useEffect(() => {
+    const rail = railRef.current;
+    if (!rail) return;
+    let frame = 0;
+    const measure = () => {
+      frame = 0;
+      const mid = rail.scrollLeft + rail.clientWidth / 2;
+      let best = 0;
+      let bestDist = Infinity;
+      for (let i = 0; i < rail.children.length; i++) {
+        const el = rail.children[i] as HTMLElement;
+        const d = Math.abs(el.offsetLeft + el.offsetWidth / 2 - mid);
+        if (d < bestDist) { bestDist = d; best = i; }
+      }
+      setCenter(best);
+    };
+    const onScroll = () => { if (!frame) frame = requestAnimationFrame(measure); };
+    rail.addEventListener("scroll", onScroll, { passive: true });
+    measure();
+    return () => {
+      rail.removeEventListener("scroll", onScroll);
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, [skins.length]);
+
+  const scrollToIndex = (i: number) => {
+    const rail = railRef.current;
+    const card = rail?.children[i] as HTMLElement | undefined;
+    if (!rail || !card) return;
+    rail.scrollTo({
+      left: card.offsetLeft - (rail.clientWidth - card.offsetWidth) / 2,
+      behavior: "smooth",
+    });
+  };
+
   if (skins.length === 0) return null;
   return (
     <section aria-label="Dossier templates, swipeable covers">
-      <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2">
+      {/* Generous side padding so the first and last cover can actually
+          centre under the thumb instead of clipping at the edge. */}
+      <div
+        ref={railRef}
+        className="scroll-x -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-[11vw] pb-2"
+      >
         {skins.map((skin) => (
           <article
             key={skin.meta.id}
-            className="w-[78vw] max-w-[340px] shrink-0 snap-center border border-ink/15"
+            className="w-[78vw] max-w-[340px] shrink-0 snap-center rounded-[10px] border border-ink/15"
             style={{ background: skin.tokens.bg }}
           >
-            <SkinCoverTile skin={skin} height={280} />
+            <div className="td-cover relative h-[300px] w-full overflow-hidden rounded-t-[10px]">
+              <DossierCoverArt skin={skin} />
+            </div>
             <div
               className="border-t px-4 py-3"
               style={{ borderColor: skin.tokens.rule }}
@@ -449,7 +495,27 @@ export function MobileCoverRail({
           </article>
         ))}
       </div>
-      <p className="mt-3 text-center text-[9px] font-medium uppercase tracking-[0.4em] text-ink/40">
+      {skins.length > 1 ? (
+        <div className="mt-3 flex items-center justify-center gap-2">
+          {skins.map((s, i) => (
+            <button
+              key={s.meta.id}
+              type="button"
+              onClick={() => scrollToIndex(i)}
+              aria-label={`Show ${s.meta.codename}`}
+              className="tap inline-flex h-6 w-6 items-center justify-center"
+            >
+              <span
+                aria-hidden
+                className={`h-1.5 rounded-full transition-all duration-300 motion-reduce:transition-none ${
+                  i === center ? "w-5 bg-seal" : "w-1.5 bg-ink/25"
+                }`}
+              />
+            </button>
+          ))}
+        </div>
+      ) : null}
+      <p className="mt-2 text-center text-[9px] font-medium uppercase tracking-[0.4em] text-ink/40">
         Swipe the covers · {skins.length} templates
       </p>
     </section>
