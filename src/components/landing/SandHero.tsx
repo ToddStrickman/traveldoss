@@ -38,8 +38,11 @@ export interface SandHeroProps {
 }
 
 const DEFAULT_LINES: HeadlineLine[] = [
-  { text: "Travel", tracking: -0.022 },
-  { text: "Doss", italic: true, accent: ".", tracking: -0.014 },
+  { text: "Travel", tracking: -0.022, inkAlpha: 80 },
+  {
+    text: "Doss", italic: true, accent: ".", tracking: -0.014,
+    inkAlpha: 132, density: 0.72, edgeBoost: 0.18,
+  },
 ];
 
 /**

@@ -390,8 +390,15 @@ function Landing() {
             // words read as one wordmark; the oblique "Doss" needs slightly
             // less negative tracking to avoid glyph collisions.
             lines={[
-              { text: "Travel", tracking: -0.022 },
-              { text: "Doss", italic: true, accent: ".", tracking: -0.014 },
+              { text: "Travel", tracking: -0.022, inkAlpha: 80 },
+              // The oblique smears its antialiasing, so the italic line gets a
+              // harder ink floor (stencil breaks stay open), denser sampling
+              // (thin shapes survive at small sizes) and an edge boost so its
+              // contours resolve early in the excavation.
+              {
+                text: "Doss", italic: true, accent: ".", tracking: -0.014,
+                inkAlpha: 132, density: 0.72, edgeBoost: 0.18,
+              },
             ]}
           />
         </Parallax>
