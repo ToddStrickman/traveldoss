@@ -77,7 +77,7 @@ function DesktopFlow() {
   return (
     <section
       ref={containerRef}
-      className="relative z-10 hidden md:block"
+      className="relative z-10 hidden lg:block"
       style={{ height: `${STEPS.length * 52}vh` }}
       aria-label="How TravelDoss works"
     >
@@ -164,7 +164,7 @@ function MobileFlow() {
       // the pin distance to change mid-scroll and feel like a bad snap.
       // overscroll-behavior-y:contain prevents rubber-band from leaking into
       // the next section on the last step.
-      className="tds-flow-mobile relative z-10 block md:hidden [overscroll-behavior-y:contain]"
+      className="tds-flow-mobile relative z-10 block lg:hidden [overscroll-behavior-y:contain]"
       style={{ height: `calc(${STEPS.length} * var(--tds-flow-step, 100svh))` }}
       aria-label="How TravelDoss works"
     >
@@ -175,7 +175,7 @@ function MobileFlow() {
         {/* Prominent top progress pill — always visible while the flow is
             pinned, so the user knows exactly where they are (01/05 → 05/05)
             and how much scrolling is left. */}
-        <div className="pointer-events-none absolute left-1/2 top-[max(0.75rem,env(safe-area-inset-top))] z-30 flex -translate-x-1/2 items-center gap-3 rounded-full border border-ink/10 bg-paper/70 px-3.5 py-1.5 shadow-[0_1px_0_rgba(255,255,255,0.6)_inset,0_4px_16px_-8px_rgba(0,0,0,0.25)] backdrop-blur-md landscape:top-2 landscape:py-1">
+        <div className="pointer-events-none absolute left-1/2 top-[max(0.75rem,env(safe-area-inset-top))] z-30 flex -translate-x-1/2 items-center md:left-28 md:translate-x-0 gap-3 rounded-full border border-ink/10 bg-paper/70 px-3.5 py-1.5 shadow-[0_1px_0_rgba(255,255,255,0.6)_inset,0_4px_16px_-8px_rgba(0,0,0,0.25)] backdrop-blur-md landscape:top-2 landscape:py-1">
           <span
             className="tabular-nums text-[13px] font-semibold leading-none tracking-tight text-ink"
             aria-live="polite"
@@ -194,7 +194,7 @@ function MobileFlow() {
           </span>
         </div>
 
-        <div className="flex h-full w-full flex-col justify-center gap-4 px-6 pb-20 pt-16 landscape:gap-2 landscape:pt-10 landscape:pb-14">
+        <div className="flex h-full w-full flex-col justify-center gap-4 px-6 pb-20 pt-16 md:pl-28 md:pr-[340px] landscape:gap-2 landscape:pt-10 landscape:pb-14">
           <div className="flex items-center gap-3 text-[10px] font-medium uppercase tracking-[0.45em] text-ink/45">
             <span className="text-seal">{step.n}</span>
             <span className="h-px w-8 bg-ink/20" />
@@ -202,28 +202,28 @@ function MobileFlow() {
           </div>
           <h2
             key={`t-${step.n}`}
-            className="text-[clamp(28px,11vw,44px)] font-normal leading-[0.95] tracking-[-0.02em] text-ink landscape:text-[clamp(22px,5vw,32px)]"
+            className="text-[clamp(28px,11vw,44px)] font-normal leading-[0.95] tracking-[-0.02em] text-ink md:text-[clamp(40px,6vw,56px)] landscape:text-[clamp(22px,5vw,32px)]"
             style={{ fontFamily: "var(--font-display)" }}
           >
             {step.title}
           </h2>
           <p
             key={`b-${step.n}`}
-            className="max-w-md text-[13px] leading-relaxed text-ink-soft landscape:text-[12px] landscape:leading-snug"
+            className="max-w-md text-[13px] leading-relaxed text-ink-soft md:max-w-xl md:text-[15px] landscape:text-[12px] landscape:leading-snug"
           >
             {step.body}
           </p>
           <Parallax
             key={`v-${step.n}`}
             depth={14}
-            className="relative mt-2 h-[38svh] w-full landscape:h-[26svh] landscape:mt-1"
+            className="relative mt-2 h-[38svh] w-full max-w-[560px] md:h-[42svh] landscape:h-[26svh] landscape:mt-1"
           >
             <Visual variant={step.visual} index={active} />
           </Parallax>
         </div>
 
         {/* Progress rail pinned to the sticky viewport. */}
-        <div className="pointer-events-none absolute bottom-[max(1rem,env(safe-area-inset-bottom))] left-0 right-0 z-20 flex items-center justify-between px-6 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/45 landscape:bottom-2">
+        <div className="pointer-events-none absolute bottom-[max(1rem,env(safe-area-inset-bottom))] left-0 right-0 z-20 flex items-center justify-between px-6 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/45 md:pl-28 md:pr-[340px] landscape:bottom-2">
           <span className="inline-flex items-center gap-2">
             <span className="text-seal">{String(active + 1).padStart(2, "0")}</span>
             <span className="text-ink/30">/ {String(STEPS.length).padStart(2, "0")}</span>
