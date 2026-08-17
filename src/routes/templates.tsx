@@ -596,23 +596,33 @@ function TemplatesPage() {
 
           {/* Result count + browse-mode toggle (all sizes: the table has a
               phone-native sibling, the swipeable cover rail) */}
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-[10px] uppercase tracking-[0.4em] text-ink/60">
+          <div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center md:justify-between">
+            <p className="min-w-0 text-[10px] uppercase tracking-[0.4em] text-ink/60">
               {filteredSkins.length} dossier template{filteredSkins.length !== 1 ? "s" : ""}
-              {activeTag ? ` · ${activeTag}` : ""}
-              {query ? ` · “${query.trim()}”` : ""}
+              {activeTag || query ? (
+                <span className="text-seal">
+                  {` · ${(activeTag ? 1 : 0) + (query.trim() ? 1 : 0)} filter${
+                    (activeTag ? 1 : 0) + (query.trim() ? 1 : 0) !== 1 ? "s" : ""
+                  } active`}
+                </span>
+              ) : null}
             </p>
-            <div className="flex items-center gap-1.5" role="group" aria-label="Browse mode">
+            {/* Segmented control — full width on phones, 44px targets. */}
+            <div
+              className="grid grid-cols-2 gap-1 rounded-full border border-ink/10 p-1 md:inline-flex md:w-auto"
+              role="group"
+              aria-label="Browse mode"
+            >
               {(["table", "grid"] as const).map((mode) => (
                 <button
                   key={mode}
                   type="button"
                   onClick={() => setBrowseMode(mode)}
                   aria-pressed={browse === mode}
-                  className={`tap rounded-full border px-3.5 py-2 text-[10px] font-medium uppercase tracking-[0.25em] transition-colors duration-300 ${
+                  className={`tap inline-flex min-h-11 items-center justify-center rounded-full px-4 text-[10px] font-medium uppercase tracking-[0.25em] transition-colors duration-300 motion-reduce:transition-none ${
                     browse === mode
-                      ? "border-seal bg-seal/10 text-seal"
-                      : "border-ink/10 text-ink/50 hover:border-ink/30 hover:text-ink"
+                      ? "bg-seal/12 text-seal"
+                      : "text-ink/50 hover:text-ink"
                   }`}
                 >
                   {mode === "table" ? "The table" : "Grid"}
@@ -674,7 +684,7 @@ function TemplatesPage() {
           )}
         </div>
         {/* Clearance for the floating mobile nav pill. */}
-        <div aria-hidden className="h-20 md:hidden" />
+        <div aria-hidden className="h-28 md:hidden" />
       </main>
 
       <Ribbon />
