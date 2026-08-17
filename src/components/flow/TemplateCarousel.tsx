@@ -266,7 +266,6 @@ function Cover({
         ["--fade" as string]: `${selected ? 1 : Math.max(0.42, 1 - abs * 0.22)}`,
       }}
     >
-      {t.fontUrl ? <link rel="stylesheet" href={t.fontUrl} /> : null}
       <button
         type="button"
         role="option"
@@ -284,86 +283,7 @@ function Cover({
             : "0 10px 24px -14px rgba(0,0,0,0.6)",
         }}
       >
-        {/* Foil edge */}
-        <span
-          aria-hidden
-          className="pointer-events-none absolute inset-[5px] rounded-[6px]"
-          style={{ border: `1px solid ${t.rule}` }}
-        />
-        <span
-          aria-hidden
-          className="pointer-events-none absolute inset-y-0 left-0 w-[6px]"
-          style={{ background: t.accent, opacity: 0.75 }}
-        />
-        {/* Sheen — sweeps once as the cover centres, again on hover. */}
-        <span aria-hidden className="td-cover-sheen pointer-events-none absolute inset-0" />
-        <div className="relative flex h-full flex-col px-4 py-5">
-          <div
-            className="text-[8.5px] font-medium uppercase tracking-[0.32em]"
-            style={{ color: t.inkSoft }}
-          >
-            Dossier
-          </div>
-          <div className="mt-4">
-            <div
-              className="text-[26px] leading-[1.05]"
-              style={{ fontFamily: t.fontDisplay, color: t.ink }}
-            >
-              {skin.meta.codename}
-            </div>
-            <div className="mt-2 h-px w-10" style={{ background: t.accent }} />
-            <div
-              className="mt-2 text-[10.5px] leading-[1.45]"
-              style={{ fontFamily: t.fontBody, color: t.inkSoft }}
-            >
-              {skin.meta.tags[0]}
-            </div>
-          </div>
-
-          {/* Day-part preview — placeholder rule work standing in for a day's
-              entries, so the taller cover uses its space. */}
-          <div className="mt-auto flex flex-col gap-2.5" aria-hidden>
-            {(["Morning", "Evening", "Night"] as const).map((part, pi) => (
-              <div key={part} className="flex flex-col gap-1">
-                <div className="flex items-center gap-1.5">
-                  <span
-                    className="h-[3px] w-[3px] rounded-full"
-                    style={{ background: t.accent, opacity: 0.9 }}
-                  />
-                  <span
-                    className="text-[7.5px] font-medium uppercase tracking-[0.28em]"
-                    style={{ color: t.inkSoft }}
-                  >
-                    {part}
-                  </span>
-                </div>
-                {[0.86, 0.58].map((w, i) => (
-                  <span
-                    key={i}
-                    className="td-cover-line h-px"
-                    style={{
-                      width: `${w * 100}%`,
-                      background: t.rule,
-                      animationDelay: `${pi * 90 + i * 45}ms`,
-                    }}
-                  />
-                ))}
-              </div>
-            ))}
-          </div>
-        </div>
-        {/* Wax seal — warms as the cover centres, stamps in on choose. */}
-        <span
-          aria-hidden
-          className="td-cover-seal absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full text-[8px] font-medium uppercase tracking-[0.1em]"
-          style={{
-            background: t.accent,
-            color: t.bg,
-            opacity: selected ? 1 : 0.45,
-          }}
-        >
-          TD
-        </span>
+        <DossierCoverArt skin={skin} selected={selected} />
       </button>
     </div>
   );
