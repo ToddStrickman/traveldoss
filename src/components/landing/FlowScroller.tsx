@@ -494,13 +494,6 @@ function MobileFlow() {
               </span>
             </span>
           </div>
-          {/* Explicit prev/next controls: reserved 44px row so nothing shifts. */}
-          <div className="mt-2 flex h-11 items-center justify-end">
-            <StepControls
-              active={active}
-              onGo={(i) => goToStep(i, "button")}
-            />
-          </div>
         </div>
 
         {/* One continuous horizontal track — the same mechanic as desktop, so
@@ -521,6 +514,14 @@ function MobileFlow() {
               <MobilePanel key={s.n} step={s} index={i} total={STEPS.length} />
             ))}
           </motion.div>
+        </div>
+
+        {/* Explicit prev/next controls, clear of the bottom dock. */}
+        <div
+          className="pointer-events-none absolute inset-x-0 z-30 flex justify-center px-5"
+          style={{ bottom: "calc(env(safe-area-inset-bottom) + 28px)" }}
+        >
+          <StepControls active={active} onGo={(i) => goToStep(i, "button")} />
         </div>
       </div>
     </section>
