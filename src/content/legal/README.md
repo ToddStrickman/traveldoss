@@ -6,7 +6,7 @@ no legal text lives in component code.
 
 ## Publishing a revision (no engineering required beyond this)
 
-1. Copy the current file to a new version, e.g. `terms-v1.2.md`, and edit it.
+1. Copy the current file to a new version, e.g. `terms-v1.1.md`, and edit it.
    Keep the existing heading structure (`## 19. Limitation of Liability` etc.)
    — anchor links like `/terms#limitation-of-liability` derive from headings.
 2. In `src/lib/legal/registry.ts`:

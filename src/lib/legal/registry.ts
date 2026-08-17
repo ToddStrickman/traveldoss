@@ -30,7 +30,7 @@ export const LEGAL_DOCS: Record<LegalDocSlug, LegalDocMeta> = {
     version: "1.2",
     publishedAt: "2026-08-13",
     effectiveAt: "2026-08-13",
-    contentHash: "fnv1a64-524b3b6e3690869c",
+    contentHash: "fnv1a64-c2e3579958f00dee",
   },
   privacy: {
     slug: "privacy",

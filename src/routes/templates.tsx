@@ -101,7 +101,7 @@ export const Route = createFileRoute("/templates")({
       },
       {
         property: "og:description",
-        content: `${SKINS.length} editorial dossier templates for your trip. Five dollars, one URL, one month — composed like a magazine.`,
+        content: `${SKINS.length} editorial dossier templates for your trip. ${PRICE_WORDS.charAt(0).toUpperCase() + PRICE_WORDS.slice(1)}, one URL, one month — composed like a magazine.`,
       },
       { property: "og:url", content: `${SITE_URL}/templates` },
     ],

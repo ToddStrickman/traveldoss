@@ -10,6 +10,7 @@ import { cloneGuide } from "@/lib/guides.functions";
 import { savePendingGuideClone, takePendingGuideClone } from "@/lib/guide-pending";
 import { supabase } from "@/integrations/supabase/client";
 import { Ribbon } from "@/components/landing/Ribbon";
+import { GuidesHomeMark } from "@/components/guides/GuidesHomeMark";
 import { MobileNavBar } from "@/components/mobile/MobileNavBar";
 import { SiteFooter } from "@/components/legal/SiteFooter";
 import { GuideCardGrid } from "@/components/guides/GuideCardGrid";
@@ -188,7 +189,8 @@ function GuidePage() {
       <Ribbon />
       <MobileNavBar />
 
-      <main>
+      <main className="relative">
+        <GuidesHomeMark />
         {/* Above the fold on mobile: identity, H1, and the primary CTA. */}
         <header className="mx-auto max-w-[1100px] px-5 pb-8 pt-8 md:px-8 md:pl-[7.5rem] md:pt-14">
           <nav aria-label="Breadcrumb" className="mb-5">

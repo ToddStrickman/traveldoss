@@ -32,6 +32,33 @@ export type Database = {
         }
         Relationships: []
       }
+      contact_messages: {
+        Row: {
+          category: string
+          created_at: string
+          email: string
+          id: string
+          message: string
+          name: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          email: string
+          id?: string
+          message: string
+          name?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          email?: string
+          id?: string
+          message?: string
+          name?: string | null
+        }
+        Relationships: []
+      }
       drive_watch_channels: {
         Row: {
           channel_id: string
@@ -299,6 +326,53 @@ export type Database = {
           version?: string
         }
         Relationships: []
+      }
+      trip_access_events: {
+        Row: {
+          actor_user_id: string | null
+          created_at: string
+          event_type: string
+          id: string
+          is_owner: boolean
+          occurred_at: string
+          trip_id: string
+          trip_slug: string
+          user_agent: string | null
+          visitor_hash: string | null
+        }
+        Insert: {
+          actor_user_id?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          is_owner?: boolean
+          occurred_at?: string
+          trip_id: string
+          trip_slug: string
+          user_agent?: string | null
+          visitor_hash?: string | null
+        }
+        Update: {
+          actor_user_id?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          is_owner?: boolean
+          occurred_at?: string
+          trip_id?: string
+          trip_slug?: string
+          user_agent?: string | null
+          visitor_hash?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_access_events_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       trip_doc_previews: {
         Row: {

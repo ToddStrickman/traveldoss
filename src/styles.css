@@ -8,6 +8,17 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Mathevas — brush-handwritten wordmark face for the landing-page sand
+   inscription. Self-hosted (public/fonts) so the grain sampler can rasterize
+   it. License: 1001Fonts Free For Commercial Use (public/fonts/mathevas-license.txt). */
+@font-face {
+  font-family: "Mathevas";
+  src: url("/fonts/mathevas.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 /*
  * Travel DOSS design system
  * Editorial / dossier feel: warm off-white paper, deep navy ink, burnt orange seal.
@@ -38,7 +49,7 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Playfair Display", Georgia, serif;
   --font-display: "Playfair Display", Georgia, serif;
-  --font-wordmark: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --font-wordmark: "Mathevas", "Outfit", ui-sans-serif, system-ui, sans-serif;
   --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);

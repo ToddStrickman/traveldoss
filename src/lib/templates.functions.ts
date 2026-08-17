@@ -76,7 +76,7 @@ export const getDossierBySlug = createServerFn({ method: "GET" })
     const { data: trip, error } = await supabaseAdmin
       .from("trips")
       .select(
-        "id, slug, destination, subtitle, tone, template_id, hero_image_url, start_date, end_date, content, expires_at, created_at",
+        "id, slug, destination, subtitle, tone, template_id, hero_image_url, start_date, end_date, content, expires_at, created_at, user_id",
       )
       .eq("slug", data.slug)
       .neq("visibility", "private")
@@ -86,7 +86,20 @@ export const getDossierBySlug = createServerFn({ method: "GET" })
       throw new Error("Failed to load dossier");
     }
     if (!trip) return { trip: null };
+
+    // Access audit trail: every view of the public link is recorded
+    // server-side (adblock-proof) before the payload leaves the server.
+    // user_id is used only for the owner flag and never shipped.
+    const { user_id: ownerUserId, ...publicRow } = trip;
+    const { recordTripAccess, resolveOptionalActor } = await import("@/lib/access-log.server");
+    await recordTripAccess({
+      tripId: trip.id,
+      tripSlug: trip.slug,
+      eventType: "view",
+      actorUserId: await resolveOptionalActor(),
+      ownerUserId,
+    });
     // Strips content/dates from expired trips — the re-publish gate must be
     // enforced here, not in the client render.
-    return projectPublicTrip(trip as PublicTripRow);
+    return projectPublicTrip(publicRow as PublicTripRow);
   });

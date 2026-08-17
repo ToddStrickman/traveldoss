@@ -330,7 +330,7 @@ TravelDoss shall not be liable for any delay or failure to perform resulting fro
 
 **PLEASE READ THIS SECTION CAREFULLY. IT AFFECTS YOUR LEGAL RIGHTS, INCLUDING YOUR RIGHT TO FILE A LAWSUIT IN COURT.**
 
-**22.1 Informal Resolution First.** Before filing any claim, you agree to first contact us at the address in Section 27 with a written description of the dispute and give us thirty (30) days to attempt to resolve it informally. Most concerns can be resolved this way. This step is a prerequisite to beginning any arbitration or court proceeding.
+**22.1 Informal Resolution First.** Before filing any claim, you agree to first contact us through the contact form identified in Section 27 with a written description of the dispute and give us thirty (30) days to attempt to resolve it informally. Most concerns can be resolved this way. This step is a prerequisite to beginning any arbitration or court proceeding.
 
 **22.2 Binding Arbitration.** Except as provided in Section 22.4, any dispute, claim, or controversy arising out of or relating to these Terms or the Service shall be resolved exclusively by final and binding arbitration administered by the American Arbitration Association ("AAA") under its Consumer Arbitration Rules then in effect. The Federal Arbitration Act governs the interpretation and enforcement of this Section. Judgment on the arbitration award may be entered in any court of competent jurisdiction.
 
@@ -340,7 +340,7 @@ TravelDoss shall not be liable for any delay or failure to perform resulting fro
 
 **22.5 Class Action and Jury Trial Waiver.** YOU AND TRAVELDOSS EACH AGREE THAT ANY PROCEEDING SHALL BE CONDUCTED ONLY ON AN INDIVIDUAL BASIS AND NOT AS A CLASS, CONSOLIDATED, OR REPRESENTATIVE ACTION, AND EACH WAIVES ANY RIGHT TO A TRIAL BY JURY. The arbitrator may not consolidate claims of more than one person. If this class action waiver is found unenforceable as to a particular claim, then that claim (and only that claim) shall be severed and proceed in court, with the remainder of this Section remaining in effect.
 
-**22.6 Thirty-Day Right to Opt Out.** You may opt out of this arbitration agreement by sending written notice to the address in Section 27 within thirty (30) days of first accepting these Terms, stating your name, the email associated with your account, and your intent to opt out. Opting out of arbitration does not affect any other provision of these Terms.
+**22.6 Thirty-Day Right to Opt Out.** You may opt out of this arbitration agreement by submitting written notice through the contact form identified in Section 27, selecting the "Arbitration opt-out" category, within thirty (30) days of first accepting these Terms, stating your name, the email associated with your account, and your intent to opt out. Opting out of arbitration does not affect any other provision of these Terms.
 
 **22.7 Time Limit on Claims.** To the maximum extent permitted by applicable law, any claim arising out of or relating to the Service must be filed within one (1) year after the claim accrued, or it is permanently barred.
 
@@ -364,8 +364,6 @@ These Terms, together with the [Privacy Policy](/privacy) and any additional pol
 
 ## 27. Contact
 
-Questions regarding these Terms may be directed to:
+Questions regarding these Terms, legal notices, informal dispute-resolution requests under Section 22.1, and arbitration opt-outs under Section 22.6 may be submitted through the contact form on the Service at /contact.
 
 **TravelDoss**
-
-Email: toddstrickman@gmail.com

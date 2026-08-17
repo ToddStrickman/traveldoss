@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useLocation } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { exportItineraryToGoogleDoc } from "@/lib/itinerary/export.functions";
+import { logTripExport } from "@/lib/access-log.functions";
 import { useState } from "react";
 import { withRetry } from "@/lib/retry";
 
@@ -23,9 +24,15 @@ export function ExportMenu({
   const navigate = useNavigate();
   const location = useLocation();
   const exportDoc = useServerFn(exportItineraryToGoogleDoc);
+  const logExport = useServerFn(logTripExport);
+  // Audit trail write; never allowed to block or break the export itself.
+  const audit = (eventType: "export_pdf" | "export_ics" | "export_gdoc") => {
+    void logExport({ data: { slug, eventType } }).catch(() => {});
+  };
   const [exporting, setExporting] = useState(false);
   const [exportAttempt, setExportAttempt] = useState(0);
   function printPdf() {
+    audit("export_pdf");
     document.body.classList.add("td-print-mode");
     setTimeout(() => {
       window.print();
@@ -50,6 +57,7 @@ export function ExportMenu({
         onAttempt: ({ attempt }) => setExportAttempt(attempt),
       });
       toast.success("Opened in Google Docs", { description: r.googleDocUrl });
+      audit("export_gdoc");
       window.open(r.googleDocUrl, "_blank", "noopener");
     } catch (err) {
       console.error("[export-doc] failed", err);
@@ -141,6 +149,7 @@ export function ExportMenu({
     toast.success("Calendar file ready", {
       description: `${parts.join(" · ")} — open the .ics to add to Apple, Google, or Outlook.`,
     });
+    audit("export_ics");
   }
 
   return (
