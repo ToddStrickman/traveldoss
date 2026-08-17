@@ -260,6 +260,20 @@ export function IngestionModal({
       ? genPrompt.trim().length >= 6 || genDestination.trim().length > 0
       : text.trim().length >= 8;
 
+  // A quick "cheers" glow the moment the CTA becomes available, so the
+  // unlock is felt rather than just seen.
+  const [cheers, setCheers] = useState(false);
+  const wasReady = useRef(false);
+  useEffect(() => {
+    if (hasContent && !wasReady.current) {
+      setCheers(true);
+      const t = window.setTimeout(() => setCheers(false), 950);
+      wasReady.current = true;
+      return () => window.clearTimeout(t);
+    }
+    if (!hasContent) wasReady.current = false;
+  }, [hasContent]);
+
   // Restore a composer draft stashed by ensureAuthed before a login
   // redirect. Only when the modal opens empty for the SAME template, so a
   // draft can never stomp text the user is actively typing.
@@ -928,7 +942,9 @@ export function IngestionModal({
             <button
               onClick={submit}
               disabled={!template || parsing || !hasContent}
-              className="group inline-flex items-center gap-4 rounded-md border border-seal/40 bg-seal/15 py-3 pl-5 pr-3 text-[11px] font-medium uppercase tracking-[0.4em] text-seal transition-elegant hover:border-seal hover:bg-seal hover:text-paper disabled:opacity-40"
+              className={`group inline-flex items-center gap-4 rounded-md border border-seal/40 bg-seal/15 py-3 pl-5 pr-3 text-[11px] font-medium uppercase tracking-[0.4em] text-seal transition-elegant hover:border-seal hover:bg-seal hover:text-paper disabled:opacity-40 ${
+                cheers ? "td-cheers" : ""
+              }`}
             >
             <span>
               {parsing
@@ -937,7 +953,7 @@ export function IngestionModal({
                   : "Reading & enriching…"
                 : clarifyQs.length
                 ? "Continue"
-                : "Compose Dossier"}
+                : "Mint Dossier"}
             </span>
             <span aria-hidden className="inline-flex h-7 w-7 items-center justify-center rounded-sm border border-seal/40 transition-elegant group-hover:border-paper/40">
               →
