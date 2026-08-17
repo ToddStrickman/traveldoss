@@ -196,14 +196,40 @@ function MobileFlow() {
     };
   }, []);
 
+  // Snap targets are measured, not guessed: the pin distance depends on the
+  // real viewport height, which on iOS never equals exactly 100svh. Computing
+  // the tops in JS keeps the native snap points and goToStep() in perfect
+  // agreement, so a flick rests square on a panel instead of ~100px off it.
+  const [snapTops, setSnapTops] = useState<number[]>([]);
+  useEffect(() => {
+    const measure = () => {
+      const el = containerRef.current;
+      if (!el) return;
+      const pin = Math.max(1, el.offsetHeight - window.innerHeight);
+      setSnapTops(STEPS.map((_, i) => (pin * (i + 0.5)) / STEPS.length));
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    window.addEventListener("orientationchange", measure);
+    return () => {
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("orientationchange", measure);
+    };
+  }, []);
+
   const goToStep = (i: number) => {
     const el = containerRef.current;
     if (!el) return;
     const clamped = Math.min(STEPS.length - 1, Math.max(0, i));
     const top = el.getBoundingClientRect().top + window.scrollY;
-    const stepH = el.offsetHeight / STEPS.length;
+    // Steps rest at the CENTRE of their progress bucket — that's where the
+    // ribbon parks on an exact panel boundary. Progress runs over the PIN
+    // distance (section height minus one viewport), not the full height, so
+    // aiming at bucket starts would land the track halfway between panels.
+    const pin = Math.max(1, el.offsetHeight - window.innerHeight);
+    const target = top + (pin * (clamped + 0.5)) / STEPS.length;
     window.scrollTo({
-      top: top + clamped * stepH + 2,
+      top: target,
       behavior: reduce ? "auto" : "smooth",
     });
   };
@@ -240,13 +266,15 @@ function MobileFlow() {
       style={{ height: `calc(${STEPS.length} * var(--tds-flow-step, 100svh))` }}
       aria-label="How TravelDoss works"
     >
-      {/* Invisible snap targets — one per step. */}
+      {/* Invisible snap targets — one per step, placed at the CENTRE of each
+          progress bucket measured over the pin distance, which is exactly
+          where a panel sits square in the viewport. */}
       <div className="pointer-events-none absolute inset-0" aria-hidden="true">
         {STEPS.map((s, i) => (
           <div
             key={s.n}
             className="absolute left-0 h-px w-px [scroll-snap-align:start]"
-            style={{ top: `calc(${i} * var(--tds-flow-step, 100svh) + 2px)` }}
+            style={{ top: snapTops[i] ?? 0 }}
           />
         ))}
       </div>

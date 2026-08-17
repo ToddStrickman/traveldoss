@@ -42,7 +42,11 @@ const DEVICE_PRESETS = [
 const EMULATIONS = DEVICE_PRESETS.map((name) => {
   const preset = devices[name];
   if (!preset) throw new Error(`Playwright device preset missing: ${name}`);
-  return { label: name, preset } as const;
+  // browserName/defaultBrowserType can't be set inside a describe group
+  // (Playwright forces a new worker), so we strip them and run this spec
+  // under the `webkit` project instead: `--project=webkit`.
+  const { defaultBrowserType: _d, ...rest } = preset;
+  return { label: name, preset: rest } as const;
 });
 
 const SECTION = 'section.tds-flow-mobile[aria-label="How TravelDoss works"]';
@@ -77,8 +81,8 @@ async function flowGeometry(page: Page) {
 for (const { label, preset } of EMULATIONS) {
   test.describe(`FlowScroller mobile · ${label}`, () => {
     // Full device emulation: UA, DPR, touch/hasTouch, isMobile, viewport.
-    // Forces the WebKit browser so we exercise iOS Safari, not Chromium.
-    test.use({ ...preset, browserName: "webkit" });
+    // Browser engine comes from the `webkit` project (iOS Safari).
+    test.use({ ...preset });
 
     test("each of the 5 steps snaps into view as the user scrolls", async ({ page }) => {
       await page.goto("/");
@@ -164,6 +168,85 @@ for (const { label, preset } of EMULATIONS) {
       );
       await page.waitForTimeout(180);
       await expect(section.getByText("Arrive well", { exact: true })).toBeVisible();
+    });
+
+    test("horizontal swipes land exactly on each step", async ({ page }) => {
+      await page.goto("/");
+      await page.waitForSelector("main", { timeout: 15000 });
+
+      const section = page.locator(SECTION);
+      await scrollUntilMounted(page, section);
+
+      const { sectionTop, sectionHeight, vh } = await flowGeometry(page);
+      const pin = sectionHeight - vh;
+
+      // Start parked on step 01.
+      await page.evaluate(
+        (y) => window.scrollTo({ top: y, behavior: "instant" as ScrollBehavior }),
+        sectionTop + pin * 0.05,
+      );
+      await page.waitForTimeout(200);
+
+      /**
+       * iOS Safari swipe. Real Touch objects aren't constructible in WebKit,
+       * so we dispatch native-named touch events with the two fields the
+       * handler reads (clientX/clientY) — exercising the same code path a
+       * finger flick takes.
+       */
+      const swipe = async (dx: number) => {
+        await page.evaluate(
+          ({ sel, dx }) => {
+            const sticky = document.querySelector(`${sel} div.sticky`) as HTMLElement;
+            const r = sticky.getBoundingClientRect();
+            const y = r.top + r.height / 2;
+            const x = r.left + r.width / 2;
+            const fire = (type: string, key: "touches" | "changedTouches", cx: number) => {
+              const ev = new Event(type, { bubbles: true, cancelable: true });
+              Object.defineProperty(ev, key, { value: [{ clientX: cx, clientY: y }] });
+              sticky.dispatchEvent(ev);
+            };
+            fire("touchstart", "touches", x);
+            fire("touchend", "changedTouches", x + dx);
+          },
+          { sel: SECTION, dx },
+        );
+        // smooth scrollTo + spring settle
+        await page.waitForTimeout(900);
+      };
+
+      // Forward through every step: each swipe must land the NEXT kicker in
+      // view and park the ribbon on an exact panel boundary.
+      for (let i = 1; i < KICKERS.length; i++) {
+        await swipe(-120);
+        await expect(
+          section.getByText(KICKERS[i], { exact: true }),
+          `swipe → step ${i + 1}`,
+        ).toBeVisible();
+
+        const off = await page.evaluate((sel) => {
+          const track = document.querySelector(
+            `${sel} div.sticky [style*="translateX"], ${sel} div.sticky .flex.h-full`,
+          ) as HTMLElement;
+          const m = new DOMMatrixReadOnly(getComputedStyle(track).transform);
+          return { x: m.m41, w: track.getBoundingClientRect().width };
+        }, SECTION);
+
+        // Panel pitch = track width / 5. The rest position must be an exact
+        // multiple of it (±6px of spring residue), never between two steps.
+        const pitch = off.w / KICKERS.length;
+        const stepsMoved = Math.abs(off.x) / pitch;
+        expect(
+          Math.abs(stepsMoved - Math.round(stepsMoved)) * pitch,
+          `step ${i + 1} rests on a panel boundary`,
+        ).toBeLessThan(6);
+        expect(Math.round(stepsMoved), `step ${i + 1} panel index`).toBe(i);
+      }
+
+      // And back: a rightward flick rewinds one step, also landing clean.
+      await swipe(120);
+      await expect(
+        section.getByText(KICKERS[KICKERS.length - 2], { exact: true }),
+      ).toBeVisible();
     });
   });
 }
