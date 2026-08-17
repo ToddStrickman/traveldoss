@@ -15,6 +15,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { SandEngineOptions } from "@/lib/sand/engine";
 import type { HeadlineLine } from "@/lib/sand/textSampler";
+import { ITALIC_SAMPLING, UPRIGHT_SAMPLING } from "@/lib/sand/samplingConfig";
 import type { LightingPreset, Story } from "@/lib/sand/story";
 
 export interface SandHeroProps {
@@ -38,11 +39,8 @@ export interface SandHeroProps {
 }
 
 const DEFAULT_LINES: HeadlineLine[] = [
-  { text: "Travel", tracking: -0.022, inkAlpha: 80 },
-  {
-    text: "Doss", italic: true, accent: ".", tracking: -0.014,
-    inkAlpha: 132, density: 0.72, edgeBoost: 0.18,
-  },
+  { text: "Travel", ...UPRIGHT_SAMPLING },
+  { text: "Doss", italic: true, accent: ".", ...ITALIC_SAMPLING },
 ];
 
 /**
