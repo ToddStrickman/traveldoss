@@ -1,5 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { motion, useScroll, useTransform, useSpring } from "motion/react";
+import {
+  motion,
+  AnimatePresence,
+  useScroll,
+  useTransform,
+  useSpring,
+  useReducedMotion,
+} from "motion/react";
 import { Link } from "@tanstack/react-router";
 import { Parallax } from "@/components/motion/Tilt";
 
@@ -142,6 +149,8 @@ function MobileFlow() {
   });
 
   const [active, setActive] = useState(0);
+  const [dir, setDir] = useState(1);
+  const reduce = useReducedMotion();
   useEffect(() => {
     const unsub = scrollYProgress.on("change", (v) => {
       // Map progress evenly across STEPS.length buckets.
@@ -149,7 +158,10 @@ function MobileFlow() {
         STEPS.length - 1,
         Math.max(0, Math.floor(v * STEPS.length)),
       );
-      setActive(i);
+      setActive((prev) => {
+        if (i !== prev) setDir(i > prev ? 1 : -1);
+        return i;
+      });
     });
     return () => unsub();
   }, [scrollYProgress]);
@@ -194,32 +206,79 @@ function MobileFlow() {
           </span>
         </div>
 
-        <div className="flex h-full w-full flex-col justify-center gap-4 px-6 pb-20 pt-16 md:pl-28 md:pr-[340px] landscape:gap-2 landscape:pt-10 landscape:pb-14">
-          <div className="flex items-center gap-3 text-[10px] font-medium uppercase tracking-[0.45em] text-ink/45">
-            <span className="text-seal">{step.n}</span>
-            <span className="h-px w-8 bg-ink/20" />
-            <span>{step.kicker}</span>
-          </div>
-          <h2
-            key={`t-${step.n}`}
-            className="text-[clamp(28px,11vw,44px)] font-normal leading-[0.95] tracking-[-0.02em] text-ink md:text-[clamp(40px,6vw,56px)] landscape:text-[clamp(22px,5vw,32px)]"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
-            {step.title}
-          </h2>
-          <p
-            key={`b-${step.n}`}
-            className="max-w-md text-[13px] leading-relaxed text-ink-soft md:max-w-xl md:text-[15px] landscape:text-[12px] landscape:leading-snug"
-          >
-            {step.body}
-          </p>
-          <Parallax
-            key={`v-${step.n}`}
-            depth={14}
-            className="relative mt-2 h-[38svh] w-full max-w-[560px] md:h-[42svh] landscape:h-[26svh] landscape:mt-1"
-          >
-            <Visual variant={step.visual} index={active} />
-          </Parallax>
+        {/* Each step slides in horizontally (in the scroll direction) and
+            fades, with staggered children — so the swap reads as a deliberate
+            lateral turn of the page rather than a hard cut. Reduced motion
+            collapses this to a plain cross-fade with no travel. */}
+        <div className="relative h-full w-full">
+          <AnimatePresence initial={false} custom={dir}>
+            <motion.div
+              key={step.n}
+              custom={dir}
+              initial={
+                reduce
+                  ? { opacity: 0 }
+                  : { opacity: 0, x: dir * 48, filter: "blur(6px)" }
+              }
+              animate={
+                reduce
+                  ? { opacity: 1 }
+                  : { opacity: 1, x: 0, filter: "blur(0px)" }
+              }
+              exit={
+                reduce
+                  ? { opacity: 0 }
+                  : { opacity: 0, x: dir * -48, filter: "blur(6px)" }
+              }
+              transition={
+                reduce
+                  ? { duration: 0.2, ease: "linear" }
+                  : { type: "spring", stiffness: 210, damping: 26, mass: 0.9 }
+              }
+              className="absolute inset-0 flex h-full w-full flex-col justify-center gap-4 px-6 pb-20 pt-16 will-change-transform md:pl-28 md:pr-[340px] landscape:gap-2 landscape:pt-10 landscape:pb-14"
+            >
+              <motion.div
+                initial={reduce ? false : { opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: reduce ? 0 : 0.05, duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                className="flex items-center gap-3 text-[10px] font-medium uppercase tracking-[0.45em] text-ink/45"
+              >
+                <span className="text-seal">{step.n}</span>
+                <span className="h-px w-8 bg-ink/20" />
+                <span>{step.kicker}</span>
+              </motion.div>
+              <motion.h2
+                initial={reduce ? false : { opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: reduce ? 0 : 0.09, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                className="text-[clamp(28px,11vw,44px)] font-normal leading-[0.95] tracking-[-0.02em] text-ink md:text-[clamp(40px,6vw,56px)] landscape:text-[clamp(22px,5vw,32px)]"
+                style={{ fontFamily: "var(--font-display)" }}
+              >
+                {step.title}
+              </motion.h2>
+              <motion.p
+                initial={reduce ? false : { opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: reduce ? 0 : 0.14, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                className="max-w-md text-[13px] leading-relaxed text-ink-soft md:max-w-xl md:text-[15px] landscape:text-[12px] landscape:leading-snug"
+              >
+                {step.body}
+              </motion.p>
+              <motion.div
+                initial={reduce ? false : { opacity: 0, y: 18, scale: 0.985 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ delay: reduce ? 0 : 0.18, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                className="mt-2 landscape:mt-1"
+              >
+                <Parallax
+                  depth={14}
+                  className="relative h-[38svh] w-full max-w-[560px] md:h-[42svh] landscape:h-[26svh]"
+                >
+                  <Visual variant={step.visual} index={active} />
+                </Parallax>
+              </motion.div>
+            </motion.div>
+          </AnimatePresence>
         </div>
 
         {/* Progress rail pinned to the sticky viewport. */}
