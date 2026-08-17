@@ -151,10 +151,15 @@ function MobileFlow() {
   const reduce = useReducedMotion();
   useEffect(() => {
     const unsub = scrollYProgress.on("change", (v) => {
-      // Map progress evenly across STEPS.length buckets.
+      // Snap rest positions sit at bucket CENTRES, so the indicator picks the
+      // nearest centre rather than flooring the bucket. Flooring made the
+      // pill flip a step early on viewports where the settled scroll lands a
+      // hair under a bucket edge (short landscape phones, tablets where
+      // --tds-flow-step is 80svh); nearest-centre matches the panel actually
+      // parked in the viewport at every size.
       const i = Math.min(
         STEPS.length - 1,
-        Math.max(0, Math.floor(v * STEPS.length)),
+        Math.max(0, Math.round(v * STEPS.length - 0.5)),
       );
       setActive(i);
     });
@@ -209,9 +214,18 @@ function MobileFlow() {
       setSnapTops(STEPS.map((_, i) => (pin * (i + 0.5)) / STEPS.length));
     };
     measure();
+    // Section height changes with the --tds-flow-step breakpoint and with
+    // content reflow (font swap), so observe the element too — a resize
+    // listener alone leaves stale snap points on tablets after rotation.
+    const el = containerRef.current;
+    const ro = el ? new ResizeObserver(measure) : null;
+    if (el && ro) ro.observe(el);
+    window.visualViewport?.addEventListener("resize", measure);
     window.addEventListener("resize", measure);
     window.addEventListener("orientationchange", measure);
     return () => {
+      ro?.disconnect();
+      window.visualViewport?.removeEventListener("resize", measure);
       window.removeEventListener("resize", measure);
       window.removeEventListener("orientationchange", measure);
     };
