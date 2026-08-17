@@ -735,3 +735,32 @@
     transition: none;
   }
 }
+
+/* Ready cheers: a single quick glow when the primary CTA becomes available. */
+@keyframes td-cheers {
+  0% {
+    box-shadow:
+      0 0 0 0 color-mix(in oklab, var(--seal, #c8a96a) 55%, transparent),
+      0 0 0 0 transparent;
+  }
+  35% {
+    box-shadow:
+      0 0 0 6px color-mix(in oklab, var(--seal, #c8a96a) 0%, transparent),
+      0 0 22px 4px color-mix(in oklab, var(--seal, #c8a96a) 55%, transparent);
+  }
+  100% {
+    box-shadow:
+      0 0 0 10px transparent,
+      0 0 0 0 transparent;
+  }
+}
+
+.td-cheers {
+  animation: td-cheers 900ms cubic-bezier(0.22, 1, 0.36, 1) 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .td-cheers {
+    animation: none;
+  }
+}
