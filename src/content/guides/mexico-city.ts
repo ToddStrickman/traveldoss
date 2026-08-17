@@ -8,6 +8,7 @@ import type { GuideDef } from "./types";
 export const mexicoCity: GuideDef = {
   slug: "mexico-city",
   destination: "Mexico City",
+  displayName: "Mexico City, Ravenous",
   title: "Mexico City: The Insider Guide",
   seoTitle: "Mexico City Itinerary — 5 Days: The Insider Guide | TravelDoss",
   dek: "The food-and-design capital of the moment, at 7,350 feet.",

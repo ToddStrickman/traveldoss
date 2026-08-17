@@ -8,6 +8,7 @@ import type { GuideDef } from "./types";
 export const albania: GuideDef = {
   slug: "albania",
   destination: "Albania",
+  displayName: "Albania Unlocked",
   title: "Albania: The Insider Guide",
   seoTitle: "Albania Itinerary — 7 Days: The Insider Guide | TravelDoss",
   dek: "The last easy secret in the Mediterranean — and exactly which 40 kilometers of it still count.",

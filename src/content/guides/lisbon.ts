@@ -8,6 +8,7 @@ import type { GuideDef } from "./types";
 export const lisbon: GuideDef = {
   slug: "lisbon",
   destination: "Lisbon",
+  displayName: "Lisbon Ahead of the Crowd",
   title: "Lisbon: The Insider Guide",
   seoTitle: "Lisbon Itinerary — 5 Days: The Insider Guide | TravelDoss",
   dek: "The city moved. The crowds haven't noticed yet.",

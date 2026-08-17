@@ -8,6 +8,7 @@ import type { GuideDef } from "./types";
 export const japanGoldenRoute: GuideDef = {
   slug: "japan-golden-route",
   destination: "Japan",
+  displayName: "Japan Off-Peak",
   title: "Japan's Golden Route: The Insider Guide",
   seoTitle: "Japan Golden Route Itinerary — 8 Days: The Insider Guide | TravelDoss",
   dek: "Tokyo to Kyoto, off-peak and off-axis.",
