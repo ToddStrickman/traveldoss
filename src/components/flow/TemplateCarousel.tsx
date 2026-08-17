@@ -16,8 +16,8 @@ import { trackTemplatePreviewed } from "@/lib/analytics";
 import { SandDrift } from "./SandDrift";
 
 /** Card slot geometry — fixed, so the row never reflows. */
-const CARD_W = 176;
-const CARD_H = 244;
+const CARD_W = 212;
+const CARD_H = 312;
 const GAP = 18;
 
 export function TemplateCarousel({
@@ -149,7 +149,7 @@ export function TemplateCarousel({
           aria-label="Dossier templates"
           tabIndex={0}
           onKeyDown={onKeyDown}
-          className="td-coverflow flex w-full min-w-0 snap-x snap-mandatory items-center overflow-x-auto scroll-smooth px-[calc(50%-88px)] pb-6 pt-2 outline-none focus-visible:ring-2 focus-visible:ring-seal/60 motion-reduce:scroll-auto"
+          className="td-coverflow flex w-full min-w-0 snap-x snap-mandatory items-center overflow-x-auto scroll-smooth px-[calc(50%-106px)] pb-6 pt-2 outline-none focus-visible:ring-2 focus-visible:ring-seal/60 motion-reduce:scroll-auto"
           style={{ gap: `${GAP}px`, scrollbarWidth: "none" }}
         >
           {SKINS.map((skin, i) => (
