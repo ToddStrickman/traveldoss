@@ -202,21 +202,21 @@ function MobileFlow() {
           </div>
           <h2
             key={`t-${step.n}`}
-            className="text-[clamp(28px,11vw,44px)] font-normal leading-[0.95] tracking-[-0.02em] text-ink landscape:text-[clamp(22px,5vw,32px)]"
+            className="text-[clamp(28px,11vw,44px)] font-normal leading-[0.95] tracking-[-0.02em] text-ink md:text-[clamp(40px,6vw,56px)] landscape:text-[clamp(22px,5vw,32px)]"
             style={{ fontFamily: "var(--font-display)" }}
           >
             {step.title}
           </h2>
           <p
             key={`b-${step.n}`}
-            className="max-w-md text-[13px] leading-relaxed text-ink-soft landscape:text-[12px] landscape:leading-snug"
+            className="max-w-md text-[13px] leading-relaxed text-ink-soft md:max-w-xl md:text-[15px] landscape:text-[12px] landscape:leading-snug"
           >
             {step.body}
           </p>
           <Parallax
             key={`v-${step.n}`}
             depth={14}
-            className="relative mt-2 h-[38svh] w-full landscape:h-[26svh] landscape:mt-1"
+            className="relative mt-2 h-[38svh] w-full max-w-[560px] md:h-[42svh] landscape:h-[26svh] landscape:mt-1"
           >
             <Visual variant={step.visual} index={active} />
           </Parallax>
