@@ -26,7 +26,9 @@
 @font-face {
   font-family: "Butler Stencil";
   src: url("/fonts/butler-stencil-medium.woff2") format("woff2");
-  font-weight: 500;
+  /* Single shipped weight: declare the 400–500 range so the grain sampler's
+     `400 <px> "Butler Stencil"` font-load probe matches this face. */
+  font-weight: 400 500;
   font-style: normal;
   font-display: swap;
 }
