@@ -8,7 +8,11 @@ import { TiltCard } from "@/components/motion/Tilt";
 import { InertRender } from "@/lib/skins/shared/views/parts";
 import { SkinPeek } from "@/components/mobile/SkinPeek";
 import { IngestionModal } from "@/components/flow/IngestionModal";
-import { AtelierTable, MobileCoverRail } from "@/components/flow/AtelierTable";
+import {
+  AtelierTable,
+  MobileCoverRail,
+  VerticalCoverStack,
+} from "@/components/flow/AtelierTable";
 import { GenerationLoader } from "@/components/GenerationLoader";
 import { SandHero } from "@/components/landing/SandHero";
 import { TopoBackground } from "@/components/landing/TopoBackground";
