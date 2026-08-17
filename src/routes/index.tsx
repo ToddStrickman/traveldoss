@@ -34,6 +34,7 @@ import type { Block } from "@/lib/skins/types";
 import { createTripFromIngestion, listTrips } from "@/lib/trips.functions";
 import { getTemporalPhase } from "@/lib/itinerary/temporal";
 import { MobileNavBar } from "@/components/mobile/MobileNavBar";
+import { ITALIC_SAMPLING, UPRIGHT_SAMPLING } from "@/lib/sand/samplingConfig";
 import { SiteFooter } from "@/components/legal/SiteFooter";
 import { LegalDocDialog } from "@/components/legal/LegalDocDialog";
 import { supabase } from "@/integrations/supabase/client";
