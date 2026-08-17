@@ -271,9 +271,9 @@ function Cover({
         role="option"
         aria-selected={selected}
         onClick={onClick}
-        className={`td-cover group relative block h-full w-full overflow-hidden rounded-[10px] text-left transition-shadow ${
+        className={`td-cover group relative block h-full w-full overflow-hidden rounded-[10px] text-left ${
           stamped ? "td-cover-stamped" : ""
-        }`}
+        } ${selected ? "td-cover-selected" : ""}`}
         style={{
           background: t.bg,
           color: t.ink,
@@ -294,14 +294,16 @@ function Cover({
           className="pointer-events-none absolute inset-y-0 left-0 w-[6px]"
           style={{ background: t.accent, opacity: 0.75 }}
         />
-        <div className="relative flex h-full flex-col justify-between px-4 py-5">
+        {/* Sheen — sweeps once as the cover centres, again on hover. */}
+        <span aria-hidden className="td-cover-sheen pointer-events-none absolute inset-0" />
+        <div className="relative flex h-full flex-col px-4 py-5">
           <div
             className="text-[8.5px] font-medium uppercase tracking-[0.32em]"
             style={{ color: t.inkSoft }}
           >
             Dossier
           </div>
-          <div>
+          <div className="mt-4">
             <div
               className="text-[26px] leading-[1.05]"
               style={{ fontFamily: t.fontDisplay, color: t.ink }}
@@ -316,14 +318,36 @@ function Cover({
               {skin.meta.tags[0]}
             </div>
           </div>
-          {/* Rule work — the volume's spine lines */}
-          <div className="flex flex-col gap-1.5" aria-hidden>
-            {[0.9, 0.6, 0.75].map((w, i) => (
-              <span
-                key={i}
-                className="h-px"
-                style={{ width: `${w * 100}%`, background: t.rule }}
-              />
+
+          {/* Day-part preview — placeholder rule work standing in for a day's
+              entries, so the taller cover uses its space. */}
+          <div className="mt-auto flex flex-col gap-2.5" aria-hidden>
+            {(["Morning", "Evening", "Night"] as const).map((part, pi) => (
+              <div key={part} className="flex flex-col gap-1">
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className="h-[3px] w-[3px] rounded-full"
+                    style={{ background: t.accent, opacity: 0.9 }}
+                  />
+                  <span
+                    className="text-[7.5px] font-medium uppercase tracking-[0.28em]"
+                    style={{ color: t.inkSoft }}
+                  >
+                    {part}
+                  </span>
+                </div>
+                {[0.86, 0.58].map((w, i) => (
+                  <span
+                    key={i}
+                    className="td-cover-line h-px"
+                    style={{
+                      width: `${w * 100}%`,
+                      background: t.rule,
+                      animationDelay: `${pi * 90 + i * 45}ms`,
+                    }}
+                  />
+                ))}
+              </div>
             ))}
           </div>
         </div>
