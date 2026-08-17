@@ -245,13 +245,19 @@ function MobileFlow() {
       style={{ height: `calc(${STEPS.length} * var(--tds-flow-step, 100svh))` }}
       aria-label="How TravelDoss works"
     >
-      {/* Invisible snap targets — one per step. */}
+      {/* Invisible snap targets — one per step, placed at the CENTRE of each
+          progress bucket measured over the pin distance, which is exactly
+          where a panel sits square in the viewport. */}
       <div className="pointer-events-none absolute inset-0" aria-hidden="true">
         {STEPS.map((s, i) => (
           <div
             key={s.n}
             className="absolute left-0 h-px w-px [scroll-snap-align:start]"
-            style={{ top: `calc(${i} * var(--tds-flow-step, 100svh) + 2px)` }}
+            style={{
+              top: `calc(${i + 0.5} * var(--tds-flow-step, 100svh) - ${
+                ((i + 0.5) / STEPS.length) * 100
+              }svh)`,
+            }}
           />
         ))}
       </div>
