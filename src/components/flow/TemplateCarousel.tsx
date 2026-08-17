@@ -14,6 +14,7 @@ import { SKINS } from "@/lib/skins/registry";
 import type { SkinModule } from "@/lib/skins/types";
 import { trackTemplatePreviewed } from "@/lib/analytics";
 import { SandDrift } from "./SandDrift";
+import { DossierCoverArt } from "./DossierCover";
 
 /** Card slot geometry — fixed, so the row never reflows. */
 const CARD_W = 212;
