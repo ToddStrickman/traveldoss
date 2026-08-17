@@ -175,7 +175,7 @@ function MobileFlow() {
         {/* Prominent top progress pill — always visible while the flow is
             pinned, so the user knows exactly where they are (01/05 → 05/05)
             and how much scrolling is left. */}
-        <div className="pointer-events-none absolute left-1/2 top-[max(0.75rem,env(safe-area-inset-top))] z-30 flex -translate-x-1/2 items-center gap-3 rounded-full border border-ink/10 bg-paper/70 px-3.5 py-1.5 shadow-[0_1px_0_rgba(255,255,255,0.6)_inset,0_4px_16px_-8px_rgba(0,0,0,0.25)] backdrop-blur-md landscape:top-2 landscape:py-1">
+        <div className="pointer-events-none absolute left-1/2 top-[max(0.75rem,env(safe-area-inset-top))] z-30 flex -translate-x-1/2 items-center md:left-28 md:translate-x-0 gap-3 rounded-full border border-ink/10 bg-paper/70 px-3.5 py-1.5 shadow-[0_1px_0_rgba(255,255,255,0.6)_inset,0_4px_16px_-8px_rgba(0,0,0,0.25)] backdrop-blur-md landscape:top-2 landscape:py-1">
           <span
             className="tabular-nums text-[13px] font-semibold leading-none tracking-tight text-ink"
             aria-live="polite"
