@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
   motion,
-  AnimatePresence,
   useScroll,
   useTransform,
   useSpring,
@@ -149,7 +148,6 @@ function MobileFlow() {
   });
 
   const [active, setActive] = useState(0);
-  const [dir, setDir] = useState(1);
   const reduce = useReducedMotion();
   useEffect(() => {
     const unsub = scrollYProgress.on("change", (v) => {
@@ -158,13 +156,23 @@ function MobileFlow() {
         STEPS.length - 1,
         Math.max(0, Math.floor(v * STEPS.length)),
       );
-      setActive((prev) => {
-        if (i !== prev) setDir(i > prev ? 1 : -1);
-        return i;
-      });
+      setActive(i);
     });
     return () => unsub();
   }, [scrollYProgress]);
+
+  // Same mechanic as desktop: one continuous horizontal track that slides
+  // laterally with scroll progress, so the steps move as a single ribbon
+  // instead of cutting between cards.
+  // Each panel rests centred while its bucket is active and glides to the
+  // next one across the bucket boundary, so the ribbon never sits half-way
+  // between two steps at rest.
+  const centers = STEPS.map((_, i) => (i + 0.5) / STEPS.length);
+  const offsets = STEPS.map((_, i) => `${-(i / STEPS.length) * 100}%`);
+  const xRaw = useTransform(scrollYProgress, centers, offsets, {
+    clamp: true,
+  });
+  const x = useSpring(xRaw, { stiffness: 130, damping: 26, mass: 0.4 });
 
   // Scroll snapping: the document scroller only gets snap points while the
   // flow is on screen, so the rest of the page keeps free scrolling. Each
@@ -220,8 +228,6 @@ function MobileFlow() {
     goToStep(active + (dx < 0 ? 1 : -1));
   };
 
-  const step = STEPS[active];
-
   return (
     <section
       ref={containerRef}
@@ -253,119 +259,72 @@ function MobileFlow() {
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
       >
-        {/* Prominent top progress pill — always visible while the flow is
-            pinned, so the user knows exactly where they are (01/05 → 05/05)
-            and how much scrolling is left. */}
-        <div className="pointer-events-none absolute left-1/2 top-[max(0.75rem,env(safe-area-inset-top))] z-30 flex -translate-x-1/2 items-center md:left-28 md:translate-x-0 gap-3 rounded-full border border-ink/10 bg-paper/70 px-3.5 py-1.5 shadow-[0_1px_0_rgba(255,255,255,0.6)_inset,0_4px_16px_-8px_rgba(0,0,0,0.25)] backdrop-blur-md landscape:top-2 landscape:py-1">
-          <span
-            className="tabular-nums text-[13px] font-semibold leading-none tracking-tight text-ink"
-            aria-live="polite"
-          >
-            <span className="text-seal">{String(active + 1).padStart(2, "0")}</span>
-            <span className="text-ink/30"> / {String(STEPS.length).padStart(2, "0")}</span>
-          </span>
-          <span className="relative block h-1 w-24 overflow-hidden rounded-full bg-ink/10">
+        {/* Header rail at the very TOP: counter, progress bar, step dots and
+            an explicit "keep scrolling" cue so it's obvious the section is a
+            five-step walkthrough you're about to move through. Space is
+            reserved (fixed height) so nothing shifts as steps change. */}
+        <div
+          className="pointer-events-none absolute inset-x-0 top-0 z-30 px-5 md:pl-28 md:pr-[340px]"
+          style={{ paddingTop: "calc(env(safe-area-inset-top) + 68px)" }}
+        >
+          <div className="flex h-9 items-center gap-3 rounded-full border border-ink/10 bg-paper/70 px-3.5 shadow-[0_1px_0_rgba(255,255,255,0.6)_inset,0_4px_16px_-8px_rgba(0,0,0,0.25)] backdrop-blur-md">
             <span
-              className="absolute inset-y-0 left-0 rounded-full bg-seal transition-[width] duration-300 ease-out"
-              style={{ width: `${((active + 1) / STEPS.length) * 100}%` }}
-            />
-          </span>
-          <span className="text-[9px] font-medium uppercase tracking-[0.35em] text-ink/45">
-            The Flow
-          </span>
-        </div>
-
-        {/* Each step slides in horizontally (in the scroll direction) and
-            fades, with staggered children — so the swap reads as a deliberate
-            lateral turn of the page rather than a hard cut. Reduced motion
-            collapses this to a plain cross-fade with no travel. */}
-        <div className="relative h-full w-full">
-          <AnimatePresence initial={false} custom={dir}>
-            <motion.div
-              key={step.n}
-              custom={dir}
-              initial={
-                reduce
-                  ? { opacity: 0 }
-                  : { opacity: 0, x: dir * 48, filter: "blur(6px)" }
-              }
-              animate={
-                reduce
-                  ? { opacity: 1 }
-                  : { opacity: 1, x: 0, filter: "blur(0px)" }
-              }
-              exit={
-                reduce
-                  ? { opacity: 0 }
-                  : { opacity: 0, x: dir * -48, filter: "blur(6px)" }
-              }
-              transition={
-                reduce
-                  ? { duration: 0.2, ease: "linear" }
-                  : { type: "spring", stiffness: 210, damping: 26, mass: 0.9 }
-              }
-              className="absolute inset-0 flex h-full w-full flex-col justify-center gap-4 px-6 pb-20 pt-16 will-change-transform md:pl-28 md:pr-[340px] landscape:gap-2 landscape:pt-10 landscape:pb-14"
+              className="tabular-nums text-[13px] font-semibold leading-none tracking-tight text-ink"
+              aria-live="polite"
             >
-              <motion.div
-                initial={reduce ? false : { opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: reduce ? 0 : 0.05, duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                className="flex items-center gap-3 text-[10px] font-medium uppercase tracking-[0.45em] text-ink/45"
-              >
-                <span className="text-seal">{step.n}</span>
-                <span className="h-px w-8 bg-ink/20" />
-                <span>{step.kicker}</span>
-              </motion.div>
-              <motion.h2
-                initial={reduce ? false : { opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: reduce ? 0 : 0.09, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-                className="text-[clamp(28px,11vw,44px)] font-normal leading-[0.95] tracking-[-0.02em] text-ink md:text-[clamp(40px,6vw,56px)] landscape:text-[clamp(22px,5vw,32px)]"
-                style={{ fontFamily: "var(--font-display)" }}
-              >
-                {step.title}
-              </motion.h2>
-              <motion.p
-                initial={reduce ? false : { opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: reduce ? 0 : 0.14, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-                className="max-w-md text-[13px] leading-relaxed text-ink-soft md:max-w-xl md:text-[15px] landscape:text-[12px] landscape:leading-snug"
-              >
-                {step.body}
-              </motion.p>
-              <motion.div
-                initial={reduce ? false : { opacity: 0, y: 18, scale: 0.985 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ delay: reduce ? 0 : 0.18, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                className="mt-2 landscape:mt-1"
-              >
-                <Parallax
-                  depth={14}
-                  className="relative h-[38svh] w-full max-w-[560px] md:h-[42svh] landscape:h-[26svh]"
-                >
-                  <Visual variant={step.visual} index={active} />
-                </Parallax>
-              </motion.div>
-            </motion.div>
-          </AnimatePresence>
+              <span className="text-seal">{String(active + 1).padStart(2, "0")}</span>
+              <span className="text-ink/40"> / {String(STEPS.length).padStart(2, "0")}</span>
+            </span>
+            <span className="relative block h-1 flex-1 overflow-hidden rounded-full bg-ink/10">
+              <span
+                className="absolute inset-y-0 left-0 rounded-full bg-seal transition-[width] duration-300 ease-out"
+                style={{ width: `${((active + 1) / STEPS.length) * 100}%` }}
+              />
+            </span>
+            <span className="inline-flex shrink-0 items-center gap-1.5">
+              {STEPS.map((s, i) => (
+                <span
+                  key={s.n}
+                  className={`h-1.5 rounded-full transition-all ${
+                    i === active ? "w-4 bg-seal" : "w-1.5 bg-ink/25"
+                  }`}
+                />
+              ))}
+            </span>
+          </div>
+          <div className="mt-1.5 flex h-4 items-center justify-between text-[9px] font-medium uppercase tracking-[0.35em] text-ink/50">
+            <span>The Flow · 5 steps</span>
+            <span
+              className={`inline-flex items-center gap-1 transition-opacity duration-300 ${
+                active === STEPS.length - 1 ? "opacity-0" : "opacity-100"
+              }`}
+            >
+              Keep scrolling
+              <span aria-hidden="true" className={reduce ? "" : "animate-bounce"}>
+                ↓
+              </span>
+            </span>
+          </div>
         </div>
 
-        {/* Progress rail pinned to the sticky viewport. */}
-        <div className="pointer-events-none absolute bottom-[max(1rem,env(safe-area-inset-bottom))] left-0 right-0 z-20 flex items-center justify-between px-6 text-[10px] font-medium uppercase tracking-[0.4em] text-ink/45 md:pl-28 md:pr-[340px] landscape:bottom-2">
-          <span className="inline-flex items-center gap-2">
-            <span className="text-seal">{String(active + 1).padStart(2, "0")}</span>
-            <span className="text-ink/30">/ {String(STEPS.length).padStart(2, "0")}</span>
-          </span>
-          <span className="inline-flex items-center gap-1.5">
+        {/* One continuous horizontal track — the same mechanic as desktop, so
+            the steps glide sideways as a single ribbon instead of cutting
+            between cards. */}
+        <div
+          className="absolute inset-0 overflow-hidden"
+          style={{
+            paddingTop: "calc(env(safe-area-inset-top) + 148px)",
+            paddingBottom: "calc(env(safe-area-inset-bottom) + 88px)",
+          }}
+        >
+          <motion.div
+            style={{ x, width: `${STEPS.length * 100}%` }}
+            className="flex h-full will-change-transform"
+          >
             {STEPS.map((s, i) => (
-              <span
-                key={s.n}
-                className={`h-1.5 rounded-full transition-all ${
-                  i === active ? "w-6 bg-seal" : "w-1.5 bg-ink/20"
-                }`}
-              />
+              <MobilePanel key={s.n} step={s} index={i} total={STEPS.length} />
             ))}
-          </span>
+          </motion.div>
         </div>
       </div>
     </section>
@@ -387,6 +346,47 @@ function Counter({
       <motion.span className="text-seal">{idx}</motion.span>
       <span className="text-ink/30">/ {String(total).padStart(2, "0")}</span>
     </span>
+  );
+}
+
+/** Mobile step panel — one slot on the horizontal track. Copy on top, the
+ *  card visual below it, sized so the card is the dominant object on screen
+ *  and there is no dead band under it. */
+function MobilePanel({
+  step,
+  index,
+  total,
+}: {
+  step: Step;
+  index: number;
+  total: number;
+}) {
+  return (
+    <div
+      className="flex h-full shrink-0 flex-col justify-start gap-3 px-5 md:pl-28 md:pr-[340px] landscape:gap-1.5"
+      style={{ width: `${100 / total}%` }}
+    >
+      <div className="flex items-center gap-3 text-[10px] font-medium uppercase tracking-[0.45em] text-ink/50">
+        <span className="text-seal">{step.n}</span>
+        <span className="h-px w-8 bg-ink/25" />
+        <span>{step.kicker}</span>
+      </div>
+      <h2
+        className="text-[clamp(26px,9.5vw,40px)] font-normal leading-[0.95] tracking-[-0.02em] text-ink md:text-[clamp(36px,5.5vw,52px)] landscape:text-[clamp(20px,4.5vw,30px)]"
+        style={{ fontFamily: "var(--font-display)" }}
+      >
+        {step.title}
+      </h2>
+      <p className="max-w-md text-[13px] leading-relaxed text-ink-soft md:max-w-xl md:text-[15px] landscape:text-[12px] landscape:leading-snug">
+        {step.body}
+      </p>
+      <Parallax
+        depth={12}
+        className="relative mt-1 min-h-0 w-full max-w-[560px] flex-1"
+      >
+        <Visual variant={step.visual} index={index} />
+      </Parallax>
+    </div>
   );
 }
 
