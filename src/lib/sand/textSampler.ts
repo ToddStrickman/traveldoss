@@ -18,6 +18,12 @@ export interface HeadlineLine {
   leadChars?: number;
   /** Font-size multiple for the leading characters. Default 1 (no swash). */
   leadScale?: number;
+  /**
+   * Letter-spacing in em, applied between every glyph of the line (and before
+   * the accent glyph). Negative tightens — the stencil face sets loose by
+   * default, so the wordmark wants a small negative value to read as one word.
+   */
+  tracking?: number;
 }
 
 export interface SampledPoint {
@@ -61,7 +67,8 @@ interface SampleOptions {
 
 const RASTER_FONT_PX = 220;   // large enough that grid sampling stays crisp
 const GRID_STEP = 2;          // raster px between samples ≈ grain spacing
-const LINE_GAP = 0.98;        // line-height multiple, matches leading-[0.95]
+const LINE_GAP = 0.88;        // line-height multiple — stencil face carries
+                              // dead em space, so the two words sit tighter
 /**
  * Alpha floor for "this pixel is ink". Low enough that the tapered, dry ends
  * of brush strokes still become grains — that feathering IS the brush.
@@ -93,6 +100,20 @@ export function sampleHeadline(opts: SampleOptions): SampledText {
   const fontFor = (italic: boolean, px = RASTER_FONT_PX) =>
     `${italic ? "italic " : ""}${fontWeight} ${px}px "${fontFamily}", Georgia, serif`;
 
+  /** Width of `text` under the current font, including per-glyph tracking. */
+  const widthOf = (text: string, trackPx: number) =>
+    text ? ctx.measureText(text).width + trackPx * text.length : 0;
+
+  /** Draw `text` glyph by glyph so tracking applies; returns advance used. */
+  const drawTracked = (text: string, x: number, baseline: number, trackPx: number) => {
+    let cursor = x;
+    for (const ch of text) {
+      ctx.fillText(ch, cursor, baseline);
+      cursor += ctx.measureText(ch).width + trackPx;
+    }
+    return cursor - x;
+  };
+
   /** Split a line into its swash-capital head and its normal-size tail. */
   const split = (line: HeadlineLine) => {
     const n = line.leadChars ?? 0;
@@ -108,11 +129,12 @@ export function sampleHeadline(opts: SampleOptions): SampledText {
   // Measure each line (body + optional accent glyph) to size the canvas.
   const lineMetrics = lines.map((line) => {
     const { lead, leadPx, rest } = split(line);
+    const track = line.tracking ?? 0;
     ctx.font = fontFor(!!line.italic, leadPx);
-    const leadW = lead ? ctx.measureText(lead).width : 0;
+    const leadW = widthOf(lead, track * leadPx);
     ctx.font = fontFor(!!line.italic);
-    const bodyW = leadW + ctx.measureText(rest).width;
-    const accentW = line.accent ? ctx.measureText(line.accent).width : 0;
+    const bodyW = leadW + widthOf(rest, track * RASTER_FONT_PX);
+    const accentW = widthOf(line.accent ?? "", track * RASTER_FONT_PX);
     return { lead, leadPx, leadW, rest, bodyW, accentW, totalW: bodyW + accentW };
   });
 
@@ -130,18 +152,19 @@ export function sampleHeadline(opts: SampleOptions): SampledText {
   ctx.textBaseline = "alphabetic";
   lines.forEach((line, i) => {
     const m = lineMetrics[i];
+    const track = line.tracking ?? 0;
     const x = align === "left" ? 0 : (rasterW - m.totalW) / 2;
     const baseline = RASTER_FONT_PX * 0.9 + overshoot + i * lineHeight;
     ctx.fillStyle = "rgb(255,0,0)";
     if (m.lead) {
       ctx.font = fontFor(!!line.italic, m.leadPx);
-      ctx.fillText(m.lead, x, baseline);
+      drawTracked(m.lead, x, baseline, track * m.leadPx);
     }
     ctx.font = fontFor(!!line.italic);
-    ctx.fillText(m.rest, x + m.leadW, baseline);
+    drawTracked(m.rest, x + m.leadW, baseline, track * RASTER_FONT_PX);
     if (line.accent) {
       ctx.fillStyle = "rgb(0,255,0)";
-      ctx.fillText(line.accent, x + m.bodyW, baseline);
+      drawTracked(line.accent, x + m.bodyW, baseline, track * RASTER_FONT_PX);
     }
   });
 
