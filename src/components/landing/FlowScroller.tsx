@@ -1,5 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { motion, useScroll, useTransform, useSpring } from "motion/react";
+import {
+  motion,
+  AnimatePresence,
+  useScroll,
+  useTransform,
+  useSpring,
+  useReducedMotion,
+} from "motion/react";
 import { Link } from "@tanstack/react-router";
 import { Parallax } from "@/components/motion/Tilt";
 
