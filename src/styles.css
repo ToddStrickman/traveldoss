@@ -113,7 +113,8 @@
 :root {
   --radius: 0.875rem;
 
-  /* Brand red — deep ruby that sits with navy + champagne, NOT the error red. */
+  /* Reserved for error/destructive states only — never for headline or body
+   * type. Brand accent is champagne gold (--seal). */
   --tds-ruby: oklch(0.63 0.17 24);
 
   /* TravelDoss — Dark-Mode Skeuomorphic Revival.
