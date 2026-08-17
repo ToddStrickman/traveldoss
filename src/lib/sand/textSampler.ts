@@ -18,6 +18,12 @@ export interface HeadlineLine {
   leadChars?: number;
   /** Font-size multiple for the leading characters. Default 1 (no swash). */
   leadScale?: number;
+  /**
+   * Letter-spacing in em, applied between every glyph of the line (and before
+   * the accent glyph). Negative tightens — the stencil face sets loose by
+   * default, so the wordmark wants a small negative value to read as one word.
+   */
+  tracking?: number;
 }
 
 export interface SampledPoint {
@@ -61,7 +67,8 @@ interface SampleOptions {
 
 const RASTER_FONT_PX = 220;   // large enough that grid sampling stays crisp
 const GRID_STEP = 2;          // raster px between samples ≈ grain spacing
-const LINE_GAP = 0.98;        // line-height multiple, matches leading-[0.95]
+const LINE_GAP = 0.88;        // line-height multiple — stencil face carries
+                              // dead em space, so the two words sit tighter
 /**
  * Alpha floor for "this pixel is ink". Low enough that the tapered, dry ends
  * of brush strokes still become grains — that feathering IS the brush.
