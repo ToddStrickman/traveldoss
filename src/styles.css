@@ -589,6 +589,7 @@
     opacity 320ms var(--ease-elegant);
 }
 .td-cover-seal {
+  position: relative;
   transition:
     opacity 320ms var(--ease-elegant),
     transform 320ms cubic-bezier(0.2, 1.2, 0.28, 1);
