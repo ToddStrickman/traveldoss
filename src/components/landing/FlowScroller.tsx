@@ -77,7 +77,7 @@ function DesktopFlow() {
   return (
     <section
       ref={containerRef}
-      className="relative z-10 hidden md:block"
+      className="relative z-10 hidden lg:block"
       style={{ height: `${STEPS.length * 52}vh` }}
       aria-label="How TravelDoss works"
     >
@@ -164,7 +164,7 @@ function MobileFlow() {
       // the pin distance to change mid-scroll and feel like a bad snap.
       // overscroll-behavior-y:contain prevents rubber-band from leaking into
       // the next section on the last step.
-      className="tds-flow-mobile relative z-10 block md:hidden [overscroll-behavior-y:contain]"
+      className="tds-flow-mobile relative z-10 block lg:hidden [overscroll-behavior-y:contain]"
       style={{ height: `calc(${STEPS.length} * var(--tds-flow-step, 100svh))` }}
       aria-label="How TravelDoss works"
     >
