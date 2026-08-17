@@ -690,10 +690,14 @@
   }
   .td-cover-sheen,
   .td-cover-selected .td-cover-sheen,
-  .td-cover-selected .td-cover-line,
   .td-cover:hover .td-cover-sheen {
     animation: none;
     opacity: 0;
+  }
+  .td-cover-selected .td-cover-line {
+    animation: none;
+    opacity: 1;
+    transform: none;
   }
   .td-cover-stamped .td-cover-seal {
     transform: none;
