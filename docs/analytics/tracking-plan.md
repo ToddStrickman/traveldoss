@@ -21,6 +21,7 @@ audit ledger must be complete and adblock-proof.
 
 | Event | When | Properties |
 | --- | --- | --- |
+| `flow_step_navigated` | A landing-page flow step is reached via the prev/next controls, arrow keys, or a swipe | `step`, `from_step`, `via` (`button` \| `keyboard` \| `swipe`), `surface` (`mobile` \| `desktop`) |
 | `compose_opened` | The intake modal opens | `entry` (`mobile_bar` \| `dock` \| `template_card`), `template_id` (null when the template stage opens first) |
 | `template_previewed` | A cover settles in the centre of the stage-1 carousel (throttled, so a swipe does not spray events) | `template_id` |
 | `template_picked` | A cover is chosen in stage 1 | `template_id`, `index` |
