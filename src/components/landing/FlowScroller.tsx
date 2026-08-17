@@ -519,7 +519,8 @@ function MobileFlow() {
         {/* Explicit prev/next controls, clear of the bottom dock. */}
         <div
           className="pointer-events-none absolute inset-x-0 z-30 flex justify-center px-5"
-          style={{ bottom: "calc(env(safe-area-inset-bottom) + 28px)" }}
+          // Sits above the fixed mobile nav dock (bottom-4 + ~56px tall).
+          style={{ bottom: "calc(env(safe-area-inset-bottom) + 96px)" }}
         >
           <StepControls active={active} onGo={(i) => goToStep(i, "button")} />
         </div>
