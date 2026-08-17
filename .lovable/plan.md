@@ -95,6 +95,14 @@ the ten skin palettes, so accessibility stays at 100.
   (`"source" | "review"`) with a `"template"` stage; render the filmstrip from
   the `SKINS` registry. Selecting a skin advances to `"source"` and reports the
   choice up so the parent's mint call uses it.
+- Stage 1 carousel: reuse the existing cover-flow implementation pattern from
+  `ActivityImages` (scroll-snap + transform/opacity per offset) rather than
+  adding a carousel dependency; covers render from each skin's own tokens, with
+  fixed card dimensions so CLS stays 0. Sand echo mounts the existing engine at
+  a low grain budget and pauses off-screen; every motion path has a
+  `prefers-reduced-motion` fallback.
+- Analytics for the choosing moment: `template_previewed` (card centred, with
+  `template_id`) is throttled so a swipe does not spray events.
 - `src/routes/index.tsx`: `openDock()` stops pre-seeding `SKINS[0]` and opens
   the modal on the template stage; `openWithTemplate()` is unchanged. The parent
   needs an `onTemplateChange` handler so the modal's pick lands in `picked`
