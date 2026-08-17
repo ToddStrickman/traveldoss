@@ -211,7 +211,7 @@ function MobileFlow() {
             lateral turn of the page rather than a hard cut. Reduced motion
             collapses this to a plain cross-fade with no travel. */}
         <div className="relative h-full w-full">
-          <AnimatePresence initial={false} mode="popLayout" custom={dir}>
+          <AnimatePresence initial={false} custom={dir}>
             <motion.div
               key={step.n}
               custom={dir}
