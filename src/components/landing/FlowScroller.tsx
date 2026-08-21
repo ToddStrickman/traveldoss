@@ -253,6 +253,12 @@ function DesktopFlow() {
   );
 }
 
+/** Width of one mobile step panel as a percentage of the viewport. The
+ *  remaining 18% is split between the two edges, so ~9% of each neighbouring
+ *  step bleeds into view and invites the swipe. Single source of truth for the
+ *  track width, the panel width and the rest offsets. */
+const PANEL_PCT = 82;
+
 function MobileFlow() {
   // Scroll-pin: the section is STEPS.length viewport-heights tall and
   // holds a sticky 100dvh viewport that swaps step content based on the
@@ -291,12 +297,24 @@ function MobileFlow() {
   // Each panel rests centred while its bucket is active and glides to the
   // next one across the bucket boundary, so the ribbon never sits half-way
   // between two steps at rest.
+  // Panels are narrower than the viewport (PANEL_PCT) so a sliver of the
+  // neighbouring steps bleeds in at both edges — the visual promise that
+  // there is more walkthrough to swipe to. All three numbers below (track
+  // width, panel width, rest offsets) derive from that one constant so they
+  // can never drift apart.
   const centers = STEPS.map((_, i) => (i + 0.5) / STEPS.length);
-  const offsets = STEPS.map((_, i) => `${-(i / STEPS.length) * 100}%`);
+  // 1% of the container is 100 / (total * PANEL_PCT) percent of the track, so
+  // the centring shift of (100 - PANEL_PCT) / 2 container-percent becomes:
+  const CENTER_SHIFT =
+    (((100 - PANEL_PCT) / 2) * 100) / (STEPS.length * PANEL_PCT);
+  const offsets = STEPS.map(
+    (_, i) => `${-(i / STEPS.length) * 100 + CENTER_SHIFT}%`,
+  );
   const xRaw = useTransform(scrollYProgress, centers, offsets, {
     clamp: true,
   });
   const x = useSpring(xRaw, { stiffness: 130, damping: 26, mass: 0.4 });
+
 
   // Scroll snapping: the document scroller only gets snap points while the
   // flow is on screen, so the rest of the page keeps free scrolling. Each
@@ -507,13 +525,21 @@ function MobileFlow() {
           }}
         >
           <motion.div
-            style={{ x, width: `${STEPS.length * 100}%` }}
+            style={{ x, width: `${STEPS.length * PANEL_PCT}%` }}
             className="flex h-full will-change-transform"
           >
             {STEPS.map((s, i) => (
-              <MobilePanel key={s.n} step={s} index={i} total={STEPS.length} />
+              <MobilePanel
+                key={s.n}
+                step={s}
+                index={i}
+                total={STEPS.length}
+                active={i === active}
+                reduce={!!reduce}
+              />
             ))}
           </motion.div>
+
         </div>
 
         {/* Explicit prev/next controls, clear of the bottom dock. */}
@@ -549,43 +575,71 @@ function Counter({
 
 /** Mobile step panel — one slot on the horizontal track. Copy on top, the
  *  card visual below it, sized so the card is the dominant object on screen
- *  and there is no dead band under it. */
+ *  and there is no dead band under it. Panels are narrower than the viewport,
+ *  so the neighbours bleed in at both edges; inactive ones are dimmed and
+ *  pushed back a touch so the eye still reads a single active card. */
 function MobilePanel({
   step,
   index,
   total,
+  active,
+  reduce,
 }: {
   step: Step;
   index: number;
   total: number;
+  active: boolean;
+  reduce: boolean;
 }) {
   return (
     <div
-      className="flex h-full shrink-0 flex-col justify-start gap-3 px-5 md:pl-28 md:pr-[340px] landscape:gap-1.5"
-      style={{ width: `${100 / total}%` }}
+      data-flow-panel={index}
+      data-flow-panel-active={active ? "true" : "false"}
+      className={`flex h-full shrink-0 flex-col justify-start px-1.5 md:pl-28 md:pr-[340px] ${
+        reduce ? "" : "transition-[opacity,transform] duration-500 ease-out"
+      } ${active ? "opacity-100" : "pointer-events-none opacity-40"}`}
+      style={{
+        width: `${100 / total}%`,
+        transform: active || reduce ? undefined : "scale(0.95)",
+      }}
+      aria-hidden={active ? undefined : true}
     >
-      <div className="flex items-center gap-3 text-[10px] font-medium uppercase tracking-[0.45em] text-ink/50">
-        <span className="text-seal">{step.n}</span>
-        <span className="h-px w-8 bg-ink/25" />
-        <span>{step.kicker}</span>
+      {/* Card frame: gives every step a defined edge, so the sliver of the
+          next step showing past the viewport edge reads as another card
+          waiting — the cue that entices the swipe. */}
+      <div
+        className={`flex h-full flex-col justify-start gap-3 rounded-[20px] border px-3.5 py-4 landscape:gap-1.5 ${
+          reduce ? "" : "transition-[border-color,box-shadow] duration-500"
+        } ${
+          active
+            ? "border-ink/25 bg-paper/[0.07] shadow-[0_10px_40px_-20px_rgba(0,0,0,0.6)]"
+            : "border-ink/20 bg-paper/[0.04]"
+        }`}
+      >
+        <div className="flex items-center gap-3 text-[10px] font-medium uppercase tracking-[0.45em] text-ink/50">
+          <span className="text-seal">{step.n}</span>
+          <span className="h-px w-8 bg-ink/25" />
+          <span>{step.kicker}</span>
+        </div>
+        <h2
+          className="text-[clamp(26px,9vw,40px)] font-normal leading-[0.95] tracking-[-0.02em] text-ink md:text-[clamp(36px,5.5vw,52px)] landscape:text-[clamp(20px,4.5vw,30px)]"
+          style={{ fontFamily: "var(--font-display)" }}
+        >
+          {step.title}
+        </h2>
+        <p className="max-w-md text-[13px] leading-relaxed text-ink-soft md:max-w-xl md:text-[15px] landscape:text-[12px] landscape:leading-snug">
+          {step.body}
+        </p>
+        <Parallax
+          depth={12}
+          className="relative mt-1 min-h-0 w-full max-w-[560px] flex-1"
+        >
+          <Visual variant={step.visual} index={index} />
+        </Parallax>
       </div>
-      <h2
-        className="text-[clamp(26px,9.5vw,40px)] font-normal leading-[0.95] tracking-[-0.02em] text-ink md:text-[clamp(36px,5.5vw,52px)] landscape:text-[clamp(20px,4.5vw,30px)]"
-        style={{ fontFamily: "var(--font-display)" }}
-      >
-        {step.title}
-      </h2>
-      <p className="max-w-md text-[13px] leading-relaxed text-ink-soft md:max-w-xl md:text-[15px] landscape:text-[12px] landscape:leading-snug">
-        {step.body}
-      </p>
-      <Parallax
-        depth={12}
-        className="relative mt-1 min-h-0 w-full max-w-[560px] flex-1"
-      >
-        <Visual variant={step.visual} index={index} />
-      </Parallax>
     </div>
   );
+
 }
 
 function Panel({ step, index, total }: { step: Step; index: number; total: number }) {
