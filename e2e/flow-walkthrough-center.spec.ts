@@ -174,10 +174,10 @@ test.describe("mobile flow walkthrough @393px", () => {
       assertCentered(all, i);
       assertBleed(all, i);
 
-      // Counter and progress rail track the centred panel.
+      // Progress state tracks the centred panel.
       await expect(
-        page.getByText(`/ 0${TOTAL}`, { exact: false }).first(),
-      ).toBeVisible();
+        page.locator(`[data-flow-panel="${i}"][data-flow-panel-active="true"]`),
+      ).toHaveCount(1);
 
       if (VISUAL) {
         await expect(page.locator("section.tds-flow-mobile")).toHaveScreenshot(
