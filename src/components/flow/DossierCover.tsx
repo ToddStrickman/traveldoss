@@ -78,37 +78,28 @@ export function DossierCoverArt({
           </div>
         </div>
 
-        {/* Day-part preview — placeholder rule work standing in for a day's
-            entries, so the cover uses its space without faking content. */}
+        {/* Layout preview — placeholder rule work standing in for the
+            itinerary, shaped like the layout you're browsing. */}
         <div className={`mt-auto flex flex-col ${s.gap}`} aria-hidden>
-          {(["Morning", "Evening", "Night"] as const).map((part, pi) => (
-            <div key={part} className="flex flex-col gap-1">
-              <div className="flex items-center gap-1.5">
-                <span
-                  className="h-[3px] w-[3px] rounded-full"
-                  style={{ background: t.accent, opacity: 0.9 }}
-                />
-                <span
-                  className={`${s.part} font-medium uppercase tracking-[0.28em]`}
-                  style={{ color: t.inkSoft }}
-                >
-                  {part}
-                </span>
-              </div>
-              {[0.86, 0.58].map((w, i) => (
-                <span
-                  key={i}
-                  className="td-cover-line h-px"
-                  style={{
-                    width: `${w * 100}%`,
-                    background: t.rule,
-                    animationDelay: `${pi * 90 + i * 45}ms`,
-                  }}
-                />
-              ))}
-            </div>
-          ))}
+          {variant === "grid" ? (
+            <GridArt t={t} part={s.part} />
+          ) : variant === "horizontal" ? (
+            <HorizontalArt t={t} part={s.part} />
+          ) : (
+            <VerticalArt t={t} part={s.part} gap={s.gap} />
+          )}
+          <span
+            className={`${s.part} font-medium uppercase tracking-[0.28em]`}
+            style={{ color: `color-mix(in oklab, ${t.inkSoft} 88%, ${t.ink})` }}
+          >
+            {variant === "grid"
+              ? "The whole trip at a glance"
+              : variant === "horizontal"
+                ? "One day at a time"
+                : "The full read, top to bottom"}
+          </span>
         </div>
+
       </div>
 
       {/* Wax seal — warms as the cover centres, stamps in on choose. */}
