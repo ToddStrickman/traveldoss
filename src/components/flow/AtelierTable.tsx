@@ -29,7 +29,7 @@ import {
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import type { SkinModule } from "@/lib/skins/registry";
 import { InertRender } from "@/lib/skins/shared/views/parts";
-import { DossierCoverArt } from "./DossierCover";
+import { DossierCoverArt, type CoverVariant } from "./DossierCover";
 
 /** Ring geometry. Step angle × radius sets how far covers travel per stop.
  *  CARD_W is the card's TRUE rendered width — the centered cover displays
@@ -387,13 +387,20 @@ export function MobileCoverRail({
   skins,
   onPick,
   pickingId,
+  variant = "horizontal",
 }: {
   skins: SkinModule[];
   onPick: (id: string) => void;
   pickingId: string | null;
+  variant?: CoverVariant;
 }) {
   return (
-    <MobileCoverRailInner skins={skins} onPick={onPick} pickingId={pickingId} />
+    <MobileCoverRailInner
+      skins={skins}
+      onPick={onPick}
+      pickingId={pickingId}
+      variant={variant}
+    />
   );
 }
 
@@ -404,11 +411,13 @@ function CoverCard({
   onPick,
   pickingId,
   className = "",
+  variant = "horizontal",
 }: {
   skin: SkinModule;
   onPick: (id: string) => void;
   pickingId: string | null;
   className?: string;
+  variant?: CoverVariant;
 }) {
   const busy = pickingId === skin.meta.id;
   return (
@@ -417,7 +426,7 @@ function CoverCard({
       style={{ background: skin.tokens.bg }}
     >
       <div className="td-cover relative h-[300px] w-full overflow-hidden rounded-t-[10px]">
-        <DossierCoverArt skin={skin} />
+        <DossierCoverArt skin={skin} variant={variant} />
       </div>
       <div className="border-t px-4 py-3" style={{ borderColor: skin.tokens.rule }}>
         <h3
@@ -496,10 +505,12 @@ function MobileCoverRailInner({
   skins,
   onPick,
   pickingId,
+  variant,
 }: {
   skins: SkinModule[];
   onPick: (id: string) => void;
   pickingId: string | null;
+  variant: CoverVariant;
 }) {
   const railRef = useRef<HTMLDivElement>(null);
   const [center, setCenter] = useState(0);
@@ -555,6 +566,7 @@ function MobileCoverRailInner({
             skin={skin}
             onPick={onPick}
             pickingId={pickingId}
+            variant={variant}
             className="w-[78vw] max-w-[340px] shrink-0 snap-center"
           />
         ))}
