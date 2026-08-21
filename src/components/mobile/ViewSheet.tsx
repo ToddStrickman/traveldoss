@@ -19,7 +19,7 @@ const OPTIONS: Array<{
   Icon: typeof Rows3;
 }> = [
   { value: "vertical", label: "Vertical", hint: "The editorial read, day by day", Icon: Rows3 },
-  { value: "horizontal", label: "Horizontal", hint: "Swipe through days side by side", Icon: Columns3 },
+  { value: "horizontal", label: "Horizontal", hint: "Days side by side — slide activities between them", Icon: Columns3 },
   { value: "grid", label: "Grid", hint: "The whole trip on one board", Icon: LayoutGrid },
 ];
 
