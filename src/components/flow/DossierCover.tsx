@@ -12,15 +12,22 @@
  */
 import type { SkinModule } from "@/lib/skins/types";
 
+/** Which layout's unique benefit the placeholder art should express. */
+export type CoverVariant = "horizontal" | "vertical" | "grid";
+
 export function DossierCoverArt({
   skin,
   selected = true,
   /** Scales the interior type/rules for smaller or larger cover slots. */
   size = "md",
+  /** Placeholder art matches the layout being browsed: sideways day cards
+   *  (horizontal), one flowing ribbon (vertical), a day board (grid). */
+  variant = "horizontal",
 }: {
   skin: SkinModule;
   selected?: boolean;
   size?: "sm" | "md" | "lg";
+  variant?: CoverVariant;
 }) {
   const t = skin.tokens;
   const s =
@@ -29,6 +36,7 @@ export function DossierCoverArt({
       : size === "sm"
         ? { pad: "px-3.5 py-4", eyebrow: "text-[8px]", title: "text-[22px]", tag: "text-[10px]", part: "text-[7px]", gap: "gap-2", seal: "h-5 w-5 text-[7px]" }
         : { pad: "px-4 py-5", eyebrow: "text-[8.5px]", title: "text-[26px]", tag: "text-[10.5px]", part: "text-[7.5px]", gap: "gap-2.5", seal: "h-6 w-6 text-[8px]" };
+
 
   return (
     <>
