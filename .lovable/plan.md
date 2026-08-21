@@ -1,30 +1,31 @@
-# Outcome-led placeholder copy for all three view options
+# Walkthrough neighbor bleed + centering e2e at 393px
 
-The three captions in the dossier selector currently describe shapes and mechanics ("The full read, top to bottom", "The whole trip at a glance", "Days side by side"). This change rewrites all three to lead with what the traveler actually gets out of the view, then names the mechanic that delivers it — so the switcher answers "why would I pick this?" instead of "what does this look like?".
+Two connected pieces of work on the mobile five-step Flow walkthrough.
 
-## New copy — dossier selector covers
+## 1. Purposeful neighbor bleed
 
-| View | Current | New |
-| --- | --- | --- |
-| Horizontal | Days side by side — slide activities between them | Fix an overpacked day in seconds — days sit side by side, so activities slide between them |
-| Vertical | The full read, top to bottom | Never lose your place — read the whole trip in one unbroken scroll |
-| Grid | The whole trip at a glance | Catch the empty afternoon before you land — every day on one board |
+Today each mobile panel is exactly one viewport wide, so the walkthrough looks like a single static screen — there is no visual promise that a step 02 exists just off the right edge. The change gives the active step a card-like slot narrower than the viewport, so a sliver of the next (and previous) step bleeds in at the edges and invites the swipe.
 
-## New copy — layout sheet on /t/&lt;slug&gt;
+- Panels become ~86% of the viewport width with the track offset so the active panel lands dead-center; roughly 7% of each neighbor shows on either side.
+- Neighbors are visually subordinate, not just cropped: they render dimmed and very slightly scaled down and pushed back, so the eye reads one active card with material continuing past the frame. The active panel returns to full opacity/scale as it centers, driven by the existing scroll progress motion value.
+- The right-edge bleed on step 01 and the left-edge bleed on step 05 are the "there is more this way" cue that pairs with the existing "Keep scrolling" hint; the outer edges stay clean (no phantom sixth card).
+- `prefers-reduced-motion` keeps the bleed and centering but drops the scale/opacity interpolation to a static treatment.
+- Desktop (`lg:`) and the untouched `Panel` component are not changed.
 
-Same voice, trimmed so each row stays one line at 375px.
+## 2. Automated e2e: `e2e/flow-walkthrough-center.spec.ts`
 
-| View | Current hint | New hint |
-| --- | --- | --- |
-| Horizontal | Days side by side — slide activities between them | Move activities between days |
-| Vertical | The editorial read, day by day | Read straight through, no jumping |
-| Grid | The whole trip on one board | See where a day is empty |
+New spec at 393x852 (iPhone 14/15-class), following the conventions in `templates-mobile-visual.spec.ts`.
+
+- Drives the walkthrough one step at a time with real touch gestures (`dispatchTouchEvent`-style swipes on the sticky pane), plus a second pass using the prev/next controls.
+- After each step settles, measures the active panel's bounding box and asserts its center is within a small tolerance (about 2px) of the viewport center at 393px — this is the "perfectly centered" guarantee.
+- Asserts the bleed is real and bounded: on steps 02-04 both neighbors are partially visible with each visible sliver inside an expected band, on step 01 only the right neighbor bleeds, on step 05 only the left one.
+- Asserts the step counter, progress bar width and active dot track the centered panel, and that the page never gains horizontal document scroll.
+- Opt-in pixel snapshots behind `VISUAL=1`, matching the existing spec's approach, since baselines are machine-specific.
 
 ## Technical notes
 
-- `src/components/flow/DossierCover.tsx` (~lines 95-100): the caption ternary for `grid` / `horizontal` / `vertical`.
-- `src/components/mobile/ViewSheet.tsx` (`OPTIONS`, lines 21-23): the `hint` strings for all three modes.
-- `e2e/templates-mobile-visual.spec.ts` pins the cover captions in its `CAPTIONS` map — update all three entries in the same change so the 393px mobile regression test stays green.
-- Text-only edits: no layout, art, token, or behavior changes. Cover captions keep the existing single-line uppercase treatment with reserved space, so CLS and contrast are untouched.
-- The longer cover captions are checked at 375px and 393px; if a line runs past two lines in the cover, the mechanic clause is shortened rather than the outcome clause.
-- Verification: `npx vitest run` (all pass), `tsc --noEmit` clean.
+- `src/components/landing/FlowScroller.tsx`: mobile track (lines ~509-517) and `MobilePanel` (lines ~553-589). Panel width moves off `100 / total` to a `PANEL_VW` constant; the `x` transform range and the snap-target math (`snapTops`, `goToStep`'s bucket-center formula, lines ~301-395) are recomputed from the same constant so native snapping still lands panels centered. One shared constant drives width, track offset and snap tops — they must not be allowed to drift.
+- Existing swipe threshold (44px) and `useStepKeys` behavior stay as they are.
+- Analytics: the new spec asserts nothing about events, but the bleed change adds no new measurable moment, so no new events. `flow_step_navigated` already fires per step with `via` set to `swipe` / `button`.
+- Register the new spec in the existing Playwright project config; no new dependencies.
+- Verification: `npx vitest run` and `tsc --noEmit` clean, then `npx playwright test e2e/flow-walkthrough-center.spec.ts` green. Accessibility and CLS on the walkthrough must not regress — reserved space in the header rail and control row is untouched.
