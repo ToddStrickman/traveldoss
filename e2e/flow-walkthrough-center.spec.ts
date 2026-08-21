@@ -175,7 +175,9 @@ test.describe("mobile flow walkthrough @393px", () => {
       assertBleed(all, i);
 
       // Counter and progress rail track the centred panel.
-      await expect(page.getByText(`/ 0${TOTAL}`, { exact: false })).toBeVisible();
+      await expect(
+        page.getByText(`/ 0${TOTAL}`, { exact: false }).first(),
+      ).toBeVisible();
 
       if (VISUAL) {
         await expect(page.locator("section.tds-flow-mobile")).toHaveScreenshot(
