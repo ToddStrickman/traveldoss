@@ -113,3 +113,116 @@ export function DossierCoverArt({
     </>
   );
 }
+
+type Tk = SkinModule["tokens"];
+
+/** Vertical: one continuous ribbon of day-parts flowing downward. */
+function VerticalArt({ t, part, gap }: { t: Tk; part: string; gap: string }) {
+  return (
+    <div className={`relative flex flex-col ${gap} pl-3`}>
+      <span
+        className="absolute bottom-1 left-0 top-1 w-px"
+        style={{ background: t.accent, opacity: 0.55 }}
+      />
+      {(["Morning", "Evening", "Night"] as const).map((label, pi) => (
+        <div key={label} className="flex flex-col gap-1">
+          <div className="flex items-center gap-1.5">
+            <span
+              className="-ml-[13px] h-[3px] w-[3px] rounded-full"
+              style={{ background: t.accent, opacity: 0.9 }}
+            />
+            <span
+              className={`${part} font-medium uppercase tracking-[0.28em]`}
+              style={{ color: t.inkSoft }}
+            >
+              {label}
+            </span>
+          </div>
+          {[0.86, 0.58].map((w, i) => (
+            <span
+              key={i}
+              className="td-cover-line h-px"
+              style={{
+                width: `${w * 100}%`,
+                background: t.rule,
+                animationDelay: `${pi * 90 + i * 45}ms`,
+              }}
+            />
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Horizontal: day cards receding sideways, the swipe-one-day-at-a-time read. */
+function HorizontalArt({ t, part }: { t: Tk; part: string }) {
+  return (
+    <div className="flex items-end gap-1.5 overflow-hidden">
+      {[0, 1, 2].map((i) => (
+        <div
+          key={i}
+          className="td-cover-line flex flex-col gap-1 rounded-[3px] p-1.5"
+          style={{
+            border: `1px solid ${t.rule}`,
+            width: i === 0 ? "48%" : i === 1 ? "32%" : "22%",
+            opacity: i === 0 ? 1 : i === 1 ? 0.7 : 0.42,
+            animationDelay: `${i * 90}ms`,
+          }}
+        >
+          <span
+            className={`${part} font-medium uppercase tracking-[0.2em]`}
+            style={{ color: t.inkSoft }}
+          >
+            {`D${i + 1}`}
+          </span>
+          {[0.9, 0.65, 0.78].map((w, j) => (
+            <span
+              key={j}
+              className="h-px"
+              style={{ width: `${w * 100}%`, background: t.rule }}
+            />
+          ))}
+        </div>
+      ))}
+      <span
+        className="mb-2 h-px shrink-0"
+        style={{ width: 14, background: t.accent, opacity: 0.8 }}
+      />
+    </div>
+  );
+}
+
+/** Grid: a small board of day tiles — everything on one surface. */
+function GridArt({ t, part }: { t: Tk; part: string }) {
+  return (
+    <div className="grid grid-cols-3 gap-1.5">
+      {[0, 1, 2, 3, 4, 5].map((i) => (
+        <div
+          key={i}
+          className="td-cover-line flex flex-col gap-[3px] rounded-[3px] p-1"
+          style={{
+            border: `1px solid ${t.rule}`,
+            background: i === 0 ? `color-mix(in oklab, ${t.accent} 12%, transparent)` : "transparent",
+            animationDelay: `${i * 50}ms`,
+          }}
+        >
+          <span
+            className={`${part} font-medium uppercase tracking-[0.18em]`}
+            style={{ color: t.inkSoft }}
+          >
+            {`D${i + 1}`}
+          </span>
+          {[0.95, 0.6].map((w, j) => (
+            <span
+              key={j}
+              className="h-px"
+              style={{ width: `${w * 100}%`, background: t.rule }}
+            />
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
