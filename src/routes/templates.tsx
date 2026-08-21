@@ -24,6 +24,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { PRICE_WORDS, SITE_URL } from "@/lib/site";
 import { peekPendingComposer } from "@/lib/mint-pending";
+import { capture } from "@/lib/analytics";
 import { MintTermsGate, type MintTermsGateHandle } from "@/components/legal/MintTermsGate";
 
 function TemplatesSkeleton() {
@@ -307,8 +308,10 @@ function TemplatesPage() {
       setBrowse(saved);
   }, []);
   const setBrowseMode = (mode: BrowseMode) => {
+    if (mode === browse) return;
     setBrowse(mode);
     window.localStorage.setItem("templates:browse", mode);
+    capture("template_browse_mode_changed", { mode, from_mode: browse });
   };
   const navigate = useNavigate();
   const { pick: pickParam } = Route.useSearch();
@@ -621,27 +624,33 @@ function TemplatesPage() {
           </div>
         </div>
 
+        {/* Mobile: every mode is the same sideways swipe — only the cover's
+            placeholder art changes, so the layout's benefit reads before you
+            commit and the switcher is never a scroll away. */}
+        {filteredSkins.length > 0 ? (
+          <div className="mt-6 md:hidden">
+            <MobileCoverRail
+              key={browse}
+              skins={filteredSkins}
+              onPick={handlePick}
+              pickingId={picking}
+              variant={browse}
+            />
+          </div>
+        ) : null}
+
         {browse === "horizontal" && filteredSkins.length > 0 ? (
-          <>
-            <div className="mt-8 hidden md:block">
-              <AtelierTable
-                skins={filteredSkins}
-                onPick={handlePick}
-                pickingId={picking}
-              />
-            </div>
-            <div className="mt-8 md:hidden">
-              <MobileCoverRail
-                skins={filteredSkins}
-                onPick={handlePick}
-                pickingId={picking}
-              />
-            </div>
-          </>
+          <div className="mt-8 hidden md:block">
+            <AtelierTable
+              skins={filteredSkins}
+              onPick={handlePick}
+              pickingId={picking}
+            />
+          </div>
         ) : null}
 
         {browse === "vertical" && filteredSkins.length > 0 ? (
-          <div className="mt-8">
+          <div className="mt-8 hidden md:block">
             <VerticalCoverStack
               skins={filteredSkins}
               onPick={handlePick}
@@ -652,7 +661,11 @@ function TemplatesPage() {
 
         <div
           className={`mt-8 grid grid-cols-1 gap-6 sm:mt-10 sm:gap-8 md:grid-cols-2 lg:grid-cols-3 ${
-            browse === "grid" || filteredSkins.length === 0 ? "" : "hidden"
+            filteredSkins.length === 0
+              ? ""
+              : browse === "grid"
+                ? "hidden md:grid"
+                : "hidden"
           }`}
         >
           {filteredSkins.map((skin) => (

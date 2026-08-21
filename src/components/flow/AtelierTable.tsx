@@ -494,6 +494,7 @@ export function VerticalCoverStack({
           skin={skin}
           onPick={onPick}
           pickingId={pickingId}
+          variant="vertical"
           className="w-full"
         />
       ))}
