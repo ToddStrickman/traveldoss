@@ -26,3 +26,4 @@ audit ledger must be complete and adblock-proof.
 | `template_previewed` | A cover settles in the centre of the stage-1 carousel (throttled, so a swipe does not spray events) | `template_id` |
 | `template_picked` | A cover is chosen in stage 1 | `template_id`, `index` |
 | `template_switched` | The top-bar template chip is used to change the dossier mid-compose | `from_template_id`, `template_id` |
+| `template_browse_mode_changed` | The /templates browse switcher changes layout (grid / horizontal / vertical) | `mode`, `from_mode` |
