@@ -24,6 +24,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { PRICE_WORDS, SITE_URL } from "@/lib/site";
 import { peekPendingComposer } from "@/lib/mint-pending";
+import { capture } from "@/lib/analytics";
 import { MintTermsGate, type MintTermsGateHandle } from "@/components/legal/MintTermsGate";
 
 function TemplatesSkeleton() {
@@ -289,6 +290,44 @@ function SkinCard({
 /** The three ways to browse the selection area. */
 type BrowseMode = "grid" | "horizontal" | "vertical";
 
+/** The three-way browse switcher. Same control on both breakpoints; only
+ *  where it sits differs. */
+function BrowseToggle({
+  value,
+  onChange,
+}: {
+  value: BrowseMode;
+  onChange: (mode: BrowseMode) => void;
+}) {
+  return (
+    <div
+      className="grid grid-cols-3 gap-1 rounded-full border border-ink/10 p-1 sm:mx-auto sm:w-[420px]"
+      role="group"
+      aria-label="Browse mode"
+    >
+      {(
+        [
+          ["grid", "Grid"],
+          ["horizontal", "Horizontal"],
+          ["vertical", "Vertical"],
+        ] as const
+      ).map(([mode, label]) => (
+        <button
+          key={mode}
+          type="button"
+          onClick={() => onChange(mode)}
+          aria-pressed={value === mode}
+          className={`tap inline-flex min-h-11 items-center justify-center rounded-full px-2 text-[10px] font-medium uppercase tracking-[0.2em] transition-colors duration-300 motion-reduce:transition-none ${
+            value === mode ? "bg-seal/12 text-seal" : "text-ink/50 hover:text-ink"
+          }`}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function TemplatesPage() {
   const [picking, setPicking] = useState<string | null>(null);
   const [peekId, setPeekId] = useState<string | null>(null);
@@ -307,8 +346,10 @@ function TemplatesPage() {
       setBrowse(saved);
   }, []);
   const setBrowseMode = (mode: BrowseMode) => {
+    if (mode === browse) return;
     setBrowse(mode);
     window.localStorage.setItem("templates:browse", mode);
+    capture("template_browse_mode_changed", { mode, from_mode: browse });
   };
   const navigate = useNavigate();
   const { pick: pickParam } = Route.useSearch();
@@ -621,27 +662,39 @@ function TemplatesPage() {
           </div>
         </div>
 
+        {/* Mobile: every mode is the same sideways swipe — only the cover's
+            placeholder art changes, so the layout's benefit reads before you
+            commit and the switcher is never a scroll away. */}
+        {filteredSkins.length > 0 ? (
+          <div className="mt-6 md:hidden">
+            <BrowseToggle value={browse} onChange={setBrowseMode} />
+          </div>
+        ) : null}
+
+        {filteredSkins.length > 0 ? (
+          <div className="mt-5 md:hidden">
+            <MobileCoverRail
+              key={browse}
+              skins={filteredSkins}
+              onPick={handlePick}
+              pickingId={picking}
+              variant={browse}
+            />
+          </div>
+        ) : null}
+
         {browse === "horizontal" && filteredSkins.length > 0 ? (
-          <>
-            <div className="mt-8 hidden md:block">
-              <AtelierTable
-                skins={filteredSkins}
-                onPick={handlePick}
-                pickingId={picking}
-              />
-            </div>
-            <div className="mt-8 md:hidden">
-              <MobileCoverRail
-                skins={filteredSkins}
-                onPick={handlePick}
-                pickingId={picking}
-              />
-            </div>
-          </>
+          <div className="mt-8 hidden md:block">
+            <AtelierTable
+              skins={filteredSkins}
+              onPick={handlePick}
+              pickingId={picking}
+            />
+          </div>
         ) : null}
 
         {browse === "vertical" && filteredSkins.length > 0 ? (
-          <div className="mt-8">
+          <div className="mt-8 hidden md:block">
             <VerticalCoverStack
               skins={filteredSkins}
               onPick={handlePick}
@@ -652,7 +705,11 @@ function TemplatesPage() {
 
         <div
           className={`mt-8 grid grid-cols-1 gap-6 sm:mt-10 sm:gap-8 md:grid-cols-2 lg:grid-cols-3 ${
-            browse === "grid" || filteredSkins.length === 0 ? "" : "hidden"
+            filteredSkins.length === 0
+              ? ""
+              : browse === "grid"
+                ? "hidden md:grid"
+                : "hidden"
           }`}
         >
           {filteredSkins.map((skin) => (
@@ -682,33 +739,12 @@ function TemplatesPage() {
             </div>
           )}
         </div>
-        {/* View switcher — sits at the very bottom of the selection area so
-            the covers stay the first thing you touch. */}
+        {/* View switcher — desktop keeps it at the foot of the selection
+            area; mobile renders it above the rail (see below) so changing
+            your mind is never a scroll away. */}
         {filteredSkins.length > 0 ? (
-          <div
-            className="mt-8 grid grid-cols-3 gap-1 rounded-full border border-ink/10 p-1 sm:mx-auto sm:w-[420px]"
-            role="group"
-            aria-label="Browse mode"
-          >
-            {(
-              [
-                ["grid", "Grid"],
-                ["horizontal", "Horizontal"],
-                ["vertical", "Vertical"],
-              ] as const
-            ).map(([mode, label]) => (
-              <button
-                key={mode}
-                type="button"
-                onClick={() => setBrowseMode(mode)}
-                aria-pressed={browse === mode}
-                className={`tap inline-flex min-h-11 items-center justify-center rounded-full px-2 text-[10px] font-medium uppercase tracking-[0.2em] transition-colors duration-300 motion-reduce:transition-none ${
-                  browse === mode ? "bg-seal/12 text-seal" : "text-ink/50 hover:text-ink"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
+          <div className="mt-8 hidden md:block">
+            <BrowseToggle value={browse} onChange={setBrowseMode} />
           </div>
         ) : null}
         {/* Clearance for the floating mobile nav pill. */}
