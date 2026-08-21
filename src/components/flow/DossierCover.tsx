@@ -95,7 +95,7 @@ export function DossierCoverArt({
             {variant === "grid"
               ? "The whole trip at a glance"
               : variant === "horizontal"
-                ? "One day at a time"
+                ? "Days side by side — slide activities between them"
                 : "The full read, top to bottom"}
           </span>
         </div>
