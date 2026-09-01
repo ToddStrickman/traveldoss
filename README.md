@@ -15,20 +15,16 @@ Travel DOSS turns a pasted itinerary into a beautifully designed dossier — fli
 
 ## Required setup
 
-### Unsplash
+Copy [`.env.example`](.env.example) to `.env` and fill in the values. That file
+is the complete, maintained list of every key the app reads, grouped by
+purpose, with a note on which are injected by Lovable in production.
 
-1. Create a developer app at [unsplash.com/developers](https://unsplash.com/developers)
-2. Copy the **Access Key** — paste into the secret prompt.
+Keys prefixed `VITE_` ship to the browser and are public by design. Every
+other key is server-only and read from `process.env` inside server functions.
 
-## Secrets used
-
-| Secret | Purpose |
-|---|---|
-| `UNSPLASH_ACCESS_KEY` | Hero images |
-| `LOVABLE_API_KEY` | (auto-injected) AI Gateway calls |
-| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, etc. | (auto-injected) Database access |
-
-All secrets are server-side only and read from `process.env` inside server functions.
+The database schema, storage bucket, and scheduled jobs are all declared in
+`supabase/migrations/`; a fresh Supabase project needs nothing created by
+hand.
 
 ## Output modes
 
