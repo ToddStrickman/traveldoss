@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import type { DebugReport } from "@/lib/itinerary/debug-report";
+import { capDebugReport, type DebugReport } from "@/lib/itinerary/debug-report";
 
 /** Persist a debug report for the authenticated user. */
 export const saveDebugReport = createServerFn({ method: "POST" })
@@ -20,6 +20,10 @@ export const saveDebugReport = createServerFn({ method: "POST" })
     if (!report || typeof report !== "object") {
       throw new Error("Invalid report payload.");
     }
+    // attempts_count records the true number of attempts; the stored report
+    // is bounded (see DEBUG_REPORT_LIMITS) so a bad parse can't persist an
+    // unbounded blob. Rows are also swept after 90 days by pg_cron.
+    const capped = capDebugReport(report);
     const { data: row, error } = await supabase
       .from("parse_debug_reports")
       .insert({
@@ -29,7 +33,7 @@ export const saveDebugReport = createServerFn({ method: "POST" })
         outcome: String(report.outcome ?? "unknown").slice(0, 32),
         attempts_count: Array.isArray(report.attempts) ? report.attempts.length : 0,
         // Stored as jsonb; cast through unknown to satisfy generated Json type.
-        report: JSON.parse(JSON.stringify(report)),
+        report: JSON.parse(JSON.stringify(capped)),
       })
       .select("id, created_at")
       .single();
