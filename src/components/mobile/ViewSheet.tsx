@@ -7,7 +7,7 @@
  * budget) opening a sheet with the three layouts.
  */
 import * as React from "react";
-import { LayoutGrid, Rows3, Columns3, Check } from "lucide-react";
+import { LayoutGrid, Rows3, Columns3, Check, ChevronDown } from "lucide-react";
 import { TdSheet } from "@/components/mobile/TdSheet";
 import type { SkinView } from "@/lib/skins/types";
 import { cn } from "@/lib/utils";
@@ -32,7 +32,7 @@ export function ViewPill({
   value: SkinView;
   onChange: (v: SkinView) => void;
   className?: string;
-  /** floating = fixed bottom-right pill; inline = bare icon trigger for bars. */
+  /** floating = fixed bottom-right pill; inline = labelled trigger for bars. */
   variant?: "floating" | "inline";
 }) {
   const [open, setOpen] = React.useState(false);
@@ -47,9 +47,10 @@ export function ViewPill({
         aria-haspopup="dialog"
         aria-label={`Layout: ${active.label}. Change layout`}
         className={cn(
+          "group",
           variant === "floating"
             ? "fixed right-4 z-50 inline-flex h-12 items-center gap-2 rounded-full border border-white/15 bg-paper/90 px-4 text-ink shadow-elev backdrop-blur-md transition-colors hover:border-seal hover:text-seal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal md:hidden"
-            : "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-ink/5 hover:text-seal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal sm:hidden",
+            : "inline-flex h-11 shrink-0 items-center gap-2 rounded-md px-2 text-ink transition-[background-color,transform] hover:bg-ink/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal motion-safe:active:scale-95 sm:hidden",
           className,
         )}
         style={
@@ -58,11 +59,27 @@ export function ViewPill({
             : undefined
         }
       >
-        <active.Icon className="h-4 w-4 text-seal" aria-hidden />
+        {/* Glyph tracks the active layout, so the trigger says where you are
+         *  as well as that it can be changed. The seal dot is the active mark. */}
+        <span className="relative inline-flex shrink-0 items-center" aria-hidden>
+          <active.Icon className="h-4 w-4 text-seal" />
+          {variant === "inline" ? (
+            <span className="absolute -right-1 -top-1 h-1.5 w-1.5 rounded-full bg-seal ring-2 ring-paper" />
+          ) : null}
+        </span>
         {variant === "floating" ? (
           <span className="text-[10px] font-medium uppercase tracking-[0.3em]">{active.label}</span>
-        ) : null}
+        ) : (
+          <>
+            <span className="text-[10px] font-medium uppercase tracking-[0.3em]">Layout</span>
+            <ChevronDown
+              className="h-3 w-3 shrink-0 text-ink-soft transition-transform group-hover:text-ink motion-safe:group-active:translate-y-0.5"
+              aria-hidden
+            />
+          </>
+        )}
       </button>
+
 
       <TdSheet open={open} onOpenChange={setOpen} title="Layout">
         <div role="radiogroup" aria-label="Layout" className="flex flex-col pb-2">
