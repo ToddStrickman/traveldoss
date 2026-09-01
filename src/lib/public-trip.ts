@@ -19,7 +19,6 @@ export type PublicTripRow = {
   slug: string;
   destination: string;
   subtitle: string | null;
-  tone: string | null;
   template_id: string | null;
   hero_image_url: string | null;
   start_date: string | null;
