@@ -86,17 +86,29 @@ export const getDossierBySlug = createServerFn({ method: "GET" })
     if (!trip) return { trip: null };
 
     // Access audit trail: every view of the public link is recorded
-    // server-side (adblock-proof) before the payload leaves the server.
-    // user_id is used only for the owner flag and never shipped.
+    // server-side (adblock-proof). It used to be awaited here, which put a
+    // database write (and, for signed-in callers, an auth lookup) in front
+    // of every anonymous page view. It is still recorded on the server and
+    // still cannot be forged from the browser; it just finishes after the
+    // response has gone out. user_id is used only for the owner flag and
+    // never shipped.
     const { user_id: ownerUserId, ...publicRow } = trip;
-    const { recordTripAccess, resolveOptionalActor } = await import("@/lib/access-log.server");
-    await recordTripAccess({
-      tripId: trip.id,
-      tripSlug: trip.slug,
-      eventType: "view",
-      actorUserId: await resolveOptionalActor(),
-      ownerUserId,
-    });
+    const [{ recordTripAccess, resolveOptionalActor }, { deferAfterResponse }] =
+      await Promise.all([
+        import("@/lib/access-log.server"),
+        import("@/lib/request-context.server"),
+      ]);
+    deferAfterResponse(
+      (async () => {
+        await recordTripAccess({
+          tripId: trip.id,
+          tripSlug: trip.slug,
+          eventType: "view",
+          actorUserId: await resolveOptionalActor(),
+          ownerUserId,
+        });
+      })(),
+    );
     // Strips content/dates from expired trips — the re-publish gate must be
     // enforced here, not in the client render.
     return projectPublicTrip(publicRow as PublicTripRow);
