@@ -1,0 +1,14 @@
+-- Phase 1 hardening (backend audit, 2026-08-31).
+--
+-- `google_tokens` was designed server-only ("Tokens are sensitive: only
+-- readable/writable via server (service role). No client policies." in
+-- 20260514184001), but 20260601205003 added owner-scoped SELECT/INSERT/UPDATE/
+-- DELETE policies, so any signed-in browser could read its own Google access
+-- and refresh tokens in plaintext through the Data API. That turns a session
+-- hijack into durable Google-account access.
+--
+-- Nothing in the app reads or writes this table: every Google call goes
+-- through the Lovable connector gateway with project-level keys. Dropping the
+-- table removes its policies and trigger with it. A server-only token store
+-- comes back with per-user Gmail ingest, if that ships.
+DROP TABLE IF EXISTS public.google_tokens;
