@@ -9,7 +9,6 @@ function row(overrides: Partial<PublicTripRow> = {}): PublicTripRow {
     slug: "marguerite-abc123",
     destination: "Roma & Sicilia",
     subtitle: "Two nights bookending Rome",
-    tone: "Marguerite",
     template_id: "marguerite",
     hero_image_url: "https://example.com/hero.jpg",
     start_date: "2026-11-20",

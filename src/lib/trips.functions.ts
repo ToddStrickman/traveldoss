@@ -58,9 +58,7 @@ export const createTripFromIngestion = createServerFn({ method: "POST" })
         user_id: userId,
         destination,
         subtitle: skin.meta.personality,
-        tone: skin.meta.codename,
         template_id: skin.meta.id,
-        original_template_id: skin.meta.id,
         slug,
         visibility: "unlisted",
         status: "draft",
@@ -124,7 +122,7 @@ export const getOwnDossierBySlug = createServerFn({ method: "GET" })
     const { data: row, error } = await context.supabase
       .from("trips")
       .select(
-        "id, slug, destination, subtitle, tone, template_id, hero_image_url, start_date, end_date, content, expires_at, created_at",
+        "id, slug, destination, subtitle, template_id, hero_image_url, start_date, end_date, content, expires_at, created_at",
       )
       .eq("slug", data.slug)
       .maybeSingle();

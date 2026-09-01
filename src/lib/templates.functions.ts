@@ -43,9 +43,7 @@ export const pickTemplate = createServerFn({ method: "POST" })
         user_id: userId,
         destination: "Untitled Trip",
         subtitle: skin.meta.personality,
-        tone: skin.meta.codename,
         template_id: skin.meta.id,
-        original_template_id: skin.meta.id,
         slug,
         visibility: "unlisted",
         status: "draft",
@@ -76,7 +74,7 @@ export const getDossierBySlug = createServerFn({ method: "GET" })
     const { data: trip, error } = await supabaseAdmin
       .from("trips")
       .select(
-        "id, slug, destination, subtitle, tone, template_id, hero_image_url, start_date, end_date, content, expires_at, created_at, user_id",
+        "id, slug, destination, subtitle, template_id, hero_image_url, start_date, end_date, content, expires_at, created_at, user_id",
       )
       .eq("slug", data.slug)
       .neq("visibility", "private")
