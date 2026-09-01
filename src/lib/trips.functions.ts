@@ -7,6 +7,7 @@ import { getSkin } from "@/lib/skins/registry";
 import { enrichBlocksWithLinkTitles } from "@/lib/itinerary/link-titles.server";
 import { enrichBlocksWithCoords } from "@/lib/itinerary/geo.server";
 import type { Block } from "@/lib/skins/types";
+import { DossierMetaSchema, mergeDossierMeta } from "@/lib/dossier-meta";
 
 function randomSuffix(len = 6) {
   const alphabet = "abcdefghjkmnpqrstuvwxyz23456789";
@@ -144,16 +145,7 @@ export const updateDossier = createServerFn({ method: "POST" })
         subtitle: z.string().max(280).optional(),
         startDate: z.string().max(40).optional(),
         endDate: z.string().max(40).optional(),
-        meta: z
-          .object({
-            travelers: z.string().max(80).optional(),
-            pace: z.enum(["relaxed", "balanced", "packed"]).optional(),
-            budget: z
-              .enum(["shoestring", "moderate", "elevated", "luxury"])
-              .optional(),
-            interests: z.array(z.string().max(40)).max(20).optional(),
-          })
-          .optional(),
+        meta: DossierMetaSchema.optional(),
       })
       .parse(input),
   )
@@ -210,7 +202,9 @@ export const updateDossier = createServerFn({ method: "POST" })
               ),
             }
           : {}),
-        ...(data.meta !== undefined ? { meta: data.meta } : {}),
+        // Merge, never replace: a marker-only save from the harden pass must
+        // not wipe travelers/pace, and a user save must not wipe the marker.
+        ...(data.meta !== undefined ? { meta: mergeDossierMeta(prev.meta, data.meta) } : {}),
         ...(data.templateId !== undefined ? { skin: data.templateId } : {}),
       };
     }

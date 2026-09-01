@@ -194,7 +194,7 @@ export type ParseItineraryInput = z.infer<typeof ParseInputSchema>;
 /**
  * Core parse implementation — callable directly from other SERVER code.
  *
- * Server-to-server callers (refineItineraryAiCore, importBookingEmail) MUST
+ * Server-to-server callers (refineItineraryAiCore, any future ingest path) MUST
  * use this rather than the `parseItineraryAi` server fn below. Invoking a
  * server fn from server code runs its *client* middleware chain, and
  * `attachSupabaseAuth` reads the Supabase session from localStorage — which is

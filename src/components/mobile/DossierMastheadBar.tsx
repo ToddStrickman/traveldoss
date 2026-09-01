@@ -14,7 +14,7 @@
 import * as React from "react";
 import { Link } from "@tanstack/react-router";
 import { motion, useReducedMotion } from "motion/react";
-import { CalendarDays, Mail } from "lucide-react";
+import { CalendarDays } from "lucide-react";
 import { TdSheet } from "@/components/mobile/TdSheet";
 import type { Block } from "@/lib/skins/types";
 import type { SkinView } from "@/lib/skins/types";
@@ -59,7 +59,6 @@ export function DossierMastheadBar({
   tokens,
   layout,
   onLayoutChange,
-  onOpenGmail,
   saving = false,
   savedAt = null,
   saveError = false,
@@ -78,8 +77,6 @@ export function DossierMastheadBar({
    *  view switcher so mobile has the same VERTICAL/HORIZONTAL/GRID access as desktop. */
   layout?: SkinView;
   onLayoutChange?: (v: SkinView) => void;
-  /** Owner-only: open the Gmail import sheet. When absent, no button renders. */
-  onOpenGmail?: () => void;
   /** Autosave state — mirrors the desktop EditingStatusBar so mobile owners
    *  get the same "saving / synced / offline" confirmation. */
   saving?: boolean;
@@ -249,21 +246,6 @@ export function DossierMastheadBar({
           ) : null}
           {layout && onLayoutChange ? (
             <ViewPill value={layout} onChange={onLayoutChange} variant="inline" />
-          ) : null}
-          {canEdit && onOpenGmail ? (
-            <button
-              type="button"
-              onClick={onOpenGmail}
-              className="tap inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors hover:text-seal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal"
-              style={
-                tokens
-                  ? { color: `color-mix(in oklab, ${tokens.ink} 70%, transparent)` }
-                  : undefined
-              }
-              aria-label="Import from Gmail"
-            >
-              <Mail className="h-4 w-4" aria-hidden />
-            </button>
           ) : null}
           {days.length >= 2 ? (
             <button

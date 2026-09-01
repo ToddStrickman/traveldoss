@@ -99,11 +99,9 @@ describe("money-spending server functions are authenticated", () => {
         mustNotCall: "researchDestination({",
         mustCall: "researchDestinationCore(",
       },
-      {
-        file: "src/lib/gmail-import.functions.ts",
-        mustNotCall: "parseItineraryAi({",
-        mustCall: "parseItineraryAiCore(",
-      },
+      // gmail-import.functions.ts used to be listed here. Its parse hop went
+      // with `importBookingEmail`, removed 2026-08-31 (it read a shared
+      // workspace inbox on behalf of any signed-in user).
     ];
 
     for (const { file, mustNotCall, mustCall } of cases) {

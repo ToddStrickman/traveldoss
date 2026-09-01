@@ -34,7 +34,6 @@ import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } fr
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
-import { Route as ApiPublicHooksCleanupPendingDocExportsRouteImport } from './routes/api/public/hooks/cleanup-pending-doc-exports'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
@@ -163,12 +162,6 @@ const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
   path: '/.lovable/oauth/consent',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicHooksCleanupPendingDocExportsRoute =
-  ApiPublicHooksCleanupPendingDocExportsRouteImport.update({
-    id: '/api/public/hooks/cleanup-pending-doc-exports',
-    path: '/api/public/hooks/cleanup-pending-doc-exports',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -195,7 +188,6 @@ export interface FileRoutesByFullPath {
   '/guides/': typeof GuidesIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
-  '/api/public/hooks/cleanup-pending-doc-exports': typeof ApiPublicHooksCleanupPendingDocExportsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -222,7 +214,6 @@ export interface FileRoutesByTo {
   '/guides': typeof GuidesIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
-  '/api/public/hooks/cleanup-pending-doc-exports': typeof ApiPublicHooksCleanupPendingDocExportsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -251,7 +242,6 @@ export interface FileRoutesById {
   '/guides/': typeof GuidesIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
-  '/api/public/hooks/cleanup-pending-doc-exports': typeof ApiPublicHooksCleanupPendingDocExportsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -280,7 +270,6 @@ export interface FileRouteTypes {
     | '/guides/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
-    | '/api/public/hooks/cleanup-pending-doc-exports'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -307,7 +296,6 @@ export interface FileRouteTypes {
     | '/guides'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
-    | '/api/public/hooks/cleanup-pending-doc-exports'
   id:
     | '__root__'
     | '/'
@@ -335,7 +323,6 @@ export interface FileRouteTypes {
     | '/guides/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
-    | '/api/public/hooks/cleanup-pending-doc-exports'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -363,7 +350,6 @@ export interface RootRouteChildren {
   GuidesIndexRoute: typeof GuidesIndexRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
-  ApiPublicHooksCleanupPendingDocExportsRoute: typeof ApiPublicHooksCleanupPendingDocExportsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -543,13 +529,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DotlovableOauthConsentRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/hooks/cleanup-pending-doc-exports': {
-      id: '/api/public/hooks/cleanup-pending-doc-exports'
-      path: '/api/public/hooks/cleanup-pending-doc-exports'
-      fullPath: '/api/public/hooks/cleanup-pending-doc-exports'
-      preLoaderRoute: typeof ApiPublicHooksCleanupPendingDocExportsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
@@ -591,8 +570,6 @@ const rootRouteChildren: RootRouteChildren = {
   GuidesIndexRoute: GuidesIndexRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
-  ApiPublicHooksCleanupPendingDocExportsRoute:
-    ApiPublicHooksCleanupPendingDocExportsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

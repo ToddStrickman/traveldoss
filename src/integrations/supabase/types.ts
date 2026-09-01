@@ -103,36 +103,6 @@ export type Database = {
           },
         ]
       }
-      google_tokens: {
-        Row: {
-          access_token: string
-          expires_at: string
-          google_email: string | null
-          refresh_token: string
-          scope: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          access_token: string
-          expires_at: string
-          google_email?: string | null
-          refresh_token: string
-          scope: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          access_token?: string
-          expires_at?: string
-          google_email?: string | null
-          refresh_token?: string
-          scope?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       parse_debug_reports: {
         Row: {
           attempts_count: number

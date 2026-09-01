@@ -1,5 +1,5 @@
 /**
- * Retry helpers shared by Gmail / Google Docs gateway calls.
+ * Retry helpers for Google Docs gateway calls.
  *
  * - `fetchWithRetry` retries transient HTTP failures (network errors,
  *   429, and 5xx) with exponential backoff + jitter.

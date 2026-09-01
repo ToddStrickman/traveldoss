@@ -18,10 +18,8 @@ import { autofillDayDates, notifyDayDateAutofill, type DayDateAutofill } from "@
 import { EditingProvider, arrayMove } from "@/lib/skins/shared/Editable";
 import { moveActivity } from "@/lib/skins/shared/itinerary";
 import { IngestionModal } from "@/components/flow/IngestionModal";
-import { GmailImportPanel } from "@/components/flow/GmailImportPanel";
 import { TripDocPreviews } from "@/components/flow/TripDocPreviews";
 import { DossierMastheadBar } from "@/components/mobile/DossierMastheadBar";
-import { TdSheet } from "@/components/mobile/TdSheet";
 import { LockPill } from "@/components/studio/LockPill";
 import { EditingStatusBar } from "@/components/studio/EditingStatusBar";
 import { TemplateMenu } from "@/components/studio/TemplateMenu";
@@ -190,7 +188,6 @@ function DossierPage() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(false);
   const [mintOpen, setMintOpen] = useState(false);
-  const [gmailOpen, setGmailOpen] = useState(false);
   const [justMinted, setJustMinted] = useState(false);
   const save = useServerFn(updateDossier);
   const checkOwner = useServerFn(isTripOwner);
@@ -519,8 +516,10 @@ function DossierPage() {
     // three refine passes, each a complete AI parse plus up to 24 Google
     // Places lookups (~$3). An owner opening their dossier five times while
     // planning paid roughly $15 against a single sale. The marker lives in
-    // content.meta, which updateDossier already merges, so this needs no
-    // schema change. A failed pass leaves it unset and retries next load.
+    // content.meta; updateDossier accepts it via DossierMetaSchema and merges
+    // rather than replaces (before 2026-08-31 its schema silently stripped
+    // the key, so the pass re-ran on every load anyway). A failed pass
+    // leaves it unset and retries next load.
     if ((meta as { hardenedAt?: string } | undefined)?.hardenedAt) return;
     if (hardenedFor.current === trip.id) return;
     hardenedFor.current = trip.id;
@@ -553,8 +552,9 @@ function DossierPage() {
             { coalesceKey: "harden:initial" },
           );
           // Persist the marker alongside the blocks so the next load skips
-          // the pass entirely rather than paying for it again.
-          queueSave({ blocks: res.blocks as Block[], meta: { ...meta, hardenedAt } });
+          // the pass entirely rather than paying for it again. Send only the
+          // marker: `meta` here is a stale closure, and the server merges.
+          queueSave({ blocks: res.blocks as Block[], meta: { hardenedAt } });
         })
         .catch((err) => console.error("[harden] background pass failed", err));
     }, 2500);
@@ -715,7 +715,6 @@ function DossierPage() {
         tokens={skin.tokens}
         layout={layout}
         onLayoutChange={changeLayout}
-        onOpenGmail={canEdit ? () => setGmailOpen(true) : undefined}
         saving={saving}
         savedAt={savedAt}
         saveError={saveError}
@@ -754,11 +753,6 @@ function DossierPage() {
       <skin.Render trip={view} blocks={blocks} view={layout} />
       <div className="mx-auto max-w-3xl px-6 pb-24" data-print="hide">
         <TripDocPreviews tripId={trip.id} />
-        {canEdit && (
-          <div className="hidden md:block">
-            <GmailImportPanel tripId={trip.id} />
-          </div>
-        )}
       </div>
       <Link
         to="/"
@@ -831,16 +825,6 @@ function DossierPage() {
         tripId={trip.id}
         tripCreatedAt={(trip as { created_at?: string }).created_at ?? null}
       />
-      {canEdit && (
-        <TdSheet
-          open={gmailOpen}
-          onOpenChange={setGmailOpen}
-          title="Import from Gmail"
-          description="Pick a booking email to attach to this dossier."
-        >
-          <GmailImportPanel tripId={trip.id} defaultOpen hideHeader />
-        </TdSheet>
-      )}
     </EditingProvider>
   );
 }
