@@ -11,6 +11,7 @@
 import { useState } from "react";
 import { ChevronDown, Columns3, LayoutGrid, Rows3 } from "lucide-react";
 import { TdSheet } from "@/components/mobile/TdSheet";
+import { SandBorder } from "./SandBorder";
 import { COVER_CAPTIONS, type CoverVariant } from "./DossierCover";
 
 const OPTIONS: {
