@@ -168,7 +168,10 @@ function SkinPreview({ skin }: { skin: SkinModule }) {
           <link rel="stylesheet" href={skin.tokens.fontUrl} />
         )}
         <InertRender>
-          <Render trip={previewFixture.trip} blocks={previewFixture.blocks} />
+          {/* Grid mode's whole point: the tile shows the real dossier in its
+              grid layout, so the structured at-a-glance read is the thing you
+              are actually previewing. */}
+          <Render trip={previewFixture.trip} blocks={previewFixture.blocks} view="grid" />
         </InertRender>
       </div>
       <div
@@ -300,7 +303,7 @@ function TemplatesPage() {
   // same covers, or the classic grid. Deterministic initial value keeps SSR
   // and the first client render identical; the saved preference applies
   // after mount.
-  const [browse, setBrowse] = useState<BrowseMode>("vertical");
+  const [browse, setBrowse] = useState<BrowseMode>("horizontal");
   useEffect(() => {
     const saved = window.localStorage.getItem("templates:browse");
     // "table" is the pre-three-view name for the horizontal rail.
