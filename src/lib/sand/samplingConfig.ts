@@ -27,7 +27,10 @@ export const UPRIGHT_SAMPLING: SandLineSampling = {
 export const ITALIC_SAMPLING: SandLineSampling = {
   // Less negative tracking than upright so oblique glyphs don't collide.
   tracking: -0.014,
-  inkAlpha: 132,
-  density: 0.72,
-  edgeBoost: 0.18,
+  inkAlpha: 118,
+  // Sampled SPARSER than upright (step multiplier > 1): the oblique face is
+  // heavier, so an equal-or-finer step packed far more grains into "Doss"
+  // than into "Travel" and the word read as a dense clot rather than sand.
+  density: 1.3,
+  edgeBoost: 0.1,
 };
