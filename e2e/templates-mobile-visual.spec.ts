@@ -173,7 +173,9 @@ for (const width of WIDTHS) {
 
     test("layout sheet hint matches the horizontal cover copy", async ({ page }) => {
       await page.goto("/e2e/dossier");
-      await page.getByRole("button", { name: /change layout/i }).click();
+      const trigger = page.getByRole("button", { name: /change layout/i }).first();
+      await expect(trigger).toBeVisible();
+      await trigger.click();
       const row = page.getByRole("radio", { name: /Horizontal/ });
       await expect(row).toBeVisible();
       await expect(row).toContainText(CAPTIONS.horizontal);
