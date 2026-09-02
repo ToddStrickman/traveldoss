@@ -1,7 +1,7 @@
 import { QueryClient } from "@tanstack/react-query";
 import { createRouter } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
-import { gtagPageView } from "@/lib/analytics/gtag";
+import { initAnalytics } from "@/lib/analytics/gtag";
 
 export const getRouter = () => {
   const queryClient = new QueryClient();
@@ -15,17 +15,14 @@ export const getRouter = () => {
   });
 
   // GA4 auto page views are disabled (single page app), so send one scrubbed
-  // page_view per resolved navigation — including the first render.
-  if (typeof window !== "undefined") {
-    let lastPath: string | null = null;
-    const send = () => {
-      const path = window.location.pathname;
-      if (path === lastPath) return;
-      lastPath = path;
-      gtagPageView(path);
-    };
-    router.subscribe("onResolved", send);
-    send();
+  // page_view per resolved navigation — including the first. initAnalytics also
+  // keeps localhost and Lovable preview hosts out of the production property.
+  //
+  // A referenced import, not a bare `import "@/lib/analytics/gtag"`:
+  // package.json sets `"sideEffects": false`, so Rollup deletes side-effect-only
+  // imports from the client bundle without warning.
+  if (!import.meta.env.SSR) {
+    initAnalytics(router);
   }
 
   return router;
