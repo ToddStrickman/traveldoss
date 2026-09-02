@@ -1147,7 +1147,7 @@ void main() {
   float pulse = 1.0 + vSparkle * 0.5 * (0.5 + 0.5 * sin(uTime * 9.0 + aSeed * 60.0));
   // The seal (the "." after Doss) uses slightly larger grains so it reads
   // as a solid mark, not just more sand.
-  gl_PointSize = aSize * pulse * (1.0 + aAccent * 0.35) * uPixelRatio;
+  gl_PointSize = aSize * pulse * (1.0 + aAccent * 0.18) * uPixelRatio;
   gl_Position = projectionMatrix * mv;
   vSeed = aSeed; vKind = aKind; vAccent = aAccent; vEdge = aEdge; vReveal = aReveal;
   vWorld = position.xy;
