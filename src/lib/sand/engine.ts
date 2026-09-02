@@ -1186,6 +1186,9 @@ void main() {
   float shade = uAmbient + (1.0 - uAmbient) * (0.55 - 0.45 * lit);
 
   vec3 col = palette(fract(vSeed * 5.13));
+  // Per-grain tonal depth: neighbouring grains sit at slightly different
+  // values, which separates them visually where the letterforms are dense.
+  col *= mix(0.78, 1.16, fract(vSeed * 91.7));
   if (vAccent > 0.5) {
     // The seal: molten gold, clearly apart from the sandstone field. It
     // resists the shadow term (stays luminous) and carries a slow shimmer.
