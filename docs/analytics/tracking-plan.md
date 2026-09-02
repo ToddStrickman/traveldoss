@@ -27,3 +27,20 @@ audit ledger must be complete and adblock-proof.
 | `template_picked` | A cover is chosen in stage 1 | `template_id`, `index` |
 | `template_switched` | The top-bar template chip is used to change the dossier mid-compose | `from_template_id`, `template_id` |
 | `template_browse_mode_changed` | The /templates browse switcher changes layout (grid / horizontal / vertical) | `mode`, `from_mode` |
+
+## Google Analytics 4 (mirror destination)
+
+GA4 (`gtag.js`, measurement id in `src/lib/analytics/gtag.ts`, overridable via
+`VITE_GA_MEASUREMENT_ID`) is a **mirror**, not a second vocabulary: every
+`capture()` in `src/lib/analytics.ts` fans out to GA with the same
+`object_verb` snake_case name and the same properties. There are no
+GA-specific call sites, and inline `gtag(...)` calls outside
+`src/lib/analytics/gtag.ts` are forbidden.
+
+- The tag installs once, from the root route `head().scripts`, with
+  `send_page_view: false`.
+- `page_view` is sent per resolved navigation from `src/router.tsx`, with the
+  path scrubbed by `src/lib/analytics/scrub.ts` (`/t/:slug`, `/guides/:slug`,
+  `/templates/:id`, `/auth/*`) — GA never receives a real slug.
+- GA carries no PII and no content: lengths and counts only, same rule as
+  PostHog. Money/lifecycle transitions stay server-side.
