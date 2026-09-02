@@ -28,6 +28,26 @@ audit ledger must be complete and adblock-proof.
 | `template_switched`            | The top-bar template chip is used to change the dossier mid-compose                                 | `from_template_id`, `template_id`                                                                             |
 | `template_browse_mode_changed` | The /templates browse switcher changes layout (grid / horizontal / vertical)                        | `mode`, `from_mode`                                                                                           |
 
+## Mint funnel
+
+`compose_opened` is step 1 (see the compose table above); the modal-open moment
+has exactly one event name.
+
+| Event                | When                                                            | Properties                                                |
+| -------------------- | --------------------------------------------------------------- | --------------------------------------------------------- |
+| `mint_input_ready`   | The Mint Dossier button first becomes enabled                   | `template_id`, `tab`, `input_length`                      |
+| `mint_submitted`     | Mint Dossier is pressed                                         | `template_id`, `tab`, `input_length`                      |
+| `mint_login_required`| The composer draft is stashed and the user is sent to the wall   | `template_id`, `tab`                                      |
+| `mint_parse_failed`  | AI parse throws, or no blocks could be read                     | `template_id`, `tab`, `reason`                            |
+| `mint_completed`     | The dossier row exists (client mirror of the server event)       | `template_id`, `trip_id`, `block_count`, `day_count`       |
+| `mint_failed`        | `createTripFromIngestion` rejects                               | `template_id`, `reason`                                   |
+
+`mint_completed` is ALSO captured server-side in `createTripFromIngestion`
+(`source: "server"`) — the money/lifecycle transition is never trusted from the
+client, and the client copy is the adblock-proof denominator, same pattern as
+`dossier_viewed`. Both carry `trip_id`, never `trip_slug`: the slug is a
+capability URL and every capture fans out to GA.
+
 ## Google Analytics 4 (mirror destination)
 
 GA4 (`gtag.js`, measurement id in `src/lib/analytics/gtag.ts`, overridable via
