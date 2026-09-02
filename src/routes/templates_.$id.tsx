@@ -21,6 +21,7 @@ import { IngestionModal } from "@/components/flow/IngestionModal";
 import { GenerationLoader } from "@/components/GenerationLoader";
 import { createTripFromIngestion } from "@/lib/trips.functions";
 import type { Block } from "@/lib/skins/types";
+import { trackMintCompleted, trackMintFailed } from "@/lib/analytics";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { SITE_URL } from "@/lib/site";
