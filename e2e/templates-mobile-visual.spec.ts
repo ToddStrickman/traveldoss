@@ -31,8 +31,12 @@ const CAPTIONS = {
 
 type Mode = keyof typeof CAPTIONS;
 
-const rail = (page: Page) => page.getByRole("region", { name: /swipeable covers/i });
-const switcher = (page: Page) => page.getByRole("group", { name: "Browse mode" });
+// Mobile and desktop compositions both exist in the DOM (md:hidden siblings),
+// so always narrow to the visible one before measuring.
+const rail = (page: Page) =>
+  page.getByRole("region", { name: /swipeable covers/i }).filter({ visible: true }).first();
+const switcher = (page: Page) =>
+  page.getByRole("group", { name: "Browse mode" }).filter({ visible: true }).first();
 
 async function expectNoHorizontalOverflow(page: Page, width: number) {
   const scrollW = await page.evaluate(() => document.documentElement.scrollWidth);
