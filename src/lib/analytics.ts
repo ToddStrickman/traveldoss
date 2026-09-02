@@ -44,9 +44,11 @@ async function ensureClient(): Promise<PostHog | null> {
 
 /**
  * Fire-and-forget capture. Never throws and never blocks the UI — analytics
- * failures must not be user-visible.
+ * failures must not be user-visible. Fans out to GA4 as a mirror destination
+ * so there is only one event vocabulary in the app.
  */
 export function capture(event: string, props: Props = {}): void {
+  gtagEvent(event, props);
   void ensureClient()
     .then((ph) => {
       ph?.capture(event, props);
