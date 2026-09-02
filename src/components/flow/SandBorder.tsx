@@ -87,7 +87,7 @@ export function SandBorder({ radius = 999 }: { radius?: number }) {
 
     const grains: Grain[] = Array.from({ length: GRAIN_COUNT }, () => ({
       t: Math.random(),
-      off: (Math.random() - 0.5) * 5.2,
+      off: -5 + (Math.random() - 0.5) * 6,
       speed: (0.00006 + Math.random() * 0.00022) * (Math.random() < 0.22 ? -1 : 1),
       size: 0.35 + Math.pow(Math.random(), 2.1) * 1.35,
       alpha: 0.18 + Math.random() * 0.72,
