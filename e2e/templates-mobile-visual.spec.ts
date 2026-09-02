@@ -6,7 +6,7 @@ import { expect, test, type Page, type Locator } from "@playwright/test";
  * have drifted before:
  *
  *  1. Copy — each browse mode's cover caption states that mode's benefit
- *     ("Days side by side — slide activities between them" for horizontal),
+ *     ("Drag activities between days like a board" for horizontal),
  *     and the /t/<slug> layout sheet says the same thing.
  *  2. Layout — the switcher sits ABOVE the covers (never a scroll away),
  *     every mode swipes sideways, the page never scrolls horizontally, the
@@ -24,9 +24,9 @@ const VISUAL = !!process.env.VISUAL;
 /** Caption each mode's cover placeholder must show. Mirrors DossierCover.tsx
  *  and ViewSheet.tsx — update both when the product copy changes. */
 const CAPTIONS = {
-  horizontal: "Days side by side — slide activities between them",
-  vertical: "The full read, top to bottom",
-  grid: "The whole trip at a glance",
+  horizontal: "Drag activities between days like a board",
+  vertical: "Photographs and comparisons, top to bottom",
+  grid: "Everything structured, at a glance",
 } as const;
 
 type Mode = keyof typeof CAPTIONS;
@@ -35,8 +35,9 @@ type Mode = keyof typeof CAPTIONS;
 // so always narrow to the visible one before measuring.
 const rail = (page: Page) =>
   page.getByRole("region", { name: /swipeable covers/i }).filter({ visible: true }).first();
+// The labelled layout trigger (glyph + seal dot + LAYOUT + chevron).
 const switcher = (page: Page) =>
-  page.getByRole("group", { name: "Browse mode" }).filter({ visible: true }).first();
+  page.getByRole("button", { name: /^Layout/ }).filter({ visible: true }).first();
 
 async function expectNoHorizontalOverflow(page: Page, width: number) {
   const scrollW = await page.evaluate(() => document.documentElement.scrollWidth);
@@ -62,10 +63,11 @@ async function gotoTemplates(page: Page) {
 
 async function pickMode(page: Page, mode: Mode) {
   const label = mode[0].toUpperCase() + mode.slice(1);
-  await switcher(page).getByRole("button", { name: label, exact: true }).click();
-  await expect(
-    switcher(page).getByRole("button", { name: label, exact: true }),
-  ).toHaveAttribute("aria-pressed", "true");
+  await switcher(page).click();
+  const option = page.getByRole("radio", { name: new RegExp(label, "i") }).first();
+  await expect(option).toBeVisible();
+  await option.click();
+  await expect(switcher(page)).toHaveAccessibleName(new RegExp(label, "i"));
   await page.waitForTimeout(500);
 }
 
@@ -93,20 +95,27 @@ for (const width of WIDTHS) {
   test.describe(`dossier selector · mobile ${width}×${HEIGHT}`, () => {
     test.use({ viewport: { width, height: HEIGHT }, hasTouch: true, isMobile: true });
 
-    test("switcher sits above the covers and meets tap targets", async ({ page }) => {
+    test("switcher sits with the cover and meets tap targets", async ({ page }) => {
       await gotoTemplates(page);
 
       const toggleBox = await switcher(page).boundingBox();
       const cardBox = await rail(page).locator("article").first().boundingBox();
       expect(toggleBox && cardBox).toBeTruthy();
+      // Directly under the cover on mobile — never a scroll away from it.
+      expect(toggleBox!.y, "switcher below the first cover").toBeGreaterThanOrEqual(
+        cardBox!.y - 1,
+      );
       expect(
-        toggleBox!.y + toggleBox!.height,
-        "switcher above the first cover",
-      ).toBeLessThanOrEqual(cardBox!.y + 1);
+        toggleBox!.y - (cardBox!.y + cardBox!.height),
+        "switcher close to the cover",
+      ).toBeLessThanOrEqual(80);
 
+      await expectTapTarget(switcher(page));
+      await switcher(page).click();
       for (const label of ["Grid", "Horizontal", "Vertical"]) {
-        await expectTapTarget(switcher(page).getByRole("button", { name: label, exact: true }));
+        await expectTapTarget(page.getByRole("radio", { name: new RegExp(label, "i") }).first());
       }
+      await page.keyboard.press("Escape");
       await expectNoHorizontalOverflow(page, width);
     });
 

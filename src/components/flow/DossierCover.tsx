@@ -5,23 +5,32 @@
  * Deliberately NOT a shrunken render of the demo itinerary: at cover size
  * real type turns to grey mush and, worse, makes every template look like
  * it's about the same city. Instead each cover is drawn from that skin's own
- * tokens — foil edge, accent spine, wax seal — plus placeholder rule work
- * for Morning / Evening / Night so the shape of a day reads instantly.
+ * tokens — foil edge, accent spine, wax seal — plus abstract art that shows
+ * what the layout you're browsing actually gives you: photographs and
+ * comparisons (vertical), a drag-between-days board (horizontal), or one
+ * structured table of everything (grid).
  *
  * Fills its parent; the parent owns dimensions so layout never shifts.
  */
 import type { SkinModule } from "@/lib/skins/types";
 
-/** Which layout's unique benefit the placeholder art should express. */
+/** Which layout's benefit the abstract art should express. */
 export type CoverVariant = "horizontal" | "vertical" | "grid";
+
+/** The benefit each layout is bought for, said in one line. Shared with the
+ *  layout switcher so the picker and the cover never disagree. */
+export const COVER_CAPTIONS: Record<CoverVariant, string> = {
+  vertical: "Photographs and comparisons, top to bottom",
+  horizontal: "Drag activities between days like a board",
+  grid: "Everything structured, at a glance",
+};
 
 export function DossierCoverArt({
   skin,
   selected = true,
   /** Scales the interior type/rules for smaller or larger cover slots. */
   size = "md",
-  /** Placeholder art matches the layout being browsed: sideways day cards
-   *  (horizontal), one flowing ribbon (vertical), a day board (grid). */
+  /** Abstract art matches the layout being browsed. */
   variant = "horizontal",
 }: {
   skin: SkinModule;
@@ -78,25 +87,21 @@ export function DossierCoverArt({
           </div>
         </div>
 
-        {/* Layout preview — placeholder rule work standing in for the
-            itinerary, shaped like the layout you're browsing. */}
+        {/* Layout art — abstract, drawn from this skin's tokens, shaped like
+            the benefit of the layout you're browsing. */}
         <div className={`mt-auto flex flex-col ${s.gap}`} aria-hidden>
           {variant === "grid" ? (
             <GridArt t={t} part={s.part} />
           ) : variant === "horizontal" ? (
             <HorizontalArt t={t} part={s.part} />
           ) : (
-            <VerticalArt t={t} part={s.part} gap={s.gap} />
+            <VerticalArt t={t} part={s.part} />
           )}
           <span
             className={`${s.part} font-medium uppercase tracking-[0.28em]`}
             style={{ color: `color-mix(in oklab, ${t.inkSoft} 88%, ${t.ink})` }}
           >
-            {variant === "grid"
-              ? "The whole trip at a glance"
-              : variant === "horizontal"
-                ? "Days side by side — slide activities between them"
-                : "The full read, top to bottom"}
+            {COVER_CAPTIONS[variant]}
           </span>
         </div>
 
@@ -116,113 +121,203 @@ export function DossierCoverArt({
 
 type Tk = SkinModule["tokens"];
 
-/** Vertical: one continuous ribbon of day-parts flowing downward. */
-function VerticalArt({ t, part, gap }: { t: Tk; part: string; gap: string }) {
+/** A token-filled photograph plate — abstract, loads nothing. */
+function Plate({
+  t,
+  className = "",
+  style,
+}: {
+  t: Tk;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
   return (
-    <div className={`relative flex flex-col ${gap} pl-3`}>
-      <span
-        className="absolute bottom-1 left-0 top-1 w-px"
-        style={{ background: t.accent, opacity: 0.55 }}
-      />
-      {(["Morning", "Evening", "Night"] as const).map((label, pi) => (
-        <div key={label} className="flex flex-col gap-1">
-          <div className="flex items-center gap-1.5">
-            <span
-              className="-ml-[13px] h-[3px] w-[3px] rounded-full"
-              style={{ background: t.accent, opacity: 0.9 }}
-            />
-            <span
-              className={`${part} font-medium uppercase tracking-[0.28em]`}
-              style={{ color: t.inkSoft }}
-            >
-              {label}
-            </span>
-          </div>
-          {[0.86, 0.58].map((w, i) => (
+    <span
+      className={`block rounded-[3px] ${className}`}
+      style={{
+        border: `1px solid ${t.rule}`,
+        background: `linear-gradient(135deg, color-mix(in oklab, ${t.accent} 26%, transparent) 0%, color-mix(in oklab, ${t.inkSoft} 16%, transparent) 100%)`,
+        ...style,
+      }}
+    />
+  );
+}
+
+/**
+ * Vertical — the photographic read: image plates alternating with text,
+ * plus two plates set beside each other where a comparison sits.
+ */
+function VerticalArt({ t, part }: { t: Tk; part: string }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      {/* Plate + its text column */}
+      <div className="td-cover-line flex items-stretch gap-1.5" style={{ animationDelay: "0ms" }}>
+        <Plate t={t} className="h-7 w-[42%] shrink-0" />
+        <span className="flex min-w-0 flex-1 flex-col justify-center gap-1">
+          {[0.92, 0.7, 0.84].map((w, i) => (
             <span
               key={i}
-              className="td-cover-line h-px"
-              style={{
-                width: `${w * 100}%`,
-                background: t.rule,
-                animationDelay: `${pi * 90 + i * 45}ms`,
-              }}
+              className="h-px"
+              style={{ width: `${w * 100}%`, background: t.rule }}
             />
           ))}
-        </div>
-      ))}
+        </span>
+      </div>
+
+      {/* The comparison: two plates side by side under one label */}
+      <div className="td-cover-line flex flex-col gap-1" style={{ animationDelay: "110ms" }}>
+        <span
+          className={`${part} font-medium uppercase tracking-[0.28em]`}
+          style={{ color: t.inkSoft }}
+        >
+          This or this
+        </span>
+        <span className="flex items-stretch gap-1.5">
+          <Plate t={t} className="h-6 flex-1" />
+          <span
+            className="my-1 w-px shrink-0"
+            style={{ background: t.accent, opacity: 0.7 }}
+          />
+          <Plate t={t} className="h-6 flex-1" />
+        </span>
+      </div>
+
+      {/* One more text run so the page reads as continuous downward flow */}
+      <div className="td-cover-line flex flex-col gap-1" style={{ animationDelay: "200ms" }}>
+        {[0.96, 0.62].map((w, i) => (
+          <span
+            key={i}
+            className="h-px"
+            style={{ width: `${w * 100}%`, background: t.rule }}
+          />
+        ))}
+      </div>
     </div>
   );
 }
 
-/** Horizontal: day cards receding sideways, the swipe-one-day-at-a-time read. */
+/**
+ * Horizontal — the board: day columns side by side with activity cards, one
+ * card lifted mid-move and a dashed drop slot waiting in the next column.
+ */
 function HorizontalArt({ t, part }: { t: Tk; part: string }) {
+  const cards = [2, 1, 2];
   return (
-    <div className="flex items-end gap-1.5 overflow-hidden">
-      {[0, 1, 2].map((i) => (
+    <div className="relative flex items-start gap-1.5 overflow-hidden pt-2">
+      {cards.map((count, ci) => (
         <div
-          key={i}
-          className="td-cover-line flex flex-col gap-1 rounded-[3px] p-1.5"
+          key={ci}
+          className="td-cover-line flex flex-1 flex-col gap-1 rounded-[3px] p-1"
           style={{
             border: `1px solid ${t.rule}`,
-            width: i === 0 ? "48%" : i === 1 ? "32%" : "22%",
-            opacity: i === 0 ? 1 : i === 1 ? 0.7 : 0.42,
-            animationDelay: `${i * 90}ms`,
+            background:
+              ci === 1 ? `color-mix(in oklab, ${t.accent} 8%, transparent)` : "transparent",
+            animationDelay: `${ci * 90}ms`,
           }}
         >
           <span
             className={`${part} font-medium uppercase tracking-[0.2em]`}
             style={{ color: t.inkSoft }}
           >
-            {`D${i + 1}`}
+            {`D${ci + 1}`}
           </span>
-          {[0.9, 0.65, 0.78].map((w, j) => (
+          {Array.from({ length: count }).map((_, j) => (
             <span
               key={j}
-              className="h-px"
-              style={{ width: `${w * 100}%`, background: t.rule }}
-            />
+              className="flex flex-col gap-[2px] rounded-[2px] px-1 py-[3px]"
+              style={{ border: `1px solid ${t.rule}` }}
+            >
+              <span className="h-px w-[86%]" style={{ background: t.rule }} />
+              <span className="h-px w-[56%]" style={{ background: t.rule }} />
+            </span>
           ))}
+          {/* The waiting slot: where the lifted card is going to land. */}
+          {ci === 1 ? (
+            <span
+              className="h-4 rounded-[2px]"
+              style={{
+                border: `1px dashed ${t.accent}`,
+                background: `color-mix(in oklab, ${t.accent} 10%, transparent)`,
+              }}
+            />
+          ) : null}
         </div>
       ))}
+
+      {/* The card in flight, tilted between the first two columns. */}
       <span
-        className="mb-2 h-px shrink-0"
-        style={{ width: 14, background: t.accent, opacity: 0.8 }}
-      />
+        className="td-cover-line absolute left-[22%] top-0 flex w-[26%] flex-col gap-[2px] rounded-[2px] px-1 py-[3px]"
+        style={{
+          border: `1px solid ${t.accent}`,
+          background: t.bg,
+          transform: "rotate(-7deg)",
+          boxShadow: `0 4px 10px -4px color-mix(in oklab, ${t.ink} 55%, transparent)`,
+          animationDelay: "170ms",
+        }}
+      >
+        <span className="h-px w-[80%]" style={{ background: t.accent }} />
+        <span className="h-px w-[52%]" style={{ background: t.rule }} />
+      </span>
     </div>
   );
 }
 
-/** Grid: a small board of day tiles — everything on one surface. */
+/**
+ * Grid — the structured table: a header band, an even board of day tiles
+ * with aligned label/value rows, and one shared column rule.
+ */
 function GridArt({ t, part }: { t: Tk; part: string }) {
   return (
-    <div className="grid grid-cols-3 gap-1.5">
-      {[0, 1, 2, 3, 4, 5].map((i) => (
-        <div
-          key={i}
-          className="td-cover-line flex flex-col gap-[3px] rounded-[3px] p-1"
-          style={{
-            border: `1px solid ${t.rule}`,
-            background: i === 0 ? `color-mix(in oklab, ${t.accent} 12%, transparent)` : "transparent",
-            animationDelay: `${i * 50}ms`,
-          }}
-        >
+    <div className="flex flex-col gap-1">
+      {/* Header band */}
+      <div
+        className="flex items-center gap-1 rounded-[2px] px-1 py-[2px]"
+        style={{ background: `color-mix(in oklab, ${t.accent} 14%, transparent)` }}
+      >
+        {[0.3, 0.22, 0.26].map((w, i) => (
           <span
-            className={`${part} font-medium uppercase tracking-[0.18em]`}
-            style={{ color: t.inkSoft }}
+            key={i}
+            className="h-px"
+            style={{ width: `${w * 100}%`, background: t.accent, opacity: 0.8 }}
+          />
+        ))}
+      </div>
+
+      <div className="relative grid grid-cols-3 gap-1">
+        {/* The shared column rule that makes the board read as a table. */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-y-0 left-1/3 w-px"
+          style={{ background: t.accent, opacity: 0.35 }}
+        />
+        {[0, 1, 2, 3, 4, 5].map((i) => (
+          <div
+            key={i}
+            className="td-cover-line flex flex-col gap-[3px] rounded-[3px] p-1"
+            style={{
+              border: `1px solid ${t.rule}`,
+              animationDelay: `${i * 50}ms`,
+            }}
           >
-            {`D${i + 1}`}
-          </span>
-          {[0.95, 0.6].map((w, j) => (
             <span
-              key={j}
-              className="h-px"
-              style={{ width: `${w * 100}%`, background: t.rule }}
-            />
-          ))}
-        </div>
-      ))}
+              className={`${part} font-medium uppercase tracking-[0.18em]`}
+              style={{ color: t.inkSoft }}
+            >
+              {`D${i + 1}`}
+            </span>
+            {/* Aligned label / value pairs — the structured read. */}
+            {[0, 1].map((r) => (
+              <span key={r} className="flex items-center gap-1">
+                <span
+                  className="h-px w-[38%] shrink-0"
+                  style={{ background: t.accent, opacity: 0.65 }}
+                />
+                <span className="h-px flex-1" style={{ background: t.rule }} />
+              </span>
+            ))}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
-
