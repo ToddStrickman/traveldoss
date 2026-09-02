@@ -472,7 +472,12 @@ function CoverCard({
   );
 }
 
-/** Vertical view — the same covers stacked in one scrolling column. */
+/**
+ * Vertical view — the elegant editorial read: each dossier is a wide spread
+ * with its cover set on the left and its identity, mood tags and actions
+ * ranged beside it, so the column fills the page instead of leaving the
+ * measure stranded in empty space.
+ */
 export function VerticalCoverStack({
   skins,
   onPick,
@@ -486,18 +491,86 @@ export function VerticalCoverStack({
   return (
     <section
       aria-label="Dossier templates, stacked covers"
-      className="mx-auto flex max-w-[420px] flex-col gap-5"
+      className="mx-auto flex w-full max-w-5xl flex-col gap-6"
     >
-      {skins.map((skin) => (
-        <CoverCard
-          key={skin.meta.id}
-          skin={skin}
-          onPick={onPick}
-          pickingId={pickingId}
-          variant="vertical"
-          className="w-full"
-        />
-      ))}
+      {skins.map((skin) => {
+        const busy = pickingId === skin.meta.id;
+        const t = skin.tokens;
+        return (
+          <article
+            key={skin.meta.id}
+            className="grid grid-cols-[minmax(0,340px)_minmax(0,1fr)] items-stretch overflow-hidden rounded-[10px] border border-ink/15"
+            style={{ background: t.bg }}
+          >
+            <div className="td-cover relative h-[300px] w-full overflow-hidden">
+              <DossierCoverArt skin={skin} variant="vertical" />
+            </div>
+            <div
+              className="flex flex-col justify-center gap-3 border-l px-7 py-6"
+              style={{ borderColor: t.rule }}
+            >
+              <span
+                className="text-[9px] font-medium uppercase tracking-[0.42em]"
+                style={{ color: `color-mix(in oklab, ${t.inkSoft} 82%, ${t.ink})` }}
+              >
+                Dossier template
+              </span>
+              <h3
+                className="text-4xl leading-none"
+                style={{ fontFamily: t.fontDisplay, color: t.ink }}
+              >
+                {skin.meta.codename}
+                <span style={{ color: t.accent }}>.</span>
+              </h3>
+              <p
+                className="text-[14px] italic leading-relaxed"
+                style={{ fontFamily: t.fontDisplay, color: t.inkSoft }}
+              >
+                "{skin.meta.personality}"
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {skin.meta.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="inline-block rounded-full border px-2.5 py-1 text-[9px] font-medium uppercase tracking-[0.2em]"
+                    style={{
+                      borderColor: t.rule,
+                      color: `color-mix(in oklab, ${t.inkSoft} 82%, ${t.ink})`,
+                    }}
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+              <div className="mt-1 flex items-center gap-3">
+                <Link
+                  to="/templates/$id"
+                  params={{ id: skin.meta.id }}
+                  className="tap inline-flex min-h-11 items-center justify-center border px-6 text-[10px] font-medium uppercase tracking-[0.28em]"
+                  style={{ borderColor: t.rule, color: t.inkSoft }}
+                >
+                  Preview
+                </Link>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => onPick(skin.meta.id)}
+                  className="tap inline-flex min-h-11 items-center justify-center gap-2 border px-6 text-[10px] font-medium uppercase tracking-[0.28em] disabled:cursor-wait disabled:opacity-50"
+                  style={{ borderColor: t.accent, color: t.accent }}
+                >
+                  {busy && (
+                    <span
+                      aria-hidden
+                      className="h-3 w-3 animate-spin rounded-full border border-current border-t-transparent"
+                    />
+                  )}
+                  {busy ? "Minting…" : "Mint this dossier"}
+                </button>
+              </div>
+            </div>
+          </article>
+        );
+      })}
     </section>
   );
 }
