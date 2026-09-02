@@ -160,7 +160,7 @@ export function SandBorder({ radius = 999 }: { radius?: number }) {
     <canvas
       ref={canvasRef}
       aria-hidden
-      className="pointer-events-none absolute inset-0 h-full w-full"
+      className="pointer-events-none absolute -inset-[5px] h-[calc(100%+10px)] w-[calc(100%+10px)]"
     />
   );
 }
