@@ -766,3 +766,17 @@
     animation: none;
   }
 }
+
+/* Layout switcher shell: moody graphite lower-left lifting to sunset pink at
+   the top-right corner. Padded 1px wrapper, so the gradient reads as a border
+   while the sand canvas drifts over it. */
+.td-sand-shell {
+  background-image: linear-gradient(
+    to top right,
+    color-mix(in oklab, var(--ink, #101828) 62%, transparent) 0%,
+    color-mix(in oklab, var(--ink, #101828) 34%, transparent) 38%,
+    color-mix(in oklab, var(--sunset-pink) 62%, transparent) 74%,
+    color-mix(in oklab, var(--sunset-pink) 96%, transparent) 100%
+  );
+  box-shadow: 0 6px 26px -14px color-mix(in oklab, var(--sunset-pink) 65%, transparent);
+}
