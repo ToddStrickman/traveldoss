@@ -88,7 +88,7 @@ export function DossierCoverArt({
 
         {/* Layout preview — placeholder rule work standing in for the
             itinerary, shaped like the layout you're browsing. */}
-        <div className={`mt-auto flex flex-col ${s.gap}`} aria-hidden>
+        <div className={`mt-5 flex flex-1 flex-col justify-center ${s.gap}`} aria-hidden>
           {variant === "grid" ? (
             <GridArt t={t} part={s.part} />
           ) : variant === "horizontal" ? (
