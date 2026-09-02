@@ -515,7 +515,7 @@ function TemplatesPage() {
         <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-[9px] font-medium uppercase tracking-[0.35em] text-ink/40 sm:text-[10px] sm:tracking-[0.4em]">
           <span>{SKINS.length} templates</span>
           <span aria-hidden className="h-px w-3 bg-ink/20 sm:w-4" />
-          <span>New designs added often</span>
+          <span>Stylized, pragmatic designs at the ready — dossiers at the ready</span>
         </div>
 
         {/* Search + Filter */}
