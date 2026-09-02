@@ -572,9 +572,9 @@ function TemplatesPage() {
             )}
           </div>
 
-          {/* Result count + browse-mode toggle (all sizes: the table has a
-              phone-native sibling, the swipeable cover rail) */}
-          <div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center md:justify-between">
+          {/* Result count + browse-mode toggle — one left-aligned row so the
+              layout switcher sits right next to the template count. */}
+          <div className="flex flex-wrap items-center gap-3">
             <p className="min-w-0 text-[10px] uppercase tracking-[0.4em] text-ink/60">
               {filteredSkins.length} dossier template{filteredSkins.length !== 1 ? "s" : ""}
               {activeTag || query ? (
@@ -586,9 +586,7 @@ function TemplatesPage() {
               ) : null}
             </p>
             {filteredSkins.length > 0 ? (
-              <div className="hidden md:block">
-                <LayoutSwitcher value={browse} onChange={setBrowseMode} />
-              </div>
+              <LayoutSwitcher value={browse} onChange={setBrowseMode} />
             ) : null}
           </div>
         </div>
@@ -605,11 +603,6 @@ function TemplatesPage() {
               pickingId={picking}
               variant={browse}
             />
-            {/* Directly under the cover: switching layouts is a glance away
-                from the art it redraws, never a scroll. */}
-            <div className="mt-4 flex justify-center">
-              <LayoutSwitcher value={browse} onChange={setBrowseMode} />
-            </div>
           </div>
         ) : null}
 
