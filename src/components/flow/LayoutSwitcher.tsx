@@ -36,30 +36,37 @@ export function LayoutSwitcher({
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        className="tap inline-flex min-h-11 items-center gap-2.5 rounded-full border border-sunset-pink/55 bg-sunset-pink/[0.03] px-4 text-ink/70 transition-colors duration-300 hover:border-sunset-pink hover:bg-sunset-pink/5 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sunset-pink/60 motion-reduce:transition-none"
-      >
-        <span className="relative inline-flex items-center">
-          <ActiveIcon aria-hidden className="h-4 w-4" />
-          <span
-            aria-hidden
-            className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-sunset-pink ring-2 ring-paper"
-          />
-        </span>
-        <span className="text-[10px] font-medium uppercase tracking-[0.3em]">
-          Layout
-        </span>
-        <span aria-hidden className="h-3 w-px bg-sunset-pink/30" />
-        <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-seal">
-          {active.label}
-        </span>
-        <ChevronDown aria-hidden className="h-3.5 w-3.5 text-sunset-pink/70" />
-        <span className="sr-only">. Change layout</span>
-      </button>
+      {/* Gradient shell: moody graphite at the lower-left lifting to sunset
+          pink at the top-right, with drifting pink sand grains riding the
+          perimeter. The gradient lives on a padded wrapper so the ring reads as
+          a 1px border without a border-image. */}
+      <span className="td-sand-shell relative inline-flex rounded-full p-px">
+        <SandBorder />
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          className="tap relative inline-flex min-h-11 items-center gap-2.5 rounded-full bg-paper/85 px-4 text-ink/70 backdrop-blur-sm transition-colors duration-300 hover:bg-sunset-pink/5 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sunset-pink/60 motion-reduce:transition-none"
+        >
+          <span className="relative inline-flex items-center">
+            <ActiveIcon aria-hidden className="h-4 w-4" />
+            <span
+              aria-hidden
+              className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-sunset-pink ring-2 ring-paper"
+            />
+          </span>
+          <span className="text-[10px] font-medium uppercase tracking-[0.3em]">
+            Layout
+          </span>
+          <span aria-hidden className="h-3 w-px bg-sunset-pink/30" />
+          <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-seal">
+            {active.label}
+          </span>
+          <ChevronDown aria-hidden className="h-3.5 w-3.5 text-sunset-pink/70" />
+          <span className="sr-only">. Change layout</span>
+        </button>
+      </span>
 
       <TdSheet
         open={open}
