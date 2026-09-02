@@ -135,15 +135,20 @@ export const trackMintLoginRequired = (templateId: string, tab: MintTab) =>
 export const trackMintParseFailed = (templateId: string, tab: MintTab, reason: string) =>
   capture("mint_parse_failed", { template_id: templateId, tab, reason: reason.slice(0, 120) });
 
+/**
+ * `trip_id` and never `trip_slug`: the slug is a capability URL (possessing it
+ * reads the dossier) and every capture fans out to GA, where path scrubbing
+ * exists precisely to keep slugs out of Google.
+ */
 export const trackMintCompleted = (
   templateId: string,
-  tripSlug: string,
+  tripId: string,
   blockCount: number,
   dayCount: number,
 ) =>
   capture("mint_completed", {
     template_id: templateId,
-    trip_slug: tripSlug,
+    trip_id: tripId,
     block_count: blockCount,
     day_count: dayCount,
   });
