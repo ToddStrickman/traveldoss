@@ -35,10 +35,10 @@ export const LEGAL_DOCS: Record<LegalDocSlug, LegalDocMeta> = {
   privacy: {
     slug: "privacy",
     title: "Privacy Policy",
-    version: "1.0",
-    publishedAt: "2026-07-27",
-    effectiveAt: "2026-07-27",
-    contentHash: "fnv1a64-f9ba5594103e6596",
+    version: "1.1",
+    publishedAt: "2026-08-28",
+    effectiveAt: "2026-08-28",
+    contentHash: "fnv1a64-2dcf0c2315affce0",
   },
   disclaimer: {
     slug: "disclaimer",
