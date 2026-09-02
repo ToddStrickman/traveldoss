@@ -41,7 +41,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { SITE_URL } from "@/lib/site";
 import { clearPendingComposer, peekPendingComposer } from "@/lib/mint-pending";
-import { trackComposeOpened } from "@/lib/analytics";
+import { trackComposeOpened, trackMintCompleted, trackMintFailed } from "@/lib/analytics";
+
+/** Day blocks only — the funnel's "how big was this dossier" measure. */
+function dayCount(blocks: Block[]): number {
+  return blocks.filter((b) => (b as { kind?: string }).kind === "day").length;
+}
 
 export const Route = createFileRoute("/")({
   component: Landing,
@@ -225,20 +230,23 @@ function Landing() {
       }
       setMinting(true);
       try {
+        const resumeBlocks = JSON.parse(pendingBlocks) as Block[];
         const r = await create({
           data: {
             templateId: skin.meta.id,
-            blocks: JSON.parse(pendingBlocks) as Block[],
+            blocks: resumeBlocks,
             ...(pendingDestination ? { destination: pendingDestination } : {}),
             ...(pendingDates?.startDate ? { startDate: pendingDates.startDate } : {}),
             ...(pendingDates?.endDate ? { endDate: pendingDates.endDate } : {}),
           },
         });
         clearPending();
+        trackMintCompleted(skin.meta.id, r.tripId, resumeBlocks.length, dayCount(resumeBlocks));
         setPendingSlug(r.slug);
       } catch (e) {
         // Keep the payload: the next visit retries instead of losing work.
         console.error(e);
+        trackMintFailed(skin.meta.id, e instanceof Error ? e.message : String(e));
         toast.error("Couldn't create your dossier", { description: String(e) });
         setMinting(false);
       }
@@ -295,9 +303,11 @@ function Landing() {
           ...(dates?.endDate ? { endDate: dates.endDate } : {}),
         },
       });
+      trackMintCompleted(picked.meta.id, r.tripId, blocks.length, dayCount(blocks));
       setPendingSlug(r.slug);
     } catch (e) {
       console.error(e);
+      trackMintFailed(picked.meta.id, e instanceof Error ? e.message : String(e));
       toast.error("Couldn't create your dossier", { description: String(e) });
       setMinting(false);
     }

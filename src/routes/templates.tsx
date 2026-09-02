@@ -25,8 +25,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { PRICE_WORDS, SITE_URL } from "@/lib/site";
 import { peekPendingComposer } from "@/lib/mint-pending";
-import { capture } from "@/lib/analytics";
+import { capture, trackMintCompleted, trackMintFailed } from "@/lib/analytics";
 import { MintTermsGate, type MintTermsGateHandle } from "@/components/legal/MintTermsGate";
+
+/** Day blocks only — the funnel's "how big was this dossier" measure. */
+function dayCount(blocks: Block[]): number {
+  return blocks.filter((b) => (b as { kind?: string }).kind === "day").length;
+}
 
 function TemplatesSkeleton() {
   return (
@@ -452,9 +457,11 @@ function TemplatesPage() {
           ...(dates?.endDate ? { endDate: dates.endDate } : {}),
         },
       });
+      trackMintCompleted(modalSkin.meta.id, r.tripId, blocks.length, dayCount(blocks));
       setPendingSlug(r.slug);
     } catch (e) {
       console.error(e);
+      trackMintFailed(modalSkin.meta.id, e instanceof Error ? e.message : String(e));
       toast.error("Couldn't create your dossier", {
         description: e instanceof Error ? e.message : String(e),
       });

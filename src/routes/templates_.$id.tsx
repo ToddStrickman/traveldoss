@@ -157,9 +157,11 @@ function TemplateSpread() {
           ...(dates?.endDate ? { endDate: dates.endDate } : {}),
         },
       });
+      trackMintCompleted(skin.meta.id, r.tripId, blocks.length, dayCount(blocks));
       setPendingSlug(r.slug);
     } catch (e) {
       console.error(e);
+      trackMintFailed(skin.meta.id, e instanceof Error ? e.message : String(e));
       toast.error("Couldn't create your dossier", {
         description: e instanceof Error ? e.message : String(e),
       });
