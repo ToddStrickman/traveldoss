@@ -106,3 +106,47 @@ export const trackTemplatePicked = (templateId: string, index: number) =>
 
 export const trackTemplateSwitched = (fromId: string | null, toId: string) =>
   capture("template_switched", { from_template_id: fromId, template_id: toId });
+
+/* ---------------- Mint funnel events (see docs/analytics/tracking-plan.md)
+ *
+ * Counts and lengths only — never pasted itinerary text, prompts or block
+ * content. `mint_completed` is ALSO captured server-side in
+ * createTripFromIngestion; the client copy is the adblock-proof denominator. */
+
+export type MintTab = "paste" | "transcript" | "generate";
+
+export const trackMintComposerOpened = (
+  templateId: string,
+  entry: "mobile_bar" | "dock" | "template_card" | "resume",
+) => capture("mint_composer_opened", { template_id: templateId, entry });
+
+export const trackMintInputReady = (
+  templateId: string,
+  tab: MintTab,
+  inputLength: number,
+) => capture("mint_input_ready", { template_id: templateId, tab, input_length: inputLength });
+
+export const trackMintSubmitted = (templateId: string, tab: MintTab, inputLength: number) =>
+  capture("mint_submitted", { template_id: templateId, tab, input_length: inputLength });
+
+export const trackMintLoginRequired = (templateId: string, tab: MintTab) =>
+  capture("mint_login_required", { template_id: templateId, tab });
+
+export const trackMintParseFailed = (templateId: string, tab: MintTab, reason: string) =>
+  capture("mint_parse_failed", { template_id: templateId, tab, reason: reason.slice(0, 120) });
+
+export const trackMintCompleted = (
+  templateId: string,
+  tripSlug: string,
+  blockCount: number,
+  dayCount: number,
+) =>
+  capture("mint_completed", {
+    template_id: templateId,
+    trip_slug: tripSlug,
+    block_count: blockCount,
+    day_count: dayCount,
+  });
+
+export const trackMintFailed = (templateId: string, reason: string) =>
+  capture("mint_failed", { template_id: templateId, reason: reason.slice(0, 120) });
