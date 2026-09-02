@@ -115,10 +115,8 @@ export const trackTemplateSwitched = (fromId: string | null, toId: string) =>
 
 export type MintTab = "paste" | "transcript" | "generate";
 
-export const trackMintComposerOpened = (
-  templateId: string,
-  entry: "mobile_bar" | "dock" | "template_card" | "resume",
-) => capture("mint_composer_opened", { template_id: templateId, entry });
+/* Funnel step 1 is the existing `compose_opened` above — deliberately not
+ * duplicated here, so the modal-open moment has exactly one event name. */
 
 export const trackMintInputReady = (
   templateId: string,
