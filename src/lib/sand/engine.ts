@@ -339,7 +339,9 @@ export class SandEngine {
       this.edge[i] = p.edgeness;
 
       aSeed[i] = this.rand();
-      aSize[i] = 1.7 + this.rand() * 1.1;
+      // Skewed size spread (many fine grains, a few coarse ones) so the
+      // inscription reads as layered sand instead of a uniform stipple.
+      aSize[i] = 1.35 + Math.pow(this.rand(), 2.2) * 2.3;
       aKind[i] = kind;
       aAccent[i] = p.accent ? 1 : 0;
       aEdge[i] = p.edgeness;
