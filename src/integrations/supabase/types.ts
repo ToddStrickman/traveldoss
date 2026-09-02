@@ -166,71 +166,6 @@ export type Database = {
         }
         Relationships: []
       }
-      places: {
-        Row: {
-          address: string | null
-          category: Database["public"]["Enums"]["place_category"]
-          created_at: string
-          day_number: number | null
-          google_place_id: string | null
-          id: string
-          lat: number | null
-          lng: number | null
-          name: string
-          notes: string | null
-          order_index: number
-          saved: boolean
-          source_excerpt: string | null
-          trip_id: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          address?: string | null
-          category?: Database["public"]["Enums"]["place_category"]
-          created_at?: string
-          day_number?: number | null
-          google_place_id?: string | null
-          id?: string
-          lat?: number | null
-          lng?: number | null
-          name: string
-          notes?: string | null
-          order_index?: number
-          saved?: boolean
-          source_excerpt?: string | null
-          trip_id: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          address?: string | null
-          category?: Database["public"]["Enums"]["place_category"]
-          created_at?: string
-          day_number?: number | null
-          google_place_id?: string | null
-          id?: string
-          lat?: number | null
-          lng?: number | null
-          name?: string
-          notes?: string | null
-          order_index?: number
-          saved?: boolean
-          source_excerpt?: string | null
-          trip_id?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "places_trip_id_fkey"
-            columns: ["trip_id"]
-            isOneToOne: false
-            referencedRelation: "trips"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -474,16 +409,11 @@ export type Database = {
           expires_at: string | null
           hero_image_url: string | null
           id: string
-          keywords: string | null
-          locked_at: string | null
-          locked_snapshot: Json | null
-          original_template_id: string | null
           slug: string
           start_date: string | null
           status: Database["public"]["Enums"]["trip_status"]
           subtitle: string | null
           template_id: string | null
-          tone: string | null
           updated_at: string
           user_id: string
           visibility: string
@@ -498,16 +428,11 @@ export type Database = {
           expires_at?: string | null
           hero_image_url?: string | null
           id?: string
-          keywords?: string | null
-          locked_at?: string | null
-          locked_snapshot?: Json | null
-          original_template_id?: string | null
           slug: string
           start_date?: string | null
           status?: Database["public"]["Enums"]["trip_status"]
           subtitle?: string | null
           template_id?: string | null
-          tone?: string | null
           updated_at?: string
           user_id: string
           visibility?: string
@@ -522,16 +447,11 @@ export type Database = {
           expires_at?: string | null
           hero_image_url?: string | null
           id?: string
-          keywords?: string | null
-          locked_at?: string | null
-          locked_snapshot?: Json | null
-          original_template_id?: string | null
           slug?: string
           start_date?: string | null
           status?: Database["public"]["Enums"]["trip_status"]
           subtitle?: string | null
           template_id?: string | null
-          tone?: string | null
           updated_at?: string
           user_id?: string
           visibility?: string
@@ -546,13 +466,6 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      place_category:
-        | "lodging"
-        | "food"
-        | "activity"
-        | "transport"
-        | "sight"
-        | "other"
       trip_status: "draft" | "generated" | "refined"
     }
     CompositeTypes: {
@@ -681,14 +594,6 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      place_category: [
-        "lodging",
-        "food",
-        "activity",
-        "transport",
-        "sight",
-        "other",
-      ],
       trip_status: ["draft", "generated", "refined"],
     },
   },
