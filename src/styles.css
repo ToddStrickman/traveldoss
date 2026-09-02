@@ -108,6 +108,7 @@
   --color-surface: var(--surface);
   --color-taupe: var(--taupe);
   --color-ruby: var(--tds-ruby);
+  --color-sunset-pink: var(--sunset-pink);
 }
 
 :root {
@@ -116,6 +117,7 @@
   /* Reserved for error/destructive states only — never for headline or body
    * type. Brand accent is champagne gold (--seal). */
   --tds-ruby: oklch(0.63 0.17 24);
+  --sunset-pink: oklch(0.75 0.13 30);         /* warm sunset coral-pink accent */
 
   /* TravelDoss — Dark-Mode Skeuomorphic Revival.
    * Deep Navy canvas, Ivory ink, Champagne Gold accent. */
