@@ -31,6 +31,6 @@ export const ITALIC_SAMPLING: SandLineSampling = {
   // Sampled SPARSER than upright (step multiplier > 1): the oblique face is
   // heavier, so an equal-or-finer step packed far more grains into "Doss"
   // than into "Travel" and the word read as a dense clot rather than sand.
-  density: 1.18,
+  density: 1.5,
   edgeBoost: 0.1,
 };
