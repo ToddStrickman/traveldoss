@@ -13,6 +13,7 @@ import appCss from "../styles.css?url";
 import { Toaster } from "@/components/ui/sonner";
 import { registerServiceWorker } from "@/lib/pwa/register-sw";
 import { PRICE_CENTS, SITE_URL } from "@/lib/site";
+import { gtagHeadScripts } from "@/lib/analytics/gtag";
 
 function NotFoundComponent() {
   return (
@@ -107,6 +108,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
     ],
     scripts: [
+      ...gtagHeadScripts(),
       {
         type: "application/ld+json",
         children: JSON.stringify({
