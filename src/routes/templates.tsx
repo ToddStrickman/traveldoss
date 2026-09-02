@@ -572,21 +572,18 @@ function TemplatesPage() {
             )}
           </div>
 
-          {/* Result count + browse-mode toggle — one left-aligned row so the
-              layout switcher sits right next to the template count. */}
+          {/* Browse-mode toggle. The template count already lives in the intro
+              line above, so only the active-filter note rides along here. */}
           <div className="flex flex-wrap items-center gap-3">
-            <p className="min-w-0 text-[10px] uppercase tracking-[0.4em] text-ink/60">
-              {filteredSkins.length} dossier template{filteredSkins.length !== 1 ? "s" : ""}
-              {activeTag || query ? (
-                <span className="text-seal">
-                  {` · ${(activeTag ? 1 : 0) + (query.trim() ? 1 : 0)} filter${
-                    (activeTag ? 1 : 0) + (query.trim() ? 1 : 0) !== 1 ? "s" : ""
-                  } active`}
-                </span>
-              ) : null}
-            </p>
             {filteredSkins.length > 0 ? (
               <LayoutSwitcher value={browse} onChange={setBrowseMode} />
+            ) : null}
+            {activeTag || query ? (
+              <p className="min-w-0 text-[10px] uppercase tracking-[0.4em] text-seal">
+                {`${(activeTag ? 1 : 0) + (query.trim() ? 1 : 0)} filter${
+                  (activeTag ? 1 : 0) + (query.trim() ? 1 : 0) !== 1 ? "s" : ""
+                } active`}
+              </p>
             ) : null}
           </div>
         </div>
