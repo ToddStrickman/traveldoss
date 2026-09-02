@@ -5,7 +5,7 @@ import { motion } from "motion/react";
 import { ArrowLeft, Search, X } from "lucide-react";
 import { SKINS, type SkinModule } from "@/lib/skins/registry";
 import { TiltCard } from "@/components/motion/Tilt";
-import { InertRender } from "@/lib/skins/shared/views/parts";
+import { DossierCoverArt } from "@/components/flow/DossierCover";
 import { SkinPeek } from "@/components/mobile/SkinPeek";
 import { IngestionModal } from "@/components/flow/IngestionModal";
 import {
@@ -128,63 +128,23 @@ export const Route = createFileRoute("/templates")({
   }),
 });
 
+/**
+ * Grid-mode tile — the same stylized explainer cover the horizontal table and
+ * the vertical spreads use, drawn in this skin's own tokens, so every mode
+ * shows a dossier *object* whose art states the layout's benefit instead of a
+ * shrunken, unreadable render of the demo trip.
+ */
 function SkinPreview({ skin }: { skin: SkinModule }) {
-  const { Render, previewFixture, tokens } = skin;
-  // Measured scale: desktops shrink the 1400px page to the tile; phones
-  // render the skin's own 390px mobile layout near-legible. (CSS cqw math
-  // can't produce a unitless scale factor cross-browser yet.)
-  const tileRef = useRef<HTMLDivElement>(null);
-  const [fit, setFit] = useState({ basis: 1400, scale: 0.32 });
-  useEffect(() => {
-    const el = tileRef.current;
-    if (!el) return;
-    const measure = () => {
-      const w = el.clientWidth;
-      if (w <= 0) return;
-      const basis = window.matchMedia("(max-width: 767px)").matches ? 390 : 1400;
-      setFit({ basis, scale: w / basis });
-    };
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
   return (
     <div
-      ref={tileRef}
-      className="relative h-[420px] w-full overflow-hidden border"
-      style={{ borderColor: "rgba(255,255,255,0.08)", background: tokens.bg }}
+      className="td-cover relative h-[420px] w-full overflow-hidden border"
+      style={{ borderColor: skin.tokens.rule, background: skin.tokens.bg }}
     >
-      <div
-        className="absolute left-0 top-0 origin-top-left"
-        style={{
-          width: `${fit.basis}px`,
-          transform: `scale(${fit.scale})`,
-          transformOrigin: "top left",
-          pointerEvents: "none",
-        }}
-      >
-        {skin.tokens.fontUrl && (
-          <link rel="stylesheet" href={skin.tokens.fontUrl} />
-        )}
-        <InertRender>
-          {/* Grid mode's whole point: the tile shows the real dossier in its
-              grid layout, so the structured at-a-glance read is the thing you
-              are actually previewing. */}
-          <Render trip={previewFixture.trip} blocks={previewFixture.blocks} view="grid" />
-        </InertRender>
-      </div>
-      <div
-        aria-hidden
-        className="absolute inset-0"
-        style={{
-          background:
-            "linear-gradient(180deg, transparent 55%, rgba(0,0,0,0.55) 100%)",
-        }}
-      />
+      <DossierCoverArt skin={skin} size="lg" variant="grid" />
     </div>
   );
 }
+
 
 function SkinCard({
   skin,
@@ -555,7 +515,7 @@ function TemplatesPage() {
         <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-[9px] font-medium uppercase tracking-[0.35em] text-ink/40 sm:text-[10px] sm:tracking-[0.4em]">
           <span>{SKINS.length} templates</span>
           <span aria-hidden className="h-px w-3 bg-ink/20 sm:w-4" />
-          <span>New designs added often</span>
+          <span>Stylized, pragmatic designs at the ready — dossiers at the ready</span>
         </div>
 
         {/* Search + Filter */}
@@ -612,23 +572,18 @@ function TemplatesPage() {
             )}
           </div>
 
-          {/* Result count + browse-mode toggle (all sizes: the table has a
-              phone-native sibling, the swipeable cover rail) */}
-          <div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center md:justify-between">
-            <p className="min-w-0 text-[10px] uppercase tracking-[0.4em] text-ink/60">
-              {filteredSkins.length} dossier template{filteredSkins.length !== 1 ? "s" : ""}
-              {activeTag || query ? (
-                <span className="text-seal">
-                  {` · ${(activeTag ? 1 : 0) + (query.trim() ? 1 : 0)} filter${
-                    (activeTag ? 1 : 0) + (query.trim() ? 1 : 0) !== 1 ? "s" : ""
-                  } active`}
-                </span>
-              ) : null}
-            </p>
+          {/* Browse-mode toggle. The template count already lives in the intro
+              line above, so only the active-filter note rides along here. */}
+          <div className="flex flex-wrap items-center gap-3">
             {filteredSkins.length > 0 ? (
-              <div className="hidden md:block">
-                <LayoutSwitcher value={browse} onChange={setBrowseMode} />
-              </div>
+              <LayoutSwitcher value={browse} onChange={setBrowseMode} />
+            ) : null}
+            {activeTag || query ? (
+              <p className="min-w-0 text-[10px] uppercase tracking-[0.4em] text-seal">
+                {`${(activeTag ? 1 : 0) + (query.trim() ? 1 : 0)} filter${
+                  (activeTag ? 1 : 0) + (query.trim() ? 1 : 0) !== 1 ? "s" : ""
+                } active`}
+              </p>
             ) : null}
           </div>
         </div>
@@ -645,11 +600,6 @@ function TemplatesPage() {
               pickingId={picking}
               variant={browse}
             />
-            {/* Directly under the cover: switching layouts is a glance away
-                from the art it redraws, never a scroll. */}
-            <div className="mt-4 flex justify-center">
-              <LayoutSwitcher value={browse} onChange={setBrowseMode} />
-            </div>
           </div>
         ) : null}
 

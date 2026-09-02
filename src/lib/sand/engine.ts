@@ -339,7 +339,9 @@ export class SandEngine {
       this.edge[i] = p.edgeness;
 
       aSeed[i] = this.rand();
-      aSize[i] = 1.7 + this.rand() * 1.1;
+      // Skewed size spread (many fine grains, a few coarse ones) so the
+      // inscription reads as layered sand instead of a uniform stipple.
+      aSize[i] = 1.35 + Math.pow(this.rand(), 2.2) * 2.3;
       aKind[i] = kind;
       aAccent[i] = p.accent ? 1 : 0;
       aEdge[i] = p.edgeness;
@@ -1145,7 +1147,7 @@ void main() {
   float pulse = 1.0 + vSparkle * 0.5 * (0.5 + 0.5 * sin(uTime * 9.0 + aSeed * 60.0));
   // The seal (the "." after Doss) uses slightly larger grains so it reads
   // as a solid mark, not just more sand.
-  gl_PointSize = aSize * pulse * (1.0 + aAccent * 0.35) * uPixelRatio;
+  gl_PointSize = aSize * pulse * (1.0 + aAccent * 0.18) * uPixelRatio;
   gl_Position = projectionMatrix * mv;
   vSeed = aSeed; vKind = aKind; vAccent = aAccent; vEdge = aEdge; vReveal = aReveal;
   vWorld = position.xy;
@@ -1184,6 +1186,9 @@ void main() {
   float shade = uAmbient + (1.0 - uAmbient) * (0.55 - 0.45 * lit);
 
   vec3 col = palette(fract(vSeed * 5.13));
+  // Per-grain tonal depth: neighbouring grains sit at slightly different
+  // values, which separates them visually where the letterforms are dense.
+  col *= mix(0.78, 1.16, fract(vSeed * 91.7));
   if (vAccent > 0.5) {
     // The seal: molten gold, clearly apart from the sandstone field. It
     // resists the shadow term (stays luminous) and carries a slow shimmer.

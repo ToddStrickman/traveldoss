@@ -88,7 +88,7 @@ export function DossierCoverArt({
 
         {/* Layout preview — placeholder rule work standing in for the
             itinerary, shaped like the layout you're browsing. */}
-        <div className={`mt-auto flex flex-col ${s.gap}`} aria-hidden>
+        <div className={`mt-5 flex flex-1 flex-col justify-center ${s.gap}`} aria-hidden>
           {variant === "grid" ? (
             <GridArt t={t} part={s.part} />
           ) : variant === "horizontal" ? (
@@ -197,35 +197,62 @@ function HorizontalArt({ t, part }: { t: Tk; part: string }) {
   );
 }
 
-/** Grid: a small board of day tiles — everything on one surface. */
+/** Grid: a structured board — a header band, aligned label/value rows and a
+ *  shared column rule, so it reads as "everything, scannable at once". */
 function GridArt({ t, part }: { t: Tk; part: string }) {
   return (
-    <div className="grid grid-cols-3 gap-1.5">
-      {[0, 1, 2, 3, 4, 5].map((i) => (
-        <div
-          key={i}
-          className="td-cover-line flex flex-col gap-[3px] rounded-[3px] p-1"
-          style={{
-            border: `1px solid ${t.rule}`,
-            background: i === 0 ? `color-mix(in oklab, ${t.accent} 12%, transparent)` : "transparent",
-            animationDelay: `${i * 50}ms`,
-          }}
+    <div
+      className="overflow-hidden rounded-[4px]"
+      style={{ border: `1px solid ${t.rule}` }}
+    >
+      {/* Header band */}
+      <div
+        className="flex items-center gap-1.5 px-1.5 py-1"
+        style={{
+          background: `color-mix(in oklab, ${t.accent} 14%, transparent)`,
+          borderBottom: `1px solid ${t.rule}`,
+        }}
+      >
+        <span className="h-[3px] w-[3px] rounded-full" style={{ background: t.accent }} />
+        <span
+          className={`${part} font-medium uppercase tracking-[0.28em]`}
+          style={{ color: t.inkSoft }}
         >
-          <span
-            className={`${part} font-medium uppercase tracking-[0.18em]`}
-            style={{ color: t.inkSoft }}
+          Day board
+        </span>
+      </div>
+      <div className="grid grid-cols-3">
+        {[0, 1, 2, 3, 4, 5].map((i) => (
+          <div
+            key={i}
+            className="td-cover-line flex flex-col gap-[4px] p-1.5"
+            style={{
+              borderRight: i % 3 === 2 ? "none" : `1px solid ${t.rule}`,
+              borderTop: i > 2 ? `1px solid ${t.rule}` : "none",
+              animationDelay: `${i * 50}ms`,
+            }}
           >
-            {`D${i + 1}`}
-          </span>
-          {[0.95, 0.6].map((w, j) => (
             <span
-              key={j}
-              className="h-px"
-              style={{ width: `${w * 100}%`, background: t.rule }}
-            />
-          ))}
-        </div>
-      ))}
+              className={`${part} font-medium uppercase tracking-[0.2em]`}
+              style={{ color: t.inkSoft }}
+            >
+              {`D${i + 1}`}
+            </span>
+            {[0.95, 0.72, 0.55].map((w, j) => (
+              <span key={j} className="flex items-center gap-1">
+                <span
+                  className="h-px shrink-0"
+                  style={{ width: 5, background: t.accent, opacity: 0.65 }}
+                />
+                <span
+                  className="h-px"
+                  style={{ width: `${w * 76}%`, background: t.rule }}
+                />
+              </span>
+            ))}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
