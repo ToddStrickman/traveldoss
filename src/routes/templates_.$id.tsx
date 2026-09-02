@@ -26,6 +26,11 @@ import { toast } from "sonner";
 import { SITE_URL } from "@/lib/site";
 import { MintTermsGate, type MintTermsGateHandle } from "@/components/legal/MintTermsGate";
 
+/** Day blocks only — the funnel's "how big was this dossier" measure. */
+function dayCount(blocks: Block[]): number {
+  return blocks.filter((b) => (b as { kind?: string }).kind === "day").length;
+}
+
 export const Route = createFileRoute("/templates_/$id")({
   component: TemplateSpread,
   beforeLoad: ({ params }) => {
