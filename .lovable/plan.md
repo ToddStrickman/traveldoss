@@ -1,26 +1,38 @@
-# One Lisbon sample, simply shown
+# The layout toggle, placed elegantly on the dossier picker
 
-The templates page stays as it is. No builder, no forms, no draft, nothing saved. The only thing added is a simple way to look at the one sample — Lisbon — in any template and any of the three layouts. The visitor puts nothing in until they mint.
+Understood. Nothing about sample trips, builders, or real itinerary content. While the visitor is picking a dossier, the layout toggle sits elegantly next to the cover, and the cover's abstract art shows what each view actually gives you. No inputs, no data, no commitment.
 
-## What gets added
+## The toggle
 
-**A single "See the Lisbon sample" entry.** One clear control on `/templates`. It opens the Lisbon dossier rendered in the template currently selected — the real, finished, five-day guide content that already exists in the project.
+One control, placed with the cover rather than at the foot of the page: the glyph that reflects the active view (stacked rows / side-by-side columns / four squares), a wax-seal dot marking it active, the word LAYOUT in small caps, and a chevron showing it opens a chooser. Vertical is the default. It sits directly under the cover on mobile and beside it on desktop, so switching views is a glance away from the thing it changes and never a scroll.
 
-**The layout pivot, inside the sample view.** The switcher is the approved direction: a glyph that reflects the active layout (stacked rows / side-by-side columns / four squares), a wax-seal dot marking it active, the word LAYOUT in small caps, and a chevron showing it opens a chooser. Vertical is the default. Choosing horizontal or grid re-renders the same Lisbon trip in that layout.
+Switching redraws the cover art in place — same cover, same size, same position. Nothing else on the page moves.
 
-**A way to change template without leaving.** Inside the sample view, the visitor can step to the next or previous template and the Lisbon content stays put, so the comparison is design against design.
+## The abstract art, per view
 
-**One exit that matters.** "Mint this dossier" from inside the sample view, going into the existing mint flow unchanged. Composing a real trip still happens only after that commitment.
+Still abstract, still drawn from each skin's own tokens — but each variant now expresses that view's real benefit instead of generic rule-work.
 
-That's it. The selection grid, the cover rail, the search, the filters and the abstract covers all stay exactly as they are.
+**Vertical — the photographic read.** Full-bleed image plates alternating with text columns down the page, two plates set beside each other where a comparison would sit. It reads as pictures and side-by-side comparisons flowing top to bottom.
+Caption: "Photographs and comparisons, top to bottom"
+
+**Horizontal — the kanban board.** Day columns standing side by side with small activity cards stacked in each, one card lifted and tilted mid-move with a dashed drop slot in the neighbouring column. It reads as drag-and-drop between days.
+Caption: "Drag activities between days like a board"
+
+**Grid — the structured table.** An even board of day tiles with aligned label/value rows, a shared column rule, and a header band, so it reads as everything structured and easy to scan.
+Caption: "Everything structured, at a glance"
+
+Each cover carries its caption under the art, in the existing small-caps register, so the benefit is stated as well as drawn.
+
+## Nothing else changes
+
+The selection grid, the cover rail, search, filters, and the mint flow all stay exactly as they are.
 
 ## Technical notes
 
-- New `src/lib/skins/sample-trip.ts`: the showcase `TripView` and `Block[]`, derived from `lisbon.blocks` in `src/content/guides/lisbon.ts` so the copy has one source of truth and nothing is duplicated or separately maintained.
-- The sample view reuses the existing `SkinPeek` surface (`src/components/mobile/SkinPeek.tsx`) rather than adding a route, feeding it the Lisbon blocks and a layout state. No new route, no persistence, no server functions, no schema change.
-- The layout control is a new `LayoutSwitcher` reusing the glyph + seal-dot + chevron composition already built in `src/components/mobile/ViewSheet.tsx`, passing `view` through to `skin.Render`.
-- `DossierCoverArt` and the covers are untouched — they keep their abstract art.
-- Skins are untouched; all colour comes from existing skin tokens.
-- Analytics (`src/lib/analytics.ts`, documented in `docs/analytics/tracking-plan.md` in the same change): `sample_dossier_opened` (with `template_id`), `sample_layout_switched` (with `view`), `sample_template_stepped`. No content, no PII.
-- Accessibility: the switcher's accessible name is "Layout: Vertical. Change layout"; 44px tap targets; reduced motion disables the transitions.
-- Verify with `npx vitest run`, a typecheck, and 375 / 393 / 430px checks for zero horizontal overflow.
+- `src/components/flow/DossierCover.tsx`: `VerticalArt`, `HorizontalArt` and `GridArt` are redrawn to the three descriptions above, and the three captions are updated. Same props, same sizes (`sm` / `md` / `lg`), same reserved height per variant, so no caller changes and no layout shift. Image plates are token-filled blocks, not real images — the cover stays abstract and loads nothing.
+- New `LayoutSwitcher`, reusing the glyph + seal-dot + chevron composition already built in `src/components/mobile/ViewSheet.tsx`, with the three-option chooser sheet. It replaces `BrowseToggle` in `src/routes/templates.tsx` and moves to sit with the cover (under it on mobile, beside it from `md`) instead of at the foot of the selection area.
+- Default browse mode becomes `vertical`; the saved `templates:browse` preference still wins after mount.
+- Skins are untouched; every colour comes from existing skin tokens, so all ten templates theme correctly.
+- Analytics: keep the existing `template_browse_mode_changed` event — the moment is already captured. Nothing new to add.
+- Accessibility: the switcher's accessible name is "Layout: Vertical. Change layout"; the art is `aria-hidden` with the caption carrying the meaning; captions keep the `color-mix` contrast rule; 44px tap targets; reduced motion disables the redraw transitions.
+- Verify with `npx vitest run` and a typecheck, plus 375 / 393 / 430px checks for zero horizontal overflow, and update `e2e/templates-mobile-visual.spec.ts` for the new captions and the toggle's new position.
