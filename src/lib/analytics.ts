@@ -5,6 +5,7 @@
  * previews and tests never need a PostHog project.
  */
 import type { PostHog } from "posthog-js";
+import { gtagEvent } from "./analytics/gtag";
 
 type Props = Record<string, string | number | boolean | null | undefined>;
 
