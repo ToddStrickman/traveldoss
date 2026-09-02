@@ -5,7 +5,7 @@ import { motion } from "motion/react";
 import { ArrowLeft, Search, X } from "lucide-react";
 import { SKINS, type SkinModule } from "@/lib/skins/registry";
 import { TiltCard } from "@/components/motion/Tilt";
-import { InertRender } from "@/lib/skins/shared/views/parts";
+import { DossierCoverArt } from "@/components/flow/DossierCover";
 import { SkinPeek } from "@/components/mobile/SkinPeek";
 import { IngestionModal } from "@/components/flow/IngestionModal";
 import {
