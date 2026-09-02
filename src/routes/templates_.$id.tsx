@@ -21,10 +21,16 @@ import { IngestionModal } from "@/components/flow/IngestionModal";
 import { GenerationLoader } from "@/components/GenerationLoader";
 import { createTripFromIngestion } from "@/lib/trips.functions";
 import type { Block } from "@/lib/skins/types";
+import { trackMintCompleted, trackMintFailed } from "@/lib/analytics";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { SITE_URL } from "@/lib/site";
 import { MintTermsGate, type MintTermsGateHandle } from "@/components/legal/MintTermsGate";
+
+/** Day blocks only — the funnel's "how big was this dossier" measure. */
+function dayCount(blocks: Block[]): number {
+  return blocks.filter((b) => (b as { kind?: string }).kind === "day").length;
+}
 
 export const Route = createFileRoute("/templates_/$id")({
   component: TemplateSpread,
@@ -157,9 +163,11 @@ function TemplateSpread() {
           ...(dates?.endDate ? { endDate: dates.endDate } : {}),
         },
       });
+      trackMintCompleted(skin.meta.id, r.tripId, blocks.length, dayCount(blocks));
       setPendingSlug(r.slug);
     } catch (e) {
       console.error(e);
+      trackMintFailed(skin.meta.id, e instanceof Error ? e.message : String(e));
       toast.error("Couldn't create your dossier", {
         description: e instanceof Error ? e.message : String(e),
       });

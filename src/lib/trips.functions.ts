@@ -8,6 +8,7 @@ import { enrichBlocksWithLinkTitles } from "@/lib/itinerary/link-titles.server";
 import { enrichBlocksWithCoords } from "@/lib/itinerary/geo.server";
 import type { Block } from "@/lib/skins/types";
 import { DossierMetaSchema, mergeDossierMeta } from "@/lib/dossier-meta";
+import { captureServer } from "@/lib/analytics.server";
 
 function randomSuffix(len = 6) {
   const alphabet = "abcdefghjkmnpqrstuvwxyz23456789";
@@ -82,6 +83,17 @@ export const createTripFromIngestion = createServerFn({ method: "POST" })
       console.error("[createTripFromIngestion] insert failed", error);
       throw new Error("Failed to create dossier");
     }
+    // Lifecycle transition: captured server-side so it is never trusted from
+    // the client. Counts only, and the trip id rather than the capability slug.
+    await captureServer("mint_completed", userId, {
+      template_id: skin.meta.id,
+      trip_id: trip.id,
+      block_count: (data.blocks as Block[]).length,
+      day_count: (data.blocks as Block[]).filter(
+        (b) => (b as { kind?: string }).kind === "day",
+      ).length,
+      source: "server",
+    });
     return { tripId: trip.id, slug: trip.slug };
   });
 

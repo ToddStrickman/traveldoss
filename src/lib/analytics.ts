@@ -106,3 +106,50 @@ export const trackTemplatePicked = (templateId: string, index: number) =>
 
 export const trackTemplateSwitched = (fromId: string | null, toId: string) =>
   capture("template_switched", { from_template_id: fromId, template_id: toId });
+
+/* ---------------- Mint funnel events (see docs/analytics/tracking-plan.md)
+ *
+ * Counts and lengths only — never pasted itinerary text, prompts or block
+ * content. `mint_completed` is ALSO captured server-side in
+ * createTripFromIngestion; the client copy is the adblock-proof denominator. */
+
+export type MintTab = "paste" | "transcript" | "generate";
+
+/* Funnel step 1 is the existing `compose_opened` above — deliberately not
+ * duplicated here, so the modal-open moment has exactly one event name. */
+
+export const trackMintInputReady = (
+  templateId: string,
+  tab: MintTab,
+  inputLength: number,
+) => capture("mint_input_ready", { template_id: templateId, tab, input_length: inputLength });
+
+export const trackMintSubmitted = (templateId: string, tab: MintTab, inputLength: number) =>
+  capture("mint_submitted", { template_id: templateId, tab, input_length: inputLength });
+
+export const trackMintLoginRequired = (templateId: string, tab: MintTab) =>
+  capture("mint_login_required", { template_id: templateId, tab });
+
+export const trackMintParseFailed = (templateId: string, tab: MintTab, reason: string) =>
+  capture("mint_parse_failed", { template_id: templateId, tab, reason: reason.slice(0, 120) });
+
+/**
+ * `trip_id` and never `trip_slug`: the slug is a capability URL (possessing it
+ * reads the dossier) and every capture fans out to GA, where path scrubbing
+ * exists precisely to keep slugs out of Google.
+ */
+export const trackMintCompleted = (
+  templateId: string,
+  tripId: string,
+  blockCount: number,
+  dayCount: number,
+) =>
+  capture("mint_completed", {
+    template_id: templateId,
+    trip_id: tripId,
+    block_count: blockCount,
+    day_count: dayCount,
+  });
+
+export const trackMintFailed = (templateId: string, reason: string) =>
+  capture("mint_failed", { template_id: templateId, reason: reason.slice(0, 120) });

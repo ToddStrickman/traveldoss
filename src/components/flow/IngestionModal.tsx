@@ -115,7 +115,14 @@ const TABS: {
 import { tripRef } from "@/lib/trip-ref";
 import { ElevateTagline } from "@/components/brand/ElevateTagline";
 import { TemplateCarousel } from "./TemplateCarousel";
-import { trackTemplatePicked, trackTemplateSwitched } from "@/lib/analytics";
+import {
+  trackTemplatePicked,
+  trackTemplateSwitched,
+  trackMintInputReady,
+  trackMintLoginRequired,
+  trackMintParseFailed,
+  trackMintSubmitted,
+} from "@/lib/analytics";
 import {
   clearPendingComposer,
   peekPendingComposer,
@@ -211,6 +218,7 @@ export function IngestionModal({
     // this runs ahead of parsing, so without it a pasted itinerary or
     // generate prompt is simply gone after the sign-in round trip.
     if (template) {
+      trackMintLoginRequired(template.meta.id, tab);
       savePendingComposer({
         templateId: template.meta.id,
         tab,
@@ -267,6 +275,13 @@ export function IngestionModal({
   useEffect(() => {
     if (hasContent && !wasReady.current) {
       setCheers(true);
+      if (template) {
+        trackMintInputReady(
+          template.meta.id,
+          tab,
+          tab === "generate" ? genPrompt.trim().length : text.trim().length,
+        );
+      }
       const t = window.setTimeout(() => setCheers(false), 950);
       wasReady.current = true;
       return () => window.clearTimeout(t);
@@ -355,6 +370,11 @@ export function IngestionModal({
 
   async function submit() {
     if (!template) return;
+    trackMintSubmitted(
+      template.meta.id,
+      tab,
+      tab === "generate" ? genPrompt.trim().length : text.trim().length,
+    );
     if (!(await ensureAuthed())) return;
     if (tab === "generate") {
       if (clarifyQs.length) submitClarifications();
@@ -384,6 +404,11 @@ export function IngestionModal({
       );
     } catch (err) {
       console.error("[ai-parse] failed, falling back to local parser", err);
+      trackMintParseFailed(
+        template.meta.id,
+        tab,
+        err instanceof Error ? err.message : "unknown",
+      );
       toast.warning("AI parser unavailable — used offline parser", {
         description:
           err instanceof Error
@@ -405,6 +430,7 @@ export function IngestionModal({
       setParsing(false);
     }
     if (!blocks.length) {
+      trackMintParseFailed(template.meta.id, tab, "no_blocks");
       toast.error("We couldn't read structure out of that. Try Day 1, Day 2…");
       return;
     }
