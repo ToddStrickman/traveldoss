@@ -175,9 +175,13 @@ for (const width of WIDTHS) {
       await page.goto("/e2e/dossier");
       const trigger = page.getByRole("button", { name: /change layout/i }).first();
       await expect(trigger).toBeVisible();
-      await trigger.click();
+      // The trigger paints before hydration attaches its handler; retry the
+      // open until the sheet's options appear.
       const row = page.getByRole("radio", { name: /Horizontal/ });
-      await expect(row).toBeVisible();
+      await expect(async () => {
+        await trigger.click();
+        await expect(row).toBeVisible({ timeout: 1000 });
+      }).toPass({ timeout: 15000 });
       await expect(row).toContainText(CAPTIONS.horizontal);
       await expectNoHorizontalOverflow(page, width);
     });
