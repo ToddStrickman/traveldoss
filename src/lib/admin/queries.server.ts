@@ -346,12 +346,17 @@ export async function loadAdminMetrics(days: number): Promise<AdminMetrics> {
     ["shared", "Shared / opened by someone else", shared],
   ];
   const top = funnelRaw[0][2];
+  /* Rates are clamped to 100%: the last two steps are counted from the trips and
+     access tables (ground truth, including dossiers minted by sessions that
+     started before this period), so a raw ratio can exceed the step above it and
+     would read as a bug rather than as history. Absolute counts stay exact. */
+  const clamp = (n: number) => Math.min(100, n);
   const funnel: FunnelStep[] = funnelRaw.map(([key, label, value], i) => ({
     key,
     label,
     value,
-    stepRate: i === 0 ? null : pct(value, funnelRaw[i - 1][2]),
-    overallRate: pct(value, top),
+    stepRate: i === 0 ? null : clamp(pct(value, funnelRaw[i - 1][2])),
+    overallRate: clamp(pct(value, top)),
   }));
 
   const kpis: Kpi[] = [

@@ -168,12 +168,10 @@ export function Funnel({
                 }}
               />
             </div>
-            {i > 0 ? (
+            {i > 0 && lost > 0 ? (
               <p className={"mt-1 text-[10px] tabular-nums " + SOFT_TEXT}>
                 {s.stepRate}% continued
-                {lost > 0 ? (
-                  <span style={{ color: RUBY }}> · {lost.toLocaleString()} dropped off</span>
-                ) : null}
+                <span style={{ color: RUBY }}> · {lost.toLocaleString()} dropped off</span>
               </p>
             ) : null}
           </li>
