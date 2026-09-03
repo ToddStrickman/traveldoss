@@ -14,12 +14,19 @@ let client: PostHog | null = null;
 let loading: Promise<PostHog | null> | null = null;
 
 function key(): string | undefined {
-  const k = import.meta.env.VITE_POSTHOG_KEY as string | undefined;
+  // The PostHog connector supplies VITE_LOVABLE_CONNECTOR_POSTHOG_*; the plain
+  // VITE_POSTHOG_* vars stay supported as a manual override.
+  const k =
+    (import.meta.env.VITE_POSTHOG_KEY as string | undefined) ||
+    (import.meta.env.VITE_LOVABLE_CONNECTOR_POSTHOG_API_KEY as string | undefined);
   return k && k.length > 0 ? k : undefined;
 }
 
 function host(): string {
-  return (import.meta.env.VITE_POSTHOG_HOST as string | undefined) ?? "https://us.i.posthog.com";
+  const explicit = import.meta.env.VITE_POSTHOG_HOST as string | undefined;
+  if (explicit && explicit.length > 0) return explicit;
+  const region = import.meta.env.VITE_LOVABLE_CONNECTOR_POSTHOG_REGION as string | undefined;
+  return region === "eu" ? "https://eu.i.posthog.com" : "https://us.i.posthog.com";
 }
 
 /** Lazily boots posthog-js in the browser. Returns null when unconfigured. */
