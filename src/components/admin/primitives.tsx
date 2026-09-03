@@ -234,8 +234,7 @@ function funnelPathScaled(
     return seg;
   };
   const topSeg = pts(-1);
-  const botSeg = pts(1).reverse().map((c) => c);
-  // Reverse the bottom edge point-by-point so the outline closes cleanly.
+  // The bottom edge is traced right→left so the outline closes cleanly.
   const bottomPoints = bottomEdgePoints(steps, w, half, cy);
   return `M 0 ${cy - half[0]} ${topSeg.join(" ").replace(/^L 0 [^ ]+ /, "")} ${bottomPoints} Z`;
 }
