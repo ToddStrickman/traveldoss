@@ -98,6 +98,13 @@ export type Database = {
             foreignKeyName: "drive_watch_channels_trip_id_fkey"
             columns: ["trip_id"]
             isOneToOne: true
+            referencedRelation: "admin_trip_engagement"
+            referencedColumns: ["trip_id"]
+          },
+          {
+            foreignKeyName: "drive_watch_channels_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: true
             referencedRelation: "trips"
             referencedColumns: ["id"]
           },
@@ -226,10 +233,56 @@ export type Database = {
             foreignKeyName: "places_trip_id_fkey"
             columns: ["trip_id"]
             isOneToOne: false
+            referencedRelation: "admin_trip_engagement"
+            referencedColumns: ["trip_id"]
+          },
+          {
+            foreignKeyName: "places_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
             referencedRelation: "trips"
             referencedColumns: ["id"]
           },
         ]
+      }
+      product_events: {
+        Row: {
+          created_at: string
+          event: string
+          id: string
+          occurred_at: string
+          path: string | null
+          props: Json
+          session_id: string | null
+          template_id: string | null
+          trip_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event: string
+          id?: string
+          occurred_at?: string
+          path?: string | null
+          props?: Json
+          session_id?: string | null
+          template_id?: string | null
+          trip_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event?: string
+          id?: string
+          occurred_at?: string
+          path?: string | null
+          props?: Json
+          session_id?: string | null
+          template_id?: string | null
+          trip_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -369,6 +422,13 @@ export type Database = {
             foreignKeyName: "trip_access_events_trip_id_fkey"
             columns: ["trip_id"]
             isOneToOne: false
+            referencedRelation: "admin_trip_engagement"
+            referencedColumns: ["trip_id"]
+          },
+          {
+            foreignKeyName: "trip_access_events_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
             referencedRelation: "trips"
             referencedColumns: ["id"]
           },
@@ -458,6 +518,13 @@ export type Database = {
             foreignKeyName: "trip_entitlements_trip_id_fkey"
             columns: ["trip_id"]
             isOneToOne: false
+            referencedRelation: "admin_trip_engagement"
+            referencedColumns: ["trip_id"]
+          },
+          {
+            foreignKeyName: "trip_entitlements_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
             referencedRelation: "trips"
             referencedColumns: ["id"]
           },
@@ -538,14 +605,124 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
-      [_ in never]: never
+      admin_event_daily: {
+        Row: {
+          day: string | null
+          event: string | null
+          events: number | null
+          sessions: number | null
+          users: number | null
+        }
+        Relationships: []
+      }
+      admin_revenue_daily: {
+        Row: {
+          day: string | null
+          gross_cents: number | null
+          paid_mints: number | null
+          paying_users: number | null
+        }
+        Relationships: []
+      }
+      admin_signup_cohorts: {
+        Row: {
+          cohort_week: string | null
+          first_mint_at: string | null
+          minted_any: number | null
+          signups: number | null
+        }
+        Relationships: []
+      }
+      admin_template_leaderboard: {
+        Row: {
+          mint_submits: number | null
+          mints: number | null
+          picks: number | null
+          previews: number | null
+          template_id: string | null
+        }
+        Relationships: []
+      }
+      admin_trip_engagement: {
+        Row: {
+          block_count: number | null
+          created_at: string | null
+          day_count: number | null
+          destination: string | null
+          edited_after_mint: boolean | null
+          export_events: number | null
+          is_paid: boolean | null
+          recipient_views: number | null
+          template_id: string | null
+          trip_id: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          block_count?: never
+          created_at?: string | null
+          day_count?: never
+          destination?: string | null
+          edited_after_mint?: never
+          export_events?: never
+          is_paid?: never
+          recipient_views?: never
+          template_id?: string | null
+          trip_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          block_count?: never
+          created_at?: string | null
+          day_count?: never
+          destination?: string | null
+          edited_after_mint?: never
+          export_events?: never
+          is_paid?: never
+          recipient_views?: never
+          template_id?: string | null
+          trip_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
+      app_role: "admin" | "moderator" | "user"
       place_category:
         | "lodging"
         | "food"
@@ -681,6 +858,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "moderator", "user"],
       place_category: [
         "lodging",
         "food",

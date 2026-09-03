@@ -2,6 +2,7 @@ import { QueryClient } from "@tanstack/react-query";
 import { createRouter } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
 import { initAnalytics } from "@/lib/analytics/gtag";
+import { initFirstPartyAnalytics } from "@/lib/analytics/first-party";
 
 export const getRouter = () => {
   const queryClient = new QueryClient();
@@ -23,6 +24,9 @@ export const getRouter = () => {
   // imports from the client bundle without warning.
   if (!import.meta.env.SSR) {
     initAnalytics(router);
+    // The same navigations, recorded first-party, because the admin console
+    // cannot query GA. See src/lib/analytics/first-party.ts.
+    initFirstPartyAnalytics(router);
   }
 
   return router;

@@ -1,8 +1,9 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Briefcase, BookOpen, Compass, Home, UserCircle2 } from "lucide-react";
+import { BarChart3, Briefcase, BookOpen, Compass, Home, UserCircle2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 
 /* The rail lists only destinations that actually exist (owner direction:
    an option that doesn't exist shouldn't be present). Its look is the
@@ -77,6 +78,9 @@ function IdentityChip({ user }: { user: User | null }) {
 
 export function Ribbon() {
   const [user, setUser] = useState<User | null>(null);
+  // Owner-only destination: rendered solely for admins, so the rail gives no
+  // hint that a console exists. The console re-verifies the role server-side.
+  const admin = useIsAdmin();
   const path = useRouterState({ select: (s) => s.location.pathname });
 
   useEffect(() => {
@@ -99,8 +103,18 @@ export function Ribbon() {
       icon: Briefcase,
       label: user ? "My Trips" : "My Trips · sign in",
       to: (user ? "/app" : "/login") as "/app" | "/login",
-      active: path.startsWith("/app"),
+      active: path === "/app" || path.startsWith("/app/") ? !path.startsWith("/app/admin") : false,
     },
+    ...(admin
+      ? [
+          {
+            icon: BarChart3,
+            label: "Console",
+            to: "/app/admin" as const,
+            active: path.startsWith("/app/admin"),
+          },
+        ]
+      : []),
   ];
 
   return (
