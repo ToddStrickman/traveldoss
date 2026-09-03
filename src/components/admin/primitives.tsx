@@ -140,46 +140,222 @@ export function KpiCard({
   );
 }
 
-/** Horizontal funnel bars: width is share of the top step, drop-off in ruby. */
-export function Funnel({
-  steps,
-}: {
-  steps: { key: string; label: string; value: number; stepRate: number | null; overallRate: number }[];
-}) {
+type FunnelStep = {
+  key: string;
+  label: string;
+  value: number;
+  stepRate: number | null;
+  overallRate: number;
+};
+
+
+
+
+/** The funnel as an actual tapering shape: columns per step, flow narrowing left→right. */
+function FunnelShape({ steps }: { steps: FunnelStep[] }) {
+  const cols = steps.length;
+  const W = 1000;
+  const H = 340;
+  const w = W / cols;
+  const top = 74;
+  const bottom = H - 66;
+  const max = Math.max(1, ...steps.map((s) => s.value));
+  const cy = (top + bottom) / 2;
+  const span = (bottom - top) / 2;
+
+  // Two ghost bands behind the main flow give the shape depth, as in the brief.
+  const ghost = (scale: number, offset: number) =>
+    funnelPathScaled(steps, w, max, cy + offset, span * scale);
+
   return (
-    <ol className="flex flex-col gap-3">
-      {steps.map((s, i) => {
-        const lost = i > 0 ? Math.max(0, steps[i - 1].value - s.value) : 0;
-        return (
-          <li key={s.key}>
-            <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <span className="text-sm text-ink/85">{s.label}</span>
-              <span className="text-xs tabular-nums text-ink/70">
-                {s.value.toLocaleString()}
-                <span className={"ml-2 " + SOFT_TEXT}>{s.overallRate}% of all</span>
-              </span>
-            </div>
-            <div className="mt-1.5 h-3 overflow-hidden rounded-full bg-ink/8">
-              <div
-                className="h-full rounded-full transition-[width] duration-500 motion-reduce:transition-none"
-                style={{
-                  width: `${Math.max(s.overallRate, s.value > 0 ? 1.5 : 0)}%`,
-                  background: `linear-gradient(90deg, ${GOLD}, ${PINK})`,
-                }}
-              />
-            </div>
-            {i > 0 && lost > 0 ? (
-              <p className={"mt-1 text-[10px] tabular-nums " + SOFT_TEXT}>
-                {s.stepRate}% continued
-                <span style={{ color: RUBY }}> · {lost.toLocaleString()} dropped off</span>
-              </p>
-            ) : null}
-          </li>
-        );
-      })}
-    </ol>
+    <figure className="m-0" aria-hidden="true">
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        className="h-[340px] w-full"
+        preserveAspectRatio="none"
+        role="presentation"
+      >
+        <defs>
+          <linearGradient id="td-funnel-flow" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor={GOLD} stopOpacity={0.85} />
+            <stop offset="100%" stopColor={PINK} stopOpacity={0.85} />
+          </linearGradient>
+          <linearGradient id="td-funnel-ghost" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor={GOLD} stopOpacity={0.14} />
+            <stop offset="100%" stopColor={PINK} stopOpacity={0.1} />
+          </linearGradient>
+        </defs>
+
+        <path d={ghost(1.16, -14)} fill="url(#td-funnel-ghost)" />
+        <path d={ghost(1.08, 18)} fill="url(#td-funnel-ghost)" />
+        <path d={funnelPathScaled(steps, w, max, cy, span)} fill="url(#td-funnel-flow)" />
+
+        {steps.map((s, i) => (
+          <line
+            key={`rule-${s.key}`}
+            x1={i * w}
+            x2={i * w}
+            y1={10}
+            y2={H - 10}
+            stroke="color-mix(in oklab, var(--ink) 14%, transparent)"
+            strokeWidth={1}
+            vectorEffect="non-scaling-stroke"
+          />
+        ))}
+      </svg>
+    </figure>
   );
 }
+
+function funnelPathScaled(
+  steps: FunnelStep[],
+  w: number,
+  max: number,
+  cy: number,
+  span: number,
+): string {
+  const half = steps.map((s) => Math.max(2, (s.value / max) * span));
+  const pts = (sign: 1 | -1) => {
+    const seg: string[] = [];
+    for (let i = 0; i < steps.length; i += 1) {
+      const x0 = i * w;
+      const flatEnd = x0 + w * 0.6;
+      const y = cy + sign * half[i];
+      seg.push(`L ${x0} ${y}`, `L ${flatEnd} ${y}`);
+      if (i < steps.length - 1) {
+        const nx = (i + 1) * w;
+        const ny = cy + sign * half[i + 1];
+        const mid = (flatEnd + nx) / 2;
+        seg.push(`C ${mid} ${y} ${mid} ${ny} ${nx} ${ny}`);
+      } else {
+        seg.push(`L ${steps.length * w} ${y}`);
+      }
+    }
+    return seg;
+  };
+  const topSeg = pts(-1);
+  // The bottom edge is traced right→left so the outline closes cleanly.
+  const bottomPoints = bottomEdgePoints(steps, w, half, cy);
+  return `M 0 ${cy - half[0]} ${topSeg.join(" ").replace(/^L 0 [^ ]+ /, "")} ${bottomPoints} Z`;
+}
+
+/** Bottom edge traced right→left as straight-ish segments (mirrors the top). */
+function bottomEdgePoints(steps: FunnelStep[], w: number, half: number[], cy: number): string {
+  const seg: string[] = [];
+  for (let i = steps.length - 1; i >= 0; i -= 1) {
+    const y = cy + half[i];
+    const x1 = (i + 1) * w;
+    const flatStart = i * w + w * 0.6;
+    seg.push(`L ${x1} ${y}`);
+    if (i > 0) {
+      const py = cy + half[i - 1];
+      const prevFlatEnd = (i - 1) * w + w * 0.6;
+      const mid = (prevFlatEnd + i * w) / 2;
+      seg.push(`L ${flatStart} ${y}`, `L ${i * w} ${y}`, `C ${mid} ${y} ${mid} ${py} ${prevFlatEnd} ${py}`);
+    } else {
+      seg.push(`L 0 ${y}`);
+    }
+  }
+  return seg.join(" ");
+}
+
+/**
+ * Conversion funnel. Desktop gets the tapering flow shape with a column per
+ * step; mobile keeps the stacked bars (a 9-column funnel is unreadable at
+ * 375px) and stays available to screen readers on every size.
+ */
+export function Funnel({ steps }: { steps: FunnelStep[] }) {
+  return (
+    <div>
+      {/* Desktop: the funnel proper. */}
+      <div className="hidden md:block">
+        <div className="relative">
+          <div
+            className="absolute inset-x-0 top-0 grid"
+            style={{ gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))` }}
+          >
+            {steps.map((s) => (
+              <p
+                key={`h-${s.key}`}
+                className="td-eyebrow px-2 pt-1 text-center text-[9px] leading-snug text-ink/60"
+              >
+                {s.label}
+              </p>
+            ))}
+          </div>
+
+          <FunnelShape steps={steps} />
+
+          <div
+            className="pointer-events-none absolute inset-0 grid items-center"
+            style={{ gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))` }}
+          >
+            {steps.map((s) => (
+              <p
+                key={`p-${s.key}`}
+                className="text-center text-2xl leading-none text-ink tabular-nums"
+                style={{ fontFamily: "var(--font-display)" }}
+              >
+                {s.overallRate}%
+              </p>
+            ))}
+          </div>
+
+          <div
+            className="absolute inset-x-0 bottom-0 grid"
+            style={{ gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))` }}
+          >
+            {steps.map((s, i) => {
+              const lost = i > 0 ? Math.max(0, steps[i - 1].value - s.value) : 0;
+              return (
+                <p key={`f-${s.key}`} className={"px-2 text-center text-[10px] tabular-nums " + SOFT_TEXT}>
+                  {s.value.toLocaleString()}
+                  {i > 0 && lost > 0 ? (
+                    <span style={{ color: RUBY }}> · −{lost.toLocaleString()}</span>
+                  ) : null}
+                </p>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile: stacked bars. Visually hidden on desktop, still read aloud. */}
+      <ol className="flex flex-col gap-3 md:sr-only">
+        {steps.map((s, i) => {
+          const lost = i > 0 ? Math.max(0, steps[i - 1].value - s.value) : 0;
+          return (
+            <li key={s.key}>
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <span className="text-sm text-ink/85">{s.label}</span>
+                <span className="text-xs tabular-nums text-ink/70">
+                  {s.value.toLocaleString()}
+                  <span className={"ml-2 " + SOFT_TEXT}>{s.overallRate}% of all</span>
+                </span>
+              </div>
+              <div className="mt-1.5 h-3 overflow-hidden rounded-full bg-ink/8">
+                <div
+                  className="h-full rounded-full transition-[width] duration-500 motion-reduce:transition-none"
+                  style={{
+                    width: `${Math.max(s.overallRate, s.value > 0 ? 1.5 : 0)}%`,
+                    background: `linear-gradient(90deg, ${GOLD}, ${PINK})`,
+                  }}
+                />
+              </div>
+              {i > 0 && lost > 0 ? (
+                <p className={"mt-1 text-[10px] tabular-nums " + SOFT_TEXT}>
+                  {s.stepRate}% continued
+                  <span style={{ color: RUBY }}> · {lost.toLocaleString()} dropped off</span>
+                </p>
+              ) : null}
+            </li>
+          );
+        })}
+      </ol>
+    </div>
+  );
+}
+
 
 const tooltipStyle = {
   contentStyle: {
