@@ -74,3 +74,28 @@ GA-specific call sites, and inline `gtag(...)` calls outside
 - Disclosure: Privacy Policy v1.1 §5 "Cookies and Analytics" names GA4 and the
   `_ga` cookie. `ANALYTICS_ENABLED` in `gtag.ts` is coupled to that disclosure.
 - Full rationale and verification steps: `docs/directives/ANALYTICS.md`.
+
+## First-party store & admin console (2026-09-03)
+
+GA4 cannot be queried from the app and PostHog has no key configured, so every
+`capture()` also lands in a first-party table that the admin console reads.
+
+- `src/lib/analytics/first-party.ts` — batched, anonymous sink. A per-tab
+  `sessionStorage` id (`td_sid_v1`) is the only identifier; the path is scrubbed
+  by `scrub.ts` so a dossier slug is never stored. Flushes every 2s, on
+  `pagehide` and on tab hide. Also emits `page_viewed` per resolved navigation
+  (the funnel's "landed" and "browsed templates" steps).
+- `src/lib/analytics/event-allowlist.ts` — the complete event vocabulary. New
+  events must be added here and documented in this file.
+- `src/lib/product-events.functions.ts` — public `recordEvents` endpoint:
+  allowlisted names, capped batch (20), capped prop count/length, primitives
+  only, no client-supplied user id. Writes with the service role; RLS denies all
+  client access to `product_events` and grants reads only to `has_role(uid,'admin')`.
+- `src/lib/admin/queries.server.ts` — metrics from ground-truth tables (`trips`,
+  `trip_access_events`, `trip_entitlements`, `profiles`, `contact_messages`) plus
+  `product_events`. Returns counts, rates and lengths only.
+- `/app/admin` (`src/routes/_authenticated/app_.admin.tsx`) — admin-only console;
+  the rail button in `Ribbon.tsx` renders only for admins.
+
+New event: `page_viewed` (first-party only, not mirrored to GA — GA sends its own
+`page_view`). Props: `entry` (boolean), scrubbed `path`.
