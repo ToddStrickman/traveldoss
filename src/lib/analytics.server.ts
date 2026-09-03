@@ -10,9 +10,12 @@ export async function captureServer(
   distinctId: string,
   props: Props = {},
 ): Promise<void> {
-  const apiKey = process.env["POSTHOG_KEY"];
+  // POSTHOG_API_KEY / POSTHOG_REGION come from the PostHog connector;
+  // POSTHOG_KEY / POSTHOG_HOST remain supported as manual overrides.
+  const apiKey = process.env["POSTHOG_KEY"] ?? process.env["POSTHOG_API_KEY"];
   if (!apiKey) return;
-  const apiHost = process.env["POSTHOG_HOST"] ?? "https://us.i.posthog.com";
+  const region = process.env["POSTHOG_REGION"] === "eu" ? "eu" : "us";
+  const apiHost = process.env["POSTHOG_HOST"] ?? `https://${region}.i.posthog.com`;
   try {
     await fetch(`${apiHost}/i/v0/e/`, {
       method: "POST",
