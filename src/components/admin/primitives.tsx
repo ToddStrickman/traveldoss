@@ -148,47 +148,8 @@ type FunnelStep = {
   overallRate: number;
 };
 
-/**
- * Builds the two mirrored edges of the funnel band: each column holds its
- * height flat for 60% of its width, then eases into the next column's height.
- */
-function funnelPath(steps: FunnelStep[], w: number, h: number, top: number, bottom: number): string {
-  const max = Math.max(1, ...steps.map((s) => s.value));
-  const cy = (top + bottom) / 2;
-  const span = (bottom - top) / 2;
-  const half = steps.map((s) => Math.max(1.5, (s.value / max) * span));
 
-  const edge = (sign: 1 | -1) => {
-    let d = "";
-    for (let i = 0; i < steps.length; i += 1) {
-      const x0 = i * w;
-      const flatEnd = x0 + w * 0.6;
-      const y = cy + sign * half[i];
-      d += i === 0 ? `M ${x0} ${y} ` : `L ${x0} ${y} `;
-      d += `L ${flatEnd} ${y} `;
-      if (i < steps.length - 1) {
-        const nx = (i + 1) * w;
-        const ny = cy + sign * half[i + 1];
-        const mid = (flatEnd + nx) / 2;
-        d += `C ${mid} ${y} ${mid} ${ny} ${nx} ${ny} `;
-      } else {
-        d += `L ${steps.length * w} ${y} `;
-      }
-    }
-    return d;
-  };
 
-  // Top edge left→right, then down the right wall, then the bottom edge back.
-  const topEdge = edge(-1);
-  const bottomEdge = edge(1)
-    .replace(/^M /, "L ")
-    .trim();
-  const bottomReversed = bottomEdge; // drawn L→R too; closing the path joins the walls
-  return `${topEdge} L ${steps.length * w} ${cy + half[steps.length - 1]} ${bottomReversed
-    .split(" ")
-    .slice(0)
-    .join(" ")} Z`;
-}
 
 /** The funnel as an actual tapering shape: columns per step, flow narrowing left→right. */
 function FunnelShape({ steps }: { steps: FunnelStep[] }) {
