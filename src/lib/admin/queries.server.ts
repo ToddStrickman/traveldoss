@@ -287,9 +287,15 @@ export async function loadAdminMetrics(days: number): Promise<AdminMetrics> {
   const signups = (profiles.data ?? []).length;
   const prevSignups = (prevProfiles.data ?? []).length;
 
-  const currentEnt = entRows.filter((e) => e.purchased_at >= fromIso);
-  const prevEnt = entRows.filter((e) => e.purchased_at < fromIso);
-  const grossCents = currentEnt.reduce((sum, e) => sum + (e.amount_cents ?? 0), 0);
+  const paid = payRows.filter((p) => p.status === "paid");
+  const currentPay = paid.filter((p) => p.paid_at >= fromIso);
+  const prevPay = paid.filter((p) => p.paid_at < fromIso);
+  const grossCents = currentPay.reduce((sum, p) => sum + (p.gross_cents ?? 0), 0);
+  const netCents = currentPay.reduce((sum, p) => sum + (p.net_cents ?? 0), 0);
+  const refundedCents = payRows
+    .filter((p) => p.status !== "paid" && p.paid_at >= fromIso)
+    .reduce((sum, p) => sum + (p.gross_cents ?? 0), 0);
+  const currency = currentPay[0]?.currency ?? paid[0]?.currency ?? "USD";
 
   /* Engagement depth: how much of a dossier a builder actually assembles.
      Read from the trips we already fetched, counted — never returned. */
