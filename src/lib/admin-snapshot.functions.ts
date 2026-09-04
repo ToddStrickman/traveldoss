@@ -7,11 +7,13 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-const TokenSchema = z.object({ token: z.string().regex(/^[0-9a-f]{32}$/) });
+const TokenSchema = z.object({ token: z.string().max(64) });
+const TOKEN_RE = /^[0-9a-f]{32}$/;
 
 export const getAdminSnapshot = createServerFn({ method: "GET" })
   .inputValidator((input: unknown) => TokenSchema.parse(input))
   .handler(async ({ data }) => {
+    if (!TOKEN_RE.test(data.token)) return null;
     const { readSnapshot } = await import("@/lib/admin/snapshots.server");
     const snapshot = await readSnapshot(data.token);
     if (snapshot) {
