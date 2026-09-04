@@ -6,7 +6,7 @@
  *
  * Two data sources, deliberately:
  *   1. Ground truth from tables the product already writes — trips (mints),
- *      trip_access_events (views/exports), trip_entitlements (revenue),
+ *      trip_access_events (views/exports), purchases (revenue),
  *      profiles (signups). These have real history from day one.
  *   2. product_events for moments no table records (browsing, composing,
  *      failures). Anonymous, counts and lengths only.
@@ -83,7 +83,19 @@ export interface AdminMetrics {
     depth: Slice[];
   };
   cohorts: CohortRow[];
-  revenue: { grossCents: number; paidMints: number; series: Point[] };
+  revenue: {
+    grossCents: number;
+    netCents: number;
+    paidMints: number;
+    renewals: number;
+    refundedCents: number;
+    currency: string;
+    series: Point[];
+    /** False until the payment ledger has its first row — the panel then says so. */
+    live: boolean;
+    /** Rows in the ledger, all time, regardless of range. */
+    ledgerRows: number;
+  };
   friction: Slice[];
 }
 
