@@ -222,6 +222,77 @@ const ENGAGE_EVENTS = new Set([
   "guide_clone",
 ]);
 
+/* ------------------------------------------------------- segmented funnels */
+
+/**
+ * Cut the funnel by one event property.
+ *
+ * A session is assigned to the segment value carried by its *earliest* event in
+ * the period (first touch), so an internal navigation or a template switch can
+ * never re-attribute the visit. Sessions with no id are grouped as one bucket
+ * per segment value rather than dropped, because privacy-mode visitors are real
+ * traffic. Rows are ordered by minted, then by landed.
+ */
+function segmentFunnel(rows: EventRow[], pick: (r: EventRow) => string | null): SegmentRow[] {
+  // sessionKey -> segment value, taken from the first event we see (rows are
+  // already sorted ascending by occurred_at).
+  const assigned = new Map<string, string>();
+  for (const r of rows) {
+    const value = pick(r);
+    if (!value) continue;
+    const skey = r.session_id ?? `anon:${value}`;
+    if (!assigned.has(skey)) assigned.set(skey, value);
+  }
+
+  const blank = () => ({ landed: 0, browsed: 0, composed: 0, submitted: 0, minted: 0 });
+  const reach = new Map<string, Set<string>>(); // segment -> sessions per step
+  const buckets = new Map<string, ReturnType<typeof blank>>();
+  const step = (seg: string, name: keyof ReturnType<typeof blank>, skey: string) => {
+    const mapKey = `${seg}::${name}`;
+    let seen = reach.get(mapKey);
+    if (!seen) reach.set(mapKey, (seen = new Set()));
+    if (seen.has(skey)) return;
+    seen.add(skey);
+    const b = buckets.get(seg) ?? blank();
+    b[name]++;
+    buckets.set(seg, b);
+  };
+
+  for (const r of rows) {
+    const value = pick(r);
+    const skey = r.session_id ?? (value ? `anon:${value}` : null);
+    if (!skey) continue;
+    const seg = assigned.get(skey);
+    if (!seg) continue;
+    if (r.event === "page_viewed") step(seg, "landed", skey);
+    if (BROWSE_EVENTS.has(r.event) || (r.path ?? "").startsWith("/templates")) {
+      step(seg, "browsed", skey);
+    }
+    if (r.event === "compose_opened") step(seg, "composed", skey);
+    if (r.event === "mint_submitted") step(seg, "submitted", skey);
+    if (r.event === "mint_completed") step(seg, "minted", skey);
+  }
+
+  return [...buckets.entries()]
+    .map(([label, b]) => {
+      const base = Math.max(b.landed, b.browsed);
+      const small = base < SMALL_N;
+      return {
+        label,
+        ...b,
+        mintRate: small ? null : pct(b.minted, base),
+        browseRate: small ? null : pct(b.browsed, base),
+        small,
+      };
+    })
+    .sort((a, b) => b.minted - a.minted || b.landed - a.landed);
+}
+
+function propString(r: EventRow, key: string): string | null {
+  const v = r.props?.[key];
+  return typeof v === "string" && v.length > 0 ? v.slice(0, 40) : null;
+}
+
 /* -------------------------------------------------------------------- query */
 
 export async function loadAdminMetrics(days: number): Promise<AdminMetrics> {
