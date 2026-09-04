@@ -104,12 +104,15 @@ export function recordFirstParty(event: string, props: Props = {}): void {
   if (typeof window === "undefined") return;
   bindFlushListeners();
   const clean = cleanProps(props);
+  // Coarse first-touch segments on every event, so the console can cut the
+  // funnel by source / device / browser without a second query or a join.
+  const seg = sessionSegments();
   queue.push({
     event,
     occurred_at: new Date().toISOString(),
     session_id: sessionId(),
     path: scrubPath(window.location.pathname),
-    props: clean,
+    props: { src: seg.src, device: seg.device, browser: seg.browser, ...clean },
   });
   if (queue.length >= MAX_BATCH) void flushFirstParty();
   else schedule();
