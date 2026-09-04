@@ -255,6 +255,15 @@ function AdminConsole() {
           </Panel>
         </div>
 
+        <div className="mt-4">
+          <Panel
+            title="What drives minting"
+            subtitle="The same funnel, cut by where the visit came from, what it's on, and which template it touched. Segments below 20 sessions show counts, not rates."
+          >
+            {m ? <SegmentFunnels groups={m.segments} /> : <Skeleton height={320} />}
+          </Panel>
+        </div>
+
         <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
           <Panel title="Template performance" subtitle="Interest against mints, by dossier template." className="lg:col-span-2">
             {!m ? (
