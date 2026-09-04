@@ -236,11 +236,17 @@ export async function loadAdminMetrics(days: number): Promise<AdminMetrics> {
         .select("event_type, occurred_at, trip_id, is_owner")
         .gte("occurred_at", fromIso)
         .limit(50_000),
+      /* The payment ledger. Written only by verified provider webhooks, so a
+         row here is money that actually moved. `trip_entitlements` is the May
+         model and is deliberately never read. */
       supabaseAdmin
-        .from("trip_entitlements")
-        .select("amount_cents, purchased_at, status, template_id")
-        .gte("purchased_at", prevFromIso)
+        .from("purchases")
+        .select("gross_cents, net_cents, currency, kind, status, paid_at")
+        .gte("paid_at", prevFromIso)
         .limit(10_000),
+      /* All-time ledger size: tells the panel whether payments exist at all,
+         so an empty range reads "not switched on yet" instead of "$0". */
+      supabaseAdmin.from("purchases").select("id", { count: "exact", head: true }),
       supabaseAdmin.from("profiles").select("user_id, created_at").gte("created_at", fromIso),
       supabaseAdmin
         .from("profiles")
