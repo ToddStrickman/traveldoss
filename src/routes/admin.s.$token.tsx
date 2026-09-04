@@ -20,6 +20,7 @@ import {
   TrendChart,
   formatValue,
 } from "@/components/admin/primitives";
+import { SegmentFunnels } from "@/components/admin/SegmentFunnels";
 
 export const Route = createFileRoute("/admin/s/$token")({
   loader: ({ params }) => getAdminSnapshot({ data: { token: params.token } }),
