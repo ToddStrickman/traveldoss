@@ -112,6 +112,8 @@ export interface AdminMetrics {
     depth: Slice[];
   };
   cohorts: CohortRow[];
+  /** The funnel cut by acquisition source, device, browser and template. */
+  segments: SegmentGroup[];
   revenue: {
     grossCents: number;
     netCents: number;
