@@ -260,7 +260,8 @@ export async function loadAdminMetrics(days: number): Promise<AdminMetrics> {
   const prevEv = (prevEvents.data ?? []) as Pick<EventRow, "event" | "occurred_at" | "session_id">[];
   const tripRows = trips.data ?? [];
   const accessRows = access.data ?? [];
-  const entRows = (entitlements.data ?? []).filter((e) => e.status === "active");
+  const ledgerRows = ledgerCount.count ?? 0;
+  const payRows = purchases.data ?? [];
 
   const is = (name: string) => (r: { event: string }) => r.event === name;
   const pageViews = ev.filter(is("page_viewed"));
