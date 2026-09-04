@@ -62,7 +62,7 @@ export async function createSnapshot(
       label,
       created_by: userId,
       range_days: days,
-      payload: { metrics, capturedAt: new Date().toISOString() } as unknown as Record<string, unknown>,
+      payload: { metrics, capturedAt: new Date().toISOString() } as unknown as never,
       expires_at: expiresAt,
     })
     .select("id, token, label, range_days, created_at, expires_at, revoked_at, view_count, last_viewed_at")
