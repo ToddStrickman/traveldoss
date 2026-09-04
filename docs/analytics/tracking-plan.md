@@ -119,3 +119,25 @@ session ids, no slugs, no emails.
 Revenue now reads the `purchases` ledger (Paddle, verified webhook only) instead
 of `trip_entitlements`; with zero rows the panel renders an explicit
 "Revenue not switched on yet" state rather than a misleading zero.
+
+## Session segments (first-party, on every event)
+
+Every first-party event now carries three coarse first-touch props, added in
+`src/lib/analytics/first-party.ts` from `src/lib/analytics/segments.ts`:
+
+| Prop | Values | Notes |
+| --- | --- | --- |
+| `src` | `direct`, `search`, `instagram`, `x`, …, `referral: <host>`, or a `utm_source`/`ref` value | Host bucket only — never a referring path or query (OAuth callbacks park tokens there) |
+| `device` | `mobile`, `tablet`, `desktop` | From the UA string; no screen measurements |
+| `browser` | `Chrome`, `Safari`, `Firefox`, `Edge`, `Opera`, `Samsung`, `other` | Family only, never a version |
+
+Frozen on the first event of a tab (sessionStorage `td_seg_v1`), so an internal
+navigation cannot re-attribute the visit. No new event names.
+
+The console reads them in `loadAdminMetrics` → `metrics.segments`: four funnel
+cuts (traffic source, device, browser, template) rendered by
+`src/components/admin/SegmentFunnels.tsx`. Each session is attributed to the
+segment value on its earliest event in the range; steps are landed → browsed →
+composed → submitted → minted (`mint_completed`). Segments below `SMALL_N` (20
+sessions) return `mintRate: null` and the UI shows counts plus a "small sample"
+marker instead of a percentage.
