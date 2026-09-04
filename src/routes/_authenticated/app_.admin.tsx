@@ -15,6 +15,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { ArrowLeft, Download, RefreshCw } from "lucide-react";
 import { getAdminMetrics, getLiveFeed, isAdmin as isAdminFn } from "@/lib/admin.functions";
+import { SnapshotLinks } from "@/components/admin/SnapshotLinks";
 import {
   BarList,
   Donut,
@@ -448,6 +449,10 @@ function AdminConsole() {
               </ul>
             )}
           </Panel>
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <SnapshotLinks days={days} enabled={allowed} />
         </div>
 
         <p className={"mt-8 text-[10px] " + SOFT_TEXT}>
