@@ -597,6 +597,32 @@ export async function loadAdminMetrics(days: number): Promise<AdminMetrics> {
       depth: [...depthBuckets.entries()].map(([label, value]) => ({ label, value })),
     },
     cohorts,
+    segments: [
+      {
+        key: "source",
+        label: "Traffic source",
+        subtitle: "First-touch source of the session — where the visit came from.",
+        rows: segmentFunnel(ev, (r) => propString(r, "src")).slice(0, 10),
+      },
+      {
+        key: "device",
+        label: "Device",
+        subtitle: "Phone, tablet or computer, from the browser's own description.",
+        rows: segmentFunnel(ev, (r) => propString(r, "device")).slice(0, 6),
+      },
+      {
+        key: "browser",
+        label: "Browser",
+        subtitle: "Browser family only — no versions, no fingerprints.",
+        rows: segmentFunnel(ev, (r) => propString(r, "browser")).slice(0, 8),
+      },
+      {
+        key: "template",
+        label: "Template",
+        subtitle: "Sessions grouped by the first template they touched.",
+        rows: segmentFunnel(ev, (r) => r.template_id).slice(0, 10),
+      },
+    ],
     revenue: {
       grossCents,
       netCents,
