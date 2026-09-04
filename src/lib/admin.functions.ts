@@ -56,3 +56,47 @@ export const getLiveFeed = createServerFn({ method: "POST" })
     const { loadLiveFeed } = await import("@/lib/admin/queries.server");
     return loadLiveFeed(data.limit);
   });
+
+/* -------------------------------------------------------- investor snapshots */
+
+const CreateSnapshotSchema = z.object({
+  days: z.number().int().min(1).max(365),
+  label: z.string().trim().max(80).nullable().optional(),
+  ttlDays: z.number().int().min(1).max(90).default(30),
+});
+
+export const createAdminSnapshot = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => CreateSnapshotSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { createSnapshot } = await import("@/lib/admin/snapshots.server");
+    const row = await createSnapshot(context.userId, data.days, data.label ?? null, data.ttlDays);
+    const { captureServer } = await import("@/lib/analytics.server");
+    await captureServer("admin_snapshot_created", context.userId, {
+      range_days: data.days,
+      ttl_days: data.ttlDays,
+      labelled: Boolean(data.label),
+    });
+    return row;
+  });
+
+export const listAdminSnapshots = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context);
+    const { listSnapshots } = await import("@/lib/admin/snapshots.server");
+    return listSnapshots();
+  });
+
+export const revokeAdminSnapshot = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { revokeSnapshot } = await import("@/lib/admin/snapshots.server");
+    await revokeSnapshot(data.id);
+    const { captureServer } = await import("@/lib/analytics.server");
+    await captureServer("admin_snapshot_revoked", context.userId, {});
+    return { revoked: true };
+  });
