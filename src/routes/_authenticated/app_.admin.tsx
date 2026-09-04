@@ -16,6 +16,7 @@ import { useMemo, useState } from "react";
 import { ArrowLeft, Download, RefreshCw } from "lucide-react";
 import { getAdminMetrics, getLiveFeed, isAdmin as isAdminFn } from "@/lib/admin.functions";
 import { SnapshotLinks } from "@/components/admin/SnapshotLinks";
+import { SegmentFunnels } from "@/components/admin/SegmentFunnels";
 import {
   BarList,
   Donut,
@@ -98,6 +99,20 @@ function AdminConsole() {
     for (const s of m.funnel) rows.push([s.label, s.value, s.overallRate, s.stepRate ?? ""]);
     rows.push([], ["template", "previews", "submits", "mints", "reads"]);
     for (const t of m.templates) rows.push([t.templateId, t.previews, t.submits, t.mints, t.views]);
+    for (const g of m.segments) {
+      rows.push([], [g.label, "landed", "browsed", "composed", "submitted", "minted", "mint rate %"]);
+      for (const r of g.rows) {
+        rows.push([
+          r.label,
+          r.landed,
+          r.browsed,
+          r.composed,
+          r.submitted,
+          r.minted,
+          r.mintRate === null ? "small sample" : r.mintRate,
+        ]);
+      }
+    }
     return rows;
   }, [m]);
 
@@ -252,6 +267,15 @@ function AdminConsole() {
             ) : (
               <Skeleton height={220} />
             )}
+          </Panel>
+        </div>
+
+        <div className="mt-4">
+          <Panel
+            title="What drives minting"
+            subtitle="The same funnel, cut by where the visit came from, what it's on, and which template it touched. Segments below 20 sessions show counts, not rates."
+          >
+            {m ? <SegmentFunnels groups={m.segments} /> : <Skeleton height={320} />}
           </Panel>
         </div>
 

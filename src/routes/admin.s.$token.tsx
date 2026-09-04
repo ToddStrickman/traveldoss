@@ -20,6 +20,7 @@ import {
   TrendChart,
   formatValue,
 } from "@/components/admin/primitives";
+import { SegmentFunnels } from "@/components/admin/SegmentFunnels";
 
 export const Route = createFileRoute("/admin/s/$token")({
   loader: ({ params }) => getAdminSnapshot({ data: { token: params.token } }),
@@ -97,6 +98,20 @@ function SnapshotPage() {
             <TrendChart data={m.traffic} seriesB={m.mints} labelA="Page views" labelB="Mints" />
           </Panel>
         </div>
+
+        {/* Older snapshots were frozen before segments existed, hence the guard. */}
+        {(m.segments ?? []).length > 0 ? (
+          <div className="mt-4">
+            <Panel
+              title="What drives minting"
+              subtitle={`Funnel by source, device, browser and template · as of ${stamp(snapshot.createdAt)}`}
+            >
+              <SegmentFunnels groups={m.segments} />
+            </Panel>
+          </div>
+        ) : null}
+
+
 
         <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
           <Panel title="Dossier depth" subtitle={`As of ${stamp(snapshot.createdAt)}`}>

@@ -63,6 +63,35 @@ export interface CohortRow {
   rate: number;
 }
 
+/** One segment value's walk down the funnel (sessions, not page views). */
+export interface SegmentRow {
+  label: string;
+  landed: number;
+  browsed: number;
+  composed: number;
+  submitted: number;
+  minted: number;
+  /** Landed → minted, as a %. `null` when the base is too small to mean anything. */
+  mintRate: number | null;
+  /** Landed → browsed, as a %. `null` below the reporting floor. */
+  browseRate: number | null;
+  /** True when this row is below SMALL_N: read the counts, not the rates. */
+  small: boolean;
+}
+
+export interface SegmentGroup {
+  key: "source" | "device" | "browser" | "template";
+  label: string;
+  subtitle: string;
+  rows: SegmentRow[];
+}
+
+/**
+ * Below this many sessions a percentage is noise dressed as a finding, so the
+ * rates come back null and the console shows the raw counts instead.
+ */
+export const SMALL_N = 20;
+
 export interface AdminMetrics {
   range: { days: number; from: string; to: string };
   eventsTracked: number;
@@ -83,6 +112,8 @@ export interface AdminMetrics {
     depth: Slice[];
   };
   cohorts: CohortRow[];
+  /** The funnel cut by acquisition source, device, browser and template. */
+  segments: SegmentGroup[];
   revenue: {
     grossCents: number;
     netCents: number;
@@ -190,6 +221,77 @@ const ENGAGE_EVENTS = new Set([
   "access_trail_opened",
   "guide_clone",
 ]);
+
+/* ------------------------------------------------------- segmented funnels */
+
+/**
+ * Cut the funnel by one event property.
+ *
+ * A session is assigned to the segment value carried by its *earliest* event in
+ * the period (first touch), so an internal navigation or a template switch can
+ * never re-attribute the visit. Sessions with no id are grouped as one bucket
+ * per segment value rather than dropped, because privacy-mode visitors are real
+ * traffic. Rows are ordered by minted, then by landed.
+ */
+function segmentFunnel(rows: EventRow[], pick: (r: EventRow) => string | null): SegmentRow[] {
+  // sessionKey -> segment value, taken from the first event we see (rows are
+  // already sorted ascending by occurred_at).
+  const assigned = new Map<string, string>();
+  for (const r of rows) {
+    const value = pick(r);
+    if (!value) continue;
+    const skey = r.session_id ?? `anon:${value}`;
+    if (!assigned.has(skey)) assigned.set(skey, value);
+  }
+
+  const blank = () => ({ landed: 0, browsed: 0, composed: 0, submitted: 0, minted: 0 });
+  const reach = new Map<string, Set<string>>(); // segment -> sessions per step
+  const buckets = new Map<string, ReturnType<typeof blank>>();
+  const step = (seg: string, name: keyof ReturnType<typeof blank>, skey: string) => {
+    const mapKey = `${seg}::${name}`;
+    let seen = reach.get(mapKey);
+    if (!seen) reach.set(mapKey, (seen = new Set()));
+    if (seen.has(skey)) return;
+    seen.add(skey);
+    const b = buckets.get(seg) ?? blank();
+    b[name]++;
+    buckets.set(seg, b);
+  };
+
+  for (const r of rows) {
+    const value = pick(r);
+    const skey = r.session_id ?? (value ? `anon:${value}` : null);
+    if (!skey) continue;
+    const seg = assigned.get(skey);
+    if (!seg) continue;
+    if (r.event === "page_viewed") step(seg, "landed", skey);
+    if (BROWSE_EVENTS.has(r.event) || (r.path ?? "").startsWith("/templates")) {
+      step(seg, "browsed", skey);
+    }
+    if (r.event === "compose_opened") step(seg, "composed", skey);
+    if (r.event === "mint_submitted") step(seg, "submitted", skey);
+    if (r.event === "mint_completed") step(seg, "minted", skey);
+  }
+
+  return [...buckets.entries()]
+    .map(([label, b]) => {
+      const base = Math.max(b.landed, b.browsed);
+      const small = base < SMALL_N;
+      return {
+        label,
+        ...b,
+        mintRate: small ? null : pct(b.minted, base),
+        browseRate: small ? null : pct(b.browsed, base),
+        small,
+      };
+    })
+    .sort((a, b) => b.minted - a.minted || b.landed - a.landed);
+}
+
+function propString(r: EventRow, key: string): string | null {
+  const v = r.props?.[key];
+  return typeof v === "string" && v.length > 0 ? v.slice(0, 40) : null;
+}
 
 /* -------------------------------------------------------------------- query */
 
@@ -495,6 +597,32 @@ export async function loadAdminMetrics(days: number): Promise<AdminMetrics> {
       depth: [...depthBuckets.entries()].map(([label, value]) => ({ label, value })),
     },
     cohorts,
+    segments: [
+      {
+        key: "source",
+        label: "Traffic source",
+        subtitle: "First-touch source of the session — where the visit came from.",
+        rows: segmentFunnel(ev, (r) => propString(r, "src")).slice(0, 10),
+      },
+      {
+        key: "device",
+        label: "Device",
+        subtitle: "Phone, tablet or computer, from the browser's own description.",
+        rows: segmentFunnel(ev, (r) => propString(r, "device")).slice(0, 6),
+      },
+      {
+        key: "browser",
+        label: "Browser",
+        subtitle: "Browser family only — no versions, no fingerprints.",
+        rows: segmentFunnel(ev, (r) => propString(r, "browser")).slice(0, 8),
+      },
+      {
+        key: "template",
+        label: "Template",
+        subtitle: "Sessions grouped by the first template they touched.",
+        rows: segmentFunnel(ev, (r) => r.template_id).slice(0, 10),
+      },
+    ],
     revenue: {
       grossCents,
       netCents,
