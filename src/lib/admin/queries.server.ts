@@ -63,6 +63,35 @@ export interface CohortRow {
   rate: number;
 }
 
+/** One segment value's walk down the funnel (sessions, not page views). */
+export interface SegmentRow {
+  label: string;
+  landed: number;
+  browsed: number;
+  composed: number;
+  submitted: number;
+  minted: number;
+  /** Landed → minted, as a %. `null` when the base is too small to mean anything. */
+  mintRate: number | null;
+  /** Landed → browsed, as a %. `null` below the reporting floor. */
+  browseRate: number | null;
+  /** True when this row is below SMALL_N: read the counts, not the rates. */
+  small: boolean;
+}
+
+export interface SegmentGroup {
+  key: "source" | "device" | "browser" | "template";
+  label: string;
+  subtitle: string;
+  rows: SegmentRow[];
+}
+
+/**
+ * Below this many sessions a percentage is noise dressed as a finding, so the
+ * rates come back null and the console shows the raw counts instead.
+ */
+export const SMALL_N = 20;
+
 export interface AdminMetrics {
   range: { days: number; from: string; to: string };
   eventsTracked: number;
