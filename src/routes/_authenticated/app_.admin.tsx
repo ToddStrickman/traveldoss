@@ -99,6 +99,20 @@ function AdminConsole() {
     for (const s of m.funnel) rows.push([s.label, s.value, s.overallRate, s.stepRate ?? ""]);
     rows.push([], ["template", "previews", "submits", "mints", "reads"]);
     for (const t of m.templates) rows.push([t.templateId, t.previews, t.submits, t.mints, t.views]);
+    for (const g of m.segments) {
+      rows.push([], [g.label, "landed", "browsed", "composed", "submitted", "minted", "mint rate %"]);
+      for (const r of g.rows) {
+        rows.push([
+          r.label,
+          r.landed,
+          r.browsed,
+          r.composed,
+          r.submitted,
+          r.minted,
+          r.mintRate === null ? "small sample" : r.mintRate,
+        ]);
+      }
+    }
     return rows;
   }, [m]);
 
