@@ -99,3 +99,23 @@ GA4 cannot be queried from the app and PostHog has no key configured, so every
 
 New event: `page_viewed` (first-party only, not mirrored to GA — GA sends its own
 `page_view`). Props: `entry` (boolean), scrubbed `path`.
+
+## Investor snapshots (admin-only, server-captured)
+
+Snapshot links freeze the console's aggregate panels behind a random 32-hex
+token served at `/admin/s/:token` (noindex, 30-day expiry, revocable).
+
+| Event | Where | Props |
+| --- | --- | --- |
+| `admin_snapshot_created` | `createAdminSnapshot` (server) | `range_days`, `ttl_days`, `labelled` |
+| `admin_snapshot_revoked` | `revokeAdminSnapshot` (server) | — |
+| `admin_snapshot_viewed` | `getAdminSnapshot` (server, public read) | `range_days` |
+
+All three are server-side only (`captureServer`) and carry no viewer identity:
+the public view uses the fixed distinct id `snapshot-viewer`. The stored payload
+is the same aggregate `AdminMetrics` shape the console renders — no live feed, no
+session ids, no slugs, no emails.
+
+Revenue now reads the `purchases` ledger (Paddle, verified webhook only) instead
+of `trip_entitlements`; with zero rows the panel renders an explicit
+"Revenue not switched on yet" state rather than a misleading zero.

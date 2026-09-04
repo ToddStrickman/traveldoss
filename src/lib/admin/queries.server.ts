@@ -6,7 +6,7 @@
  *
  * Two data sources, deliberately:
  *   1. Ground truth from tables the product already writes — trips (mints),
- *      trip_access_events (views/exports), trip_entitlements (revenue),
+ *      trip_access_events (views/exports), purchases (revenue),
  *      profiles (signups). These have real history from day one.
  *   2. product_events for moments no table records (browsing, composing,
  *      failures). Anonymous, counts and lengths only.
@@ -83,7 +83,19 @@ export interface AdminMetrics {
     depth: Slice[];
   };
   cohorts: CohortRow[];
-  revenue: { grossCents: number; paidMints: number; series: Point[] };
+  revenue: {
+    grossCents: number;
+    netCents: number;
+    paidMints: number;
+    renewals: number;
+    refundedCents: number;
+    currency: string;
+    series: Point[];
+    /** False until the payment ledger has its first row — the panel then says so. */
+    live: boolean;
+    /** Rows in the ledger, all time, regardless of range. */
+    ledgerRows: number;
+  };
   friction: Slice[];
 }
 
@@ -189,8 +201,18 @@ export async function loadAdminMetrics(days: number): Promise<AdminMetrics> {
   const prevFromIso = new Date(new Date(fromIso).getTime() - days * DAY_MS).toISOString();
   const dates = dateSpan(new Date(fromIso), days);
 
-  const [events, prevEvents, trips, prevTrips, access, entitlements, profiles, prevProfiles, contacts] =
-    await Promise.all([
+  const [
+    events,
+    prevEvents,
+    trips,
+    prevTrips,
+    access,
+    purchases,
+    ledgerCount,
+    profiles,
+    prevProfiles,
+    contacts,
+  ] = await Promise.all([
       supabaseAdmin
         .from("product_events")
         .select("event, occurred_at, session_id, template_id, path, props")
@@ -214,11 +236,17 @@ export async function loadAdminMetrics(days: number): Promise<AdminMetrics> {
         .select("event_type, occurred_at, trip_id, is_owner")
         .gte("occurred_at", fromIso)
         .limit(50_000),
+      /* The payment ledger. Written only by verified provider webhooks, so a
+         row here is money that actually moved. `trip_entitlements` is the May
+         model and is deliberately never read. */
       supabaseAdmin
-        .from("trip_entitlements")
-        .select("amount_cents, purchased_at, status, template_id")
-        .gte("purchased_at", prevFromIso)
+        .from("purchases")
+        .select("gross_cents, net_cents, currency, kind, status, paid_at")
+        .gte("paid_at", prevFromIso)
         .limit(10_000),
+      /* All-time ledger size: tells the panel whether payments exist at all,
+         so an empty range reads "not switched on yet" instead of "$0". */
+      supabaseAdmin.from("purchases").select("id", { count: "exact", head: true }),
       supabaseAdmin.from("profiles").select("user_id, created_at").gte("created_at", fromIso),
       supabaseAdmin
         .from("profiles")
@@ -232,7 +260,8 @@ export async function loadAdminMetrics(days: number): Promise<AdminMetrics> {
   const prevEv = (prevEvents.data ?? []) as Pick<EventRow, "event" | "occurred_at" | "session_id">[];
   const tripRows = trips.data ?? [];
   const accessRows = access.data ?? [];
-  const entRows = (entitlements.data ?? []).filter((e) => e.status === "active");
+  const ledgerRows = ledgerCount.count ?? 0;
+  const payRows = purchases.data ?? [];
 
   const is = (name: string) => (r: { event: string }) => r.event === name;
   const pageViews = ev.filter(is("page_viewed"));
@@ -258,9 +287,15 @@ export async function loadAdminMetrics(days: number): Promise<AdminMetrics> {
   const signups = (profiles.data ?? []).length;
   const prevSignups = (prevProfiles.data ?? []).length;
 
-  const currentEnt = entRows.filter((e) => e.purchased_at >= fromIso);
-  const prevEnt = entRows.filter((e) => e.purchased_at < fromIso);
-  const grossCents = currentEnt.reduce((sum, e) => sum + (e.amount_cents ?? 0), 0);
+  const paid = payRows.filter((p) => p.status === "paid");
+  const currentPay = paid.filter((p) => p.paid_at >= fromIso);
+  const prevPay = paid.filter((p) => p.paid_at < fromIso);
+  const grossCents = currentPay.reduce((sum, p) => sum + (p.gross_cents ?? 0), 0);
+  const netCents = currentPay.reduce((sum, p) => sum + (p.net_cents ?? 0), 0);
+  const refundedCents = payRows
+    .filter((p) => p.status !== "paid" && p.paid_at >= fromIso)
+    .reduce((sum, p) => sum + (p.gross_cents ?? 0), 0);
+  const currency = currentPay[0]?.currency ?? paid[0]?.currency ?? "USD";
 
   /* Engagement depth: how much of a dossier a builder actually assembles.
      Read from the trips we already fetched, counted — never returned. */
@@ -418,10 +453,10 @@ export async function loadAdminMetrics(days: number): Promise<AdminMetrics> {
       key: "revenue",
       label: "Revenue",
       value: grossCents,
-      previous: prevEnt.reduce((s, e) => s + (e.amount_cents ?? 0), 0),
+      previous: prevPay.reduce((s, p) => s + (p.gross_cents ?? 0), 0),
       format: "currency",
-      series: series(dates, currentEnt.map((e) => e.purchased_at)),
-      hint: "Active entitlements only — the ledger, never a client claim.",
+      series: series(dates, currentPay.map((p) => p.paid_at)),
+      hint: "Settled payments in the ledger only — never a client claim.",
     },
     {
       key: "exports",
@@ -462,8 +497,14 @@ export async function loadAdminMetrics(days: number): Promise<AdminMetrics> {
     cohorts,
     revenue: {
       grossCents,
-      paidMints: currentEnt.length,
-      series: series(dates, currentEnt.map((e) => e.purchased_at)),
+      netCents,
+      paidMints: currentPay.filter((p) => p.kind === "mint").length,
+      renewals: currentPay.filter((p) => p.kind === "renew").length,
+      refundedCents,
+      currency,
+      series: series(dates, currentPay.map((p) => p.paid_at)),
+      live: ledgerRows > 0,
+      ledgerRows,
     },
     friction: [
       { label: "Login required mid-mint", value: loginRequired },

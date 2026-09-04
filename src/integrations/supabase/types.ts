@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_snapshots: {
+        Row: {
+          created_at: string
+          created_by: string
+          expires_at: string
+          id: string
+          label: string | null
+          last_viewed_at: string | null
+          payload: Json
+          range_days: number
+          revoked_at: string | null
+          token: string
+          view_count: number
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          expires_at: string
+          id?: string
+          label?: string | null
+          last_viewed_at?: string | null
+          payload: Json
+          range_days: number
+          revoked_at?: string | null
+          token: string
+          view_count?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          expires_at?: string
+          id?: string
+          label?: string | null
+          last_viewed_at?: string | null
+          payload?: Json
+          range_days?: number
+          revoked_at?: string | null
+          token?: string
+          view_count?: number
+        }
+        Relationships: []
+      }
       app_config: {
         Row: {
           key: string
@@ -310,6 +352,84 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      purchases: {
+        Row: {
+          attributed_ref: string | null
+          attributed_surface: string | null
+          created_at: string
+          currency: string
+          fee_cents: number
+          gross_cents: number
+          id: string
+          kind: Database["public"]["Enums"]["purchase_kind"]
+          net_cents: number
+          paid_at: string
+          price_variant: string | null
+          provider: Database["public"]["Enums"]["purchase_provider"]
+          provider_ref: string
+          refunded_at: string | null
+          status: Database["public"]["Enums"]["purchase_status"]
+          tax_cents: number
+          trip_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          attributed_ref?: string | null
+          attributed_surface?: string | null
+          created_at?: string
+          currency?: string
+          fee_cents?: number
+          gross_cents?: number
+          id?: string
+          kind?: Database["public"]["Enums"]["purchase_kind"]
+          net_cents?: number
+          paid_at?: string
+          price_variant?: string | null
+          provider?: Database["public"]["Enums"]["purchase_provider"]
+          provider_ref: string
+          refunded_at?: string | null
+          status?: Database["public"]["Enums"]["purchase_status"]
+          tax_cents?: number
+          trip_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          attributed_ref?: string | null
+          attributed_surface?: string | null
+          created_at?: string
+          currency?: string
+          fee_cents?: number
+          gross_cents?: number
+          id?: string
+          kind?: Database["public"]["Enums"]["purchase_kind"]
+          net_cents?: number
+          paid_at?: string
+          price_variant?: string | null
+          provider?: Database["public"]["Enums"]["purchase_provider"]
+          provider_ref?: string
+          refunded_at?: string | null
+          status?: Database["public"]["Enums"]["purchase_status"]
+          tax_cents?: number
+          trip_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchases_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "admin_trip_engagement"
+            referencedColumns: ["trip_id"]
+          },
+          {
+            foreignKeyName: "purchases_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       saved_trip_requests: {
         Row: {
@@ -730,6 +850,9 @@ export type Database = {
         | "transport"
         | "sight"
         | "other"
+      purchase_kind: "mint" | "renew"
+      purchase_provider: "stripe" | "paddle"
+      purchase_status: "paid" | "refunded" | "disputed"
       trip_status: "draft" | "generated" | "refined"
     }
     CompositeTypes: {
@@ -867,6 +990,9 @@ export const Constants = {
         "sight",
         "other",
       ],
+      purchase_kind: ["mint", "renew"],
+      purchase_provider: ["stripe", "paddle"],
+      purchase_status: ["paid", "refunded", "disputed"],
       trip_status: ["draft", "generated", "refined"],
     },
   },

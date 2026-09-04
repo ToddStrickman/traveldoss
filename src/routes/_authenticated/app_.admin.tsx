@@ -15,6 +15,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { ArrowLeft, Download, RefreshCw } from "lucide-react";
 import { getAdminMetrics, getLiveFeed, isAdmin as isAdminFn } from "@/lib/admin.functions";
+import { SnapshotLinks } from "@/components/admin/SnapshotLinks";
 import {
   BarList,
   Donut,
@@ -364,8 +365,35 @@ function AdminConsole() {
             )}
           </Panel>
 
-          <Panel title="Revenue" subtitle="Recorded entitlements only — never a client claim.">
-            {m ? (
+          {/* Revenue reads the payments ledger only. Before the first settled
+              payment exists it says so plainly — a "$0" and a flat line would
+              read as a failing business rather than an unbuilt one. */}
+          <Panel title="Revenue" subtitle="Settled payments in the ledger only — never a client claim.">
+            {!m ? (
+              <Skeleton height={200} />
+            ) : !m.revenue.live ? (
+              <div>
+                <p className="td-eyebrow text-[9px] text-ink/55">Revenue not switched on yet</p>
+                <p className={"mt-3 text-xs leading-relaxed " + SOFT_TEXT}>
+                  Paddle is the merchant of record and the checkout isn’t live, so the ledger has no rows.
+                  This panel stays empty on purpose: it will fill itself the moment the first payment
+                  settles, and never shows a number the ledger can’t back.
+                </p>
+                <dl className="mt-4 grid grid-cols-2 gap-3">
+                  {[
+                    ["Provider", "Paddle"],
+                    ["Charges", "Mint + keep-alive renewal"],
+                    ["Ledger rows", "0"],
+                    ["Source of truth", "Verified webhook only"],
+                  ].map(([k, v]) => (
+                    <div key={k}>
+                      <dt className={"td-eyebrow text-[9px] " + SOFT_TEXT}>{k}</dt>
+                      <dd className="mt-1 text-xs text-ink/85">{v}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            ) : (
               <>
                 <p
                   className="text-4xl leading-none text-ink tabular-nums"
@@ -374,14 +402,16 @@ function AdminConsole() {
                   {formatValue(m.revenue.grossCents, "currency")}
                 </p>
                 <p className={"mt-2 text-xs " + SOFT_TEXT}>
-                  {m.revenue.paidMints.toLocaleString()} paid mints in the period
+                  {m.revenue.paidMints.toLocaleString()} paid mints · {m.revenue.renewals.toLocaleString()}{" "}
+                  renewals · net {formatValue(m.revenue.netCents, "currency")}
+                  {m.revenue.refundedCents > 0
+                    ? ` · ${formatValue(m.revenue.refundedCents, "currency")} refunded`
+                    : ""}
                 </p>
                 <div className="mt-3">
                   <TrendChart data={m.revenue.series} labelA="Revenue" height={120} />
                 </div>
               </>
-            ) : (
-              <Skeleton height={200} />
             )}
           </Panel>
         </div>
@@ -419,6 +449,10 @@ function AdminConsole() {
               </ul>
             )}
           </Panel>
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <SnapshotLinks days={days} enabled={allowed} />
         </div>
 
         <p className={"mt-8 text-[10px] " + SOFT_TEXT}>

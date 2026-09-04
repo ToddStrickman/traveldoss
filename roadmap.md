@@ -1,8 +1,8 @@
 # Roadmap
 
 ## Admin console — Amendment 1
-- [ ] Decide: investor snapshot links vs presentation mode only
-- [ ] Empty Paddle `purchases` ledger + "Revenue not switched on yet" panel state
+- [x] Expiring, revocable investor snapshot links (/admin/s/:token)
+- [x] Empty Paddle `purchases` ledger + "Revenue not switched on yet" panel state
 - [ ] `trips.shape_id` (trip shape vs skin) + shape leaderboard
 - [ ] Small-number mode (suppress % below base 20)
 - [ ] Exclude internal/own traffic from panels
