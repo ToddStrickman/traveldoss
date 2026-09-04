@@ -17,6 +17,7 @@
 
 import { recordEvents } from "@/lib/product-events.functions";
 import { scrubPath } from "./scrub";
+import { sessionSegments } from "./segments";
 
 type Props = Record<string, string | number | boolean | null | undefined>;
 
