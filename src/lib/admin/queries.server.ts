@@ -201,8 +201,18 @@ export async function loadAdminMetrics(days: number): Promise<AdminMetrics> {
   const prevFromIso = new Date(new Date(fromIso).getTime() - days * DAY_MS).toISOString();
   const dates = dateSpan(new Date(fromIso), days);
 
-  const [events, prevEvents, trips, prevTrips, access, entitlements, profiles, prevProfiles, contacts] =
-    await Promise.all([
+  const [
+    events,
+    prevEvents,
+    trips,
+    prevTrips,
+    access,
+    purchases,
+    ledgerCount,
+    profiles,
+    prevProfiles,
+    contacts,
+  ] = await Promise.all([
       supabaseAdmin
         .from("product_events")
         .select("event, occurred_at, session_id, template_id, path, props")
