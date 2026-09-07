@@ -49,13 +49,19 @@ export function geocodeQueryFor(b: PlaceBlock, destination?: string | null): str
   return null;
 }
 
-/** Whether the backfill should spend a lookup on this stop. */
-export function shouldAttemptGeocode(b: PlaceBlock): boolean {
+/** Whether the backfill should spend a lookup on this stop. An explicit
+ *  owner request (`retryNeedsReview`) may give a capped stop one more go;
+ *  automatic saves never do. */
+export function shouldAttemptGeocode(
+  b: PlaceBlock,
+  { retryNeedsReview = false }: { retryNeedsReview?: boolean } = {},
+): boolean {
   if (b.lat != null && b.lng != null) return false;
   if (b.mapHidden) return false;
   const status = b.geocode?.status;
-  if (status === "manual" || status === "needs_review" || status === "failed") return false;
-  if ((b.geocode?.attempts ?? 0) >= MAX_GEOCODE_ATTEMPTS) return false;
+  if (status === "manual" || status === "failed") return false;
+  if (status === "needs_review") return retryNeedsReview;
+  if ((b.geocode?.attempts ?? 0) >= MAX_GEOCODE_ATTEMPTS) return retryNeedsReview;
   return true;
 }
 
@@ -119,7 +125,17 @@ export async function enrichBlocksWithCoords(
     destination,
     apiKey = process.env.GOOGLE_MAPS_API_KEY,
     deps = {},
-  }: { budgetMs?: number; destination?: string | null; apiKey?: string; deps?: GeocodeDeps } = {},
+    maxPerRun = MAX_PLACES_PER_RUN,
+    retryNeedsReview = false,
+  }: {
+    budgetMs?: number;
+    destination?: string | null;
+    apiKey?: string;
+    deps?: GeocodeDeps;
+    /** Per-call cap: 8 on autosave, more for an explicit owner request. */
+    maxPerRun?: number;
+    retryNeedsReview?: boolean;
+  } = {},
 ): Promise<Block[]> {
   try {
     if (!apiKey) return blocks;
@@ -127,7 +143,7 @@ export async function enrichBlocksWithCoords(
 
     const targets: Array<{ index: number; query: string }> = [];
     blocks.forEach((b, index) => {
-      if (b.kind !== "place" || !shouldAttemptGeocode(b)) return;
+      if (b.kind !== "place" || !shouldAttemptGeocode(b, { retryNeedsReview })) return;
       const query = geocodeQueryFor(b, destination);
       if (query) targets.push({ index, query });
     });
@@ -136,7 +152,7 @@ export async function enrichBlocksWithCoords(
     const outcomes = new Map<number, { hit: GeocodeHit | null; query: string }>();
     await Promise.race([
       Promise.allSettled(
-        targets.slice(0, MAX_PLACES_PER_RUN).map(async ({ index, query }) => {
+        targets.slice(0, maxPerRun).map(async ({ index, query }) => {
           const { hit } = await resolveGeocodeQuery(query, apiKey, deps);
           outcomes.set(index, { hit, query });
         }),

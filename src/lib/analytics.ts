@@ -195,3 +195,11 @@ export const trackMapRouteToggled = (on: boolean) => capture("map_route_toggled"
 export const trackMapPlanBToggled = (on: boolean) => capture("map_planb_toggled", { on });
 
 export const trackMapTilesFailed = (source: string) => capture("map_tiles_failed", { source });
+
+export const trackMapLocateRequested = (p: {
+  auto: boolean;
+  requested: number;
+  located: number;
+  unresolved: number;
+  configured: boolean;
+}) => capture("map_locate_requested", p);

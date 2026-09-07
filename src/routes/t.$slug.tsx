@@ -9,7 +9,14 @@ import type { Block, SkinView, TripView } from "@/lib/skins/types";
 import { supabase } from "@/integrations/supabase/client";
 import { StudioBar } from "@/components/studio/StudioBar";
 import { ViewSwitch } from "@/components/ViewSwitch";
-import { openMap, serializeMapParam, useMapRequest, useMapUrlSync } from "@/lib/maps/use-map-param";
+import {
+  openMap,
+  registerMapLocator,
+  serializeMapParam,
+  useMapRequest,
+  useMapUrlSync,
+} from "@/lib/maps/use-map-param";
+import { locateTripPlaces } from "@/lib/maps/locate.functions";
 import { ExportMenu } from "@/components/studio/ExportMenu";
 import { AccessAuditTrail } from "@/components/studio/AccessAuditTrail";
 import { PrintScheduleGrid } from "@/components/studio/PrintScheduleGrid";
@@ -586,6 +593,35 @@ function DossierPage() {
     return () => clearTimeout(handle);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trip.id, canEdit, blocks.length]);
+
+  // Live Map "Locate stops": the owner's on-demand geocode pass. The server
+  // persists the located blocks; we mirror them into the editor state so the
+  // map redraws at once and the next autosave carries the same content.
+  const locateFn = useServerFn(locateTripPlaces);
+  useEffect(() => {
+    if (!canEdit) {
+      registerMapLocator(null);
+      return;
+    }
+    registerMapLocator({
+      locate: async (opts) => {
+        const res = await locateFn({
+          data: { slug: trip.slug, retryNeedsReview: !!opts?.retryNeedsReview },
+        });
+        if (res.blocks) {
+          const located = res.blocks as Block[];
+          setSnap((s) => ({ ...s, blocks: located }), { coalesceKey: "map:locate" });
+        }
+        return {
+          configured: res.configured,
+          located: res.located,
+          unresolved: res.unresolved,
+          remaining: res.remaining,
+        };
+      },
+    });
+    return () => registerMapLocator(null);
+  }, [canEdit, trip.slug, locateFn, setSnap]);
 
   const editingCtx = useMemo(
     () => ({
