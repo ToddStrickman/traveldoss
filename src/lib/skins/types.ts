@@ -49,6 +49,25 @@ export type Block =
        *  the Live Map never geocodes at view time. */
       lat?: number;
       lng?: number;
+      /** Google Places resource id (`places.id`). The one Places datum
+       *  Google allows storing indefinitely; lets the map dedupe visits and
+       *  a later phase fetch Place Details. */
+      placeId?: string;
+      /** Geocoding lifecycle. Absent = never attempted (legacy dossiers).
+       *  After MAX_ATTEMPTS misses the stop becomes `needs_review` and is
+       *  never auto-retried; an owner fix sets `manual`, which no pipeline
+       *  overwrites. */
+      geocode?: {
+        status: "resolved" | "pending" | "needs_review" | "failed" | "manual";
+        provider?: "google-places" | "photon" | "manual";
+        attempts: number;
+        /** The text that was sent, shown to the owner when reviewing. */
+        query?: string;
+        /** ISO timestamp of the last attempt or the manual fix. */
+        at?: string;
+      };
+      /** Owner chose to keep this stop off the Live Map (a private address). */
+      mapHidden?: boolean;
       /** Inline photo row rendered with the stop in the Vertical view. */
       images?: GalleryImage[];
       /** Resolved titles for raw URLs appearing inside `note` (url → title). */

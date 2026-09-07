@@ -1,47 +1,45 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { MapPin, X } from "lucide-react";
-import type { Block, SkinTokens, TripView } from "@/lib/skins/types";
-import { buildItinerary } from "@/lib/skins/shared/itinerary";
-import { loadGoogleMaps } from "@/lib/maps/google-maps-loader";
-
 /**
- * The Live Map (landing promise: "see them on a live map").
+ * The Live Map overlay.
  *
- * A floating pin button rendered by SkinFrame across every template. Opening
- * it plots ONLY the stops currently visible on screen — anything truncated
- * or collapsed (closed grid disclosures, hidden carousel alternatives,
- * collapsed Plan-B section) is excluded by checking real DOM visibility of
- * each rendered activity at click time. Pins are numbered per stop and
- * colored per day; a per-day polyline traces the day's route.
+ * One full-screen plate owned by SkinFrame, opened from the masthead Map
+ * button, the desktop view-switch segment, a day header's Map pill, or a
+ * `?map=` link. It plots ONLY the stops currently visible on screen when
+ * it opens (collapsed days, hidden carousel alternatives and the collapsed
+ * Plan-B section are excluded by checking real DOM visibility), except the
+ * day it was opened from, which is always included.
  *
- * Cost profile: coordinates are persisted at enrichment time, so opening the
- * map performs zero geocoding; the Maps SDK itself loads lazily on first
- * click only.
+ * Rendering: MapLibre over OpenFreeMap vector tiles restyled from the skin's
+ * tokens (`MapCanvas`), or parchment mode when that is not possible
+ * (`MapParchment`). Coordinates are persisted at enrichment time, so
+ * opening the map never geocodes.
  */
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { Crosshair, MapPin as MapPinIcon, Minus, Plus, X } from "lucide-react";
+import type { Block, SkinTokens, TripView } from "@/lib/skins/types";
+import { buildMapModel, type MapModel, type MapPlace } from "@/lib/maps/build-map-places";
+import { alpha } from "@/lib/maps/color";
+import { pinPalette } from "@/lib/maps/taxonomy";
+import type { MapEntry } from "@/lib/maps/use-map-param";
+import {
+  trackMapClosed,
+  trackMapDayToggled,
+  trackMapOpened,
+  trackMapPinSelected,
+  trackMapPlanBToggled,
+  trackMapRouteToggled,
+  trackMapTilesFailed,
+} from "@/lib/analytics";
+import { MapCanvas, type MapCanvasHandle, type MapStatus } from "./MapCanvas";
+import { MapParchment } from "./MapParchment";
+import { visitLabel } from "./MapPin";
+import "./map.css";
 
-/** Google reports key/referrer auth failures once per page session and then
- *  renders every subsequent map blank — remember it so reopens short-circuit
- *  to the graceful error instead of an empty canvas. */
-let mapsAuthFailed = false;
-
-const DAY_COLORS = [
-  "#B7472A", "#2E6F8E", "#7A5C2E", "#4A7A4A", "#6B4A8E",
-  "#B0713A", "#3A7A72", "#8E3A5C", "#5C6B2E", "#3A4A8E",
-];
-
-type Pin = {
-  index: number;
-  name: string;
-  time?: string;
-  lat: number;
-  lng: number;
-  day: number | null; // day number (1-based) or null = trip essentials
-  order: number; // 1-based order within its day among located pins
-};
+export { indexDayLookup } from "@/lib/maps/build-map-places";
 
 /** Indexes of activity blocks currently visible (untruncated) on screen. */
-function collectVisibleIndexes(): Set<number> {
+export function collectVisibleIndexes(): Set<number> {
   const out = new Set<number>();
+  if (typeof document === "undefined") return out;
   const nodes = document.querySelectorAll<HTMLElement>(".tds [data-block-index]");
   for (const el of nodes) {
     const idx = Number(el.dataset.blockIndex);
@@ -50,193 +48,14 @@ function collectVisibleIndexes(): Set<number> {
     // content-visibility:auto skipping is a scroll-perf optimization, not
     // user truncation — off-screen days still belong on the map.
     const visible =
-      typeof el.checkVisibility === "function"
-        ? el.checkVisibility()
-        : el.offsetParent !== null;
+      typeof el.checkVisibility === "function" ? el.checkVisibility() : el.offsetParent !== null;
     if (visible) out.add(idx);
   }
   return out;
 }
 
-/** Map each block index to its day number (null = preface/essentials).
- *  Exported for SkinFrame's per-day map buttons (which days are locatable). */
-export function indexDayLookup(blocks: Block[]): Map<number, number | null> {
-  const it = buildItinerary(blocks);
-  const lookup = new Map<number, number | null>();
-  for (const { index } of it.preface) lookup.set(index, null);
-  for (const d of it.days) {
-    const entries = [...d.morning, ...d.afternoon, ...d.evening, ...d.unassigned, ...d.shadows];
-    for (const { index } of entries) lookup.set(index, d.day.n);
-  }
-  return lookup;
-}
-
-/* ── Keyless fallback: a static OpenStreetMap tile grid ─────────────────
- * When Google Maps can't authorize (referrer-locked key on non-prod hosts,
- * missing connector key on forks), the Live Map still works: we compute the
- * Web-Mercator projection ourselves, lay out public OSM raster tiles as
- * plain <img>s, and draw numbered day-colored pins + route lines in an SVG
- * overlay. Zero dependencies, zero API keys, proper OSM attribution. */
-
-const TILE = 256;
-
-function mercator(lat: number, lng: number): { x: number; y: number } {
-  const x = (lng + 180) / 360;
-  const rad = (lat * Math.PI) / 180;
-  const y = (1 - Math.log(Math.tan(rad) + 1 / Math.cos(rad)) / Math.PI) / 2;
-  return { x, y };
-}
-
-function StaticOsmMap({
-  pins,
-  hiddenDays,
-  colorFor,
-}: {
-  pins: Pin[];
-  hiddenDays: Set<number>;
-  colorFor: (day: number | null) => string;
-}) {
-  const boxRef = useRef<HTMLDivElement | null>(null);
-  const [size, setSize] = useState<{ w: number; h: number } | null>(null);
-  useEffect(() => {
-    const el = boxRef.current;
-    if (!el) return;
-    const measure = () => setSize({ w: el.clientWidth, h: el.clientHeight });
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
-  const shown = pins.filter((p) => p.day == null || !hiddenDays.has(p.day));
-
-  const layout = useMemo(() => {
-    if (!size || shown.length === 0) return null;
-    const { w, h } = size;
-    const pts = shown.map((p) => ({ p, m: mercator(p.lat, p.lng) }));
-    const minX = Math.min(...pts.map((t) => t.m.x));
-    const maxX = Math.max(...pts.map((t) => t.m.x));
-    const minY = Math.min(...pts.map((t) => t.m.y));
-    const maxY = Math.max(...pts.map((t) => t.m.y));
-    // Largest zoom (≤17) whose pixel bbox fits with breathing room.
-    let z = 17;
-    while (z > 2) {
-      const scale = TILE * 2 ** z;
-      if ((maxX - minX) * scale <= w - 90 && (maxY - minY) * scale <= h - 90) break;
-      z--;
-    }
-    if (shown.length === 1) z = Math.min(z, 15);
-    const scale = TILE * 2 ** z;
-    const cx = ((minX + maxX) / 2) * scale;
-    const cy = ((minY + maxY) / 2) * scale;
-    const ox = cx - w / 2; // world-pixel origin of the viewport
-    const oy = cy - h / 2;
-    const tiles: Array<{ key: string; url: string; left: number; top: number }> = [];
-    const tx0 = Math.floor(ox / TILE);
-    const ty0 = Math.floor(oy / TILE);
-    const tx1 = Math.floor((ox + w) / TILE);
-    const ty1 = Math.floor((oy + h) / TILE);
-    const nTiles = 2 ** z;
-    for (let tx = tx0; tx <= tx1; tx++) {
-      for (let ty = Math.max(0, ty0); ty <= Math.min(nTiles - 1, ty1); ty++) {
-        const wrappedX = ((tx % nTiles) + nTiles) % nTiles;
-        tiles.push({
-          key: `${z}/${tx}/${ty}`,
-          url: `https://tile.openstreetmap.org/${z}/${wrappedX}/${ty}.png`,
-          left: tx * TILE - ox,
-          top: ty * TILE - oy,
-        });
-      }
-    }
-    const dots = pts.map(({ p, m }) => ({
-      pin: p,
-      left: m.x * scale - ox,
-      top: m.y * scale - oy,
-    }));
-    const paths = new Map<number, string>();
-    for (const d of dots) {
-      if (d.pin.day == null) continue;
-      const prev = paths.get(d.pin.day);
-      paths.set(d.pin.day, `${prev ? `${prev} L` : "M"}${d.left.toFixed(1)},${d.top.toFixed(1)}`);
-    }
-    return { tiles, dots, paths, w, h };
-  }, [size, shown]);
-
-  return (
-    <div ref={boxRef} style={{ position: "absolute", inset: 0, overflow: "hidden", background: "#e8e4dc" }}>
-      {layout ? (
-        <>
-          {layout.tiles.map((t) => (
-            <img
-              key={t.key}
-              src={t.url}
-              alt=""
-              width={TILE}
-              height={TILE}
-              draggable={false}
-              style={{ position: "absolute", left: t.left, top: t.top, userSelect: "none" }}
-            />
-          ))}
-          <svg
-            width={layout.w}
-            height={layout.h}
-            style={{ position: "absolute", inset: 0, pointerEvents: "none" }}
-            aria-hidden
-          >
-            {[...layout.paths.entries()].map(([day, d]) => (
-              <path key={day} d={d} fill="none" stroke={colorFor(day)} strokeWidth={2.5} strokeOpacity={0.55} />
-            ))}
-          </svg>
-          {layout.dots.map(({ pin, left, top }) => (
-            <div
-              key={pin.index}
-              title={`${pin.name}${pin.day != null ? ` · Day ${pin.day}` : ""}`}
-              style={{
-                position: "absolute",
-                left,
-                top,
-                transform: "translate(-50%, -50%)",
-                width: 26,
-                height: 26,
-                borderRadius: 999,
-                background: colorFor(pin.day),
-                border: "2px solid #ffffff",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.35)",
-                color: "#ffffff",
-                font: "700 11px/22px system-ui, sans-serif",
-                textAlign: "center",
-              }}
-            >
-              {pin.order}
-            </div>
-          ))}
-          <div
-            style={{
-              position: "absolute",
-              right: 6,
-              bottom: 4,
-              padding: "2px 6px",
-              borderRadius: 4,
-              background: "rgba(255,255,255,0.75)",
-              font: "400 10px/1.3 system-ui, sans-serif",
-              color: "#333",
-            }}
-          >
-            ©{" "}
-            <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer" style={{ color: "inherit" }}>
-              OpenStreetMap
-            </a>{" "}
-            contributors
-          </div>
-        </>
-      ) : null}
-    </div>
-  );
-}
-
-/* The floating DossierMapButton FAB is retired (owner correction): the map
- * is opened from an embedded button in EVERY day header — see SkinFrame's
- * DayMapContext and editing-kit's EditableDayHeader. */
+const FOCUSABLE =
+  'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
 export function DossierMapOverlay({
   trip,
@@ -244,301 +63,442 @@ export function DossierMapOverlay({
   tokens,
   onClose,
   initialDay,
+  entry,
 }: {
   trip: TripView;
   blocks: Block[];
   tokens: SkinTokens;
   onClose: () => void;
-  /** Open focused on one day: every OTHER day starts hidden; the existing
-   *  day chips restore them (the reference dossier's in-map day picker). */
-  initialDay?: number;
+  /** Open focused on one day: every OTHER day starts hidden; the day chips
+   *  restore them. */
+  initialDay?: number | null;
+  entry?: MapEntry | null;
 }) {
-  const mapEl = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<google.maps.Map | null>(null);
-  const markersRef = useRef<Map<number, google.maps.Marker[]>>(new Map());
-  const linesRef = useRef<Map<number, google.maps.Polyline>>(new Map());
-  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+  const closeRef = useRef<HTMLButtonElement | null>(null);
+  const canvasRef = useRef<MapCanvasHandle | null>(null);
+  const openedAt = useRef(Date.now());
+  const selections = useRef(0);
+  const [status, setStatus] = useState<MapStatus>("loading");
+  const [parchment, setParchment] = useState(false);
+  const [showRoute, setShowRoute] = useState(true);
+  const [showPlanB, setShowPlanB] = useState(false);
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
 
-  // Snapshot what's on screen at open time — the "untruncated only" contract.
-  const { pins, unlocatedVisible } = useMemo(() => {
-    const visible = collectVisibleIndexes();
-    const dayOf = indexDayLookup(blocks);
-    const perDayCount = new Map<number, number>();
-    const pins: Pin[] = [];
-    let unlocated = 0;
-    blocks.forEach((b, index) => {
-      if (b.kind !== "place") return;
-      // Structural visibility filters out collapsed/truncated content, EXCEPT
-      // when the traveler opened the map focused on a specific day — then that
-      // day's pins are always included even if that day is currently collapsed
-      // (otherwise the "Map" button on a collapsed day header opens an empty
-      // map).
-      const day = dayOf.get(index) ?? null;
-      const forceInclude = initialDay != null && day === initialDay;
-      if (!forceInclude && !visible.has(index)) return;
-      if (b.lat == null || b.lng == null) {
-        unlocated++;
-        return;
-      }
-      const key = day ?? 0;
-      const order = (perDayCount.get(key) ?? 0) + 1;
-      perDayCount.set(key, order);
-      pins.push({ index, name: b.name, time: b.time, lat: b.lat, lng: b.lng, day, order });
+  // Snapshot the screen at open time — the "untruncated only" contract.
+  const model: MapModel = useMemo(
+    () =>
+      buildMapModel(trip, blocks, {
+        onlyVisible: collectVisibleIndexes(),
+        forceDay: initialDay ?? null,
+      }),
+    // Computed once per open on purpose: the overlay reflects the screen
+    // state at the moment the traveller opened it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+  const palette = useMemo(() => pinPalette(tokens), [tokens]);
+  const hasPlanB = useMemo(() => model.places.some((p) => p.tier === "shadow"), [model]);
+
+  const [hiddenDays, setHiddenDays] = useState<Set<number>>(() =>
+    initialDay == null ? new Set<number>() : new Set(model.days.filter((d) => d !== initialDay)),
+  );
+  const focusedDay =
+    model.days.length - hiddenDays.size === 1
+      ? (model.days.find((d) => !hiddenDays.has(d)) ?? null)
+      : null;
+
+  const visible = useMemo<MapPlace[]>(
+    () =>
+      model.places.filter((p) => {
+        if (p.tier === "shadow" && !showPlanB) return false;
+        // A place stays while any of its visits is on a shown day; preface
+        // stops (hotel, essentials) always stay.
+        return p.visits.some((v) => v.day == null || !hiddenDays.has(v.day));
+      }),
+    [model, hiddenDays, showPlanB],
+  );
+
+  const selected = useMemo(
+    () => model.places.find((p) => p.key === selectedKey) ?? null,
+    [model, selectedKey],
+  );
+
+  // Analytics: one open, one close.
+  useEffect(() => {
+    trackMapOpened({
+      entry: entry ?? "deeplink",
+      surface: typeof window !== "undefined" && window.innerWidth < 768 ? "mobile" : "desktop",
+      located_count: model.places.length,
+      unlocated_count: model.unlocated.length,
+      day_count: model.days.length,
+      focused_day: initialDay != null,
+      renderer: parchment ? "parchment" : "maplibre",
     });
-    return { pins, unlocatedVisible: unlocated };
-    // Intentionally computed once per open — the overlay reflects the screen
-    // state at the moment the traveler clicked the map icon.
+    const startedAt = openedAt.current;
+    return () => {
+      trackMapClosed({ duration_ms: Date.now() - startedAt, pins_selected: selections.current });
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const days = useMemo(() => {
-    const set = new Set<number>();
-    for (const p of pins) if (p.day != null) set.add(p.day);
-    return [...set].sort((a, b) => a - b);
-  }, [pins]);
-
-  // Day-focused opening: start with every other day hidden. (Declared after
-  // `days` so the initializer can see the full day list; hooks order is
-  // stable because none of this is conditional.)
-  const [hiddenDays, setHiddenDays] = useState<Set<number>>(() =>
-    initialDay == null
-      ? new Set<number>()
-      : new Set(days.filter((d) => d !== initialDay)),
-  );
-
-  const colorFor = useCallback(
-    (day: number | null) =>
-      day == null ? "#555555" : DAY_COLORS[(day - 1) % DAY_COLORS.length],
-    [],
-  );
-
-  // Mount the map once the SDK arrives.
-  useEffect(() => {
-    let cancelled = false;
-    // Google reports key/referrer problems via this global rather than the
-    // loader promise — surface our graceful error state instead of the SDK's
-    // raw "Oops" overlay (e.g. RefererNotAllowedMapError on non-prod hosts).
-    (window as unknown as { gm_authFailure?: () => void }).gm_authFailure = () => {
-      mapsAuthFailed = true;
-      if (!cancelled) setStatus("error");
-    };
-    if (mapsAuthFailed) {
-      setStatus("error");
-      return () => {
-        cancelled = true;
-      };
+  const onStatus = useCallback((s: MapStatus) => {
+    setStatus(s);
+    if (s === "error") {
+      setParchment(true);
+      trackMapTilesFailed("openfreemap");
     }
-    loadGoogleMaps()
-      .then((gm) => {
-        if (cancelled || !mapEl.current) return;
-        const map = new gm.Map(mapEl.current, {
-          mapTypeControl: false,
-          streetViewControl: false,
-          fullscreenControl: false,
-          clickableIcons: false,
-        });
-        mapRef.current = map;
-        const bounds = new gm.LatLngBounds();
-        const info = new gm.InfoWindow();
-        const byDay = markersRef.current;
-        const lines = linesRef.current;
-        const dayPaths = new Map<number, { lat: number; lng: number }[]>();
-
-        for (const pin of pins) {
-          const color = colorFor(pin.day);
-          const marker = new gm.Marker({
-            map,
-            position: { lat: pin.lat, lng: pin.lng },
-            label: { text: String(pin.order), color: "#ffffff", fontSize: "11px", fontWeight: "700" },
-            icon: {
-              path: gm.SymbolPath.CIRCLE,
-              scale: 13,
-              fillColor: color,
-              fillOpacity: 1,
-              strokeColor: "#ffffff",
-              strokeWeight: 2,
-            },
-            title: pin.name,
-          });
-          marker.addListener("click", () => {
-            info.close();
-            const when = pin.time ? `<div style="color:#666;font-size:11px">${pin.time}${pin.day != null ? ` · Day ${pin.day}` : ""}</div>` : pin.day != null ? `<div style="color:#666;font-size:11px">Day ${pin.day}</div>` : "";
-            info.open({ map, anchor: marker });
-            (info as unknown as { setContent: (c: string) => void }).setContent(
-              `<div style="font:600 13px/1.4 system-ui;max-width:220px">${pin.name}${when}</div>`,
-            );
-          });
-          const dayKey = pin.day ?? 0;
-          byDay.set(dayKey, [...(byDay.get(dayKey) ?? []), marker]);
-          if (pin.day != null) {
-            dayPaths.set(pin.day, [...(dayPaths.get(pin.day) ?? []), { lat: pin.lat, lng: pin.lng }]);
-          }
-          bounds.extend({ lat: pin.lat, lng: pin.lng });
-        }
-        for (const [day, path] of dayPaths) {
-          if (path.length < 2) continue;
-          lines.set(
-            day,
-            new gm.Polyline({
-              map,
-              path,
-              strokeColor: colorFor(day),
-              strokeOpacity: 0.55,
-              strokeWeight: 2.5,
-            }),
-          );
-        }
-        if (pins.length > 1) map.fitBounds(bounds, 56);
-        else if (pins.length === 1) {
-          map.setCenter({ lat: pins[0].lat, lng: pins[0].lng });
-          map.setZoom(15);
-        }
-        setStatus("ready");
-      })
-      .catch((err) => {
-        console.error("[live-map] failed to load Google Maps", err);
-        if (!cancelled) setStatus("error");
-      });
-    return () => {
-      cancelled = true;
-      mapRef.current = null;
-      markersRef.current = new Map();
-      linesRef.current = new Map();
-    };
-  }, [pins, colorFor]);
-
-  // Day chip toggles — hide/show that day's markers + route line.
-  const toggleDay = useCallback((day: number) => {
-    setHiddenDays((prev) => {
-      const next = new Set(prev);
-      const nowHidden = !next.has(day);
-      if (nowHidden) next.add(day);
-      else next.delete(day);
-      for (const m of markersRef.current.get(day) ?? []) m.setMap(nowHidden ? null : mapRef.current);
-      const line = linesRef.current.get(day);
-      if (line) line.setMap(nowHidden ? null : mapRef.current);
-      return next;
-    });
   }, []);
 
-  // Escape closes; lock body scroll while open.
+  const onSelect = useCallback(
+    (key: string | null) => {
+      setSelectedKey(key);
+      if (key) {
+        selections.current++;
+        const p = model.places.find((x) => x.key === key);
+        if (p) {
+          trackMapPinSelected({
+            kind: p.kind,
+            via: "click",
+            has_image: !!p.imageUrl,
+            has_reservation: !!p.reservation,
+          });
+        }
+      }
+    },
+    [model],
+  );
+
+  const toggleDay = useCallback(
+    (day: number) => {
+      setHiddenDays((prev) => {
+        const next = new Set(prev);
+        const nowHidden = !next.has(day);
+        if (nowHidden) next.add(day);
+        else next.delete(day);
+        trackMapDayToggled(!nowHidden, model.days.length - next.size);
+        return next;
+      });
+    },
+    [model.days.length],
+  );
+
+  // Escape closes; body scroll locks; focus is trapped inside the dialog.
   useEffect(() => {
+    const dialog = dialogRef.current;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        if (selectedKey) setSelectedKey(null);
+        else onClose();
+        return;
+      }
+      if (e.key === "Tab" && dialog) {
+        const nodes = [...dialog.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(
+          (n) => n.offsetParent !== null || n === document.activeElement,
+        );
+        if (nodes.length === 0) return;
+        const first = nodes[0];
+        const last = nodes[nodes.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     };
     document.addEventListener("keydown", onKey);
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    closeRef.current?.focus({ preventScroll: true });
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = prev;
     };
-  }, [onClose]);
+  }, [onClose, selectedKey]);
+
+  const vars = {
+    "--map-paper": tokens.bg,
+    "--map-paper-90": alpha(tokens.bg, 0.9),
+    "--map-paper-94": alpha(tokens.bg, 0.94),
+    "--map-ink": tokens.ink,
+    "--map-ink-70": alpha(tokens.ink, 0.7),
+    "--map-ink-60": alpha(tokens.ink, 0.6),
+    "--map-ink-08": alpha(tokens.ink, 0.08),
+    "--map-accent": tokens.accent,
+    "--map-rule": tokens.rule,
+    "--tds-fontBody": tokens.fontBody,
+    "--tds-fontDisplay": tokens.fontDisplay,
+  } as CSSProperties;
+
+  const count = visible.length;
+  const empty = model.places.length === 0;
 
   return (
     <div
+      ref={dialogRef}
       role="dialog"
       aria-modal="true"
       aria-label={`Live map of ${trip.destination}`}
       data-print="hide"
-      style={{ position: "fixed", inset: 0, zIndex: 70, display: "flex", flexDirection: "column", background: tokens.bg }}
+      id="live-map"
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 70,
+        display: "flex",
+        flexDirection: "column",
+        background: tokens.bg,
+        color: tokens.ink,
+        fontFamily: tokens.fontBody,
+        ...vars,
+      }}
     >
       <header
         style={{
-          display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
-          padding: "12px 16px", borderBottom: `1px solid ${tokens.rule}`, color: tokens.ink,
-          fontFamily: tokens.fontBody,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+          padding: "12px 16px",
+          paddingTop: "calc(12px + env(safe-area-inset-top, 0px))",
+          borderBottom: `1px solid ${tokens.rule}`,
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-          <MapPin size={16} color={tokens.accent} aria-hidden />
-          <span style={{ font: `600 11px/1 ${tokens.fontBody}`, letterSpacing: "0.28em", textTransform: "uppercase" }}>
+          <MapPinIcon size={16} color={tokens.accent} aria-hidden style={{ flex: "0 0 auto" }} />
+          <span
+            style={{
+              font: `600 11px/1 ${tokens.fontBody}`,
+              letterSpacing: "0.28em",
+              textTransform: "uppercase",
+              whiteSpace: "nowrap",
+              flex: "0 0 auto",
+            }}
+          >
             The Live Map
           </span>
-          <span style={{ color: tokens.inkSoft, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {trip.destination} · {pins.length} stop{pins.length === 1 ? "" : "s"} shown
+          <span
+            style={{
+              color: tokens.inkSoft,
+              fontSize: 12,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {trip.destination} · {count} stop{count === 1 ? "" : "s"}
+            {model.days.length > 0 ? ` · ${model.days.length} day${model.days.length === 1 ? "" : "s"}` : ""}
           </span>
         </div>
         <button
+          ref={closeRef}
           type="button"
           onClick={onClose}
           aria-label="Close map"
-          style={{
-            display: "inline-flex", alignItems: "center", justifyContent: "center",
-            width: 40, height: 40, borderRadius: 999, border: `1px solid ${tokens.rule}`,
-            background: "transparent", color: tokens.ink, cursor: "pointer",
-          }}
+          className="tds-map-iconbtn"
+          style={{ width: 40, height: 40, background: "transparent" }}
         >
           <X size={16} aria-hidden />
         </button>
       </header>
 
-      {days.length > 0 ? (
+      {model.days.length > 0 || hasPlanB ? (
         <div
           style={{
-            display: "flex", gap: 8, padding: "10px 16px", overflowX: "auto",
+            display: "flex",
+            gap: 8,
+            padding: "10px 16px",
+            overflowX: "auto",
+            alignItems: "center",
             borderBottom: `1px solid ${tokens.rule}`,
+            scrollbarWidth: "none",
           }}
         >
-          {days.map((d) => {
+          {model.days.map((d) => {
             const off = hiddenDays.has(d);
             return (
-              <button
-                key={d}
-                type="button"
-                onClick={() => toggleDay(d)}
-                aria-pressed={!off}
-                style={{
-                  display: "inline-flex", alignItems: "center", gap: 7, padding: "7px 12px",
-                  borderRadius: 999, cursor: "pointer", whiteSpace: "nowrap",
-                  border: `1px solid ${off ? tokens.rule : colorFor(d)}`,
-                  background: off ? "transparent" : colorFor(d),
-                  color: off ? tokens.inkSoft : "#ffffff",
-                  font: `600 10px/1 ${tokens.fontBody}`, letterSpacing: "0.16em", textTransform: "uppercase",
-                }}
-              >
-                <span
-                  aria-hidden
-                  style={{ width: 8, height: 8, borderRadius: 999, background: off ? colorFor(d) : "#ffffff" }}
-                />
+              <button key={d} type="button" className="tds-map-chip" onClick={() => toggleDay(d)} aria-pressed={!off}>
+                <span className="dot" aria-hidden />
                 Day {String(d).padStart(2, "0")}
               </button>
             );
           })}
+          <span aria-hidden style={{ width: 1, height: 20, background: tokens.rule, margin: "0 4px", flex: "0 0 auto" }} />
+          <button
+            type="button"
+            className="tds-map-chip"
+            aria-pressed={showRoute}
+            onClick={() =>
+              setShowRoute((v) => {
+                trackMapRouteToggled(!v);
+                return !v;
+              })
+            }
+          >
+            Route
+          </button>
+          {hasPlanB ? (
+            <button
+              type="button"
+              className="tds-map-chip"
+              aria-pressed={showPlanB}
+              onClick={() =>
+                setShowPlanB((v) => {
+                  trackMapPlanBToggled(!v);
+                  return !v;
+                })
+              }
+            >
+              Plan B
+            </button>
+          ) : null}
         </div>
       ) : null}
 
-      <div style={{ position: "relative", flex: 1 }}>
-        <div
-          ref={mapEl}
-          style={{ position: "absolute", inset: 0, visibility: status === "error" ? "hidden" : "visible" }}
-        />
-        {status === "error" ? (
-          // Google couldn't authorize (or no key) — the itinerary still gets a
-          // real map: static OpenStreetMap tiles, keyless and dependency-free.
-          <StaticOsmMap pins={pins} hiddenDays={hiddenDays} colorFor={colorFor} />
-        ) : null}
-        {status === "loading" ? (
+      <div style={{ position: "relative", flex: 1, minHeight: 0 }}>
+        {empty ? (
           <div
             style={{
-              position: "absolute", inset: 0, display: "grid", placeItems: "center",
-              color: tokens.inkSoft, font: `500 12px/1.5 ${tokens.fontBody}`, textAlign: "center", padding: 24,
+              position: "absolute",
+              inset: 0,
+              display: "grid",
+              placeItems: "center",
+              padding: 24,
+              color: tokens.inkSoft,
+              font: `500 13px/1.6 ${tokens.fontBody}`,
+              textAlign: "center",
+            }}
+          >
+            <div style={{ maxWidth: 360 }}>
+              <div style={{ font: `500 22px/1.2 ${tokens.fontDisplay}`, color: tokens.ink, marginBottom: 8 }}>
+                Nothing pinned yet
+              </div>
+              This dossier's places haven't been located. Stops with an address are pinned
+              automatically the next time the dossier saves.
+            </div>
+          </div>
+        ) : parchment ? (
+          <MapParchment
+            model={model}
+            visible={visible}
+            tokens={tokens}
+            palette={palette}
+            showRoute={showRoute}
+            showOrder={focusedDay != null}
+            selectedKey={selectedKey}
+            onSelect={onSelect}
+            hiddenDays={hiddenDays}
+          />
+        ) : (
+          <MapCanvas
+            ref={canvasRef}
+            model={model}
+            visible={visible}
+            tokens={tokens}
+            palette={palette}
+            hiddenDays={hiddenDays}
+            showRoute={showRoute}
+            showOrder={focusedDay != null}
+            selectedKey={selectedKey}
+            onSelect={onSelect}
+            onStatus={onStatus}
+          />
+        )}
+
+        {!empty && !parchment ? (
+          <div className="tds-map-controls">
+            <button
+              type="button"
+              className="tds-map-iconbtn"
+              aria-label="Fit the whole trip"
+              title="Fit trip"
+              onClick={() => canvasRef.current?.fitAll()}
+            >
+              <Crosshair size={15} aria-hidden />
+            </button>
+            <button type="button" className="tds-map-iconbtn" aria-label="Zoom in" onClick={() => canvasRef.current?.zoomIn()}>
+              <Plus size={15} aria-hidden />
+            </button>
+            <button type="button" className="tds-map-iconbtn" aria-label="Zoom out" onClick={() => canvasRef.current?.zoomOut()}>
+              <Minus size={15} aria-hidden />
+            </button>
+          </div>
+        ) : null}
+
+        {status === "loading" && !parchment && !empty ? (
+          <div
+            aria-live="polite"
+            style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              top: 12,
+              display: "grid",
+              placeItems: "center",
+              pointerEvents: "none",
+              color: tokens.inkSoft,
+              font: `500 11px/1.5 ${tokens.fontBody}`,
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
             }}
           >
             Plotting your dossier…
           </div>
         ) : null}
+
+        {selected ? (
+          <div className="tds-map-caption" role="status">
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div className="tds-map-caption-eyebrow">
+                {[
+                  selected.visits[0] ? visitLabel(selected.visits[0]) : null,
+                  selected.tier === "shadow" ? "Plan B" : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ") || "Trip essentials"}
+              </div>
+              <div className="tds-map-caption-name">{selected.name}</div>
+              {selected.address || selected.visits.length > 1 ? (
+                <div
+                  className="tds-map-caption-meta"
+                  style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                >
+                  {selected.visits.length > 1 ? `${selected.visits.length} visits · ` : ""}
+                  {selected.address ?? ""}
+                </div>
+              ) : null}
+            </div>
+            <button
+              type="button"
+              className="tds-map-iconbtn"
+              aria-label="Dismiss"
+              style={{ width: 32, height: 32 }}
+              onClick={() => setSelectedKey(null)}
+            >
+              <X size={14} aria-hidden />
+            </button>
+          </div>
+        ) : null}
       </div>
 
-      {unlocatedVisible > 0 ? (
+      {model.unlocated.length > 0 ? (
         <footer
           style={{
-            padding: "8px 16px", borderTop: `1px solid ${tokens.rule}`,
-            color: tokens.inkSoft, font: `500 11px/1.4 ${tokens.fontBody}`,
+            padding: "8px 16px",
+            paddingBottom: "calc(8px + env(safe-area-inset-bottom, 0px))",
+            borderTop: `1px solid ${tokens.rule}`,
+            color: tokens.inkSoft,
+            font: `500 11px/1.4 ${tokens.fontBody}`,
           }}
         >
-          {unlocatedVisible} visible stop{unlocatedVisible === 1 ? "" : "s"} without a pinned
-          location yet — locations fill in automatically as the dossier saves.
+          {model.unlocated.length} visible stop{model.unlocated.length === 1 ? "" : "s"} without a pinned location
+          {model.unlocated.some((u) => u.status === "needs_review")
+            ? " — some could not be found and need a look"
+            : " — locations fill in automatically as the dossier saves"}
+          .
         </footer>
       ) : null}
     </div>

@@ -163,3 +163,35 @@ export const trackMintCompleted = (
 
 export const trackMintFailed = (templateId: string, reason: string) =>
   capture("mint_failed", { template_id: templateId, reason: reason.slice(0, 120) });
+
+// ── Live Map ─────────────────────────────────────────────────────────────
+// Counts and kinds only: never a place name, a coordinate, or a slug.
+
+export const trackMapOpened = (p: {
+  entry: string;
+  surface: "mobile" | "desktop";
+  located_count: number;
+  unlocated_count: number;
+  day_count: number;
+  focused_day: boolean;
+  renderer: "maplibre" | "parchment";
+}) => capture("map_opened", p);
+
+export const trackMapClosed = (p: { duration_ms: number; pins_selected: number }) =>
+  capture("map_closed", p);
+
+export const trackMapPinSelected = (p: {
+  kind: string;
+  via: "click" | "keyboard";
+  has_image: boolean;
+  has_reservation: boolean;
+}) => capture("map_pin_selected", p);
+
+export const trackMapDayToggled = (on: boolean, dayCountVisible: number) =>
+  capture("map_day_toggled", { on, day_count_visible: dayCountVisible });
+
+export const trackMapRouteToggled = (on: boolean) => capture("map_route_toggled", { on });
+
+export const trackMapPlanBToggled = (on: boolean) => capture("map_planb_toggled", { on });
+
+export const trackMapTilesFailed = (source: string) => capture("map_tiles_failed", { source });

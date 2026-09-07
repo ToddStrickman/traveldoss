@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import type { Block } from "@/lib/skins/types";
 import { parseItineraryAiCore } from "@/lib/itinerary/parse-ai.functions";
+import { carryOverBlockFields } from "@/lib/itinerary/carry-over";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 /**
@@ -49,7 +50,13 @@ export async function refineItineraryAiCore(data: RefineItineraryInput) {
     reason: data.reason,
   });
   const result = await parseItineraryAiCore({ text: brief, source: "ai" });
-  return { blocks: result.blocks, destination: result.destination ?? null };
+  // The brief is text, so the re-parse cannot return what the model never
+  // saw: coordinates, Places ids, geocode status, photos, link titles, an
+  // owner's manual pin. Restore them from the blocks that went in.
+  return {
+    blocks: carryOverBlockFields(blocks, result.blocks as Block[]),
+    destination: result.destination ?? null,
+  };
 }
 
 /** Authenticated HTTP entry point. Spends AI + Google Places credits. */

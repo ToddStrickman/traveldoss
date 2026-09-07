@@ -14,11 +14,13 @@
  *                                   "this edit produced a save intent".
  */
 import { useEffect, useMemo, useRef, useState } from "react";
-import { createFileRoute, notFound } from "@tanstack/react-router";
+import { createFileRoute, notFound, useNavigate } from "@tanstack/react-router";
 import { FALLBACK_SKIN, getSkin } from "@/lib/skins/registry";
 import type { Block, SkinView, TripMeta, TripView } from "@/lib/skins/types";
 import { DEMO_BLOCKS, DEMO_TRIP } from "@/lib/skins/demo";
 import { DossierMastheadBar } from "@/components/mobile/DossierMastheadBar";
+import { ViewSwitch } from "@/components/ViewSwitch";
+import { openMap, serializeMapParam, useMapRequest, useMapUrlSync } from "@/lib/maps/use-map-param";
 import { ViewPill } from "@/components/mobile/ViewSheet";
 import { StudioBar } from "@/components/studio/StudioBar";
 import { IngestionModal } from "@/components/flow/IngestionModal";
@@ -32,11 +34,12 @@ export const Route = createFileRoute("/e2e/dossier")({
   },
   validateSearch: (
     s: Record<string, unknown>,
-  ): { skin?: string; view: SkinView; edit?: boolean } => ({
+  ): { skin?: string; view: SkinView; edit?: boolean; map?: string } => ({
     skin: typeof s.skin === "string" ? s.skin : undefined,
     view:
       s.view === "horizontal" || s.view === "grid" ? s.view : "vertical",
     edit: s.edit === 1 || s.edit === "1" || s.edit === true ? true : undefined,
+    map: typeof s.map === "string" ? s.map : s.map === 1 ? "1" : undefined,
   }),
   component: DossierHarness,
 });
@@ -50,6 +53,28 @@ declare global {
 function DossierHarness() {
   const search = Route.useSearch();
   const skin = getSkin(search.skin ?? "") ?? FALLBACK_SKIN;
+  // Same Live Map ↔ URL wiring as /t/$slug so ?map= is testable without a DB.
+  const navigate = useNavigate();
+  const mapNavigator = useMemo(
+    () => ({
+      open: (day: number | null) =>
+        void navigate({
+          to: ".",
+          search: (prev: Record<string, unknown>) => ({ ...prev, map: serializeMapParam(day) }),
+          resetScroll: false,
+        }),
+      close: () =>
+        void navigate({
+          to: ".",
+          search: (prev: Record<string, unknown>) => ({ ...prev, map: undefined }),
+          replace: true,
+          resetScroll: false,
+        }),
+    }),
+    [navigate],
+  );
+  useMapUrlSync(search.map, mapNavigator);
+  const mapRequest = useMapRequest();
   const [layout, setLayout] = useState<SkinView>(search.view);
   const [mintOpen, setMintOpen] = useState(false);
   const [snap, setSnap] = useState<{ trip: TripView; blocks: Block[] }>({
@@ -147,7 +172,21 @@ function DossierHarness() {
   return (
     <>
       {skin.tokens.fontUrl && <link rel="stylesheet" href={skin.tokens.fontUrl} />}
-      <DossierMastheadBar title={snap.trip.destination} blocks={snap.blocks} />
+      <DossierMastheadBar
+        title={snap.trip.destination}
+        blocks={snap.blocks}
+        tokens={skin.tokens}
+        onOpenMap={() => openMap(null, "masthead")}
+        mapOpen={mapRequest.open}
+        mapAvailable={snap.blocks.some((b) => b.kind === "place" && b.lat != null && b.lng != null)}
+      />
+      <ViewSwitch
+        value={layout}
+        onChange={setLayout}
+        tokens={skin.tokens}
+        onOpenMap={() => openMap(null, "view_switch")}
+        mapOpen={mapRequest.open}
+      />
       <div
         aria-hidden
         className="md:hidden"
