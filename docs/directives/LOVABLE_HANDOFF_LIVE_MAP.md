@@ -93,12 +93,19 @@ are deliberately excluded so the traveller's own stops stay the hero.
 
 ## Deploy notes
 
-- The `geocode_cache` migration applies with the next Publish, like earlier
-  migrations. It creates a server-only table; no RLS policy for clients on
-  purpose.
-- `src/integrations/supabase/types.ts` was extended by hand with
-  `geocode_cache`. If you regenerate types from the database, keep that block
-  (or run the migration first so the generator sees the table).
+- The `geocode_cache` table was created on the live database by the Lovable
+  agent on 2026-09-07 (migration `20260907210812_…`, with `created_at` /
+  `updated_at` and a trigger). The app's writes use only the columns both
+  definitions share, and the duplicate migration from PR #52 was removed so
+  a fresh environment runs one `CREATE TABLE`. Keep the table server-only:
+  no RLS policy for clients on purpose.
+- **"Locate stops"** (`src/lib/maps/locate.functions.ts`) is the owner's
+  on-demand geocode pass: up to 24 stops per call, cache first, attempt cap
+  honoured, result persisted through the user's RLS-scoped client. The map
+  runs it automatically once when an owner opens it on unlocated stops, and
+  offers a button after that. Viewers never see it. It needs
+  `GOOGLE_MAPS_API_KEY` on the server; without it the map says so plainly
+  instead of promising a fix.
 - Observed 2026-09-07: regenerated types on `main` still listed `google_tokens`
   and `places`, which suggests the drop migrations from earlier PRs have not
   been applied to the live database. Worth checking in the Supabase
@@ -109,9 +116,9 @@ are deliberately excluded so the traveller's own stops stay the hero.
 - **Phase 2:** desktop docked place-detail panel and the extended mobile
   place sheet (photo, editorial note, reservation, hours, directions with
   Apple/Google choice, "open in dossier", next/previous stop), owner tools
-  ("fix this pin" by drag or search, "hide from map", "locate stops"),
-  hop arcs for long jumps, overlap nudging, photo medallion pins, route
-  draw-on animation.
+  ("fix this pin" by drag or search, "hide from map"; "locate stops" already
+  shipped), hop arcs for long jumps, overlap nudging, photo medallion pins,
+  route draw-on animation.
 - **Phase 3:** stable `block.id`, a derived `trip_places` index, the
   cross-trip Atlas on `/app` with clustering, category and city chips,
   taxonomy expansion (coffee, bar, shopping, wellness) through one module and

@@ -20,7 +20,13 @@ import type { Block, SkinView, TripMeta, TripView } from "@/lib/skins/types";
 import { DEMO_BLOCKS, DEMO_TRIP } from "@/lib/skins/demo";
 import { DossierMastheadBar } from "@/components/mobile/DossierMastheadBar";
 import { ViewSwitch } from "@/components/ViewSwitch";
-import { openMap, serializeMapParam, useMapRequest, useMapUrlSync } from "@/lib/maps/use-map-param";
+import {
+  openMap,
+  registerMapLocator,
+  serializeMapParam,
+  useMapRequest,
+  useMapUrlSync,
+} from "@/lib/maps/use-map-param";
 import { ViewPill } from "@/components/mobile/ViewSheet";
 import { StudioBar } from "@/components/studio/StudioBar";
 import { IngestionModal } from "@/components/flow/IngestionModal";
@@ -34,12 +40,15 @@ export const Route = createFileRoute("/e2e/dossier")({
   },
   validateSearch: (
     s: Record<string, unknown>,
-  ): { skin?: string; view: SkinView; edit?: boolean; map?: string } => ({
+  ): { skin?: string; view: SkinView; edit?: boolean; map?: string; nocoords?: boolean } => ({
     skin: typeof s.skin === "string" ? s.skin : undefined,
     view:
       s.view === "horizontal" || s.view === "grid" ? s.view : "vertical",
     edit: s.edit === 1 || s.edit === "1" || s.edit === true ? true : undefined,
     map: typeof s.map === "string" ? s.map : s.map === 1 ? "1" : undefined,
+    // ?nocoords=1 strips the fixture's coordinates to exercise the Live
+    // Map's "nothing pinned" and "Locate stops" states.
+    nocoords: s.nocoords === 1 || s.nocoords === "1" || s.nocoords === true ? true : undefined,
   }),
   component: DossierHarness,
 });
@@ -75,12 +84,46 @@ function DossierHarness() {
   );
   useMapUrlSync(search.map, mapNavigator);
   const mapRequest = useMapRequest();
+  // Fake "Locate stops" for the harness: no server, so scatter the fixture's
+  // unlocated stops around Lisbon after a short delay. Exercises the map's
+  // locating / located / empty states without a database or a Google key.
+  useEffect(() => {
+    registerMapLocator({
+      locate: async () => {
+        await new Promise((r) => setTimeout(r, 1200));
+        const current = snapRef.current;
+        let located = 0;
+        const blocks = current.blocks.map((b, i) => {
+          if (b.kind !== "place" || b.lat != null) return b;
+          located++;
+          return {
+            ...b,
+            lat: 38.7095 + ((i * 7) % 11) * 0.0018,
+            lng: -9.1424 - ((i * 5) % 9) * 0.0022,
+            geocode: { status: "resolved" as const, provider: "manual" as const, attempts: 1 },
+          };
+        });
+        const next = { ...current, blocks };
+        snapRef.current = next;
+        setSnap(next);
+        return { configured: true, located, unresolved: 0, remaining: 0 };
+      },
+    });
+    return () => registerMapLocator(null);
+  }, []);
   const [layout, setLayout] = useState<SkinView>(search.view);
   const [mintOpen, setMintOpen] = useState(false);
-  const [snap, setSnap] = useState<{ trip: TripView; blocks: Block[] }>({
+  const [snap, setSnap] = useState<{ trip: TripView; blocks: Block[] }>(() => ({
     trip: DEMO_TRIP,
-    blocks: DEMO_BLOCKS,
-  });
+    blocks: search.nocoords
+      ? DEMO_BLOCKS.map((b) => {
+          if (b.kind !== "place") return b;
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { lat, lng, placeId, geocode, ...rest } = b;
+          return rest as Block;
+        })
+      : DEMO_BLOCKS,
+  }));
   const snapRef = useRef(snap);
   snapRef.current = snap;
   const editingCtx = useMemo<EditingCtx | null>(() => {

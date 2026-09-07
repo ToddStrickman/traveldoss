@@ -19,10 +19,11 @@ import type { Block, SkinTokens, TripView } from "@/lib/skins/types";
 import { buildMapModel, type MapModel, type MapPlace } from "@/lib/maps/build-map-places";
 import { alpha } from "@/lib/maps/color";
 import { pinPalette } from "@/lib/maps/taxonomy";
-import type { MapEntry } from "@/lib/maps/use-map-param";
+import { useMapLocator, type MapEntry } from "@/lib/maps/use-map-param";
 import {
   trackMapClosed,
   trackMapDayToggled,
+  trackMapLocateRequested,
   trackMapOpened,
   trackMapPinSelected,
   trackMapPlanBToggled,
@@ -85,6 +86,15 @@ export function DossierMapOverlay({
   const [showPlanB, setShowPlanB] = useState(false);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
 
+  // "Locate stops": present only for the owner (the dossier route registers
+  // it when the viewer can edit). Runs once automatically when the map opens
+  // on unlocated stops, and on demand from the empty state or the footer.
+  const locator = useMapLocator();
+  const [locating, setLocating] = useState(false);
+  const [locateNote, setLocateNote] = useState<string | null>(null);
+  const [modelVersion, setModelVersion] = useState(0);
+  const autoLocated = useRef(false);
+
   // Snapshot the screen at open time — the "untruncated only" contract.
   const model: MapModel = useMemo(
     () =>
@@ -92,11 +102,62 @@ export function DossierMapOverlay({
         onlyVisible: collectVisibleIndexes(),
         forceDay: initialDay ?? null,
       }),
-    // Computed once per open on purpose: the overlay reflects the screen
-    // state at the moment the traveller opened it.
+    // Computed once per open on purpose (plus once per locate pass): the
+    // overlay reflects the screen state at the moment it was opened.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
+    [modelVersion],
   );
+  const eligibleToLocate = useMemo(
+    () => model.unlocated.filter((u) => u.status === "none" || u.status === "pending").length,
+    [model],
+  );
+  const cappedStops = useMemo(() => model.unlocated.filter((u) => u.status === "needs_review").length, [model]);
+
+  const runLocate = useCallback(
+    async (auto: boolean, retryNeedsReview = false) => {
+      if (!locator || locating) return;
+      const requested = retryNeedsReview ? model.unlocated.length : eligibleToLocate;
+      setLocating(true);
+      setLocateNote(null);
+      try {
+        const res = await locator.locate({ retryNeedsReview });
+        trackMapLocateRequested({
+          auto,
+          requested,
+          located: res.located,
+          unresolved: res.unresolved,
+          configured: res.configured,
+        });
+        if (!res.configured) {
+          setLocateNote("Location lookup isn't set up on this server yet, so stops can't be pinned here.");
+        } else if (res.located > 0) {
+          setLocateNote(
+            `Located ${res.located} stop${res.located === 1 ? "" : "s"}` +
+              (res.unresolved > 0 ? `. ${res.unresolved} couldn't be found; a street address helps.` : "."),
+          );
+        } else if (res.unresolved > 0) {
+          setLocateNote(
+            `${res.unresolved} stop${res.unresolved === 1 ? "" : "s"} couldn't be found. Add a street address to each and try again.`,
+          );
+        } else {
+          setLocateNote("No new locations were found.");
+        }
+        setModelVersion((v) => v + 1);
+      } catch (err) {
+        console.error("[live-map] locate failed", err);
+        setLocateNote("Couldn't locate stops just now. Try again in a moment.");
+      } finally {
+        setLocating(false);
+      }
+    },
+    [locator, locating, model, eligibleToLocate],
+  );
+
+  useEffect(() => {
+    if (autoLocated.current || !locator || eligibleToLocate === 0) return;
+    autoLocated.current = true;
+    void runLocate(true);
+  }, [locator, eligibleToLocate, runLocate]);
   const palette = useMemo(() => pinPalette(tokens), [tokens]);
   const hasPlanB = useMemo(() => model.places.some((p) => p.tier === "shadow"), [model]);
 
@@ -372,12 +433,34 @@ export function DossierMapOverlay({
               textAlign: "center",
             }}
           >
-            <div style={{ maxWidth: 360 }}>
+            <div style={{ maxWidth: 380 }}>
               <div style={{ font: `500 22px/1.2 ${tokens.fontDisplay}`, color: tokens.ink, marginBottom: 8 }}>
-                Nothing pinned yet
+                {locating ? "Locating your stops…" : "Nothing pinned yet"}
               </div>
-              This dossier's places haven't been located. Stops with an address are pinned
-              automatically the next time the dossier saves.
+              {locating ? (
+                <span aria-live="polite">
+                  Looking up {eligibleToLocate} stop{eligibleToLocate === 1 ? "" : "s"}. This takes a few seconds.
+                </span>
+              ) : locator ? (
+                <>
+                  {locateNote ??
+                    `${model.unlocated.length} stop${model.unlocated.length === 1 ? " has" : "s have"} no location yet.`}
+                  <div style={{ marginTop: 16, display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
+                    {eligibleToLocate > 0 || cappedStops > 0 ? (
+                      <button
+                        type="button"
+                        className="tds-map-chip"
+                        aria-pressed="true"
+                        onClick={() => void runLocate(false, eligibleToLocate === 0)}
+                      >
+                        {eligibleToLocate > 0 ? "Locate stops" : "Try the unfound stops again"}
+                      </button>
+                    ) : null}
+                  </div>
+                </>
+              ) : (
+                "This dossier's places haven't been pinned yet. The owner can locate them from the map."
+              )}
             </div>
           </div>
         ) : parchment ? (
@@ -484,9 +567,14 @@ export function DossierMapOverlay({
         ) : null}
       </div>
 
-      {model.unlocated.length > 0 ? (
+      {!empty && (model.unlocated.length > 0 || locateNote) ? (
         <footer
+          aria-live="polite"
           style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            flexWrap: "wrap",
             padding: "8px 16px",
             paddingBottom: "calc(8px + env(safe-area-inset-bottom, 0px))",
             borderTop: `1px solid ${tokens.rule}`,
@@ -494,11 +582,27 @@ export function DossierMapOverlay({
             font: `500 11px/1.4 ${tokens.fontBody}`,
           }}
         >
-          {model.unlocated.length} visible stop{model.unlocated.length === 1 ? "" : "s"} without a pinned location
-          {model.unlocated.some((u) => u.status === "needs_review")
-            ? " — some could not be found and need a look"
-            : " — locations fill in automatically as the dossier saves"}
-          .
+          <span style={{ flex: "1 1 auto", minWidth: 0 }}>
+            {locating
+              ? `Locating ${eligibleToLocate} stop${eligibleToLocate === 1 ? "" : "s"}…`
+              : locateNote ??
+                `${model.unlocated.length} visible stop${model.unlocated.length === 1 ? "" : "s"} without a location` +
+                  (cappedStops > 0
+                    ? ` — ${cappedStops} couldn't be found`
+                    : locator
+                      ? ""
+                      : " — the owner can locate them from the map") +
+                  "."}
+          </span>
+          {locator && !locating && (eligibleToLocate > 0 || cappedStops > 0) ? (
+            <button
+              type="button"
+              className="tds-map-chip"
+              onClick={() => void runLocate(false, eligibleToLocate === 0)}
+            >
+              {eligibleToLocate > 0 ? "Locate stops" : "Try again"}
+            </button>
+          ) : null}
         </footer>
       ) : null}
     </div>

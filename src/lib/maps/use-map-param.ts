@@ -124,10 +124,45 @@ export function useMapUrlSync(param: string | undefined, nav: MapNavigator) {
   }, [param]);
 }
 
+/* ── Locator: the owner's "Locate stops" capability ──────────────────────
+ * The dossier route registers it when the viewer can edit; the overlay
+ * shows the control and runs it. Viewers never see it. */
+
+export type MapLocateResult = {
+  configured: boolean;
+  located: number;
+  unresolved: number;
+  remaining: number;
+};
+
+export type MapLocator = {
+  locate: (opts?: { retryNeedsReview?: boolean }) => Promise<MapLocateResult>;
+};
+
+let locator: MapLocator | null = null;
+const locatorListeners = new Set<() => void>();
+
+export function registerMapLocator(next: MapLocator | null) {
+  locator = next;
+  for (const l of locatorListeners) l();
+}
+
+function subscribeLocator(l: () => void) {
+  locatorListeners.add(l);
+  return () => {
+    locatorListeners.delete(l);
+  };
+}
+
+export function useMapLocator(): MapLocator | null {
+  return useSyncExternalStore(subscribeLocator, () => locator, () => null);
+}
+
 /** Test seam. */
 export function __resetMapRequestForTests() {
   state = CLOSED;
   navigator = null;
   opener = null;
   pushed = false;
+  locator = null;
 }
