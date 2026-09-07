@@ -152,39 +152,6 @@ export type Database = {
           },
         ]
       }
-      geocode_cache: {
-        Row: {
-          lat: number | null
-          lng: number | null
-          miss_count: number
-          place_id: string | null
-          provider: string
-          query: string
-          query_hash: string
-          resolved_at: string
-        }
-        Insert: {
-          lat?: number | null
-          lng?: number | null
-          miss_count?: number
-          place_id?: string | null
-          provider: string
-          query: string
-          query_hash: string
-          resolved_at?: string
-        }
-        Update: {
-          lat?: number | null
-          lng?: number | null
-          miss_count?: number
-          place_id?: string | null
-          provider?: string
-          query?: string
-          query_hash?: string
-          resolved_at?: string
-        }
-        Relationships: []
-      }
       google_tokens: {
         Row: {
           access_token: string
