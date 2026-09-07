@@ -9,6 +9,7 @@ import type { Block, SkinView, TripView } from "@/lib/skins/types";
 import { supabase } from "@/integrations/supabase/client";
 import { StudioBar } from "@/components/studio/StudioBar";
 import { ViewSwitch } from "@/components/ViewSwitch";
+import { openMap, serializeMapParam, useMapRequest, useMapUrlSync } from "@/lib/maps/use-map-param";
 import { ExportMenu } from "@/components/studio/ExportMenu";
 import { AccessAuditTrail } from "@/components/studio/AccessAuditTrail";
 import { PrintScheduleGrid } from "@/components/studio/PrintScheduleGrid";
@@ -49,6 +50,9 @@ export const Route = createFileRoute("/t/$slug")({
     mint: z.union([z.literal("1"), z.literal(1), z.boolean()]).optional(),
     // Additive + shareable: layout survives reload and cross-device handoff.
     view: z.enum(["vertical", "horizontal", "grid"]).optional(),
+    // The Live Map: "1" = whole trip, "day-N" = focused on a day. In the URL
+    // so the browser's back button closes it and a link can open it.
+    map: z.string().max(12).optional(),
   }),
   loader: async ({ params }) => {
     const result = await getDossierBySlug({ data: { slug: params.slug } });
@@ -143,6 +147,27 @@ function DossierPage() {
   const { trip, expired, publicExpired } = Route.useLoaderData();
   const navigate = useNavigate();
   const search = Route.useSearch();
+  // Live Map ↔ URL: open pushes `?map=`, close pops it (see use-map-param).
+  const mapNavigator = useMemo(
+    () => ({
+      open: (day: number | null) =>
+        void navigate({
+          to: ".",
+          search: (prev: Record<string, unknown>) => ({ ...prev, map: serializeMapParam(day) }),
+          resetScroll: false,
+        }),
+      close: () =>
+        void navigate({
+          to: ".",
+          search: (prev: Record<string, unknown>) => ({ ...prev, map: undefined }),
+          replace: true,
+          resetScroll: false,
+        }),
+    }),
+    [navigate],
+  );
+  useMapUrlSync(search.map, mapNavigator);
+  const mapRequest = useMapRequest();
   const [layout, setLayoutState] = useState<SkinView>(search.view ?? "vertical");
   // Reflect layout into ?view= so the choice is shareable; replace history so
   // back doesn't step through layout toggles.
@@ -718,6 +743,9 @@ function DossierPage() {
         saving={saving}
         savedAt={savedAt}
         saveError={saveError}
+        onOpenMap={() => openMap(null, "masthead")}
+        mapOpen={mapRequest.open}
+        mapAvailable={canEdit || blocks.some((b) => b.kind === "place" && b.lat != null && b.lng != null && !b.mapHidden)}
       />
       <div
         aria-hidden
@@ -763,7 +791,17 @@ function DossierPage() {
         <span aria-hidden>←</span>
         <span className="hidden sm:inline">TravelDoss</span>
       </Link>
-      <ViewSwitch value={layout} onChange={changeLayout} tokens={skin.tokens} />
+      <ViewSwitch
+        value={layout}
+        onChange={changeLayout}
+        tokens={skin.tokens}
+        onOpenMap={
+          canEdit || blocks.some((b) => b.kind === "place" && b.lat != null && b.lng != null && !b.mapHidden)
+            ? () => openMap(null, "view_switch")
+            : undefined
+        }
+        mapOpen={mapRequest.open}
+      />
       {/* Mobile view switching now lives inline in the DossierMastheadBar
           (matches desktop's top-center pills) — no separate floating pill. */}
       <EditingStatusBar

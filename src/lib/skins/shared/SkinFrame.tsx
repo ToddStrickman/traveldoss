@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, type CSSProperties } from "react";
+import { useCallback, useMemo, type CSSProperties } from "react";
 import type { Block, SkinTokens, SkinView, TripView } from "../types";
 import "./skin.css";
 import { VerticalView } from "./views/VerticalView";
@@ -7,6 +7,7 @@ import { GridView } from "./views/GridView";
 import { useEditing } from "./Editable";
 import { SlotSelectionProvider, useInertRender } from "./views/parts";
 import { DossierMapOverlay, indexDayLookup } from "@/components/map/DossierMap";
+import { closeMap, openMap as requestMap, useMapRequest } from "@/lib/maps/use-map-param";
 import { DayMapContext, type DayMapApi } from "./day-map-context";
 import { GalleryOverlayButton } from "./gallery/CoverflowGallery";
 
@@ -28,27 +29,28 @@ export function SkinFrame({ trip, blocks, tokens, view = "vertical" }: SkinFrame
   // Thumbnails (gallery tiles, landing rail) render inert — no floating chrome.
   const inert = useInertRender();
 
-  // The Live Map, owned once at the frame. Day headers open it focused on
-  // their day (owner correction: the map is embedded in each day's header,
-  // not a hovering button).
-  const [mapState, setMapState] = useState<{ open: boolean; initialDay?: number }>({
-    open: false,
-  });
+  // The Live Map, owned once at the frame. Open/close state lives in a small
+  // shared store (src/lib/maps/use-map-param.ts) that the dossier route keeps
+  // in step with `?map=`; day headers, the masthead button and the desktop
+  // view-switch segment all open the same overlay. (Owner rulings: the map
+  // is embedded in each day's header, never a hovering button — 2026-07-13;
+  // and it also gets a persistent control in the existing chrome — 2026-09-07.)
+  const mapRequest = useMapRequest();
   const openMap = useCallback((day?: number) => {
-    setMapState({ open: true, initialDay: day });
+    requestMap(day ?? null, "day_header");
   }, []);
   const locatedDays = useMemo(() => {
     const dayOf = indexDayLookup(blocks);
     const set = new Set<number>();
     blocks.forEach((b, index) => {
-      if (b.kind !== "place" || b.lat == null || b.lng == null) return;
+      if (b.kind !== "place" || b.lat == null || b.lng == null || b.mapHidden) return;
       const day = dayOf.get(index);
       if (day != null) set.add(day);
     });
     return set;
   }, [blocks]);
   const hasAnyCoords = useMemo(
-    () => blocks.some((b) => b.kind === "place" && b.lat != null && b.lng != null),
+    () => blocks.some((b) => b.kind === "place" && b.lat != null && b.lng != null && !b.mapHidden),
     [blocks],
   );
   const dayMapApi = useMemo<DayMapApi>(
@@ -95,14 +97,17 @@ export function SkinFrame({ trip, blocks, tokens, view = "vertical" }: SkinFrame
         </span>
       </footer>
 
-      {/* The Live Map overlay — one instance, opened from any day header. */}
-      {!inert && mapState.open ? (
+      {/* The Live Map overlay — one instance. Keyed on the focused day so a
+          re-open from another day header rebuilds its snapshot. */}
+      {!inert && mapRequest.open ? (
         <DossierMapOverlay
+          key={mapRequest.day ?? "trip"}
           trip={trip}
           blocks={blocks}
           tokens={tokens}
-          initialDay={mapState.initialDay}
-          onClose={() => setMapState({ open: false })}
+          initialDay={mapRequest.day}
+          entry={mapRequest.entry}
+          onClose={closeMap}
         />
       ) : null}
 

@@ -629,7 +629,7 @@ async function fillFromGooglePlaces(
         "Content-Type": "application/json",
         "X-Goog-Api-Key": apiKey,
         "X-Goog-FieldMask":
-          "places.displayName,places.formattedAddress,places.internationalPhoneNumber,places.websiteUri,places.regularOpeningHours,places.location",
+          "places.id,places.displayName,places.formattedAddress,places.internationalPhoneNumber,places.websiteUri,places.regularOpeningHours,places.location",
       },
       body: JSON.stringify({ textQuery: query, pageSize: 1 }),
       signal: ctrl.signal,
@@ -637,6 +637,7 @@ async function fillFromGooglePlaces(
     if (!res.ok) return false;
     const json = (await res.json()) as {
       places?: Array<{
+        id?: string;
         formattedAddress?: string;
         internationalPhoneNumber?: string;
         websiteUri?: string;
@@ -645,7 +646,19 @@ async function fillFromGooglePlaces(
       }>;
     };
     const hit = json.places?.[0];
-    if (!hit) return false;
+    if (!hit) {
+      // Record the miss so the save-time backfill's attempt cap counts it.
+      if (place.lat == null && !place.geocode) {
+        place.geocode = {
+          status: "pending",
+          provider: "google-places",
+          attempts: 1,
+          query,
+          at: new Date().toISOString(),
+        };
+      }
+      return false;
+    }
 
     let changed = false;
     if (!place.address && hit.formattedAddress) {
@@ -671,7 +684,17 @@ async function fillFromGooglePlaces(
     ) {
       place.lat = hit.location.latitude;
       place.lng = hit.location.longitude;
+      if (hit.id) place.placeId = hit.id;
+      place.geocode = {
+        status: "resolved",
+        provider: "google-places",
+        attempts: (place.geocode?.attempts ?? 0) + 1,
+        query,
+        at: new Date().toISOString(),
+      };
       changed = true;
+    } else if (hit.id && !place.placeId) {
+      place.placeId = hit.id;
     }
     if (changed) {
       // Hard facts from Google Places — treat as high-confidence and

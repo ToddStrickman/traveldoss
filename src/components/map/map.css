@@ -1,0 +1,142 @@
+/* ==========================================================================
+   Live Map — pins, plate chrome and MapLibre overrides. Colours come from
+   the active skin through CSS variables set by the overlay (`--map-*`) and
+   by each pin (`--pin-*`); nothing here hard-codes a palette.
+   ========================================================================== */
+
+.tds-map { position: absolute; inset: 0; }
+.tds-map .maplibregl-canvas:focus { outline: none; }
+.tds-map .maplibregl-canvas-container.maplibregl-interactive { cursor: grab; }
+.tds-map .maplibregl-canvas-container.maplibregl-interactive:active { cursor: grabbing; }
+
+/* Attribution: required for OpenStreetMap data, styled as a plate footnote. */
+.tds-map .maplibregl-ctrl-bottom-right { z-index: 3; }
+.tds-map .maplibregl-ctrl-attrib {
+  background: var(--map-paper-90);
+  color: var(--map-ink-60);
+  font: 400 10px/1.3 var(--tds-fontBody, system-ui, sans-serif);
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin: 0 6px 4px 0;
+}
+.tds-map .maplibregl-ctrl-attrib a { color: inherit; text-decoration: none; }
+.tds-map .maplibregl-ctrl-attrib a:hover { text-decoration: underline; }
+/* Narrow plates: MapLibre collapses the credit behind an ⓘ button. */
+.tds-map .maplibregl-ctrl-attrib.maplibregl-compact { padding: 0; min-height: 24px; border-radius: 12px; }
+.tds-map .maplibregl-ctrl-attrib.maplibregl-compact-show { padding: 2px 28px 2px 8px; }
+.tds-map .maplibregl-ctrl-attrib-button { background-color: transparent; border-radius: 12px; }
+.tds-map .maplibregl-ctrl-attrib-button:focus-visible { outline: 2px solid var(--map-accent); }
+
+/* Grain and vignette so the plate reads as bound into the page. */
+.tds-map-grain {
+  position: absolute; inset: 0; pointer-events: none; z-index: 2;
+  box-shadow: inset 0 0 90px var(--map-ink-08);
+}
+
+/* ── Pins ──────────────────────────────────────────────────────────── */
+.maplibregl-marker.tds-mappin-anchor { will-change: transform; }
+.tds-mappin {
+  all: unset;
+  position: relative;
+  display: block;
+  width: var(--pin-size, 28px);
+  height: var(--pin-size, 28px);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.tds-mappin-disc {
+  position: absolute; inset: 0;
+  border-radius: 999px;
+  background: var(--pin-fill);
+  border: 1.5px solid var(--pin-paper);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  color: var(--pin-paper);
+  display: grid; place-items: center;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+.tds-mappin-disc svg { width: 52%; height: 52%; stroke-width: 1.7; }
+.tds-mappin:hover .tds-mappin-disc {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.22);
+}
+.tds-mappin[data-selected="true"] .tds-mappin-disc {
+  transform: scale(1.12);
+  box-shadow: 0 0 0 5px var(--pin-halo), 0 4px 10px rgba(0, 0, 0, 0.22);
+}
+.tds-mappin:focus-visible .tds-mappin-disc {
+  outline: 2px solid var(--pin-fill);
+  outline-offset: 3px;
+}
+.tds-mappin[data-ghost="true"] .tds-mappin-disc {
+  background: var(--pin-paper);
+  border: 1.4px dashed var(--pin-fill);
+  color: var(--pin-fill);
+  box-shadow: none;
+  opacity: 0.9;
+}
+.tds-mappin-order {
+  position: absolute; right: -5px; bottom: -5px;
+  min-width: 16px; height: 16px; padding: 0 4px; box-sizing: border-box;
+  border-radius: 999px;
+  background: var(--pin-ink);
+  color: var(--pin-paper);
+  border: 1.2px solid var(--pin-paper);
+  font: 600 9.5px/13px var(--tds-fontBody, system-ui, sans-serif);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.tds-mappin-mark {
+  position: absolute; top: -2px; right: -2px;
+  width: 8px; height: 8px; border-radius: 999px;
+  background: #D6C29C;
+  border: 1px solid var(--pin-paper);
+}
+
+/* ── Overlay chrome ────────────────────────────────────────────────── */
+.tds-map-chip {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 7px 12px; border-radius: 999px; white-space: nowrap; cursor: pointer;
+  border: 1px solid var(--map-rule);
+  background: transparent;
+  color: var(--map-ink-70);
+  font: 600 10px/1 var(--tds-fontBody, system-ui, sans-serif);
+  letter-spacing: 0.16em; text-transform: uppercase;
+  transition: border-color 180ms ease, background-color 180ms ease, color 180ms ease;
+}
+.tds-map-chip:hover { border-color: var(--map-accent); color: var(--map-ink); }
+.tds-map-chip:focus-visible { outline: 2px solid var(--map-accent); outline-offset: 2px; }
+.tds-map-chip[aria-pressed="true"] { background: var(--map-accent); border-color: var(--map-accent); color: var(--map-paper); }
+.tds-map-chip .dot { width: 7px; height: 7px; border-radius: 999px; background: currentColor; opacity: 0.85; }
+.tds-map-iconbtn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--map-rule); background: var(--map-paper-90); color: var(--map-ink);
+  transition: border-color 180ms ease;
+}
+.tds-map-iconbtn:hover { border-color: var(--map-accent); }
+.tds-map-iconbtn:focus-visible { outline: 2px solid var(--map-accent); outline-offset: 2px; }
+.tds-map-controls {
+  position: absolute; right: 12px; top: 12px; z-index: 3;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.tds-map-caption {
+  position: absolute; left: 12px; right: 12px; bottom: 28px; z-index: 3;
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px 10px 14px; border-radius: 12px;
+  background: var(--map-paper-94); color: var(--map-ink);
+  border: 1px solid var(--map-rule);
+  box-shadow: 0 10px 30px -14px rgba(0, 0, 0, 0.45);
+  font: 400 13px/1.35 var(--tds-fontBody, system-ui, sans-serif);
+}
+@media (min-width: 768px) { .tds-map-caption { left: auto; width: 340px; } }
+.tds-map-caption-eyebrow {
+  font: 600 9.5px/1 var(--tds-fontBody, system-ui, sans-serif);
+  letter-spacing: 0.2em; text-transform: uppercase; color: var(--map-accent);
+}
+.tds-map-caption-name { font: 500 17px/1.25 var(--tds-fontDisplay, Georgia, serif); margin-top: 3px; }
+.tds-map-caption-meta { color: var(--map-ink-60); font-size: 12px; margin-top: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tds-mappin-disc, .tds-map-chip, .tds-map-iconbtn { transition: none; }
+  .tds-mappin:hover .tds-mappin-disc { transform: none; }
+}

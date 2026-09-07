@@ -26,7 +26,7 @@ const PERIOD_TO_SLOT: Record<string, DaySlot> = {
 };
 
 /** Parse a clock-time string to a 0–23 hour, or null when unparseable. */
-function hourOf(time: string): number | null {
+export function hourOf(time: string): number | null {
   const t = time.trim().toLowerCase();
   const m = t.match(/^(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm)?$/);
   if (!m) return null;

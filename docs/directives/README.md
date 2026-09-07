@@ -11,6 +11,7 @@ dependency is called out. Written 2026-07-06 against `main` @ `ebb1d5c`.
 | 4 | [Dossier update loop](04-dossier-update-loop.md) | Re-ingest changed bookings with a diff | L (3–5 d) | — |
 | 5 | [Public page performance](05-public-page-performance.md) | Faster first paint on shared links | M (2–3 d) | — |
 | 6 | [High-yield follow-ups](06-high-yield-followups.md) | Auto-ingest, weather/flight status, suggestions | L (5–8 d total, split into 3 shippable slices) | 6a benefits from #4 |
+| 7 | [Live Map v2](07-live-map-v2.md) · [Lovable handoff](LOVABLE_HANDOFF_LIVE_MAP.md) | Persistent, skin-styled Live Map (MapLibre + OpenFreeMap), category pins, geocode hardening | Phase 1 SHIPPED 2026-09-07 (PR #52); Phases 2–3 pending | — |
 
 Recommended order: **2 → 1 → 3 → 5 → 4 → 6** (quickest wins first; #4 and #6a
 share the ingestion-merge machinery, so do #4 before #6a).

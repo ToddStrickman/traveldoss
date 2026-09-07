@@ -141,3 +141,17 @@ segment value on its earliest event in the range; steps are landed → browsed �
 composed → submitted → minted (`mint_completed`). Segments below `SMALL_N` (20
 sessions) return `mintRate: null` and the UI shows counts plus a "small sample"
 marker instead of a percentage.
+
+## Live Map (`/t/<slug>?map=`)
+
+Counts and kinds only. Never a place name, a coordinate, or a slug.
+
+| Event                 | When                                                                 | Properties                                                                                                                         |
+| --------------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `map_opened`          | The Live Map overlay mounts                                          | `entry` (`masthead` \| `view_switch` \| `day_header` \| `deeplink`), `surface`, `located_count`, `unlocated_count`, `day_count`, `focused_day`, `renderer` (`maplibre` \| `parchment`) |
+| `map_closed`          | The overlay unmounts (close button, Escape, browser back)            | `duration_ms`, `pins_selected`                                                                                                     |
+| `map_pin_selected`    | A pin is selected                                                    | `kind` (marker kind), `via` (`click` \| `keyboard`), `has_image`, `has_reservation`                                                |
+| `map_day_toggled`     | A day chip is toggled                                                | `on`, `day_count_visible`                                                                                                          |
+| `map_route_toggled`   | The Route control is toggled                                         | `on`                                                                                                                               |
+| `map_planb_toggled`   | The Plan B control is toggled                                        | `on`                                                                                                                               |
+| `map_tiles_failed`    | The basemap could not render and parchment mode took over            | `source`                                                                                                                           |

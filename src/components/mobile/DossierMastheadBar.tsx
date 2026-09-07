@@ -14,7 +14,7 @@
 import * as React from "react";
 import { Link } from "@tanstack/react-router";
 import { motion, useReducedMotion } from "motion/react";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, MapPinned } from "lucide-react";
 import { TdSheet } from "@/components/mobile/TdSheet";
 import type { Block } from "@/lib/skins/types";
 import type { SkinView } from "@/lib/skins/types";
@@ -62,6 +62,9 @@ export function DossierMastheadBar({
   saving = false,
   savedAt = null,
   saveError = false,
+  onOpenMap,
+  mapOpen = false,
+  mapAvailable = false,
 }: {
   title: string;
   blocks: Block[];
@@ -82,6 +85,12 @@ export function DossierMastheadBar({
   saving?: boolean;
   savedAt?: string | null;
   saveError?: boolean;
+  /** Opens the Live Map (the persistent control; day headers keep their
+   *  own per-day pill). Rendered only when `mapAvailable`. */
+  onOpenMap?: () => void;
+  mapOpen?: boolean;
+  /** The trip has at least one located stop, or the viewer owns it. */
+  mapAvailable?: boolean;
 }) {
   const days = React.useMemo(() => collectDays(blocks), [blocks]);
   const [past, setPast] = React.useState(false);
@@ -262,6 +271,25 @@ export function DossierMastheadBar({
             >
               <CalendarDays className="h-4 w-4" aria-hidden />
               <span className="hidden xs:inline">Days</span>
+            </button>
+          ) : null}
+          {onOpenMap && mapAvailable ? (
+            <button
+              type="button"
+              onClick={onOpenMap}
+              className="tap inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full px-3 text-[10px] font-medium uppercase tracking-[0.3em] transition-colors hover:text-seal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal"
+              style={
+                tokens
+                  ? { color: mapOpen ? tokens.ink : `color-mix(in oklab, ${tokens.ink} 70%, transparent)` }
+                  : undefined
+              }
+              aria-haspopup="dialog"
+              aria-expanded={mapOpen}
+              aria-controls="live-map"
+              aria-label="Open the Live Map"
+            >
+              <MapPinned className="h-4 w-4" aria-hidden />
+              <span className="hidden xs:inline">Map</span>
             </button>
           ) : null}
           {canEdit && onToggleLock ? (
