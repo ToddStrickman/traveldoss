@@ -16,6 +16,7 @@ import { useMemo, useState } from "react";
 import { ArrowLeft, Download, RefreshCw } from "lucide-react";
 import { getAdminMetrics, getLiveFeed, isAdmin as isAdminFn } from "@/lib/admin.functions";
 import { SnapshotLinks } from "@/components/admin/SnapshotLinks";
+import { EvergreenDossiers } from "@/components/admin/EvergreenDossiers";
 import { SegmentFunnels } from "@/components/admin/SegmentFunnels";
 import {
   BarList,
