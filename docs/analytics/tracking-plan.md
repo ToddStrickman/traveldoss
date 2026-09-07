@@ -109,6 +109,8 @@ token served at `/admin/s/:token` (noindex, 30-day expiry, revocable).
 | --- | --- | --- |
 | `admin_snapshot_created` | `createAdminSnapshot` (server) | `range_days`, `ttl_days`, `labelled` |
 | `admin_snapshot_revoked` | `revokeAdminSnapshot` (server) | — |
+| `trip_evergreen_set` | `setEvergreen` (server) | `trip_id`, `trip_slug` |
+| `trip_evergreen_cleared` | `setEvergreen` (server) | `trip_id`, `trip_slug` |
 | `admin_snapshot_viewed` | `getAdminSnapshot` (server, public read) | `range_days` |
 
 All three are server-side only (`captureServer`) and carry no viewer identity:
