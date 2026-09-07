@@ -100,3 +100,32 @@ export const revokeAdminSnapshot = createServerFn({ method: "POST" })
     await captureServer("admin_snapshot_revoked", context.userId, {});
     return { revoked: true };
   });
+
+/* ------------------------------------------------------- evergreen dossiers */
+
+export const listEvergreen = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context);
+    const { listEvergreenTrips } = await import("@/lib/admin/evergreen.server");
+    return listEvergreenTrips();
+  });
+
+export const setEvergreen = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ ref: z.string().trim().min(1).max(200), evergreen: z.boolean() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { setTripEvergreen } = await import("@/lib/admin/evergreen.server");
+    const trip = await setTripEvergreen(data.ref, data.evergreen);
+    if (!trip) return { trip: null };
+    const { captureServer } = await import("@/lib/analytics.server");
+    await captureServer(
+      data.evergreen ? "trip_evergreen_set" : "trip_evergreen_cleared",
+      context.userId,
+      { trip_id: trip.id, trip_slug: trip.slug },
+    );
+    return { trip };
+  });

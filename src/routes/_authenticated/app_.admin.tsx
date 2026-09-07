@@ -16,6 +16,7 @@ import { useMemo, useState } from "react";
 import { ArrowLeft, Download, RefreshCw } from "lucide-react";
 import { getAdminMetrics, getLiveFeed, isAdmin as isAdminFn } from "@/lib/admin.functions";
 import { SnapshotLinks } from "@/components/admin/SnapshotLinks";
+import { EvergreenDossiers } from "@/components/admin/EvergreenDossiers";
 import { SegmentFunnels } from "@/components/admin/SegmentFunnels";
 import {
   BarList,
@@ -477,6 +478,7 @@ function AdminConsole() {
 
         <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
           <SnapshotLinks days={days} enabled={allowed} />
+          <EvergreenDossiers enabled={allowed} />
         </div>
 
         <p className={"mt-8 text-[10px] " + SOFT_TEXT}>
