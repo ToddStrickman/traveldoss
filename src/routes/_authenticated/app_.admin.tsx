@@ -477,6 +477,7 @@ function AdminConsole() {
 
         <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
           <SnapshotLinks days={days} enabled={allowed} />
+          <EvergreenDossiers enabled={allowed} />
         </div>
 
         <p className={"mt-8 text-[10px] " + SOFT_TEXT}>
