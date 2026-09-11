@@ -196,3 +196,25 @@ for (const width of WIDTHS) {
     });
   });
 }
+
+test.describe("dossier selector · desktop carousel", () => {
+  test.use({ viewport: { width: 1280, height: 900 } });
+
+  test("every layout keeps the carousel and changes its cover artwork", async ({ page }) => {
+    await page.goto("/templates");
+    const desktopCarousel = page
+      .getByRole("region", { name: /template .* of .*:/i })
+      .filter({ visible: true });
+    await expect(desktopCarousel).toBeVisible();
+
+    for (const mode of Object.keys(CAPTIONS) as Mode[]) {
+      await pickMode(page, mode);
+      await expect(desktopCarousel.getByText(CAPTIONS[mode], { exact: true }).first()).toBeVisible();
+      await expect(
+        page.getByRole("region", { name: /template .* of .*:/i }).filter({ visible: true }),
+      ).toHaveAttribute("aria-roledescription", "carousel");
+    }
+
+    await expectNoHorizontalOverflow(page, 1280);
+  });
+});

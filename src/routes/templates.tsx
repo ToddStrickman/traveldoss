@@ -11,7 +11,6 @@ import { IngestionModal } from "@/components/flow/IngestionModal";
 import {
   AtelierTable,
   MobileCoverRail,
-  VerticalCoverStack,
 } from "@/components/flow/AtelierTable";
 import { LayoutSwitcher } from "@/components/flow/LayoutSwitcher";
 import { GenerationLoader } from "@/components/GenerationLoader";
@@ -264,10 +263,10 @@ function TemplatesPage() {
   const [peekId, setPeekId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [activeTag, setActiveTag] = useState<string | null>(null);
-  // Browse mode: horizontal cover rail / coverflow, a vertical stack of the
-  // same covers, or the classic grid. Deterministic initial value keeps SSR
-  // and the first client render identical; the saved preference applies
-  // after mount.
+  // Layout choice changes the cover's preview art while the browsing motion
+  // stays consistent: swipe rail on mobile, 3D atelier carousel on desktop.
+  // A deterministic initial value keeps SSR and hydration identical; the
+  // saved preference applies after mount.
   const [browse, setBrowse] = useState<BrowseMode>("horizontal");
   useEffect(() => {
     const saved = window.localStorage.getItem("templates:browse");
@@ -610,33 +609,21 @@ function TemplatesPage() {
           </div>
         ) : null}
 
-        {browse === "horizontal" && filteredSkins.length > 0 ? (
+        {filteredSkins.length > 0 ? (
           <div className="mt-8 hidden md:block">
             <AtelierTable
+              key={browse}
               skins={filteredSkins}
               onPick={handlePick}
               pickingId={picking}
-            />
-          </div>
-        ) : null}
-
-        {browse === "vertical" && filteredSkins.length > 0 ? (
-          <div className="mt-8 hidden md:block">
-            <VerticalCoverStack
-              skins={filteredSkins}
-              onPick={handlePick}
-              pickingId={picking}
+              variant={browse}
             />
           </div>
         ) : null}
 
         <div
           className={`mt-8 grid grid-cols-1 gap-6 sm:mt-10 sm:gap-8 md:grid-cols-2 lg:grid-cols-3 ${
-            filteredSkins.length === 0
-              ? ""
-              : browse === "grid"
-                ? "hidden md:grid"
-                : "hidden"
+            filteredSkins.length === 0 ? "" : "hidden"
           }`}
         >
           {filteredSkins.map((skin) => (
