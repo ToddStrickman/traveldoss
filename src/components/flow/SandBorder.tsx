@@ -17,9 +17,15 @@ type Grain = {
   speed: number;
   size: number;
   alpha: number;
+  /** Eased displacement toward the pointer, in px. */
+  px: number;
+  py: number;
 };
 
 const GRAIN_COUNT = 190;
+/** Pointer influence radius in px, and how far a grain can be pulled. */
+const MAGNET_RADIUS = 110;
+const MAGNET_PULL = 16;
 
 /** Point on a rounded-rect perimeter at normalised distance t. */
 function perimeterPoint(w: number, h: number, r: number, t: number) {
@@ -92,7 +98,14 @@ export function SandBorder({ radius = 999 }: { radius?: number }) {
       speed: (0.00006 + Math.random() * 0.00022) * (Math.random() < 0.22 ? -1 : 1),
       size: 0.35 + Math.pow(Math.random(), 2.1) * 1.35,
       alpha: 0.18 + Math.random() * 0.72,
+      px: 0,
+      py: 0,
     }));
+
+    // Pointer position in canvas space; null when the cursor is far away.
+    let mx = 0;
+    let my = 0;
+    let hasPointer = false;
 
     let raf = 0;
     let w = 0;
@@ -119,8 +132,27 @@ export function SandBorder({ radius = 999 }: { radius?: number }) {
         // Slow breathing drift so grains shimmer rather than march.
         const breathe = reduced ? 0 : Math.sin(now * 0.0009 + g.t * 40) * 0.9;
         const off = g.off + breathe;
-        const x = p.x + nx * off;
-        const y = p.y + ny * off;
+        const bx = p.x + nx * off;
+        const by = p.y + ny * off;
+        // Magnetic attraction: grains near the cursor lean toward it and ease
+        // back to the path once it leaves. Skipped under reduced motion.
+        let tx = 0;
+        let ty = 0;
+        if (!reduced && hasPointer) {
+          const dx = mx - bx;
+          const dy = my - by;
+          const dist = Math.hypot(dx, dy);
+          if (dist < MAGNET_RADIUS) {
+            const force = (1 - dist / MAGNET_RADIUS) ** 2 * MAGNET_PULL;
+            const len = dist || 1;
+            tx = (dx / len) * force;
+            ty = (dy / len) * force;
+          }
+        }
+        g.px += (tx - g.px) * 0.12;
+        g.py += (ty - g.py) * 0.12;
+        const x = bx + g.px;
+        const y = by + g.py;
         // Champagne-gold sand: warmer and brighter toward the top-right corner.
         const heat = (x / w) * 0.6 + (1 - y / h) * 0.4;
         const hue = 42 - heat * 10;
@@ -151,9 +183,32 @@ export function SandBorder({ radius = 999 }: { radius?: number }) {
     });
     ro.observe(canvas);
 
+    const onPointerMove = (e: PointerEvent) => {
+      if (e.pointerType !== "mouse") return;
+      const rect = canvas.getBoundingClientRect();
+      mx = e.clientX - rect.left;
+      my = e.clientY - rect.top;
+      hasPointer =
+        mx > -MAGNET_RADIUS &&
+        my > -MAGNET_RADIUS &&
+        mx < rect.width + MAGNET_RADIUS &&
+        my < rect.height + MAGNET_RADIUS;
+    };
+    const onPointerLeave = () => {
+      hasPointer = false;
+    };
+    if (!reduced) {
+      window.addEventListener("pointermove", onPointerMove, { passive: true });
+      window.addEventListener("pointerleave", onPointerLeave);
+      window.addEventListener("blur", onPointerLeave);
+    }
+
     return () => {
       cancelAnimationFrame(raf);
       ro.disconnect();
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerleave", onPointerLeave);
+      window.removeEventListener("blur", onPointerLeave);
     };
   }, [radius]);
 
