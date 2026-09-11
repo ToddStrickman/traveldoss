@@ -134,8 +134,9 @@ export function SandBorder({ radius = 999 }: { radius?: number }) {
         const off = g.off + breathe;
         const bx = p.x + nx * off;
         const by = p.y + ny * off;
-        // Magnetic attraction: grains near the cursor lean toward it and ease
-        // back to the path once it leaves. Skipped under reduced motion.
+        // Magnetic repulsion: grains near the cursor are pushed outward from
+        // the pill, creating a small bulge of sand that follows the pointer.
+        // Skipped under reduced motion.
         let tx = 0;
         let ty = 0;
         if (!reduced && hasPointer) {
@@ -145,8 +146,8 @@ export function SandBorder({ radius = 999 }: { radius?: number }) {
           if (dist < MAGNET_RADIUS) {
             const force = (1 - dist / MAGNET_RADIUS) ** 2 * MAGNET_PULL;
             const len = dist || 1;
-            tx = (dx / len) * force;
-            ty = (dy / len) * force;
+            tx = -(dx / len) * force;
+            ty = -(dy / len) * force;
           }
         }
         g.px += (tx - g.px) * 0.12;
