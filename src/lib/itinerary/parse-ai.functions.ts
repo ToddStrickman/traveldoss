@@ -3,6 +3,7 @@ import { generateText, Output } from "ai";
 import { z, ZodError, type ZodIssue } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Block } from "@/lib/skins/types";
+import { placesRequest } from "@/lib/maps/places-request.server";
 import { parseDropInWithMeta, stripEmoji } from "@/lib/itinerary/parse";
 import { normalizeParsedShape } from "@/lib/itinerary/normalize-ai";
 import { isCreditsMessage, isRateLimitMessage } from "@/lib/itinerary/ai-errors";
