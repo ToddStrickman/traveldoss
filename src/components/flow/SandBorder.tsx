@@ -183,9 +183,32 @@ export function SandBorder({ radius = 999 }: { radius?: number }) {
     });
     ro.observe(canvas);
 
+    const onPointerMove = (e: PointerEvent) => {
+      if (e.pointerType !== "mouse") return;
+      const rect = canvas.getBoundingClientRect();
+      mx = e.clientX - rect.left;
+      my = e.clientY - rect.top;
+      hasPointer =
+        mx > -MAGNET_RADIUS &&
+        my > -MAGNET_RADIUS &&
+        mx < rect.width + MAGNET_RADIUS &&
+        my < rect.height + MAGNET_RADIUS;
+    };
+    const onPointerLeave = () => {
+      hasPointer = false;
+    };
+    if (!reduced) {
+      window.addEventListener("pointermove", onPointerMove, { passive: true });
+      window.addEventListener("pointerleave", onPointerLeave);
+      window.addEventListener("blur", onPointerLeave);
+    }
+
     return () => {
       cancelAnimationFrame(raf);
       ro.disconnect();
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerleave", onPointerLeave);
+      window.removeEventListener("blur", onPointerLeave);
     };
   }, [radius]);
 
