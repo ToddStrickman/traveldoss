@@ -17,9 +17,15 @@ type Grain = {
   speed: number;
   size: number;
   alpha: number;
+  /** Eased displacement toward the pointer, in px. */
+  px: number;
+  py: number;
 };
 
 const GRAIN_COUNT = 190;
+/** Pointer influence radius in px, and how far a grain can be pulled. */
+const MAGNET_RADIUS = 110;
+const MAGNET_PULL = 16;
 
 /** Point on a rounded-rect perimeter at normalised distance t. */
 function perimeterPoint(w: number, h: number, r: number, t: number) {
