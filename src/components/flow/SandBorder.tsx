@@ -1,7 +1,8 @@
 /**
- * SandBorder — a canvas of pink sand grains drifting along the perimeter of a
- * rounded rectangle. Used to dress the layout switcher so the control reads as
- * part of the studio's sand language instead of a stock outlined button.
+ * SandBorder — a canvas of champagne-gold sand grains drifting along the
+ * perimeter of a rounded rectangle. Used to dress the layout switcher so the
+ * control reads as part of the studio's sand language instead of a stock
+ * outlined button.
  *
  * Purely decorative: it sits behind the trigger, never takes pointer events and
  * renders a single static frame when the visitor prefers reduced motion.
@@ -120,11 +121,11 @@ export function SandBorder({ radius = 999 }: { radius?: number }) {
         const off = g.off + breathe;
         const x = p.x + nx * off;
         const y = p.y + ny * off;
-        // Pink sand: hotter and brighter toward the top-right corner.
+        // Champagne-gold sand: warmer and brighter toward the top-right corner.
         const heat = (x / w) * 0.6 + (1 - y / h) * 0.4;
-        const hue = 356 - heat * 24;
-        const light = 62 + heat * 22;
-        const sat = 42 + heat * 46;
+        const hue = 42 - heat * 10;
+        const light = 58 + heat * 24;
+        const sat = 55 + heat * 30;
         ctx.fillStyle = `hsl(${hue} ${sat}% ${light}% / ${g.alpha * (0.42 + heat * 0.58)})`;
         ctx.beginPath();
         ctx.arc(x, y, g.size, 0, Math.PI * 2);
