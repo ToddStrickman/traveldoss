@@ -617,7 +617,14 @@ async function fillFromGooglePlaces(
   destination: string | null,
   apiKey: string,
 ): Promise<boolean> {
-  const query = destination ? `${place.name}, ${destination}` : place.name;
+  // A stop's own address is the strongest signal; the broad trip destination
+  // is only a fallback (matches geocodeQueryFor in geo.server.ts). Anchoring
+  // "Monreale Cathedral" to a multi-city trip destination was actively wrong.
+  const query = place.address
+    ? `${place.name}, ${place.address}`
+    : destination
+      ? `${place.name}, ${destination}`
+      : place.name;
   // Per-request timeout: without one, a single slow Places call stalled the
   // ENTIRE parse (mirrors geo.server.ts's abort discipline).
   const ctrl = new AbortController();
