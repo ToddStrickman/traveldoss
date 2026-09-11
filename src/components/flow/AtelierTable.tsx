@@ -46,10 +46,12 @@ export function AtelierTable({
   skins,
   onPick,
   pickingId,
+  variant = "horizontal",
 }: {
   skins: SkinModule[];
   onPick: (id: string) => void;
   pickingId: string | null;
+  variant?: CoverVariant;
 }) {
   const [active, setActive] = useState(0);
   const navigate = useNavigate();
@@ -180,6 +182,7 @@ export function AtelierTable({
               index={i}
               ring={ring}
               isActive={i === active}
+              variant={variant}
               onSelect={() => {
                 if (drag.current?.moved) return;
                 if (i === active) {
@@ -298,12 +301,14 @@ function RingCover({
   index,
   ring,
   isActive,
+  variant,
   onSelect,
 }: {
   skin: SkinModule;
   index: number;
   ring: MotionValue<number>;
   isActive: boolean;
+  variant: CoverVariant;
   onSelect: () => void;
 }) {
   const transform = useTransform(ring, (v) => {
@@ -355,7 +360,7 @@ function RingCover({
       >
         {/* The cover is a dossier object, not a shrunken demo itinerary. */}
         <div className="td-cover relative h-[380px] w-full overflow-hidden">
-          <DossierCoverArt skin={skin} selected={isActive} size="lg" />
+          <DossierCoverArt skin={skin} selected={isActive} size="lg" variant={variant} />
         </div>
         <div className="flex items-center justify-between border-t border-black/10 px-4 py-3">
           <span

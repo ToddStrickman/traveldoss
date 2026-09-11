@@ -12,3 +12,6 @@
 ## In progress
 - [x] Conversion funnel rendered as an actual tapering funnel shape (desktop),
       bar list retained for mobile
+
+## Templates
+- [x] Use the carousel for every layout choice on desktop and mobile
