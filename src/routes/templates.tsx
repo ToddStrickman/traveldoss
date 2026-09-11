@@ -482,7 +482,6 @@ function TemplatesPage() {
         {filteredSkins.length > 0 ? (
           <div className="mt-8 hidden md:block">
             <AtelierTable
-              key={browse}
               skins={filteredSkins}
               onPick={handlePick}
               pickingId={picking}
