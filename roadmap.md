@@ -15,3 +15,13 @@
 
 ## Templates
 - [x] Use the carousel for every layout choice on desktop and mobile
+
+## Live map / Places provider
+- [x] Shared `placesRequest` helper routing Places calls through the Lovable
+      Google Maps gateway (`src/lib/maps/places-request.server.ts`)
+- [x] parse-ai + suggest-location use the helper; parse-time enrichment prefers
+      a stop's own address over the broad trip destination
+- [ ] geo.server.ts / locate.functions.ts retry + error classification (owner is
+      editing these on a separate branch)
+- [ ] Data repair: clear 28 poisoned miss rows in `geocode_cache` and reset
+      needs_review stops — BLOCKED, pending explicit user approval

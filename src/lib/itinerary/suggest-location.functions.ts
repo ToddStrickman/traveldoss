@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { placesRequest } from "@/lib/maps/places-request.server";
 
 /**
  * Contextual location suggestion for the quick-add activity form.
@@ -46,12 +47,11 @@ export const suggestLocation = createServerFn({ method: "POST" })
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
       try {
-        const res = await fetch("https://places.googleapis.com/v1/places:searchText", {
+        const res = await placesRequest(apiKey, {
           method: "POST",
           signal: ctrl.signal,
           headers: {
             "Content-Type": "application/json",
-            "X-Goog-Api-Key": apiKey,
             "X-Goog-FieldMask": "places.displayName,places.formattedAddress",
           },
           body: JSON.stringify({ textQuery, pageSize: 1 }),

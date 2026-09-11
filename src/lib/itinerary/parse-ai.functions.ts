@@ -3,6 +3,7 @@ import { generateText, Output } from "ai";
 import { z, ZodError, type ZodIssue } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Block } from "@/lib/skins/types";
+import { placesRequest } from "@/lib/maps/places-request.server";
 import { parseDropInWithMeta, stripEmoji } from "@/lib/itinerary/parse";
 import { normalizeParsedShape } from "@/lib/itinerary/normalize-ai";
 import { isCreditsMessage, isRateLimitMessage } from "@/lib/itinerary/ai-errors";
@@ -617,17 +618,23 @@ async function fillFromGooglePlaces(
   destination: string | null,
   apiKey: string,
 ): Promise<boolean> {
-  const query = destination ? `${place.name}, ${destination}` : place.name;
+  // A stop's own address is the strongest signal; the broad trip destination
+  // is only a fallback (matches geocodeQueryFor in geo.server.ts). Anchoring
+  // "Monreale Cathedral" to a multi-city trip destination was actively wrong.
+  const query = place.address
+    ? `${place.name}, ${place.address}`
+    : destination
+      ? `${place.name}, ${destination}`
+      : place.name;
   // Per-request timeout: without one, a single slow Places call stalled the
   // ENTIRE parse (mirrors geo.server.ts's abort discipline).
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 3_000);
   try {
-    const res = await fetch("https://places.googleapis.com/v1/places:searchText", {
+    const res = await placesRequest(apiKey, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-Goog-Api-Key": apiKey,
         "X-Goog-FieldMask":
           "places.id,places.displayName,places.formattedAddress,places.internationalPhoneNumber,places.websiteUri,places.regularOpeningHours,places.location",
       },
