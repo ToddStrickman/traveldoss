@@ -98,7 +98,14 @@ export function SandBorder({ radius = 999 }: { radius?: number }) {
       speed: (0.00006 + Math.random() * 0.00022) * (Math.random() < 0.22 ? -1 : 1),
       size: 0.35 + Math.pow(Math.random(), 2.1) * 1.35,
       alpha: 0.18 + Math.random() * 0.72,
+      px: 0,
+      py: 0,
     }));
+
+    // Pointer position in canvas space; null when the cursor is far away.
+    let mx = 0;
+    let my = 0;
+    let hasPointer = false;
 
     let raf = 0;
     let w = 0;
