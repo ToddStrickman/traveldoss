@@ -132,8 +132,27 @@ export function SandBorder({ radius = 999 }: { radius?: number }) {
         // Slow breathing drift so grains shimmer rather than march.
         const breathe = reduced ? 0 : Math.sin(now * 0.0009 + g.t * 40) * 0.9;
         const off = g.off + breathe;
-        const x = p.x + nx * off;
-        const y = p.y + ny * off;
+        const bx = p.x + nx * off;
+        const by = p.y + ny * off;
+        // Magnetic attraction: grains near the cursor lean toward it and ease
+        // back to the path once it leaves. Skipped under reduced motion.
+        let tx = 0;
+        let ty = 0;
+        if (!reduced && hasPointer) {
+          const dx = mx - bx;
+          const dy = my - by;
+          const dist = Math.hypot(dx, dy);
+          if (dist < MAGNET_RADIUS) {
+            const force = (1 - dist / MAGNET_RADIUS) ** 2 * MAGNET_PULL;
+            const len = dist || 1;
+            tx = (dx / len) * force;
+            ty = (dy / len) * force;
+          }
+        }
+        g.px += (tx - g.px) * 0.12;
+        g.py += (ty - g.py) * 0.12;
+        const x = bx + g.px;
+        const y = by + g.py;
         // Champagne-gold sand: warmer and brighter toward the top-right corner.
         const heat = (x / w) * 0.6 + (1 - y / h) * 0.4;
         const hue = 42 - heat * 10;
