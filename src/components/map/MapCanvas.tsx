@@ -27,6 +27,7 @@ import type { MapModel, MapPlace } from "@/lib/maps/build-map-places";
 import { buildMapStyle } from "@/lib/maps/map-style";
 import type { MarkerKind } from "@/lib/maps/taxonomy";
 import { MapPin } from "./MapPin";
+import { spreadMapPins } from "@/lib/maps/spread-map-pins";
 
 export type MapCanvasHandle = {
   fitAll: () => void;
@@ -72,6 +73,7 @@ export const MapCanvas = forwardRef<
     tokens: SkinTokens;
     palette: Record<MarkerKind, string>;
     hiddenDays: Set<number>;
+    focusedDay?: number | null;
     showRoute: boolean;
     showOrder: boolean;
     selectedKey: string | null;
@@ -79,7 +81,7 @@ export const MapCanvas = forwardRef<
     onStatus: (status: MapStatus) => void;
   }
 >(function MapCanvas(
-  { model, visible, tokens, palette, hiddenDays, showRoute, showOrder, selectedKey, onSelect, onStatus },
+  { model, visible, tokens, palette, hiddenDays, showRoute, showOrder, selectedKey, onSelect, onStatus, focusedDay = null },
   ref,
 ) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -87,14 +89,19 @@ export const MapCanvas = forwardRef<
   const mlRef = useRef<typeof import("maplibre-gl") | null>(null);
   const markersRef = useRef<Map<string, { marker: MLMarker; el: HTMLDivElement }>>(new Map());
   const [loaded, setLoaded] = useState(false);
+  const [mapReady, setMapReady] = useState(false);
   const [mounts, setMounts] = useState<Array<{ key: string; el: HTMLDivElement }>>([]);
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
   const onStatusRef = useRef(onStatus);
   onStatusRef.current = onStatus;
 
-  const bounds = model.bounds;
-  const single = model.places.length === 1 ? model.places[0] : null;
+  const fitPlaces = useMemo(() => {
+    const focus = visible.filter((p) => focusedDay == null || p.visits.some((v) => v.day === focusedDay));
+    return focus.length ? focus : visible;
+  }, [visible, focusedDay]);
+  const bounds = useMemo(() => fitPlaces.length ? [[Math.min(...fitPlaces.map((p) => p.lng)), Math.min(...fitPlaces.map((p) => p.lat))], [Math.max(...fitPlaces.map((p) => p.lng)), Math.max(...fitPlaces.map((p) => p.lat))]] as [[number, number], [number, number]] : null, [fitPlaces]);
+  const single = fitPlaces.length === 1 ? fitPlaces[0] : null;
 
   // Mount the map once.
   useEffect(() => {
@@ -108,8 +115,9 @@ export const MapCanvas = forwardRef<
     onStatusRef.current("loading");
     let map: MLMap | null = null;
     let readyTimer: number | null = null;
-    let errors = 0;
-    let idle = false;
+    let basemapReady = false;
+    // Covers stalled imports and requests that never emit an error as well.
+    readyTimer = window.setTimeout(() => { if (!cancelled && !basemapReady) onStatusRef.current("error"); }, READY_TIMEOUT_MS);
 
     import("maplibre-gl")
       .then((ml) => {
@@ -136,12 +144,14 @@ export const MapCanvas = forwardRef<
         map.addControl(new ml.AttributionControl({}), "bottom-right");
         map.on("click", () => onSelectRef.current(null));
         map.on("error", (e) => {
-          errors++;
           if (import.meta.env.DEV) console.warn("[live-map]", e?.error?.message ?? e);
         });
-        map.once("idle", () => {
-          idle = true;
-          if (!cancelled) onStatusRef.current("ready");
+        // An idle event also fires after failed requests. Require a real tile.
+        map.on("sourcedata", (e) => {
+          if (e.sourceId === "omt" && e.tile?.state === "loaded") {
+            basemapReady = true;
+            if (!cancelled) onStatusRef.current("ready");
+          }
         });
         map.on("load", () => {
           if (cancelled || !map) return;
@@ -163,11 +173,10 @@ export const MapCanvas = forwardRef<
           setLoaded(true);
         });
         mapRef.current = map;
+        setMapReady(true);
         // A style that never finishes (tiles unreachable, glyphs blocked)
         // must not leave the traveller on a blank canvas.
-        readyTimer = window.setTimeout(() => {
-          if (!cancelled && !idle && errors > 0) onStatusRef.current("error");
-        }, READY_TIMEOUT_MS);
+
       })
       .catch((err) => {
         console.error("[live-map] maplibre failed to load", err);
@@ -183,6 +192,7 @@ export const MapCanvas = forwardRef<
       map?.remove();
       mapRef.current = null;
       setLoaded(false);
+      setMapReady(false);
     };
     // The map is created once per overlay open; tokens/model are captured
     // at open time on purpose (the overlay remounts on a new open).
@@ -205,7 +215,8 @@ export const MapCanvas = forwardRef<
       }
     }
     for (const p of visible) {
-      if (have.has(p.key)) continue;
+      const existing = have.get(p.key);
+      if (existing) { existing.marker.setLngLat([p.lng, p.lat]); continue; }
       const el = document.createElement("div");
       el.className = "tds-mappin-anchor";
       const marker = new ml.Marker({ element: el, anchor: "center" }).setLngLat([p.lng, p.lat]).addTo(map);
@@ -213,7 +224,13 @@ export const MapCanvas = forwardRef<
       changed = true;
     }
     if (changed) setMounts([...have.entries()].map(([key, { el }]) => ({ key, el })));
-  }, [visible, loaded]);
+    const spread = () => {
+      const offsets = spreadMapPins(visible.map((p) => { const point = map.project([p.lng,p.lat]); return {key:p.key,x:point.x,y:point.y}; }));
+      for (const [key, entry] of have) entry.marker.setOffset(offsets.get(key) ?? [0,0]);
+    };
+    spread(); map.on("move", spread); map.on("resize", spread);
+    return () => { map.off("move", spread); map.off("resize", spread); };
+  }, [visible, mapReady]);
 
   // Route data follows the day chips and the route toggle.
   useEffect(() => {
@@ -226,6 +243,26 @@ export const MapCanvas = forwardRef<
       if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", vis);
     }
   }, [model, hiddenDays, showRoute, loaded]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+    const duration = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 350;
+    if (bounds && !single) map.fitBounds(bounds as LngLatBoundsLike, { padding: FIT_PADDING, maxZoom: 16, duration });
+    else if (single) map.easeTo({ center: [single.lng, single.lat], zoom: 15, duration });
+  }, [bounds, single, mapReady]);
+
+  useEffect(() => {
+    const map = mapRef.current, container = containerRef.current;
+    if (!map || !container || !mapReady) return;
+    const selected = visible.find((p) => p.key === selectedKey);
+    const resize = () => {
+      map.resize();
+      if (selected) map.easeTo({ center: [selected.lng, selected.lat], duration: 0 });
+    };
+    const observer = new ResizeObserver(resize); observer.observe(container); resize();
+    return () => observer.disconnect();
+  }, [mapReady, selectedKey, visible]);
 
   useImperativeHandle(
     ref,
@@ -255,6 +292,7 @@ export const MapCanvas = forwardRef<
           <MapPin
             key={key}
             place={place}
+            focusedDay={focusedDay}
             tokens={tokens}
             fill={palette[place.kind]}
             showOrder={showOrder}

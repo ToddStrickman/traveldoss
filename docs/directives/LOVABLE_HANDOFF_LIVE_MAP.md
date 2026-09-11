@@ -139,3 +139,43 @@ are deliberately excluded so the traveller's own stops stay the hero.
 > "Do not undo these" list, keep `bun test src tests`, `tsc --noEmit` and
 > `bun run build` green, and verify on `/e2e/dossier?skin=marguerite&map=trip`
 > at 1280 px and 375 px.
+
+## September 2026 recovery and traveler companion
+
+The earlier DOM visibility contract is superseded by the owner's September 11
+request: show the saved trip and the focused itinerary day together, clearly
+differentiated. DossierMap derives from current blocks, never a DOM snapshot.
+Day focus emphasizes its pins and route while other days remain hollow context;
+Whole trip restores the full view. Plan B remains dashed and separately toggled.
+The desktop companion is a 360px sidebar; mobile uses a bounded bottom panel.
+
+Keep these regression fixes:
+- GOOGLE_MAPS_API_KEY is a Lovable connection key here. All three Places paths
+  use places-request.server.ts and the connector gateway, with both server
+  credentials. Never send the connection key directly to Google.
+- Only valid zero-result responses become negative cache entries. HTTP errors,
+  timeouts and malformed coordinates leave attempts untouched. Re-reading a
+  cached miss is not a new attempt. Explicit owner retries bypass negative
+  cache entries but continue to reuse positive hits.
+- Locate queries and writes explicitly filter user_id; the write compares
+  updated_at to avoid replacing an itinerary edited during the request. The
+  browser merges location fields rather than replacing current editor blocks.
+- Markers mount independently of tile readiness. Readiness requires an actual
+  loaded basemap tile; idle also fires when requests have failed. A 12-second
+  deadline covers hung imports and tile requests and preserves pins in fallback.
+- Nearby pins spread in screen space only; stored coordinates never change.
+  The place list remains another accessible way to select each stop.
+- Directions are ordinary Apple Maps links on iOS and Google Maps links
+  elsewhere. Dotted map segments are itinerary sequence, not walking routes.
+- e2e/live-map.spec.ts covers 1280px/375px, light/dark, Chromium/WebKit, immediate
+  coordinate arrival and tile failure. Native Comet and native macOS/iOS remain
+  separate device checks; WebKit on Windows is not an actual iPhone.
+
+Production data repair is pending explicit approval after automatic review.
+Do not delete cache rows globally or reset all trips. For orsino-yhpv2w there are
+28 unlocated entries, of which 24 have addresses. The proposed repair is a
+single bounded pass over those 24 addressed entries through the existing Google
+Maps connection; save only verified matches and location metadata, with a
+concurrent-edit check. Four vague entries and ambiguous/mismatched results stay
+unlocated and visible in the list. Preserve itinerary text, images, order,
+mapHidden and manual locations. Do not publish or run that repair until approved.

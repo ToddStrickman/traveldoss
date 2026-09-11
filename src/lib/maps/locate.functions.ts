@@ -36,14 +36,15 @@ export const locateTripPlaces = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }): Promise<LocateResult> => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
     const apiKey = process.env.GOOGLE_MAPS_API_KEY;
 
     // RLS: the user-scoped client only returns the caller's own trips.
     const { data: row, error } = await supabase
       .from("trips")
-      .select("content, destination")
+      .select("content, destination, updated_at")
       .eq("slug", data.slug)
+      .eq("user_id", userId)
       .maybeSingle();
     if (error) throw new Error(`Could not read the dossier: ${error.message}`);
     if (!row) throw new Error("Dossier not found, or you don't own it.");
@@ -52,7 +53,9 @@ export const locateTripPlaces = createServerFn({ method: "POST" })
     const before = (content.blocks ?? []) as Block[];
     if (!apiKey) return { ...summarizeLocate(before, before, false), blocks: null };
 
+    let serviceUnavailable = false;
     const after = await enrichBlocksWithCoords(before, {
+      deps: { onServiceError: () => { serviceUnavailable = true; } },
       apiKey,
       destination: row.destination,
       budgetMs: 9_000,
@@ -61,13 +64,17 @@ export const locateTripPlaces = createServerFn({ method: "POST" })
     });
 
     if (after !== before) {
-      const { error: writeError } = await supabase
+      const { data: saved, error: writeError } = await supabase
         .from("trips")
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .update({ content: { ...content, blocks: after } as any })
-        .eq("slug", data.slug);
+        .eq("slug", data.slug)
+        .eq("user_id", userId)
+        .eq("updated_at", row.updated_at)
+        .select("id");
+      if (!writeError && !saved?.length) throw new Error("The itinerary changed while locating. Try again to use the latest stops.");
       if (writeError) throw new Error(`Could not save locations: ${writeError.message}`);
     }
 
-    return { ...summarizeLocate(before, after, true), blocks: after !== before ? after : null };
+    return { ...summarizeLocate(before, after, true), serviceUnavailable, blocks: after !== before ? after : null };
   });

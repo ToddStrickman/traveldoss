@@ -66,7 +66,7 @@ export type MapModel = {
   places: MapPlace[];
   segments: MapRouteSegment[];
   unlocated: Array<{ blockIndex: number; name: string; status: GeocodeStatus | "none" }>;
-  /** Day numbers with at least one located primary stop, ascending. */
+  /** All itinerary days, including days still awaiting locations. */
   days: number[];
   /** [[west, south], [east, north]] or null when nothing is located. */
   bounds: [[number, number], [number, number]] | null;
@@ -116,7 +116,7 @@ function statusOf(b: ActivityBlock): GeocodeStatus | "none" {
 }
 
 function located(b: ActivityBlock): b is ActivityBlock & { lat: number; lng: number } {
-  return typeof b.lat === "number" && typeof b.lng === "number" && Number.isFinite(b.lat) && Number.isFinite(b.lng);
+  return typeof b.lat === "number" && typeof b.lng === "number" && Number.isFinite(b.lat) && Math.abs(b.lat) <= 90 && Number.isFinite(b.lng) && Math.abs(b.lng) <= 180;
 }
 
 type Entry = { activity: ActivityBlock; index: number };
@@ -230,7 +230,7 @@ export function buildMapModel(
     }
     for (const entry of d.shadows) consider(entry, d.day.n, undefined, null, d.day);
 
-    if (route.length > 0) daysWithPins.add(d.day.n);
+    daysWithPins.add(d.day.n);
     for (let i = 1; i < route.length; i++) {
       const from = route[i - 1];
       const to = route[i];

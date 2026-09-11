@@ -72,6 +72,13 @@ function DossierHarness() {
           search: (prev: Record<string, unknown>) => ({ ...prev, map: serializeMapParam(day) }),
           resetScroll: false,
         }),
+      focus: (day: number | null) =>
+        void navigate({
+          to: ".",
+          search: (prev: Record<string, unknown>) => ({ ...prev, map: serializeMapParam(day) }),
+          replace: true,
+          resetScroll: false,
+        }),
       close: () =>
         void navigate({
           to: ".",

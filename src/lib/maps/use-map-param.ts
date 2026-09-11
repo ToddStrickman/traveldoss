@@ -23,6 +23,7 @@ export type MapRequest = {
 
 type MapNavigator = {
   open: (day: number | null) => void;
+  focus?: (day: number | null) => void;
   close: () => void;
 };
 
@@ -75,6 +76,13 @@ export function openMap(day: number | null = null, entry: MapEntry = "deeplink")
     navigator.open(day);
   }
   emit({ open: true, day, entry });
+}
+
+/** Change focus without adding history entries or replacing the opener. */
+export function focusMap(day: number | null) {
+  if (!state.open) return;
+  navigator?.focus?.(day);
+  emit({ ...state, day });
 }
 
 export function closeMap() {
@@ -130,6 +138,7 @@ export function useMapUrlSync(param: string | undefined, nav: MapNavigator) {
 
 export type MapLocateResult = {
   configured: boolean;
+  serviceUnavailable?: boolean;
   located: number;
   unresolved: number;
   remaining: number;

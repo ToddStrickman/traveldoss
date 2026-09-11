@@ -97,11 +97,9 @@ export function SkinFrame({ trip, blocks, tokens, view = "vertical" }: SkinFrame
         </span>
       </footer>
 
-      {/* The Live Map overlay — one instance. Keyed on the focused day so a
-          re-open from another day header rebuilds its snapshot. */}
+      {/* Keep one map mounted while day focus changes; closing unmounts it. */}
       {!inert && mapRequest.open ? (
         <DossierMapOverlay
-          key={mapRequest.day ?? "trip"}
           trip={trip}
           blocks={blocks}
           tokens={tokens}

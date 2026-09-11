@@ -11,12 +11,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { MapModel, MapPlace } from "@/lib/maps/build-map-places";
 import type { MarkerKind } from "@/lib/maps/taxonomy";
 import { MapPin } from "./MapPin";
+import { spreadMapPins } from "@/lib/maps/spread-map-pins";
 
 const TILE = 256;
 
 function mercator(lat: number, lng: number): { x: number; y: number } {
   const x = (lng + 180) / 360;
-  const rad = (lat * Math.PI) / 180;
+  const rad = (Math.max(-85.051129, Math.min(85.051129, lat)) * Math.PI) / 180;
   const y = (1 - Math.log(Math.tan(rad) + 1 / Math.cos(rad)) / Math.PI) / 2;
   return { x, y };
 }
@@ -31,6 +32,7 @@ export function MapParchment({
   selectedKey,
   onSelect,
   hiddenDays,
+  focusedDay,
 }: {
   model: MapModel;
   /** Places to draw (already filtered for hidden days / Plan B). */
@@ -42,6 +44,7 @@ export function MapParchment({
   selectedKey: string | null;
   onSelect: (key: string | null) => void;
   hiddenDays: Set<number>;
+  focusedDay?: number | null;
 }) {
   const boxRef = useRef<HTMLDivElement | null>(null);
   const [size, setSize] = useState<{ w: number; h: number } | null>(null);
@@ -78,7 +81,9 @@ export function MapParchment({
       const m = mercator(lat, lng);
       return { left: m.x * scale - ox, top: m.y * scale - oy };
     };
-    const dots = pts.map(({ p }) => ({ place: p, ...project(p.lat, p.lng) }));
+    const anchors = pts.map(({ p }) => ({ place: p, ...project(p.lat, p.lng) }));
+    const offsets = spreadMapPins(anchors.map((p) => ({key:p.place.key,x:p.left,y:p.top})));
+    const dots = anchors.map((p) => { const [dx,dy] = offsets.get(p.place.key) ?? [0,0]; return {...p,left:p.left+dx,top:p.top+dy}; });
     const paths = model.segments
       .filter((s) => s.kind === "walk" && !hiddenDays.has(s.day))
       .map((s) => {
@@ -113,6 +118,7 @@ export function MapParchment({
             <div key={place.key} style={{ position: "absolute", left, top, transform: "translate(-50%, -50%)" }}>
               <MapPin
                 place={place}
+                focusedDay={focusedDay}
                 tokens={tokens}
                 fill={palette[place.kind]}
                 showOrder={showOrder}

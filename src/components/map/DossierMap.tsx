@@ -1,25 +1,14 @@
-/**
- * The Live Map overlay.
- *
- * One full-screen plate owned by SkinFrame, opened from the masthead Map
- * button, the desktop view-switch segment, a day header's Map pill, or a
- * `?map=` link. It plots ONLY the stops currently visible on screen when
- * it opens (collapsed days, hidden carousel alternatives and the collapsed
- * Plan-B section are excluded by checking real DOM visibility), except the
- * day it was opened from, which is always included.
- *
- * Rendering: MapLibre over OpenFreeMap vector tiles restyled from the skin's
- * tokens (`MapCanvas`), or parchment mode when that is not possible
- * (`MapParchment`). Coordinates are persisted at enrichment time, so
- * opening the map never geocodes.
+/** The live map follows saved itinerary data, independent of collapsed days.
+ * A focused day is emphasized while the rest of the trip stays available.
+ * MapLibre renders the basemap; parchment preserves pins during an outage.
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Crosshair, MapPin as MapPinIcon, Minus, Plus, X } from "lucide-react";
 import type { Block, SkinTokens, TripView } from "@/lib/skins/types";
-import { buildMapModel, type MapModel, type MapPlace } from "@/lib/maps/build-map-places";
+import { buildMapModel } from "@/lib/maps/build-map-places";
 import { alpha } from "@/lib/maps/color";
 import { pinPalette } from "@/lib/maps/taxonomy";
-import { useMapLocator, type MapEntry } from "@/lib/maps/use-map-param";
+import { focusMap, useMapLocator, type MapEntry } from "@/lib/maps/use-map-param";
 import {
   trackMapClosed,
   trackMapDayToggled,
@@ -32,28 +21,10 @@ import {
 } from "@/lib/analytics";
 import { MapCanvas, type MapCanvasHandle, type MapStatus } from "./MapCanvas";
 import { MapParchment } from "./MapParchment";
-import { visitLabel } from "./MapPin";
+import { MapDetailPanel } from "./MapDetailPanel";
 import "./map.css";
 
 export { indexDayLookup } from "@/lib/maps/build-map-places";
-
-/** Indexes of activity blocks currently visible (untruncated) on screen. */
-export function collectVisibleIndexes(): Set<number> {
-  const out = new Set<number>();
-  if (typeof document === "undefined") return out;
-  const nodes = document.querySelectorAll<HTMLElement>(".tds [data-block-index]");
-  for (const el of nodes) {
-    const idx = Number(el.dataset.blockIndex);
-    if (Number.isNaN(idx)) continue;
-    // Structural visibility only (display/visibility/collapsed ancestors).
-    // content-visibility:auto skipping is a scroll-perf optimization, not
-    // user truncation — off-screen days still belong on the map.
-    const visible =
-      typeof el.checkVisibility === "function" ? el.checkVisibility() : el.offsetParent !== null;
-    if (visible) out.add(idx);
-  }
-  return out;
-}
 
 const FOCUSABLE =
   'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
@@ -92,21 +63,11 @@ export function DossierMapOverlay({
   const locator = useMapLocator();
   const [locating, setLocating] = useState(false);
   const [locateNote, setLocateNote] = useState<string | null>(null);
-  const [modelVersion, setModelVersion] = useState(0);
+  const [listOpen, setListOpen] = useState(false);
   const autoLocated = useRef(false);
 
-  // Snapshot the screen at open time — the "untruncated only" contract.
-  const model: MapModel = useMemo(
-    () =>
-      buildMapModel(trip, blocks, {
-        onlyVisible: collectVisibleIndexes(),
-        forceDay: initialDay ?? null,
-      }),
-    // Computed once per open on purpose (plus once per locate pass): the
-    // overlay reflects the screen state at the moment it was opened.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [modelVersion],
-  );
+  // Saved data is authoritative, including collapsed days and deep links.
+  const model = useMemo(() => buildMapModel(trip, blocks), [trip, blocks]);
   const eligibleToLocate = useMemo(
     () => model.unlocated.filter((u) => u.status === "none" || u.status === "pending").length,
     [model],
@@ -130,6 +91,8 @@ export function DossierMapOverlay({
         });
         if (!res.configured) {
           setLocateNote("Location lookup isn't set up on this server yet, so stops can't be pinned here.");
+        } else if (res.serviceUnavailable) {
+          setLocateNote("Location lookup is temporarily unavailable. Your stops are saved; try again later.");
         } else if (res.located > 0) {
           setLocateNote(
             `Located ${res.located} stop${res.located === 1 ? "" : "s"}` +
@@ -140,9 +103,9 @@ export function DossierMapOverlay({
             `${res.unresolved} stop${res.unresolved === 1 ? "" : "s"} couldn't be found. Add a street address to each and try again.`,
           );
         } else {
-          setLocateNote("No new locations were found.");
+          setLocateNote(res.remaining > 0 ? "Some stops still need a location. Try again, or add a more precise address." : "No new locations were found.");
         }
-        setModelVersion((v) => v + 1);
+        // The model follows updated blocks directly, without a stale snapshot.
       } catch (err) {
         console.error("[live-map] locate failed", err);
         setLocateNote("Couldn't locate stops just now. Try again in a moment.");
@@ -159,30 +122,17 @@ export function DossierMapOverlay({
     void runLocate(true);
   }, [locator, eligibleToLocate, runLocate]);
   const palette = useMemo(() => pinPalette(tokens), [tokens]);
-  const hasPlanB = useMemo(() => model.places.some((p) => p.tier === "shadow"), [model]);
+  const hasPlanB = blocks.some((b) => b.kind === "place" && b.tier === "shadow" && !b.mapHidden);
 
-  const [hiddenDays, setHiddenDays] = useState<Set<number>>(() =>
-    initialDay == null ? new Set<number>() : new Set(model.days.filter((d) => d !== initialDay)),
-  );
-  const focusedDay =
-    model.days.length - hiddenDays.size === 1
-      ? (model.days.find((d) => !hiddenDays.has(d)) ?? null)
-      : null;
-
-  const visible = useMemo<MapPlace[]>(
-    () =>
-      model.places.filter((p) => {
-        if (p.tier === "shadow" && !showPlanB) return false;
-        // A place stays while any of its visits is on a shown day; preface
-        // stops (hotel, essentials) always stay.
-        return p.visits.some((v) => v.day == null || !hiddenDays.has(v.day));
-      }),
-    [model, hiddenDays, showPlanB],
-  );
+  const [focusedDay, setFocusedDay] = useState<number | null>(initialDay ?? null);
+  useEffect(() => { setFocusedDay(initialDay ?? null); }, [initialDay]);
+  const hiddenDays = useMemo(() => new Set(model.days.filter((d) => focusedDay != null && d !== focusedDay)), [model.days, focusedDay]);
+  // Other days stay on the plate as quiet, tappable context.
+  const visible = useMemo(() => model.places.filter((p) => p.tier !== "shadow" || showPlanB), [model, showPlanB]);
 
   const selected = useMemo(
-    () => model.places.find((p) => p.key === selectedKey) ?? null,
-    [model, selectedKey],
+    () => visible.find((p) => p.key === selectedKey) ?? null,
+    [visible, selectedKey],
   );
 
   // Analytics: one open, one close.
@@ -230,19 +180,12 @@ export function DossierMapOverlay({
     [model],
   );
 
-  const toggleDay = useCallback(
-    (day: number) => {
-      setHiddenDays((prev) => {
-        const next = new Set(prev);
-        const nowHidden = !next.has(day);
-        if (nowHidden) next.add(day);
-        else next.delete(day);
-        trackMapDayToggled(!nowHidden, model.days.length - next.size);
-        return next;
-      });
-    },
-    [model.days.length],
-  );
+  const toggleDay = (day: number) => {
+    const next = focusedDay === day ? null : day;
+    setFocusedDay(next);
+    focusMap(next);
+    trackMapDayToggled(true, next == null ? model.days.length : 1);
+  };
 
   // Escape closes; body scroll locks; focus is trapped inside the dialog.
   useEffect(() => {
@@ -378,8 +321,9 @@ export function DossierMapOverlay({
             scrollbarWidth: "none",
           }}
         >
+          <button type="button" className="tds-map-chip" aria-pressed={focusedDay == null} onClick={() => { setFocusedDay(null); focusMap(null); }}>Whole trip</button>
           {model.days.map((d) => {
-            const off = hiddenDays.has(d);
+            const off = focusedDay !== d;
             return (
               <button key={d} type="button" className="tds-map-chip" onClick={() => toggleDay(d)} aria-pressed={!off}>
                 <span className="dot" aria-hidden />
@@ -419,7 +363,9 @@ export function DossierMapOverlay({
         </div>
       ) : null}
 
-      <div style={{ position: "relative", flex: 1, minHeight: 0 }}>
+      <div className="tds-map-legend"><span>● {focusedDay == null ? "Planned stops" : "Day " + focusedDay + " · numbered route"}</span>{focusedDay != null ? <span>○ Rest of trip</span> : null}{showPlanB ? <span>◌ Plan B</span> : null}<span className="tds-map-route-note">Dotted lines show itinerary order, not walking directions</span><button type="button" className="tds-map-chip tds-map-list-toggle" aria-expanded={listOpen || !!selected} onClick={() => { setSelectedKey(null); setListOpen(!listOpen); }}>Places</button></div>
+      <div className="tds-map-workspace">
+      <div className="tds-map-viewport">
         {empty ? (
           <div
             style={{
@@ -474,6 +420,7 @@ export function DossierMapOverlay({
             selectedKey={selectedKey}
             onSelect={onSelect}
             hiddenDays={hiddenDays}
+            focusedDay={focusedDay}
           />
         ) : (
           <MapCanvas
@@ -488,6 +435,7 @@ export function DossierMapOverlay({
             selectedKey={selectedKey}
             onSelect={onSelect}
             onStatus={onStatus}
+            focusedDay={focusedDay}
           />
         )}
 
@@ -532,39 +480,8 @@ export function DossierMapOverlay({
           </div>
         ) : null}
 
-        {selected ? (
-          <div className="tds-map-caption" role="status">
-            <div style={{ minWidth: 0, flex: 1 }}>
-              <div className="tds-map-caption-eyebrow">
-                {[
-                  selected.visits[0] ? visitLabel(selected.visits[0]) : null,
-                  selected.tier === "shadow" ? "Plan B" : null,
-                ]
-                  .filter(Boolean)
-                  .join(" · ") || "Trip essentials"}
-              </div>
-              <div className="tds-map-caption-name">{selected.name}</div>
-              {selected.address || selected.visits.length > 1 ? (
-                <div
-                  className="tds-map-caption-meta"
-                  style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
-                >
-                  {selected.visits.length > 1 ? `${selected.visits.length} visits · ` : ""}
-                  {selected.address ?? ""}
-                </div>
-              ) : null}
-            </div>
-            <button
-              type="button"
-              className="tds-map-iconbtn"
-              aria-label="Dismiss"
-              style={{ width: 32, height: 32 }}
-              onClick={() => setSelectedKey(null)}
-            >
-              <X size={14} aria-hidden />
-            </button>
-          </div>
-        ) : null}
+      </div>
+      <MapDetailPanel selected={selected} places={visible} unlocated={model.unlocated} blocks={blocks} focusedDay={focusedDay} listOpen={listOpen} onSelect={onSelect} onDismiss={() => { setSelectedKey(null); setListOpen(false); }} onCloseMap={onClose} />
       </div>
 
       {!empty && (model.unlocated.length > 0 || locateNote) ? (

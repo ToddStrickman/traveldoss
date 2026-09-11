@@ -17,6 +17,7 @@ import {
   useMapUrlSync,
 } from "@/lib/maps/use-map-param";
 import { locateTripPlaces } from "@/lib/maps/locate.functions";
+import { mergeLocatedBlocks } from "@/lib/maps/merge-located-blocks";
 import { ExportMenu } from "@/components/studio/ExportMenu";
 import { AccessAuditTrail } from "@/components/studio/AccessAuditTrail";
 import { PrintScheduleGrid } from "@/components/studio/PrintScheduleGrid";
@@ -161,6 +162,13 @@ function DossierPage() {
         void navigate({
           to: ".",
           search: (prev: Record<string, unknown>) => ({ ...prev, map: serializeMapParam(day) }),
+          resetScroll: false,
+        }),
+      focus: (day: number | null) =>
+        void navigate({
+          to: ".",
+          search: (prev: Record<string, unknown>) => ({ ...prev, map: serializeMapParam(day) }),
+          replace: true,
           resetScroll: false,
         }),
       close: () =>
@@ -610,10 +618,11 @@ function DossierPage() {
         });
         if (res.blocks) {
           const located = res.blocks as Block[];
-          setSnap((s) => ({ ...s, blocks: located }), { coalesceKey: "map:locate" });
+          setSnap((s) => ({ ...s, blocks: mergeLocatedBlocks(s.blocks, located) }), { coalesceKey: "map:locate" });
         }
         return {
           configured: res.configured,
+          serviceUnavailable: res.serviceUnavailable,
           located: res.located,
           unresolved: res.unresolved,
           remaining: res.remaining,

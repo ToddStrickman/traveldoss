@@ -120,7 +120,7 @@ describe("buildMapModel", () => {
     const m = buildMapModel(TRIP, [{ kind: "day", n: 1, label: "Day" }, { kind: "place", name: "X", address: "Somewhere" }]);
     expect(m.places).toHaveLength(0);
     expect(m.bounds).toBeNull();
-    expect(m.days).toEqual([]);
+    expect(m.days).toEqual([1]);
     expect(m.unlocated).toHaveLength(1);
   });
 });

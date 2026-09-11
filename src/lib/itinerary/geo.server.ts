@@ -20,6 +20,7 @@
  *   3. The Places id is stored (`placeId`) for dedupe and later details.
  */
 import type { Block } from "@/lib/skins/types";
+import { placesRequest, PLACES_SEARCH_TEXT_URL } from "@/lib/maps/places-request.server";
 import {
   readGeocodeCache,
   writeGeocodeCache,
@@ -39,6 +40,7 @@ export type GeocodeDeps = {
   readCache?: (query: string) => Promise<GeocodeCacheEntry | undefined>;
   writeCache?: (query: string, hit: GeocodeHit | null, provider: string) => Promise<void>;
   now?: () => number;
+  onServiceError?: () => void;
 };
 
 /** The text sent to the geocoder for a stop, or null when nothing usable exists. */
@@ -56,7 +58,7 @@ export function shouldAttemptGeocode(
   b: PlaceBlock,
   { retryNeedsReview = false }: { retryNeedsReview?: boolean } = {},
 ): boolean {
-  if (b.lat != null && b.lng != null) return false;
+  if (typeof b.lat === "number" && Number.isFinite(b.lat) && Math.abs(b.lat) <= 90 && typeof b.lng === "number" && Number.isFinite(b.lng) && Math.abs(b.lng) <= 180) return false;
   if (b.mapHidden) return false;
   const status = b.geocode?.status;
   if (status === "manual" || status === "failed") return false;
@@ -68,34 +70,34 @@ export function shouldAttemptGeocode(
 async function googleTextSearch(
   query: string,
   apiKey: string,
-  fetchImpl: typeof fetch,
+  fetchImpl?: typeof fetch,
 ): Promise<GeocodeHit | null> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
   try {
-    const res = await fetchImpl("https://places.googleapis.com/v1/places:searchText", {
+    const request: RequestInit = {
       method: "POST",
       signal: ctrl.signal,
       headers: {
         "Content-Type": "application/json",
-        "X-Goog-Api-Key": apiKey,
         // id + location: still the Pro tier, and the id is the one Places
         // datum Google allows storing indefinitely.
         "X-Goog-FieldMask": "places.id,places.location",
       },
       body: JSON.stringify({ textQuery: query, pageSize: 1 }),
-    });
-    if (!res.ok) return null;
+    };
+    const res = fetchImpl ? await fetchImpl(PLACES_SEARCH_TEXT_URL, request) : await placesRequest(apiKey, request);
+    // Service failures are not evidence that a place does not exist.
+    if (!res.ok) throw new Error("Location service unavailable (" + res.status + ")");
     const json = (await res.json()) as {
       places?: Array<{ id?: string; location?: { latitude?: number; longitude?: number } }>;
     };
     const first = json.places?.[0];
     const loc = first?.location;
-    if (typeof loc?.latitude === "number" && typeof loc?.longitude === "number") {
+    if (typeof loc?.latitude === "number" && typeof loc?.longitude === "number" && Number.isFinite(loc.latitude) && Math.abs(loc.latitude) <= 90 && Number.isFinite(loc.longitude) && Math.abs(loc.longitude) <= 180) {
       return { lat: loc.latitude, lng: loc.longitude, placeId: first?.id };
     }
-    return null;
-  } catch {
+    if (first) throw new Error("Location service returned invalid coordinates");
     return null;
   } finally {
     clearTimeout(timer);
@@ -107,12 +109,13 @@ export async function resolveGeocodeQuery(
   query: string,
   apiKey: string,
   deps: GeocodeDeps = {},
+  bypassCachedMiss = false,
 ): Promise<{ hit: GeocodeHit | null; cacheHit: boolean }> {
   const readCache = deps.readCache ?? readGeocodeCache;
   const writeCache = deps.writeCache ?? writeGeocodeCache;
   const cached = await readCache(query);
-  if (cached) return { hit: cached.hit, cacheHit: true };
-  const hit = await googleTextSearch(query, apiKey, deps.fetchImpl ?? fetch);
+  if (cached && (cached.hit || !bypassCachedMiss)) return { hit: cached.hit, cacheHit: true };
+  const hit = await googleTextSearch(query, apiKey, deps.fetchImpl);
   await writeCache(query, hit, PROVIDER);
   return { hit, cacheHit: false };
 }
@@ -153,8 +156,13 @@ export async function enrichBlocksWithCoords(
     await Promise.race([
       Promise.allSettled(
         targets.slice(0, maxPerRun).map(async ({ index, query }) => {
-          const { hit } = await resolveGeocodeQuery(query, apiKey, deps);
-          outcomes.set(index, { hit, query });
+          try {
+            const { hit, cacheHit } = await resolveGeocodeQuery(query, apiKey, deps, retryNeedsReview);
+            // Cached misses do not consume a fresh provider attempt.
+            if (hit || !cacheHit) outcomes.set(index, { hit, query });
+          } catch {
+            deps.onServiceError?.();
+          }
         }),
       ),
       new Promise((r) => setTimeout(r, budgetMs)),

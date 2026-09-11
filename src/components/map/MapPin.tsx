@@ -32,7 +32,9 @@ export function MapPin({
   showOrder,
   selected,
   onSelect,
+  focusedDay = null,
 }: {
+  focusedDay?: number | null;
   place: MapPlace;
   tokens: { bg: string; ink: string };
   fill: string;
@@ -44,10 +46,12 @@ export function MapPin({
   const Icon = markerIconFor(place.kind, place.rawCategory) ?? PinGlyph;
   const ghost = place.tier === "shadow";
   const size = place.isBase && place.kind === "stay" ? 32 : place.kind === "transit" ? 24 : 28;
-  const first = place.visits[0];
+  const first = place.visits.find((v) => v.day === focusedDay) ?? place.visits[0];
+  const context = focusedDay != null && !place.visits.some((v) => v.day == null || v.day === focusedDay);
   const label = [
     `${MARKER_LABEL[place.kind]}: ${place.name}`,
     ghost ? "Plan B" : first ? visitLabel(first) : "",
+    context ? "Rest of trip" : "",
     place.visits.length > 1 ? `${place.visits.length} visits` : "",
   ]
     .filter(Boolean)
@@ -58,6 +62,7 @@ export function MapPin({
       type="button"
       className="tds-mappin"
       data-kind={place.kind}
+      data-context={context ? "true" : undefined}
       data-ghost={ghost ? "true" : undefined}
       data-selected={selected ? "true" : undefined}
       aria-label={label}
@@ -79,7 +84,7 @@ export function MapPin({
       <span className="tds-mappin-disc" aria-hidden>
         <Icon />
       </span>
-      {showOrder && !ghost && first && first.order > 0 ? (
+      {showOrder && !context && !ghost && first && first.order > 0 ? (
         <span className="tds-mappin-order" aria-hidden>
           {first.order}
         </span>

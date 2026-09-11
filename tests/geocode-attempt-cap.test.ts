@@ -42,7 +42,7 @@ const place = (extra: Partial<PlaceBlock> = {}): PlaceBlock => ({
 });
 
 describe("geocode backfill: attempt cap and shared cache", () => {
-  it("stops retrying an unresolvable stop after three attempts, spending one Google call", async () => {
+  it("does not spend attempts on repeated cached misses", async () => {
     const h = harness([null]);
     let blocks: Block[] = [{ kind: "day", n: 1, label: "Day" }, place()];
     for (let save = 1; save <= MAX_GEOCODE_ATTEMPTS + 2; save++) {
@@ -50,8 +50,8 @@ describe("geocode backfill: attempt cap and shared cache", () => {
     }
     const b = blocks[1] as PlaceBlock;
     expect(b.lat).toBeUndefined();
-    expect(b.geocode?.status).toBe("needs_review");
-    expect(b.geocode?.attempts).toBe(MAX_GEOCODE_ATTEMPTS);
+    expect(b.geocode?.status).toBe("pending");
+    expect(b.geocode?.attempts).toBe(1);
     expect(b.geocode?.query).toBe("Nowhere Café, 1 Rua Inexistente, Lisboa");
     // The first save asked Google; later saves hit the cached miss; after
     // the cap nothing is attempted at all.
@@ -100,8 +100,61 @@ describe("geocode backfill: attempt cap and shared cache", () => {
   it("does nothing without an API key", async () => {
     const h = harness([{ lat: 1, lng: 1 }]);
     const input: Block[] = [place()];
-    const out = await enrichBlocksWithCoords(input, { apiKey: undefined, deps: h.deps });
+    const out = await enrichBlocksWithCoords(input, { apiKey: "", deps: h.deps });
     expect(out).toBe(input);
     expect(h.calls).toHaveLength(0);
+  });
+});
+
+describe("geocode failure recovery", () => {
+  for (const status of [400, 401, 403, 429, 500, 503]) {
+    it("does not cache or consume attempts for HTTP " + status, async () => {
+      const writes: unknown[] = [];
+      let serviceErrors = 0;
+      const input = [place()];
+      const out = await enrichBlocksWithCoords(input, { apiKey: "test", deps: {
+        readCache: async () => undefined,
+        writeCache: async (...args) => { writes.push(args); },
+        fetchImpl: (async () => new Response("{}", { status })) as typeof fetch,
+        onServiceError: () => { serviceErrors++; },
+      } });
+      expect(out).toBe(input);
+      expect(writes).toHaveLength(0);
+      expect(serviceErrors).toBe(1);
+    });
+  }
+  it("explicit retry bypasses a poisoned negative cache and resolves a capped stop", async () => {
+    const h = harness([{ lat: 41.8986, lng: 12.4769, placeId: "pantheon" }]);
+    const b = place({ geocode: { status: "needs_review", attempts: 3 } });
+    h.cache.set(geocodeQueryFor(b)!, { hit: null, provider: "google-places" });
+    const out = await enrichBlocksWithCoords([b], { apiKey: "test", deps: h.deps, retryNeedsReview: true });
+    expect((out[0] as PlaceBlock).lat).toBe(41.8986);
+    expect((out[0] as PlaceBlock).geocode?.status).toBe("resolved");
+    expect(h.calls).toHaveLength(1);
+  });
+  it("caps three real zero-result responses, even across cache expiry", async () => {
+    const h = harness([null,null,null,null]);
+    let blocks: Block[] = [place()];
+    for (let i=0; i<4; i++) {
+      h.cache.clear();
+      blocks = await enrichBlocksWithCoords(blocks, { apiKey: "test", deps:h.deps });
+    }
+    expect(h.calls).toHaveLength(3);
+    expect((blocks[0] as PlaceBlock).geocode?.status).toBe("needs_review");
+  });
+  it("preserves good cached coordinates on an explicit retry", async () => {
+    const h=harness([]);
+    const b=place({geocode:{status:"needs_review",attempts:3}});
+    h.cache.set(geocodeQueryFor(b)!,{hit:{lat:0,lng:0,placeId:"origin"},provider:"google-places"});
+    const out=await enrichBlocksWithCoords([b],{apiKey:"test",deps:h.deps,retryNeedsReview:true});
+    expect((out[0] as PlaceBlock).lat).toBe(0);
+    expect(h.calls).toHaveLength(0);
+  });
+  it("preserves stops on a network timeout without caching it", async () => {
+    const h=harness([]);
+    h.deps.fetchImpl=(async () => { throw new Error("timeout"); }) as unknown as typeof fetch;
+    const input=[place()];
+    expect(await enrichBlocksWithCoords(input,{apiKey:"test",deps:h.deps})).toBe(input);
+    expect(h.cache.size).toBe(0);
   });
 });
