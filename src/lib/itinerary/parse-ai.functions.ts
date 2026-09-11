@@ -630,11 +630,10 @@ async function fillFromGooglePlaces(
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 3_000);
   try {
-    const res = await fetch("https://places.googleapis.com/v1/places:searchText", {
+    const res = await placesRequest(apiKey, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-Goog-Api-Key": apiKey,
         "X-Goog-FieldMask":
           "places.id,places.displayName,places.formattedAddress,places.internationalPhoneNumber,places.websiteUri,places.regularOpeningHours,places.location",
       },
