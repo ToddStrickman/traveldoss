@@ -4,6 +4,8 @@
  * rejects it. These tests pin the URL and the header contract.
  */
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+
+const realFetch = globalThis.fetch;
 import {
   PLACES_SEARCH_TEXT_URL,
   buildPlacesHeaders,
@@ -36,12 +38,12 @@ describe("placesRequest", () => {
   afterEach(() => {
     if (original === undefined) delete process.env.LOVABLE_API_KEY;
     else process.env.LOVABLE_API_KEY = original;
-    vi.unstubAllGlobals();
+    globalThis.fetch = realFetch;
   });
 
   it("posts to the gateway text-search endpoint with both credentials", async () => {
     const fetchMock = vi.fn(async () => new Response("{}", { status: 200 }));
-    vi.stubGlobal("fetch", fetchMock);
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
 
     await placesRequest("conn-key", {
       method: "POST",
@@ -62,7 +64,7 @@ describe("placesRequest", () => {
   it("throws instead of silently missing when gateway credentials are absent", async () => {
     delete process.env.LOVABLE_API_KEY;
     const fetchMock = vi.fn();
-    vi.stubGlobal("fetch", fetchMock);
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
     await expect(placesRequest("conn-key", { method: "POST" })).rejects.toThrow(/not configured/i);
     expect(fetchMock).not.toHaveBeenCalled();
   });
