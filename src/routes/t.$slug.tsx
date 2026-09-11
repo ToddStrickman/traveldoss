@@ -840,13 +840,7 @@ function DossierPage() {
       />
       {/* Mobile view switching now lives inline in the DossierMastheadBar
           (matches desktop's top-center pills) — no separate floating pill. */}
-      <EditingStatusBar
-        slug={trip.slug}
-        canEdit={canEdit}
-        saving={saving}
-        savedAt={savedAt}
-        saveError={saveError}
-      />
+      <EditingStatusBar slug={trip.slug} />
       {canEdit && (
         <>
           <TemplateMenu
