@@ -75,7 +75,7 @@ export function DossierCoverArt({
             className={`${s.title} leading-[1.05]`}
             style={{ fontFamily: t.fontDisplay, color: t.ink }}
           >
-            {skin.meta.codename}
+            Sample
           </div>
           <div className="mt-2 h-px w-10" style={{ background: t.accent }} />
           <div
