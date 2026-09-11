@@ -1,11 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { motion } from "motion/react";
 import { ArrowLeft, Search, X } from "lucide-react";
 import { SKINS, type SkinModule } from "@/lib/skins/registry";
-import { TiltCard } from "@/components/motion/Tilt";
-import { DossierCoverArt } from "@/components/flow/DossierCover";
 import { SkinPeek } from "@/components/mobile/SkinPeek";
 import { IngestionModal } from "@/components/flow/IngestionModal";
 import {
@@ -132,129 +129,6 @@ export const Route = createFileRoute("/templates")({
   }),
 });
 
-/**
- * Grid-mode tile — the same stylized explainer cover the horizontal table and
- * the vertical spreads use, drawn in this skin's own tokens, so every mode
- * shows a dossier *object* whose art states the layout's benefit instead of a
- * shrunken, unreadable render of the demo trip.
- */
-function SkinPreview({ skin }: { skin: SkinModule }) {
-  return (
-    <div
-      className="td-cover relative h-[420px] w-full overflow-hidden border"
-      style={{ borderColor: skin.tokens.rule, background: skin.tokens.bg }}
-    >
-      <DossierCoverArt skin={skin} size="lg" variant="grid" />
-    </div>
-  );
-}
-
-
-function SkinCard({
-  skin,
-  onPick,
-  onOpen,
-  onPrefetch,
-  picking,
-}: {
-  skin: SkinModule;
-  onPick: (id: string) => void;
-  /** When set (mobile), tapping the card opens the peek instead of minting. */
-  onOpen?: (id: string) => void;
-  onPrefetch: (id: string) => void;
-  picking: boolean;
-}) {
-  const activate = onOpen ?? onPick;
-  return (
-    <TiltCard intensity={5} className="h-full">
-    <article
-      id={skin.meta.id}
-      role="button"
-      tabIndex={picking ? -1 : 0}
-      aria-disabled={picking}
-      aria-busy={picking}
-      onClick={() => !picking && activate(skin.meta.id)}
-      onMouseEnter={() => onPrefetch(skin.meta.id)}
-      onFocus={() => onPrefetch(skin.meta.id)}
-      onKeyDown={(e) => {
-        if (picking) return;
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          activate(skin.meta.id);
-        }
-      }}
-      className="group flex h-full cursor-pointer flex-col border border-ink/10 bg-paper transition-colors duration-500 hover:border-seal/50 focus:outline-none focus-visible:border-seal focus-visible:ring-2 focus-visible:ring-seal/40"
-    >
-      <SkinPreview skin={skin} />
-
-      <div className="flex flex-1 flex-col p-7 md:p-8">
-        <div className="flex items-center gap-2 text-[9px] font-medium uppercase tracking-[0.45em] text-ink/55">
-          <span
-            className="h-1 w-1 rounded-full"
-            style={{ background: skin.tokens.accent }}
-          />
-          Dossier Template
-        </div>
-        <h2
-          className="mt-3 text-4xl font-normal leading-[1.05] tracking-tight text-ink md:text-5xl"
-          style={{ fontFamily: "var(--font-display)" }}
-        >
-          {/* A real link to the template's own spread page: crawlable,
-              middle-clickable — the card's JS activation stays for taps. */}
-          <Link
-            to="/templates/$id"
-            params={{ id: skin.meta.id }}
-            onClick={(e) => e.stopPropagation()}
-            className="transition-colors hover:text-seal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal/40"
-          >
-            {skin.meta.codename}
-          </Link>
-        </h2>
-        <p
-          className="mt-3 text-sm italic leading-relaxed text-ink-soft md:text-base"
-          style={{ fontFamily: "var(--font-display)" }}
-        >
-          "{skin.meta.personality}"
-        </p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          {skin.meta.tags.map((tag) => (
-            <span
-              key={tag}
-              className="inline-block rounded-full border border-ink/10 px-2.5 py-1 text-[9px] font-medium uppercase tracking-[0.2em] text-ink/60"
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onPick(skin.meta.id);
-          }}
-          onMouseEnter={() => onPrefetch(skin.meta.id)}
-          onFocus={() => onPrefetch(skin.meta.id)}
-          disabled={picking}
-          className="mt-auto inline-flex items-center justify-between gap-4 border-y border-ink/20 pt-7 pb-7 text-[10px] font-medium uppercase tracking-[0.4em] text-ink transition-colors duration-500 hover:border-seal hover:text-seal disabled:cursor-wait disabled:opacity-50"
-          style={{ marginTop: 28 }}
-        >
-          <span className="inline-flex items-center gap-2">
-            {picking && (
-              <span
-                aria-hidden
-                className="h-3 w-3 animate-spin rounded-full border border-current border-t-transparent"
-              />
-            )}
-            {picking ? "Minting your dossier…" : "Mint this dossier"}
-          </span>
-          <span className="text-ink/40 group-hover:text-seal">→</span>
-        </button>
-      </div>
-    </article>
-    </TiltCard>
-  );
-}
-
 /** The three ways to browse the selection area. */
 type BrowseMode = "grid" | "horizontal" | "vertical";
 
@@ -296,10 +170,6 @@ function TemplatesPage() {
     setMinting(false);
     setPendingSlug(null);
   }, [pendingSlug, navigate]);
-
-  // No route preload here: the destination /t/$slug depends on the freshly
-  // minted slug, and there's no template-side chunk to warm anymore.
-  const prefetch = (_id: string) => {};
 
   const allTags = useMemo(
     () => Array.from(new Set(SKINS.flatMap((s) => s.meta.tags))).sort(),
@@ -621,38 +491,22 @@ function TemplatesPage() {
           </div>
         ) : null}
 
-        <div
-          className={`mt-8 grid grid-cols-1 gap-6 sm:mt-10 sm:gap-8 md:grid-cols-2 lg:grid-cols-3 ${
-            filteredSkins.length === 0 ? "" : "hidden"
-          }`}
-        >
-          {filteredSkins.map((skin) => (
-            <SkinCard
-              key={skin.meta.id}
-              skin={skin}
-              onPick={handlePick}
-              onOpen={setPeekId}
-              onPrefetch={prefetch}
-              picking={picking === skin.meta.id}
-            />
-          ))}
-          {filteredSkins.length === 0 && (
-            <div className="col-span-full py-20 text-center">
-              <p className="text-sm text-ink-soft">
-                No dossier templates match your search.
-              </p>
-              <button
-                onClick={() => {
-                  setQuery("");
-                  setActiveTag(null);
-                }}
-                className="mt-4 text-[10px] font-medium uppercase tracking-[0.4em] text-seal underline-offset-4 hover:underline"
-              >
-                Clear filters
-              </button>
-            </div>
-          )}
-        </div>
+        {filteredSkins.length === 0 ? (
+          <div className="py-20 text-center">
+            <p className="text-sm text-ink-soft">
+              No dossier templates match your search.
+            </p>
+            <button
+              onClick={() => {
+                setQuery("");
+                setActiveTag(null);
+              }}
+              className="mt-4 text-[10px] font-medium uppercase tracking-[0.4em] text-seal underline-offset-4 hover:underline"
+            >
+              Clear filters
+            </button>
+          </div>
+        ) : null}
         {/* Clearance for the floating mobile nav pill. */}
         <div aria-hidden className="h-28 md:hidden" />
       </main>
