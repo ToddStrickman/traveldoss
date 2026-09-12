@@ -58,7 +58,7 @@ export function SharedDossierCard({
       title={`Share this dossier — ${url}`}
       aria-label={`Copy shareable link to this dossier`}
       className={cn(
-        "tap group inline-flex min-h-11 items-center gap-2 rounded-full border border-white/15 bg-paper/85 px-3 py-2 text-[10px] font-medium uppercase tracking-[0.32em] text-ink-soft backdrop-blur-md transition-colors hover:border-seal hover:text-seal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal",
+        "tap group inline-flex min-h-11 items-center gap-2 rounded-full border border-white/15 bg-paper/85 px-3 py-2 text-[10px] font-medium uppercase tracking-[0.32em] text-ink-soft outline outline-1 outline-offset-[3px] outline-white/15 backdrop-blur-md transition-colors hover:border-seal hover:outline-seal hover:text-seal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal",
         className,
       )}
     >
