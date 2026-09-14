@@ -32,6 +32,7 @@ import {
   resolveWithProviders,
   type GeocodeProvider,
 } from "@/lib/maps/geocode-providers.server";
+import { captureServer } from "@/lib/analytics.server";
 
 type PlaceBlock = Extract<Block, { kind: "place" }>;
 
@@ -85,12 +86,16 @@ export async function resolveGeocodeQuery(
   const readCache = deps.readCache ?? readGeocodeCache;
   const writeCache = deps.writeCache ?? writeGeocodeCache;
   const cached = await readCache(query);
-  if (cached) return {
-    hit: cached.hit,
-    cacheHit: true,
-    fault: false,
-    provider: cached.provider === PHOTON_PROVIDER ? PHOTON_PROVIDER : GOOGLE_PROVIDER,
-  };
+  if (cached) {
+    const provider = cached.provider === PHOTON_PROVIDER ? PHOTON_PROVIDER : GOOGLE_PROVIDER;
+    void captureServer("geocode_resolved", "geocoder", {
+      provider,
+      cache_hit: true,
+      found: cached.hit != null,
+      query_length: query.length,
+    });
+    return { hit: cached.hit, cacheHit: true, fault: false, provider };
+  }
 
   const outcome = await resolveWithProviders(query, {
     apiKey,
@@ -98,9 +103,20 @@ export async function resolveGeocodeQuery(
     timeoutMs: FETCH_TIMEOUT_MS,
   });
   if (outcome.kind === "fault") {
+    void captureServer("geocode_faulted", "geocoder", {
+      provider: outcome.provider,
+      reason: outcome.reason,
+      query_length: query.length,
+    });
     return { hit: null, cacheHit: false, fault: true, provider: outcome.provider };
   }
   const hit = outcome.kind === "hit" ? outcome.hit : null;
+  void captureServer("geocode_resolved", "geocoder", {
+    provider: outcome.provider,
+    cache_hit: false,
+    found: hit != null,
+    query_length: query.length,
+  });
   await writeCache(query, hit, outcome.provider);
   return { hit, cacheHit: false, fault: false, provider: outcome.provider };
 }
@@ -167,6 +183,13 @@ export async function enrichBlocksWithCoords(
           ...(o.hit.placeId ? { placeId: o.hit.placeId } : {}),
           geocode: { status: "resolved", provider: o.provider, attempts, query: o.query, at },
         };
+      }
+      if (attempts >= MAX_GEOCODE_ATTEMPTS) {
+        void captureServer("geocode_needs_review", "geocoder", {
+          provider: o.provider,
+          attempts,
+          query_length: o.query.length,
+        });
       }
       return {
         ...b,
