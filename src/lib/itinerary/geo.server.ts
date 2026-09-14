@@ -26,13 +26,14 @@ import {
   type GeocodeCacheEntry,
   type GeocodeHit,
 } from "@/lib/maps/geocode-cache.server";
+import { GOOGLE_PROVIDER, resolveWithProviders } from "@/lib/maps/geocode-providers.server";
 
 type PlaceBlock = Extract<Block, { kind: "place" }>;
 
 const FETCH_TIMEOUT_MS = 3_000;
 const MAX_PLACES_PER_RUN = 8;
 export const MAX_GEOCODE_ATTEMPTS = 3;
-const PROVIDER = "google-places";
+const PROVIDER = GOOGLE_PROVIDER;
 
 export type GeocodeDeps = {
   fetchImpl?: typeof fetch;
@@ -65,56 +66,34 @@ export function shouldAttemptGeocode(
   return true;
 }
 
-async function googleTextSearch(
-  query: string,
-  apiKey: string,
-  fetchImpl: typeof fetch,
-): Promise<GeocodeHit | null> {
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
-  try {
-    const res = await fetchImpl("https://places.googleapis.com/v1/places:searchText", {
-      method: "POST",
-      signal: ctrl.signal,
-      headers: {
-        "Content-Type": "application/json",
-        "X-Goog-Api-Key": apiKey,
-        // id + location: still the Pro tier, and the id is the one Places
-        // datum Google allows storing indefinitely.
-        "X-Goog-FieldMask": "places.id,places.location",
-      },
-      body: JSON.stringify({ textQuery: query, pageSize: 1 }),
-    });
-    if (!res.ok) return null;
-    const json = (await res.json()) as {
-      places?: Array<{ id?: string; location?: { latitude?: number; longitude?: number } }>;
-    };
-    const first = json.places?.[0];
-    const loc = first?.location;
-    if (typeof loc?.latitude === "number" && typeof loc?.longitude === "number") {
-      return { lat: loc.latitude, lng: loc.longitude, placeId: first?.id };
-    }
-    return null;
-  } catch {
-    return null;
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-/** Cache first, then Google; writes the outcome (hit or miss) back. */
+/**
+ * Cache first, then the provider ladder (free Photon, Google as fallback).
+ *
+ * A *fault* — misconfiguration, a rejected request, a timeout — is never
+ * written to the cache and is reported so the caller can leave the stop
+ * completely untouched. Only a genuine empty answer is cached as a miss.
+ */
 export async function resolveGeocodeQuery(
   query: string,
-  apiKey: string,
+  apiKey: string | undefined,
   deps: GeocodeDeps = {},
-): Promise<{ hit: GeocodeHit | null; cacheHit: boolean }> {
+): Promise<{ hit: GeocodeHit | null; cacheHit: boolean; fault: boolean; provider: string }> {
   const readCache = deps.readCache ?? readGeocodeCache;
   const writeCache = deps.writeCache ?? writeGeocodeCache;
   const cached = await readCache(query);
-  if (cached) return { hit: cached.hit, cacheHit: true };
-  const hit = await googleTextSearch(query, apiKey, deps.fetchImpl ?? fetch);
-  await writeCache(query, hit, PROVIDER);
-  return { hit, cacheHit: false };
+  if (cached) return { hit: cached.hit, cacheHit: true, fault: false, provider: cached.provider };
+
+  const outcome = await resolveWithProviders(query, {
+    apiKey,
+    fetchImpl: deps.fetchImpl ?? fetch,
+    timeoutMs: FETCH_TIMEOUT_MS,
+  });
+  if (outcome.kind === "fault") {
+    return { hit: null, cacheHit: false, fault: true, provider: outcome.provider };
+  }
+  const hit = outcome.kind === "hit" ? outcome.hit : null;
+  await writeCache(query, hit, outcome.provider);
+  return { hit, cacheHit: false, fault: false, provider: outcome.provider };
 }
 
 /** Resolve coordinates for coordinate-less places; returns enriched copies. */
