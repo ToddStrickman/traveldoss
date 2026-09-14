@@ -26,7 +26,12 @@ import {
   type GeocodeCacheEntry,
   type GeocodeHit,
 } from "@/lib/maps/geocode-cache.server";
-import { GOOGLE_PROVIDER, resolveWithProviders } from "@/lib/maps/geocode-providers.server";
+import {
+  GOOGLE_PROVIDER,
+  PHOTON_PROVIDER,
+  resolveWithProviders,
+  type GeocodeProvider,
+} from "@/lib/maps/geocode-providers.server";
 
 type PlaceBlock = Extract<Block, { kind: "place" }>;
 
@@ -77,11 +82,16 @@ export async function resolveGeocodeQuery(
   query: string,
   apiKey: string | undefined,
   deps: GeocodeDeps = {},
-): Promise<{ hit: GeocodeHit | null; cacheHit: boolean; fault: boolean; provider: string }> {
+): Promise<{ hit: GeocodeHit | null; cacheHit: boolean; fault: boolean; provider: GeocodeProvider }> {
   const readCache = deps.readCache ?? readGeocodeCache;
   const writeCache = deps.writeCache ?? writeGeocodeCache;
   const cached = await readCache(query);
-  if (cached) return { hit: cached.hit, cacheHit: true, fault: false, provider: cached.provider };
+  if (cached) return {
+    hit: cached.hit,
+    cacheHit: true,
+    fault: false,
+    provider: cached.provider === PHOTON_PROVIDER ? PHOTON_PROVIDER : GOOGLE_PROVIDER,
+  };
 
   const outcome = await resolveWithProviders(query, {
     apiKey,
@@ -130,7 +140,7 @@ export async function enrichBlocksWithCoords(
     });
     if (targets.length === 0) return blocks;
 
-    const outcomes = new Map<number, { hit: GeocodeHit | null; query: string; provider: string }>();
+    const outcomes = new Map<number, { hit: GeocodeHit | null; query: string; provider: GeocodeProvider }>();
     await Promise.race([
       Promise.allSettled(
         targets.slice(0, maxPerRun).map(async ({ index, query }) => {

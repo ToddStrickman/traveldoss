@@ -23,13 +23,16 @@ import type { GeocodeHit } from "@/lib/maps/geocode-cache.server";
 import { PLACES_SEARCH_TEXT_URL, buildPlacesHeaders } from "@/lib/maps/places-request.server";
 
 export const PHOTON_BASE_URL = "https://photon.komoot.io/api";
-export const PHOTON_PROVIDER = "photon";
-export const GOOGLE_PROVIDER = "google-places";
+/** Mirrors `block.geocode.provider` in src/lib/skins/types.ts. */
+export type GeocodeProvider = "photon" | "google-places";
+
+export const PHOTON_PROVIDER: GeocodeProvider = "photon";
+export const GOOGLE_PROVIDER: GeocodeProvider = "google-places";
 
 export type GeocodeOutcome =
-  | { kind: "hit"; provider: string; hit: GeocodeHit }
-  | { kind: "empty"; provider: string }
-  | { kind: "fault"; provider: string; reason: string };
+  | { kind: "hit"; provider: GeocodeProvider; hit: GeocodeHit }
+  | { kind: "empty"; provider: GeocodeProvider }
+  | { kind: "fault"; provider: GeocodeProvider; reason: string };
 
 export function photonSearchUrl(query: string): string {
   return `${PHOTON_BASE_URL}?q=${encodeURIComponent(query)}&limit=1`;
