@@ -102,7 +102,9 @@ export async function enrichBlocksWithCoords(
   {
     budgetMs = 3_000,
     destination,
-    apiKey = process.env.GOOGLE_MAPS_API_KEY,
+    /** Connector connection key. Callers resolve the environment value; an
+     *  explicit `undefined` disables enrichment entirely. */
+    apiKey,
     deps = {},
     maxPerRun = MAX_PLACES_PER_RUN,
     retryNeedsReview = false,
@@ -128,12 +130,15 @@ export async function enrichBlocksWithCoords(
     });
     if (targets.length === 0) return blocks;
 
-    const outcomes = new Map<number, { hit: GeocodeHit | null; query: string }>();
+    const outcomes = new Map<number, { hit: GeocodeHit | null; query: string; provider: string }>();
     await Promise.race([
       Promise.allSettled(
         targets.slice(0, maxPerRun).map(async ({ index, query }) => {
-          const { hit } = await resolveGeocodeQuery(query, apiKey, deps);
-          outcomes.set(index, { hit, query });
+          const { hit, fault, provider } = await resolveGeocodeQuery(query, apiKey, deps);
+          // A fault is a problem with us, not with the address: record nothing,
+          // spend no attempt, so the next pass can still resolve this stop.
+          if (fault) return;
+          outcomes.set(index, { hit, query, provider });
         }),
       ),
       new Promise((r) => setTimeout(r, budgetMs)),
@@ -151,14 +156,14 @@ export async function enrichBlocksWithCoords(
           lat: o.hit.lat,
           lng: o.hit.lng,
           ...(o.hit.placeId ? { placeId: o.hit.placeId } : {}),
-          geocode: { status: "resolved", provider: PROVIDER, attempts, query: o.query, at },
+          geocode: { status: "resolved", provider: o.provider, attempts, query: o.query, at },
         };
       }
       return {
         ...b,
         geocode: {
           status: attempts >= MAX_GEOCODE_ATTEMPTS ? "needs_review" : "pending",
-          provider: PROVIDER,
+          provider: o.provider,
           attempts,
           query: o.query,
           at,
