@@ -158,3 +158,17 @@ Counts and kinds only. Never a place name, a coordinate, or a slug.
 | `map_planb_toggled`   | The Plan B control is toggled                                        | `on`                                                                                                                               |
 | `map_tiles_failed`    | The basemap could not render and parchment mode took over            | `source`                                                                                                                           |
 | `map_locate_requested` | The owner's "Locate stops" runs (automatically on open, or by button) | `auto`, `requested`, `located`, `unresolved`, `configured`                                                                        |
+
+### Address lookup (server-side, `src/lib/itinerary/geo.server.ts`)
+
+Lengths and counts only — never the query text, never a coordinate.
+
+| Event                   | When                                                        | Properties                                              |
+| ----------------------- | ----------------------------------------------------------- | ------------------------------------------------------- |
+| `geocode_resolved`      | Any lookup that got an answer (from cache or a provider)     | `provider` (`photon` \| `google-places`), `cache_hit`, `found`, `query_length` |
+| `geocode_faulted`       | A provider fault: misconfiguration, rejection, timeout       | `provider`, `reason`, `query_length`                    |
+| `geocode_needs_review`  | A stop reaches the third genuine miss and is capped          | `provider`, `attempts`, `query_length`                  |
+
+`provider` on `geocode_resolved` is the free/paid split: it answers "is
+geocoding cheap?" directly. A fault is deliberately a separate event from a
+miss, because a fault costs nothing and means nothing about the address.
