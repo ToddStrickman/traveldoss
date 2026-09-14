@@ -72,7 +72,7 @@ export const createTripFromIngestion = createServerFn({ method: "POST" })
           // unresolved is picked up by the next autosave.
           blocks: await enrichBlocksWithCoords(
             await enrichBlocksWithLinkTitles(data.blocks as Block[], { budgetMs: 5_000 }),
-            { budgetMs: 4_000, destination },
+            { budgetMs: 4_000, destination, apiKey: process.env.GOOGLE_MAPS_API_KEY },
           ),
           skin: skin.meta.id,
         },
@@ -204,6 +204,7 @@ export const updateDossier = createServerFn({ method: "POST" })
                 await enrichBlocksWithLinkTitles(data.blocks as Block[], { budgetMs: 3_000 }),
                 {
                   budgetMs: 2_500,
+                  apiKey: process.env.GOOGLE_MAPS_API_KEY,
                   destination:
                     data.destination ??
                     (existing as { destination?: string } | null)?.destination ??

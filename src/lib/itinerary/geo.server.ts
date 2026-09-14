@@ -38,7 +38,6 @@ type PlaceBlock = Extract<Block, { kind: "place" }>;
 const FETCH_TIMEOUT_MS = 3_000;
 const MAX_PLACES_PER_RUN = 8;
 export const MAX_GEOCODE_ATTEMPTS = 3;
-const PROVIDER = GOOGLE_PROVIDER;
 
 export type GeocodeDeps = {
   fetchImpl?: typeof fetch;
