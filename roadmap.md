@@ -21,7 +21,13 @@
       Google Maps gateway (`src/lib/maps/places-request.server.ts`)
 - [x] parse-ai + suggest-location use the helper; parse-time enrichment prefers
       a stop's own address over the broad trip destination
-- [ ] geo.server.ts / locate.functions.ts retry + error classification (owner is
-      editing these on a separate branch)
+- [x] Provider ladder: Photon (free) first, Google via the gateway as fallback
+      (`src/lib/maps/geocode-providers.server.ts`); provider stored per stop
+- [x] Fault vs genuine-empty classification in `geo.server.ts`: faults are never
+      cached and never count against the three-attempt cap
+- [x] `apiKey` resolved at the call sites, so an explicit `undefined` disables
+      enrichment
+- [x] Server analytics: `geocode_resolved` (with `provider`, `cache_hit`),
+      `geocode_faulted`, `geocode_needs_review`
 - [ ] Data repair: clear 28 poisoned miss rows in `geocode_cache` and reset
       needs_review stops — BLOCKED, pending explicit user approval

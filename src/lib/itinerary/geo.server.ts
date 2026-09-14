@@ -26,13 +26,19 @@ import {
   type GeocodeCacheEntry,
   type GeocodeHit,
 } from "@/lib/maps/geocode-cache.server";
+import {
+  GOOGLE_PROVIDER,
+  PHOTON_PROVIDER,
+  resolveWithProviders,
+  type GeocodeProvider,
+} from "@/lib/maps/geocode-providers.server";
+import { captureServer } from "@/lib/analytics.server";
 
 type PlaceBlock = Extract<Block, { kind: "place" }>;
 
 const FETCH_TIMEOUT_MS = 3_000;
 const MAX_PLACES_PER_RUN = 8;
 export const MAX_GEOCODE_ATTEMPTS = 3;
-const PROVIDER = "google-places";
 
 export type GeocodeDeps = {
   fetchImpl?: typeof fetch;
@@ -65,56 +71,54 @@ export function shouldAttemptGeocode(
   return true;
 }
 
-async function googleTextSearch(
-  query: string,
-  apiKey: string,
-  fetchImpl: typeof fetch,
-): Promise<GeocodeHit | null> {
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
-  try {
-    const res = await fetchImpl("https://places.googleapis.com/v1/places:searchText", {
-      method: "POST",
-      signal: ctrl.signal,
-      headers: {
-        "Content-Type": "application/json",
-        "X-Goog-Api-Key": apiKey,
-        // id + location: still the Pro tier, and the id is the one Places
-        // datum Google allows storing indefinitely.
-        "X-Goog-FieldMask": "places.id,places.location",
-      },
-      body: JSON.stringify({ textQuery: query, pageSize: 1 }),
-    });
-    if (!res.ok) return null;
-    const json = (await res.json()) as {
-      places?: Array<{ id?: string; location?: { latitude?: number; longitude?: number } }>;
-    };
-    const first = json.places?.[0];
-    const loc = first?.location;
-    if (typeof loc?.latitude === "number" && typeof loc?.longitude === "number") {
-      return { lat: loc.latitude, lng: loc.longitude, placeId: first?.id };
-    }
-    return null;
-  } catch {
-    return null;
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-/** Cache first, then Google; writes the outcome (hit or miss) back. */
+/**
+ * Cache first, then the provider ladder (free Photon, Google as fallback).
+ *
+ * A *fault* — misconfiguration, a rejected request, a timeout — is never
+ * written to the cache and is reported so the caller can leave the stop
+ * completely untouched. Only a genuine empty answer is cached as a miss.
+ */
 export async function resolveGeocodeQuery(
   query: string,
-  apiKey: string,
+  apiKey: string | undefined,
   deps: GeocodeDeps = {},
-): Promise<{ hit: GeocodeHit | null; cacheHit: boolean }> {
+): Promise<{ hit: GeocodeHit | null; cacheHit: boolean; fault: boolean; provider: GeocodeProvider }> {
   const readCache = deps.readCache ?? readGeocodeCache;
   const writeCache = deps.writeCache ?? writeGeocodeCache;
   const cached = await readCache(query);
-  if (cached) return { hit: cached.hit, cacheHit: true };
-  const hit = await googleTextSearch(query, apiKey, deps.fetchImpl ?? fetch);
-  await writeCache(query, hit, PROVIDER);
-  return { hit, cacheHit: false };
+  if (cached) {
+    const provider = cached.provider === PHOTON_PROVIDER ? PHOTON_PROVIDER : GOOGLE_PROVIDER;
+    void captureServer("geocode_resolved", "geocoder", {
+      provider,
+      cache_hit: true,
+      found: cached.hit != null,
+      query_length: query.length,
+    });
+    return { hit: cached.hit, cacheHit: true, fault: false, provider };
+  }
+
+  const outcome = await resolveWithProviders(query, {
+    apiKey,
+    fetchImpl: deps.fetchImpl ?? fetch,
+    timeoutMs: FETCH_TIMEOUT_MS,
+  });
+  if (outcome.kind === "fault") {
+    void captureServer("geocode_faulted", "geocoder", {
+      provider: outcome.provider,
+      reason: outcome.reason,
+      query_length: query.length,
+    });
+    return { hit: null, cacheHit: false, fault: true, provider: outcome.provider };
+  }
+  const hit = outcome.kind === "hit" ? outcome.hit : null;
+  void captureServer("geocode_resolved", "geocoder", {
+    provider: outcome.provider,
+    cache_hit: false,
+    found: hit != null,
+    query_length: query.length,
+  });
+  await writeCache(query, hit, outcome.provider);
+  return { hit, cacheHit: false, fault: false, provider: outcome.provider };
 }
 
 /** Resolve coordinates for coordinate-less places; returns enriched copies. */
@@ -123,7 +127,9 @@ export async function enrichBlocksWithCoords(
   {
     budgetMs = 3_000,
     destination,
-    apiKey = process.env.GOOGLE_MAPS_API_KEY,
+    /** Connector connection key. Callers resolve the environment value; an
+     *  explicit `undefined` disables enrichment entirely. */
+    apiKey,
     deps = {},
     maxPerRun = MAX_PLACES_PER_RUN,
     retryNeedsReview = false,
@@ -149,12 +155,15 @@ export async function enrichBlocksWithCoords(
     });
     if (targets.length === 0) return blocks;
 
-    const outcomes = new Map<number, { hit: GeocodeHit | null; query: string }>();
+    const outcomes = new Map<number, { hit: GeocodeHit | null; query: string; provider: GeocodeProvider }>();
     await Promise.race([
       Promise.allSettled(
         targets.slice(0, maxPerRun).map(async ({ index, query }) => {
-          const { hit } = await resolveGeocodeQuery(query, apiKey, deps);
-          outcomes.set(index, { hit, query });
+          const { hit, fault, provider } = await resolveGeocodeQuery(query, apiKey, deps);
+          // A fault is a problem with us, not with the address: record nothing,
+          // spend no attempt, so the next pass can still resolve this stop.
+          if (fault) return;
+          outcomes.set(index, { hit, query, provider });
         }),
       ),
       new Promise((r) => setTimeout(r, budgetMs)),
@@ -172,14 +181,21 @@ export async function enrichBlocksWithCoords(
           lat: o.hit.lat,
           lng: o.hit.lng,
           ...(o.hit.placeId ? { placeId: o.hit.placeId } : {}),
-          geocode: { status: "resolved", provider: PROVIDER, attempts, query: o.query, at },
+          geocode: { status: "resolved", provider: o.provider, attempts, query: o.query, at },
         };
+      }
+      if (attempts >= MAX_GEOCODE_ATTEMPTS) {
+        void captureServer("geocode_needs_review", "geocoder", {
+          provider: o.provider,
+          attempts,
+          query_length: o.query.length,
+        });
       }
       return {
         ...b,
         geocode: {
           status: attempts >= MAX_GEOCODE_ATTEMPTS ? "needs_review" : "pending",
-          provider: PROVIDER,
+          provider: o.provider,
           attempts,
           query: o.query,
           at,

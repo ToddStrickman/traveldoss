@@ -65,7 +65,18 @@ are deliberately excluded so the traveller's own stops stay the hero.
 - **Keep `carryOverBlockFields` in `refineItineraryAiCore`.** Refine and
   harden re-parse a text brief; without the carry-over every AI pass erased
   coordinates, Places ids, photos and link titles from every stop.
-- **Keep the geocode attempt cap and the cache.** A stop Google cannot find
+- **Free provider first, Google second, always via the gateway.** Address
+  lookups run through `src/lib/maps/geocode-providers.server.ts`: Photon (no
+  key, no cost) answers first and Google Places is tried only when Photon has
+  nothing. `GOOGLE_MAPS_API_KEY` is the *connector connection key*, not a
+  Google key — it must go through `placesRequest` / the connector gateway.
+  Sending it to `places.googleapis.com` as `X-Goog-Api-Key` is rejected, and
+  that rejection is what wrote off a whole Rome dossier as "not found".
+- **Never cache or count a fault.** A misconfiguration, a rejected request, a
+  timeout or a network error is a `fault` outcome: nothing is written to
+  `geocode_cache` and `geocode.attempts` is not incremented. Only a genuine
+  empty answer from a provider advances the ladder toward `needs_review`.
+- **Keep the geocode attempt cap and the cache.** A stop no provider can find
   used to be looked up again on every save, forever, on a paid tier. Manual
   fixes (`geocode.status === "manual"`) must never be overwritten.
 - **Skins are content.** The map reads `SkinTokens`; never edit a skin's
