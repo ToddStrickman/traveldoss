@@ -1,5 +1,26 @@
 import { describe, expect, it } from "bun:test";
-import { buildDayImageQueries } from "./fallback-images";
+import { buildDayImageQueries, isFunerealImage } from "./fallback-images";
+
+describe("isFunerealImage", () => {
+  it("rejects cemetery photos for ordinary destination queries", () => {
+    expect(
+      isFunerealImage({ alt: "Bonaventure Cemetery, Savannah" }, "Savannah"),
+    ).toBe(true);
+    expect(
+      isFunerealImage({ alt: "Graves at dusk", sourcePageUrl: "https://x/File:Grave.jpg" }, "Paris"),
+    ).toBe(true);
+  });
+
+  it("keeps ordinary travel photos", () => {
+    expect(isFunerealImage({ alt: "Forsyth Park fountain" }, "Savannah")).toBe(false);
+  });
+
+  it("allows them when the traveler's own stop is one", () => {
+    expect(
+      isFunerealImage({ alt: "Bonaventure Cemetery" }, "Bonaventure Cemetery Savannah"),
+    ).toBe(false);
+  });
+});
 
 describe("buildDayImageQueries", () => {
   it("ranks specific stops before city before bare destination", () => {
