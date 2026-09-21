@@ -859,7 +859,10 @@ export function IngestionModal({
               <p className="text-[12px] leading-[1.5] text-ink-soft">
                 {TABS.find((t) => t.id === tab)?.sub}
               </p>
-              <div className="flex items-center justify-end">
+              {/* Import in progress: the dossier "bakes" — cake assembly with
+                  a live percentage, replacing the raw input while it runs. */}
+              {parsing ? <CakeProgress pct={composePct} /> : null}
+              <div className={`flex items-center justify-end ${parsing ? "hidden" : ""}`}>
                 <button
                   type="button"
                   onClick={() => fileRef.current?.click()}
