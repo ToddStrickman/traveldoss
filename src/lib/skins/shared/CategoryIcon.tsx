@@ -276,7 +276,60 @@ const ICONS = {
   food: RestaurantIcon,
   eat: RestaurantIcon,
   see: CultureIcon,
+  drink: CocktailIcon,
+  do: LandmarkIcon,
+  other: LandmarkIcon,
 } as const;
+
+/**
+ * Keyword refinement: a stop's own name/note picks a more specific icon than
+ * its broad category. Airport runs get a plane, ferry legs a boat, bars a
+ * coupe — so the icon tells the reader what the stop actually is at a glance.
+ * Word-boundary matching; first rule in list order wins within a category.
+ */
+const REFINEMENTS: ReadonlyArray<{
+  categories: ReadonlyArray<keyof typeof ICONS>;
+  pattern: RegExp;
+  icon: (props: IconProps) => JSX.Element;
+}> = [
+  // Transit modes
+  { categories: ["transit", "airfare", "flight"], pattern: /\b(airport|flight|flights|fly|flying|plane|jfk|terminal)\b/i, icon: PlaneIcon },
+  { categories: ["transit"], pattern: /\b(train|rail|railway|eurostar|trenitalia|italo|sncf|amtrak)\b/i, icon: TrainIcon },
+  { categories: ["transit"], pattern: /\b(ferry|ferries|boat|boats|boating|vaporetto|gondola|cruise|sail|sailing|water taxi|waterbus)\b/i, icon: BoatIcon },
+  { categories: ["transit"], pattern: /\b(metro|subway|underground|tube|tram)\b/i, icon: TramIcon },
+  { categories: ["transit"], pattern: /\b(bus|coach|shuttle)\b/i, icon: BusIcon },
+  { categories: ["transit"], pattern: /\bwalk(ing)?\s+(to|from|through|around)\b/i, icon: WalkingIcon },
+  // Dining vs drinks
+  { categories: ["restaurant", "food", "eat", "drink"], pattern: /\b(bar|cocktail|cocktails|aperitivo|aperitif|wine bar|pub|spritz|nightcap|drinks)\b/i, icon: CocktailIcon },
+  { categories: ["restaurant", "food", "eat"], pattern: /\b(caf[eé]|coffee|espresso|pasticceria|bakery|gelato|gelateria)\b/i, icon: FoodIcon },
+  // Culture vs beach vs views vs shopping
+  { categories: ["culture", "see", "do", "other", "walk", "walking"], pattern: /\b(beach|shore|swim|swimming|lido|pool|sunbathe)\b/i, icon: BeachIcon },
+  { categories: ["culture", "see", "do", "other"], pattern: /\b(viewpoint|overlook|belvedere|panorama|lookout|sunset spot)\b/i, icon: LandmarkIcon },
+  { categories: ["culture", "see", "do", "other"], pattern: /\b(shop|shopping|market|souvenir|boutique|mercato)\b/i, icon: ShoppingIcon },
+  { categories: ["culture", "see"], pattern: /\b(church|cathedral|duomo|basilica|chapel|mosque|synagogue|temple)\b/i, icon: CultureIcon },
+];
+
+/**
+ * Resolve the most specific icon for a stop. `text` should be the stop's
+ * name plus any short note; when it says nothing recognizable the broad
+ * category icon stands.
+ */
+export function resolveCategoryIcon(
+  category?: string,
+  text?: string,
+): ((props: IconProps) => JSX.Element) | null {
+  if (!category) return null;
+  const broad = ICONS[category as keyof typeof ICONS];
+  if (!broad) return null;
+  if (text) {
+    for (const rule of REFINEMENTS) {
+      if ((rule.categories as readonly string[]).includes(category) && rule.pattern.test(text)) {
+        return rule.icon;
+      }
+    }
+  }
+  return broad;
+}
 
 const LABELS: Record<string, string> = {
   // Canonical six
