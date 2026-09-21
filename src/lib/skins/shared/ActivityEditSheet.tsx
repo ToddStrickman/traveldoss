@@ -208,10 +208,7 @@ function LocationSection({
             inputMode="decimal"
             value={activity.lat ?? ""}
             placeholder="41.8986"
-            onChange={(e) => {
-              const lat = numeric(e.target.value);
-              setCoords(lat, lat == null ? undefined : activity.lng, "typed");
-            }}
+            onChange={(e) => setCoords({ lat: numeric(e.target.value) })}
           />
         </Field>
         <Field label="Longitude">
