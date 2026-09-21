@@ -516,9 +516,14 @@ export function VerticalCoverStack({
             className="grid grid-cols-[minmax(0,340px)_minmax(0,1fr)] items-stretch overflow-hidden rounded-[10px] border border-ink/15"
             style={{ background: t.bg }}
           >
-            <div className="td-cover relative h-[300px] w-full overflow-hidden">
+            <Link
+              to="/templates/$id"
+              params={{ id: skin.meta.id }}
+              aria-label={`Preview the ${skin.meta.codename} dossier`}
+              className="td-cover relative block h-[300px] w-full overflow-hidden"
+            >
               <DossierCoverArt skin={skin} variant="vertical" />
-            </div>
+            </Link>
             <div
               className="flex flex-col justify-center gap-3 border-l px-7 py-6"
               style={{ borderColor: t.rule }}
