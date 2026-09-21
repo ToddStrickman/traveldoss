@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 import { collectHotelStays } from "./HotelsQuickRef";
 import type { Block } from "../types";
 
