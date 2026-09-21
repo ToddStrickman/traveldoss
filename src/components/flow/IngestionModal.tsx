@@ -255,7 +255,9 @@ export function IngestionModal({
         ? "drafting"
         : genPhase
       : "reading";
-  const composePct = useComposeProgress(parsing, composePhase);
+  // A long paste takes legitimately longer; the bar's pace follows its length
+  // so the percentage keeps climbing on large dossiers instead of flatlining.
+  const composePct = useComposeProgress(parsing, composePhase, text.length);
 
   // ── Generate-tab state ───────────────────────────────────────────────
   const [genPrompt, setGenPrompt] = useState("");
