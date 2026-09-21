@@ -16,13 +16,19 @@
 ## Templates
 - [x] Use the carousel for every layout choice on desktop and mobile
 
-## Live map / Places provider
-- [x] Shared `placesRequest` helper routing Places calls through the Lovable
-      Google Maps gateway (`src/lib/maps/places-request.server.ts`)
-- [x] parse-ai + suggest-location use the helper; parse-time enrichment prefers
-      a stop's own address over the broad trip destination
-- [x] Provider ladder: Photon (free) first, Google via the gateway as fallback
+## Live map / place lookups — fully keyless
+- [x] Google Places removed entirely: `places-request.server.ts` and its tests
+      deleted; no mapping code reads `GOOGLE_MAPS_API_KEY`
+- [x] Provider ladder is Photon then Nominatim, both keyless
       (`src/lib/maps/geocode-providers.server.ts`); provider stored per stop
+- [x] `place-lookup.server.ts` supplies address/phone/website/hours from OSM for
+      parse-time enrichment (`enrichmentSource: "openstreetmap"`) and the
+      suggest-location tool
+- [x] "Open in maps" links point at OpenStreetMap (`osmPlaceUrl`)
+- [x] Basemap style URL overridable via `VITE_MAP_STYLE_URL` (empty = the
+      skin-tinted plate; `default` = OpenFreeMap Liberty)
+- [x] parse-time enrichment prefers a stop's own address over the broad trip
+      destination
 - [x] Fault vs genuine-empty classification in `geo.server.ts`: faults are never
       cached and never count against the three-attempt cap
 - [x] `apiKey` resolved at the call sites, so an explicit `undefined` disables
