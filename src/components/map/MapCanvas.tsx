@@ -143,6 +143,7 @@ export const MapCanvas = forwardRef<
         // full text on wide plates, an expandable ⓘ under 640 px.
         map.addControl(new ml.AttributionControl({}), "bottom-right");
         map.on("click", () => onSelectRef.current(null));
+        map.on("move", () => onViewChangedRef.current?.());
         map.on("error", (e) => {
           errors++;
           if (import.meta.env.DEV) console.warn("[live-map]", e?.error?.message ?? e);
@@ -246,6 +247,14 @@ export const MapCanvas = forwardRef<
       },
       zoomIn: () => mapRef.current?.zoomIn(),
       zoomOut: () => mapRef.current?.zoomOut(),
+      pinScreenPos: (key) => {
+        const map = mapRef.current;
+        if (!map) return null;
+        const p = placesRef.current.find((x) => x.key === key);
+        if (!p) return null;
+        const pt = map.project([p.lng, p.lat]);
+        return { x: pt.x, y: pt.y };
+      },
     }),
     [bounds, single],
   );
