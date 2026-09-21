@@ -93,14 +93,18 @@ export function AtelierTable({
   const drag = useRef<{ startX: number; startPos: number; moved: boolean } | null>(null);
   const onPointerDown = (e: React.PointerEvent) => {
     drag.current = { startX: e.clientX, startPos: pos.get(), moved: false };
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
   };
   const onPointerMove = (e: React.PointerEvent) => {
     const d = drag.current;
     if (!d) return;
     const dx = e.clientX - d.startX;
-    if (Math.abs(dx) > 4) d.moved = true;
-    pos.set(d.startPos - dx / (CARD_W * 1.05));
+    // Capture only once a real drag begins — capturing on pointer-down
+    // retargets the click to the stage and the cover never sees it.
+    if (!d.moved && Math.abs(dx) > 4) {
+      d.moved = true;
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    }
+    if (d.moved) pos.set(d.startPos - dx / (CARD_W * 1.05));
   };
   const onPointerUp = () => {
     const d = drag.current;
@@ -430,9 +434,14 @@ function CoverCard({
       className={`rounded-[10px] border border-ink/15 ${className}`}
       style={{ background: skin.tokens.bg }}
     >
-      <div className="td-cover relative h-[300px] w-full overflow-hidden rounded-t-[10px]">
+      <Link
+        to="/templates/$id"
+        params={{ id: skin.meta.id }}
+        aria-label={`Preview the ${skin.meta.codename} dossier`}
+        className="td-cover relative block h-[300px] w-full overflow-hidden rounded-t-[10px]"
+      >
         <DossierCoverArt skin={skin} variant={variant} />
-      </div>
+      </Link>
       <div className="border-t px-4 py-3" style={{ borderColor: skin.tokens.rule }}>
         <h3
           className="text-2xl leading-none"
