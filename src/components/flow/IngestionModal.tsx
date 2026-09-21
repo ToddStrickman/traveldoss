@@ -924,7 +924,7 @@ export function IngestionModal({
                 </div>
               )}
 
-              <p className="text-[11.5px] leading-[1.55] text-ink-soft">
+              <p className={`text-[11.5px] leading-[1.55] text-ink-soft ${parsing ? "hidden" : ""}`}>
                 One field, three ways in. We'll only ask for dates, travelers, pace, budget, or
                 interests if the dossier can't infer them — directly on the draft, where they belong.
               </p>
