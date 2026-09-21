@@ -11,6 +11,7 @@ import {
 import { ActivityDndContext, DraggableActivity, DroppableBucket } from "./dnd";
 import { buildDayImagePlan } from "../fallback-images";
 import { ShadowItinerary, PlanBCue } from "../ShadowItinerary";
+import { HotelsQuickRef } from "../HotelsQuickRef";
 import { BlankDayScaffold, isScaffoldTriggered } from "../BlankDayScaffold";
 import { useCallback, useState } from "react";
 import type { PartOfDay } from "../itinerary";
