@@ -1,4 +1,4 @@
-import type { SVGProps } from "react";
+import type { ComponentType, SVGProps } from "react";
 
 /**
  * Shared travel iconography for place categories. Each icon is a single-line,
@@ -89,7 +89,7 @@ export function SeeIcon(props: IconProps) {
   );
 }
 
-/** Transit — sedan profile for taxi / ferry / transfer / private car. */
+/** Transit — sedan profile for taxi / transfer / private car. */
 export function TransitIcon(props: IconProps) {
   return (
     <svg {...base} {...props}>
@@ -98,6 +98,112 @@ export function TransitIcon(props: IconProps) {
       <path d="M21 14v3h-2v-1" />
       <circle cx="7.5" cy="14.5" r="1.5" />
       <circle cx="16.5" cy="14.5" r="1.5" />
+    </svg>
+  );
+}
+
+/** Plane — side-profile jet for airport runs and flight legs. */
+export function PlaneIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M3 12.5 21 5l-4.5 7.5L21 20l-7-2.5-2.5 4-1.5-4.5L4 14z" transform="translate(0,-2) scale(0.9) translate(1.3,2.5)" />
+    </svg>
+  );
+}
+
+/** Train — front-view locomotive for rail legs. */
+export function TrainIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M5 4h14a1 1 0 0 1 1 1v10a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V5a1 1 0 0 1 1-1z" />
+      <path d="M4 11h16" />
+      <circle cx="8.5" cy="14.5" r="0.9" />
+      <circle cx="15.5" cy="14.5" r="0.9" />
+      <path d="m8 18-2 3M16 18l2 3" />
+    </svg>
+  );
+}
+
+/** Boat — ferry / water taxi / vaporetto hull on water. */
+export function BoatIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M3 15h18l-2.5 3.5h-13L3 15z" />
+      <path d="M7 15v-3.5h10V15" />
+      <path d="M11 11.5V8h2v3.5" />
+      <path d="M5 21c1.5 1 3.5 1 5 0M14 21c1.5 1 3.5 1 5 0" />
+    </svg>
+  );
+}
+
+/** Tram / metro — front car on rails with overhead pickup. */
+export function TramIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <rect x="5" y="5" width="14" height="12" rx="2.5" />
+      <path d="M5 11.5h14" />
+      <path d="M12 5V2.5M9 2.5h6" />
+      <circle cx="9" cy="14.5" r="0.9" />
+      <circle cx="15" cy="14.5" r="0.9" />
+      <path d="m8 17-1.5 3M16 17l1.5 3" />
+    </svg>
+  );
+}
+
+/** Bus / coach / shuttle — front view. */
+export function BusIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <rect x="4" y="4" width="16" height="13" rx="2.5" />
+      <path d="M4 10.5h16" />
+      <circle cx="8.5" cy="14" r="0.9" />
+      <circle cx="15.5" cy="14" r="0.9" />
+      <path d="M6.5 17v2M17.5 17v2" />
+    </svg>
+  );
+}
+
+/** Cocktail / aperitivo — coupe glass for bars and drinks stops. */
+export function CocktailIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M4 5h16l-8 8-8-8z" />
+      <path d="M12 13v6" />
+      <path d="M8.5 19h7" />
+      <path d="M15 3.5l1.5 1.5" />
+    </svg>
+  );
+}
+
+/** Beach / swim — umbrella over a shoreline. */
+export function BeachIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M12 3a7 7 0 0 1 7 7H5a7 7 0 0 1 7-7z" />
+      <path d="M12 10v7.5a2 2 0 0 0 4 0" />
+      <path d="M3 21h18" />
+    </svg>
+  );
+}
+
+/** Viewpoint / landmark — binoculars for overlooks and must-see spots. */
+export function LandmarkIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <circle cx="7" cy="16" r="3.2" />
+      <circle cx="17" cy="16" r="3.2" />
+      <path d="M10.2 16h3.6" />
+      <path d="M5 13 8 5h3l-1.5 6M19 13 16 5h-3l1.5 6" />
+    </svg>
+  );
+}
+
+/** Shopping — tote bag. */
+export function ShoppingIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M5 8h14l-1 12a2 2 0 0 1-2 1.8H8A2 2 0 0 1 6 20L5 8z" />
+      <path d="M8.5 8V6.5a3.5 3.5 0 0 1 7 0V8" />
     </svg>
   );
 }
@@ -170,7 +276,60 @@ const ICONS = {
   food: RestaurantIcon,
   eat: RestaurantIcon,
   see: CultureIcon,
+  drink: CocktailIcon,
+  do: LandmarkIcon,
+  other: LandmarkIcon,
 } as const;
+
+/**
+ * Keyword refinement: a stop's own name/note picks a more specific icon than
+ * its broad category. Airport runs get a plane, ferry legs a boat, bars a
+ * coupe — so the icon tells the reader what the stop actually is at a glance.
+ * Word-boundary matching; first rule in list order wins within a category.
+ */
+const REFINEMENTS: ReadonlyArray<{
+  categories: ReadonlyArray<keyof typeof ICONS>;
+  pattern: RegExp;
+  icon: ComponentType<IconProps>;
+}> = [
+  // Transit modes
+  { categories: ["transit", "airfare", "flight"], pattern: /\b(airport|flight|flights|fly|flying|plane|jfk|terminal)\b/i, icon: PlaneIcon },
+  { categories: ["transit"], pattern: /\b(train|rail|railway|eurostar|trenitalia|italo|sncf|amtrak)\b/i, icon: TrainIcon },
+  { categories: ["transit"], pattern: /\b(ferry|ferries|boat|boats|boating|vaporetto|gondola|cruise|sail|sailing|water taxi|waterbus)\b/i, icon: BoatIcon },
+  { categories: ["transit"], pattern: /\b(metro|subway|underground|tube|tram)\b/i, icon: TramIcon },
+  { categories: ["transit"], pattern: /\b(bus|coach|shuttle)\b/i, icon: BusIcon },
+  { categories: ["transit"], pattern: /\bwalk(ing)?\s+(to|from|through|around)\b/i, icon: WalkingIcon },
+  // Dining vs drinks
+  { categories: ["restaurant", "food", "eat", "drink"], pattern: /\b(bar|cocktail|cocktails|aperitivo|aperitif|wine bar|pub|spritz|nightcap|drinks)\b/i, icon: CocktailIcon },
+  { categories: ["restaurant", "food", "eat"], pattern: /\b(caf[eé]|coffee|espresso|pasticceria|bakery|gelato|gelateria)\b/i, icon: FoodIcon },
+  // Culture vs beach vs views vs shopping
+  { categories: ["culture", "see", "do", "other", "walk", "walking"], pattern: /\b(beach|shore|swim|swimming|lido|pool|sunbathe)\b/i, icon: BeachIcon },
+  { categories: ["culture", "see", "do", "other"], pattern: /\b(viewpoint|overlook|belvedere|panorama|lookout|sunset spot)\b/i, icon: LandmarkIcon },
+  { categories: ["culture", "see", "do", "other"], pattern: /\b(shop|shopping|market|souvenir|boutique|mercato)\b/i, icon: ShoppingIcon },
+  { categories: ["culture", "see"], pattern: /\b(church|cathedral|duomo|basilica|chapel|mosque|synagogue|temple)\b/i, icon: CultureIcon },
+];
+
+/**
+ * Resolve the most specific icon for a stop. `text` should be the stop's
+ * name plus any short note; when it says nothing recognizable the broad
+ * category icon stands.
+ */
+export function resolveCategoryIcon(
+  category?: string,
+  text?: string,
+): (ComponentType<IconProps>) | null {
+  if (!category) return null;
+  const broad = ICONS[category as keyof typeof ICONS];
+  if (!broad) return null;
+  if (text) {
+    for (const rule of REFINEMENTS) {
+      if ((rule.categories as readonly string[]).includes(category) && rule.pattern.test(text)) {
+        return rule.icon;
+      }
+    }
+  }
+  return broad;
+}
 
 const LABELS: Record<string, string> = {
   // Canonical six
@@ -190,11 +349,17 @@ const LABELS: Record<string, string> = {
   food: "Restaurant",
   eat: "Restaurant",
   see: "Culture",
+  drink: "Drinks",
+  do: "Do",
+  other: "Place",
 };
 
-export function CategoryIcon({ category, ...props }: IconProps & { category?: string }) {
-  if (!category) return null;
-  const Icon = ICONS[category as keyof typeof ICONS];
+export function CategoryIcon({
+  category,
+  text,
+  ...props
+}: IconProps & { category?: string; /** Stop name/note used for icon refinement. */ text?: string }) {
+  const Icon = resolveCategoryIcon(category, text);
   if (!Icon) return null;
   return <Icon {...props} />;
 }

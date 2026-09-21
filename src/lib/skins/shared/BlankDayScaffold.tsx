@@ -162,7 +162,7 @@ export function BlankDayScaffold({ blocks }: { blocks: Block[] }) {
                   onClick={() => addPlaceGhost(g)}
                 >
                   <span className="tds-ghost-icon" aria-hidden>
-                    <CategoryIcon category={g.category} />
+                    <CategoryIcon category={g.category} text={g.label} />
                   </span>
                   <span className="tds-ghost-body">
                     <span className="tds-ghost-label">{g.label}</span>
