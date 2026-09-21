@@ -77,6 +77,8 @@ export function HorizontalView({ trip, blocks }: { trip: TripView; blocks: Block
           inbound={it.flights.inbound}
           outboundIndex={it.flights.outboundIndex}
           inboundIndex={it.flights.inboundIndex}
+          slots={["outbound", "inbound"]}
+          blocksLength={blocks.length}
         />
       )}
 
