@@ -349,11 +349,17 @@ const LABELS: Record<string, string> = {
   food: "Restaurant",
   eat: "Restaurant",
   see: "Culture",
+  drink: "Drinks",
+  do: "Do",
+  other: "Place",
 };
 
-export function CategoryIcon({ category, ...props }: IconProps & { category?: string }) {
-  if (!category) return null;
-  const Icon = ICONS[category as keyof typeof ICONS];
+export function CategoryIcon({
+  category,
+  text,
+  ...props
+}: IconProps & { category?: string; /** Stop name/note used for icon refinement. */ text?: string }) {
+  const Icon = resolveCategoryIcon(category, text);
   if (!Icon) return null;
   return <Icon {...props} />;
 }
