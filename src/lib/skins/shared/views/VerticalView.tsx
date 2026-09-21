@@ -235,13 +235,6 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
 
       {editing ? <AddDayButton onAdd={addDay} /> : null}
 
-      <FlightStrip
-        inbound={it.flights.inbound}
-        inboundIndex={it.flights.inboundIndex}
-        slots={["inbound"]}
-        blocksLength={blocks.length}
-      />
-
       <ShadowItinerary itinerary={it} />
         </>
       )}
