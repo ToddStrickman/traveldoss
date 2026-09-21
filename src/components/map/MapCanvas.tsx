@@ -32,6 +32,8 @@ export type MapCanvasHandle = {
   fitAll: () => void;
   zoomIn: () => void;
   zoomOut: () => void;
+  /** Screen position (relative to the map container) of a place's pin. */
+  pinScreenPos: (key: string) => { x: number; y: number } | null;
 };
 
 export type MapStatus = "loading" | "ready" | "error";
@@ -79,7 +81,7 @@ export const MapCanvas = forwardRef<
     onStatus: (status: MapStatus) => void;
   }
 >(function MapCanvas(
-  { model, visible, tokens, palette, hiddenDays, showRoute, showOrder, selectedKey, onSelect, onStatus },
+  { model, visible, tokens, palette, hiddenDays, showRoute, showOrder, selectedKey, onSelect, onStatus, onViewChanged },
   ref,
 ) {
   const containerRef = useRef<HTMLDivElement | null>(null);
