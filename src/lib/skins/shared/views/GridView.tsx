@@ -14,6 +14,7 @@ import { useCallback, useRef, useState, type ReactNode } from "react";
 import { airportTzLabel, flightDuration } from "../airportTz";
 import {
   EditableHero,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   EditableDayHeader,
   AddActivitySlot,
   AddDayButton,
