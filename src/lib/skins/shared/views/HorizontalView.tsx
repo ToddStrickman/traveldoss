@@ -83,6 +83,9 @@ export function HorizontalView({ trip, blocks }: { trip: TripView; blocks: Block
         />
       )}
 
+      <HotelsQuickRef blocks={blocks} />
+
+
       {showScaffold ? (
         <BlankDayScaffold blocks={blocks} />
       ) : (
