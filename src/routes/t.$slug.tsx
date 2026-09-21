@@ -25,6 +25,7 @@ import { getTemporalPhase, phaseCopy } from "@/lib/itinerary/temporal";
 import { autofillDayDates, notifyDayDateAutofill, type DayDateAutofill } from "@/lib/itinerary/day-dates";
 import { EditingProvider, arrayMove } from "@/lib/skins/shared/Editable";
 import { moveActivity } from "@/lib/skins/shared/itinerary";
+import { TrustedViewerProvider } from "@/lib/skins/shared/trusted-viewer";
 import { IngestionModal } from "@/components/flow/IngestionModal";
 import { TripDocPreviews } from "@/components/flow/TripDocPreviews";
 import { DossierMastheadBar } from "@/components/mobile/DossierMastheadBar";
