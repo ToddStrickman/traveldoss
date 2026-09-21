@@ -37,7 +37,6 @@ export const locateTripPlaces = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }): Promise<LocateResult> => {
     const { supabase } = context;
-    const apiKey = process.env.GOOGLE_MAPS_API_KEY;
 
     // RLS: the user-scoped client only returns the caller's own trips.
     const { data: row, error } = await supabase
@@ -50,10 +49,9 @@ export const locateTripPlaces = createServerFn({ method: "POST" })
 
     const content = (row.content ?? {}) as { blocks?: Block[]; skin?: string; meta?: unknown };
     const before = (content.blocks ?? []) as Block[];
-    if (!apiKey) return { ...summarizeLocate(before, before, false), blocks: null };
-
+    // The OpenStreetMap ladder needs no credentials, so a locate pass is
+    // always available — `configured` stays true for the read model.
     const after = await enrichBlocksWithCoords(before, {
-      apiKey,
       destination: row.destination,
       budgetMs: 9_000,
       maxPerRun: LOCATE_CAP,

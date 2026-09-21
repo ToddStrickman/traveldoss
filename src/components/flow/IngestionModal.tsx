@@ -1296,12 +1296,14 @@ function LowConfidenceBadge({
   fields,
 }: {
   confidence: number;
-  source?: "model" | "google-places" | "manual";
+  source?: "model" | "openstreetmap" | "google-places" | "manual";
   fields?: string[];
 }) {
   const pct = Math.round(confidence * 100);
   const sourceLabel =
-    source === "google-places"
+    source === "openstreetmap"
+      ? "OpenStreetMap"
+      : source === "google-places"
       ? "Google Places"
       : source === "manual"
       ? "Manual entry"

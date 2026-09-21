@@ -13,14 +13,12 @@ import * as React from "react";
 import { MapPin, Phone, Globe, Copy, Check, Clock } from "lucide-react";
 import { TdSheet } from "@/components/mobile/TdSheet";
 import type { Block } from "@/lib/skins/types";
+import { osmPlaceUrl } from "@/lib/maps/external-map-url";
 
 type ActivityBlock = Extract<Block, { kind: "place" }>;
 
 function mapsUrl(activity: ActivityBlock): string {
-  const q = encodeURIComponent(
-    [activity.name, activity.address].filter(Boolean).join(", "),
-  );
-  return `https://www.google.com/maps/search/?api=1&query=${q}`;
+  return osmPlaceUrl(activity);
 }
 
 /**

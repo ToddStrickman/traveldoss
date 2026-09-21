@@ -24,7 +24,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import maplibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import type { SkinTokens } from "@/lib/skins/types";
 import type { MapModel, MapPlace } from "@/lib/maps/build-map-places";
-import { buildMapStyle } from "@/lib/maps/map-style";
+import { buildMapStyle, mapStyleUrlOverride } from "@/lib/maps/map-style";
 import type { MarkerKind } from "@/lib/maps/taxonomy";
 import { MapPin } from "./MapPin";
 
@@ -116,7 +116,7 @@ export const MapCanvas = forwardRef<
         if (cancelled) return;
         mlRef.current = ml;
         if (ml.getWorkerUrl() !== maplibreWorkerUrl) ml.setWorkerUrl(maplibreWorkerUrl);
-        const style = buildMapStyle(tokens);
+        const style = mapStyleUrlOverride() ?? buildMapStyle(tokens);
         map = new ml.Map({
           container,
           style,

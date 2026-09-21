@@ -6,7 +6,8 @@ import type { Block } from "@/lib/skins/types";
 import { shouldAttemptGeocode } from "@/lib/itinerary/geo.server";
 
 export type LocateSummary = {
-  /** False when the server has no GOOGLE_MAPS_API_KEY: nothing can be looked up. */
+  /** Kept for the read model. Always true now: the OpenStreetMap lookup
+   *  ladder is keyless, so there is nothing left to misconfigure. */
   configured: boolean;
   /** Stops that gained coordinates in this call. */
   located: number;

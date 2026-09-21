@@ -3,7 +3,7 @@ import { generateText, Output } from "ai";
 import { z, ZodError, type ZodIssue } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Block } from "@/lib/skins/types";
-import { placesRequest } from "@/lib/maps/places-request.server";
+import { lookupPlaceFacts } from "@/lib/maps/place-lookup.server";
 import { parseDropInWithMeta, stripEmoji } from "@/lib/itinerary/parse";
 import { normalizeParsedShape } from "@/lib/itinerary/normalize-ai";
 import { isCreditsMessage, isRateLimitMessage } from "@/lib/itinerary/ai-errors";
@@ -560,30 +560,27 @@ type GatewayProvider = ReturnType<
 
 /**
  * Mutates `blocks` in place: for each `place` missing address/phone/website,
- * queries Google Places (Text Search v1) for hard facts, then asks Gemini
- * to write a single <15-word editorial note per freshly enriched place.
+ * asks OpenStreetMap (keyless, see place-lookup.server.ts) for hard facts,
+ * then asks Gemini to write a single <15-word editorial note per freshly
+ * enriched place.
  */
 async function enrichPlacesViaWebSearch(
   blocks: Block[],
   destination: string | null,
   gateway: GatewayProvider,
 ): Promise<void> {
-  const mapsKey = process.env.GOOGLE_MAPS_API_KEY;
-  if (!mapsKey) return;
-
   const targets = blocks.filter(
     (b): b is PlaceBlock =>
       b.kind === "place" && !!b.name && (!b.address || !b.phone || !b.website || b.lat == null),
   );
   if (targets.length === 0) return;
 
-  // Pull facts from Google Places with BOUNDED parallelism and a per-run
-  // cap. The old Promise.all fired one uncapped billable request per place
-  // (a 60-stop paste = 60 parallel calls) and the comment claiming a
-  // concurrency cap was aspirational. Anything past the cap is picked up
-  // by the save-time backfill (geo.server.ts) on the next autosave.
+  // Bounded work with a per-run cap: the lookups are free now, but they hit
+  // a shared community service, so a 60-stop paste must not fan out. Anything
+  // past the cap is picked up by the save-time backfill (geo.server.ts) on the
+  // next autosave. Concurrency stays at 2 out of courtesy to OSM.
   const PER_RUN_CAP = 24;
-  const CONCURRENCY = 4;
+  const CONCURRENCY = 2;
   if (targets.length > PER_RUN_CAP) {
     console.warn(
       `[parse-ai] enriching ${PER_RUN_CAP}/${targets.length} places this run; the rest backfill on save`,
@@ -597,7 +594,7 @@ async function enrichPlacesViaWebSearch(
       for (;;) {
         const i = cursor++;
         if (i >= capped.length) return;
-        enrichedFlags[i] = await fillFromGooglePlaces(capped[i], destination, mapsKey);
+        enrichedFlags[i] = await fillFromOpenStreetMap(capped[i], destination);
       }
     }),
   );
@@ -613,10 +610,9 @@ async function enrichPlacesViaWebSearch(
   }
 }
 
-async function fillFromGooglePlaces(
+async function fillFromOpenStreetMap(
   place: PlaceBlock,
   destination: string | null,
-  apiKey: string,
 ): Promise<boolean> {
   // A stop's own address is the strongest signal; the broad trip destination
   // is only a fallback (matches geocodeQueryFor in geo.server.ts). Anchoring
@@ -626,39 +622,15 @@ async function fillFromGooglePlaces(
     : destination
       ? `${place.name}, ${destination}`
       : place.name;
-  // Per-request timeout: without one, a single slow Places call stalled the
-  // ENTIRE parse (mirrors geo.server.ts's abort discipline).
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 3_000);
   try {
-    const res = await placesRequest(apiKey, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Goog-FieldMask":
-          "places.id,places.displayName,places.formattedAddress,places.internationalPhoneNumber,places.websiteUri,places.regularOpeningHours,places.location",
-      },
-      body: JSON.stringify({ textQuery: query, pageSize: 1 }),
-      signal: ctrl.signal,
-    });
-    if (!res.ok) return false;
-    const json = (await res.json()) as {
-      places?: Array<{
-        id?: string;
-        formattedAddress?: string;
-        internationalPhoneNumber?: string;
-        websiteUri?: string;
-        regularOpeningHours?: { weekdayDescriptions?: string[] };
-        location?: { latitude?: number; longitude?: number };
-      }>;
-    };
-    const hit = json.places?.[0];
-    if (!hit) {
+    // Bounded: a slow lookup must never stall the whole parse.
+    const facts = await lookupPlaceFacts(query, { timeoutMs: 3_500 });
+    if (!facts) {
       // Record the miss so the save-time backfill's attempt cap counts it.
       if (place.lat == null && !place.geocode) {
         place.geocode = {
           status: "pending",
-          provider: "google-places",
+          provider: "nominatim",
           attempts: 1,
           query,
           at: new Date().toISOString(),
@@ -668,58 +640,49 @@ async function fillFromGooglePlaces(
     }
 
     let changed = false;
-    if (!place.address && hit.formattedAddress) {
-      place.address = hit.formattedAddress;
+    if (!place.address && facts.address) {
+      place.address = facts.address;
       changed = true;
     }
-    if (!place.phone && hit.internationalPhoneNumber) {
-      place.phone = hit.internationalPhoneNumber;
+    if (!place.phone && facts.phone) {
+      place.phone = facts.phone;
       changed = true;
     }
-    if (!place.website && hit.websiteUri) {
-      place.website = hit.websiteUri;
+    if (!place.website && facts.website) {
+      place.website = facts.website;
       changed = true;
     }
-    if (!place.hours && hit.regularOpeningHours?.weekdayDescriptions?.length) {
-      place.hours = hit.regularOpeningHours.weekdayDescriptions.join("; ");
+    if (!place.hours && facts.hours) {
+      place.hours = facts.hours;
       changed = true;
     }
-    if (
-      place.lat == null &&
-      typeof hit.location?.latitude === "number" &&
-      typeof hit.location?.longitude === "number"
-    ) {
-      place.lat = hit.location.latitude;
-      place.lng = hit.location.longitude;
-      if (hit.id) place.placeId = hit.id;
+    if (place.lat == null && facts.lat != null && facts.lng != null) {
+      place.lat = facts.lat;
+      place.lng = facts.lng;
       place.geocode = {
         status: "resolved",
-        provider: "google-places",
+        provider: facts.provider,
         attempts: (place.geocode?.attempts ?? 0) + 1,
         query,
         at: new Date().toISOString(),
       };
       changed = true;
-    } else if (hit.id && !place.placeId) {
-      place.placeId = hit.id;
     }
     if (changed) {
-      // Hard facts from Google Places — treat as high-confidence and
-      // record provenance so the review UI can show what was enriched.
-      place.enrichmentSource = "google-places";
+      // Hard facts straight off the map data — high confidence, and the
+      // provenance is recorded so the review UI can show what was enriched.
+      place.enrichmentSource = "openstreetmap";
       const fields = new Set(place.enrichedFields ?? []);
-      if (hit.formattedAddress) fields.add("address");
-      if (hit.internationalPhoneNumber) fields.add("phone");
-      if (hit.websiteUri) fields.add("website");
-      if (hit.regularOpeningHours?.weekdayDescriptions?.length) fields.add("hours");
+      if (facts.address) fields.add("address");
+      if (facts.phone) fields.add("phone");
+      if (facts.website) fields.add("website");
+      if (facts.hours) fields.add("hours");
       place.enrichedFields = Array.from(fields);
-      place.confidence = Math.max(place.confidence ?? 0, 0.95);
+      place.confidence = Math.max(place.confidence ?? 0, 0.9);
     }
     return changed;
   } catch {
     return false;
-  } finally {
-    clearTimeout(timer);
   }
 }
 
