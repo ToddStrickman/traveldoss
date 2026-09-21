@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { parseDropInWithMeta } from "@/lib/itinerary/parse";
+import { CakeProgress } from "@/components/flow/CakeProgress";
 import { parseItineraryAi } from "@/lib/itinerary/parse-ai.functions";
 import { generateItineraryAi } from "@/lib/itinerary/generate.functions";
 import { useServerFn } from "@tanstack/react-start";
