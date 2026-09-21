@@ -60,10 +60,14 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
         <BlankDayScaffold blocks={blocks} />
       ) : (
         <>
+      {/* Both legs summarise at the very top for quick reference; the day
+          itself still carries the flight's own detail row. */}
       <FlightStrip
         outbound={it.flights.outbound}
+        inbound={it.flights.inbound}
         outboundIndex={it.flights.outboundIndex}
-        slots={["outbound"]}
+        inboundIndex={it.flights.inboundIndex}
+        slots={["outbound", "inbound"]}
         blocksLength={blocks.length}
       />
 
@@ -230,13 +234,6 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
       </ActivityDndContext>
 
       {editing ? <AddDayButton onAdd={addDay} /> : null}
-
-      <FlightStrip
-        inbound={it.flights.inbound}
-        inboundIndex={it.flights.inboundIndex}
-        slots={["inbound"]}
-        blocksLength={blocks.length}
-      />
 
       <ShadowItinerary itinerary={it} />
         </>
