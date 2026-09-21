@@ -1,5 +1,6 @@
 import type { Block } from "@/lib/skins/types";
 import { LinkifiedText } from "@/lib/skins/shared/views/parts";
+import { osmPlaceUrl } from "@/lib/maps/external-map-url";
 
 /** Active-phase banner pinned above the dossier. Surfaces the next reservation
  *  with its confirmation # and a maps link. */
@@ -48,11 +49,10 @@ function pickNext(blocks: Block[]): { title: string; sub?: string; mapsUrl?: str
   }
   const place = blocks.find((b) => b.kind === "place");
   if (place && place.kind === "place") {
-    const q = encodeURIComponent([place.name, place.address].filter(Boolean).join(" "));
     return {
       title: place.name,
       sub: place.address ?? place.note ?? undefined,
-      mapsUrl: `https://www.google.com/maps/search/?api=1&query=${q}`,
+      mapsUrl: osmPlaceUrl(place),
     };
   }
   return null;

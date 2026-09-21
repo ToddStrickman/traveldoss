@@ -11,19 +11,19 @@ import type { Block } from "../src/lib/skins/types";
 
 type PlaceBlock = Extract<Block, { kind: "place" }>;
 
-/** In-memory stand-ins for Google and the geocode_cache table. */
+/** In-memory stand-ins for the OpenStreetMap lookup and the geocode_cache table. */
 function harness(answers: Array<GeocodeHit | null>) {
   const calls: string[] = [];
   const cache = new Map<string, GeocodeCacheEntry>();
   const deps: GeocodeDeps = {
-    fetchImpl: (async (_url: string, init?: RequestInit) => {
-      const body = JSON.parse(String(init?.body)) as { textQuery: string };
-      calls.push(body.textQuery);
+    // Photon is the first rung of the ladder, so one scripted answer per call
+    // is enough: a hit short-circuits, an empty feature list is a real miss.
+    fetchImpl: (async (url: string) => {
+      const q = new URL(String(url)).searchParams.get("q") ?? "";
+      calls.push(q);
       const next = answers.shift() ?? null;
-      const places = next
-        ? [{ id: next.placeId, location: { latitude: next.lat, longitude: next.lng } }]
-        : [];
-      return new Response(JSON.stringify({ places }), { status: 200 });
+      const features = next ? [{ geometry: { coordinates: [next.lng, next.lat] } }] : [];
+      return new Response(JSON.stringify({ features }), { status: 200 });
     }) as unknown as typeof fetch,
     readCache: async (q) => cache.get(q),
     writeCache: async (q, hit, provider) => {
@@ -42,32 +42,31 @@ const place = (extra: Partial<PlaceBlock> = {}): PlaceBlock => ({
 });
 
 describe("geocode backfill: attempt cap and shared cache", () => {
-  it("stops retrying an unresolvable stop after three attempts, spending one Google call", async () => {
+  it("stops retrying an unresolvable stop after three attempts, spending one lookup", async () => {
     const h = harness([null]);
     let blocks: Block[] = [{ kind: "day", n: 1, label: "Day" }, place()];
     for (let save = 1; save <= MAX_GEOCODE_ATTEMPTS + 2; save++) {
-      blocks = await enrichBlocksWithCoords(blocks, { apiKey: "k", deps: h.deps, budgetMs: 1_000 });
+      blocks = await enrichBlocksWithCoords(blocks, { deps: h.deps, budgetMs: 1_000 });
     }
     const b = blocks[1] as PlaceBlock;
     expect(b.lat).toBeUndefined();
     expect(b.geocode?.status).toBe("needs_review");
     expect(b.geocode?.attempts).toBe(MAX_GEOCODE_ATTEMPTS);
     expect(b.geocode?.query).toBe("Nowhere Café, 1 Rua Inexistente, Lisboa");
-    // The first save asked Google; later saves hit the cached miss; after
-    // the cap nothing is attempted at all.
-    expect(h.calls).toHaveLength(1);
+    // The first save walked both rungs of the ladder (Photon, then Nominatim);
+    // later saves hit the cached miss, and after the cap nothing is attempted.
+    expect(h.calls).toHaveLength(2);
   });
 
-  it("stores coordinates, the Places id and a resolved status on a hit", async () => {
-    const h = harness([{ lat: 38.71, lng: -9.14, placeId: "pid-1" }]);
-    const out = await enrichBlocksWithCoords([place()], { apiKey: "k", deps: h.deps });
+  it("stores coordinates and a resolved status on a hit", async () => {
+    const h = harness([{ lat: 38.71, lng: -9.14 }]);
+    const out = await enrichBlocksWithCoords([place()], { deps: h.deps });
     const b = out[0] as PlaceBlock;
     expect(b.lat).toBe(38.71);
     expect(b.lng).toBe(-9.14);
-    expect(b.placeId).toBe("pid-1");
     expect(b.geocode).toEqual({
       status: "resolved",
-      provider: "google-places",
+      provider: "photon",
       attempts: 1,
       query: "Nowhere Café, 1 Rua Inexistente, Lisboa",
       at: "2026-09-07T12:00:00.000Z",
@@ -75,10 +74,10 @@ describe("geocode backfill: attempt cap and shared cache", () => {
   });
 
   it("serves the second dossier with the same query from the cache", async () => {
-    const h = harness([{ lat: 38.71, lng: -9.14, placeId: "pid-1" }]);
-    await enrichBlocksWithCoords([place()], { apiKey: "k", deps: h.deps });
-    const again = await enrichBlocksWithCoords([place()], { apiKey: "k", deps: h.deps });
-    expect((again[0] as PlaceBlock).placeId).toBe("pid-1");
+    const h = harness([{ lat: 38.71, lng: -9.14 }]);
+    await enrichBlocksWithCoords([place()], { deps: h.deps });
+    const again = await enrichBlocksWithCoords([place()], { deps: h.deps });
+    expect((again[0] as PlaceBlock).lat).toBe(38.71);
     expect(h.calls).toHaveLength(1);
   });
 
@@ -97,11 +96,11 @@ describe("geocode backfill: attempt cap and shared cache", () => {
     expect(geocodeQueryFor(place({ address: undefined }), null)).toBeNull();
   });
 
-  it("does nothing without an API key", async () => {
+  it("needs no API key to look a stop up", async () => {
     const h = harness([{ lat: 1, lng: 1 }]);
     const input: Block[] = [place()];
-    const out = await enrichBlocksWithCoords(input, { apiKey: undefined, deps: h.deps });
-    expect(out).toBe(input);
-    expect(h.calls).toHaveLength(0);
+    const out = await enrichBlocksWithCoords(input, { deps: h.deps });
+    expect(out).not.toBe(input);
+    expect(h.calls).toHaveLength(1);
   });
 });

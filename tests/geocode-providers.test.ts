@@ -1,41 +1,38 @@
 /**
- * The provider ladder: free Photon first, Google via the connector gateway as
- * the fallback, and faults that are never cached and never counted.
+ * The keyless provider ladder: Photon first, Nominatim second, and faults
+ * that are never cached and never counted.
  */
 import { describe, expect, it } from "bun:test";
 import {
+  nominatimSearchUrl,
   photonSearchUrl,
   resolveWithProviders,
   type GeocodeOutcome,
 } from "../src/lib/maps/geocode-providers.server";
-import { PLACES_SEARCH_TEXT_URL } from "../src/lib/maps/places-request.server";
 import { enrichBlocksWithCoords, type GeocodeDeps } from "../src/lib/itinerary/geo.server";
 import type { GeocodeCacheEntry, GeocodeHit } from "../src/lib/maps/geocode-cache.server";
 import type { Block } from "../src/lib/skins/types";
 
 type PlaceBlock = Extract<Block, { kind: "place" }>;
 
-process.env.LOVABLE_API_KEY ??= "lovable-test-key";
-
 const PANTHEON = "Pantheon, Piazza della Rotonda, 00186 Roma RM, Italy";
 
-/** Routes photon and gateway calls to separate scripted answers. */
+/** Routes photon and nominatim calls to separate scripted answers. */
 function ladder(opts: {
   photon?: () => Response | Promise<Response>;
-  google?: () => Response | Promise<Response>;
+  nominatim?: () => Response | Promise<Response>;
 }) {
   const urls: string[] = [];
-  const fetchImpl = (async (url: string | URL, init?: RequestInit) => {
+  const fetchImpl = (async (url: string | URL) => {
     const href = String(url);
     urls.push(href);
     if (href.startsWith("https://photon")) {
       if (!opts.photon) throw new Error("photon not scripted");
       return opts.photon();
     }
-    expect(href).toBe(PLACES_SEARCH_TEXT_URL);
-    expect(init?.method).toBe("POST");
-    if (!opts.google) throw new Error("google not scripted");
-    return opts.google();
+    expect(href.startsWith("https://nominatim.openstreetmap.org/search")).toBe(true);
+    if (!opts.nominatim) throw new Error("nominatim not scripted");
+    return opts.nominatim();
   }) as unknown as typeof fetch;
   return { urls, fetchImpl };
 }
@@ -43,15 +40,13 @@ function ladder(opts: {
 const photonHit = (lng: number, lat: number) =>
   new Response(JSON.stringify({ features: [{ geometry: { coordinates: [lng, lat] } }] }));
 const photonEmpty = () => new Response(JSON.stringify({ features: [] }));
-const googleHit = () =>
-  new Response(
-    JSON.stringify({ places: [{ id: "pid-1", location: { latitude: 41.9, longitude: 12.47 } }] }),
-  );
+const nominatimHit = () => new Response(JSON.stringify([{ lat: "41.9", lon: "12.47" }]));
+const nominatimEmpty = () => new Response(JSON.stringify([]));
 
 describe("geocode provider ladder", () => {
-  it("asks the free provider first and never pays when it answers", async () => {
+  it("asks Photon first and stops there when it answers", async () => {
     const l = ladder({ photon: () => photonHit(12.4768729, 41.8986108) });
-    const out = await resolveWithProviders(PANTHEON, { apiKey: "conn", fetchImpl: l.fetchImpl });
+    const out = await resolveWithProviders(PANTHEON, { fetchImpl: l.fetchImpl });
     expect(out).toEqual({
       kind: "hit",
       provider: "photon",
@@ -60,33 +55,45 @@ describe("geocode provider ladder", () => {
     expect(l.urls).toEqual([photonSearchUrl(PANTHEON)]);
   });
 
-  it("falls back to Google through the gateway when the free provider is empty", async () => {
-    const l = ladder({ photon: photonEmpty, google: googleHit });
-    const out = await resolveWithProviders("Cantina Tirolese", {
-      apiKey: "conn",
-      fetchImpl: l.fetchImpl,
-    });
-    expect(out.kind).toBe("hit");
-    expect(out.provider).toBe("google-places");
-    expect(l.urls[1]).toBe(PLACES_SEARCH_TEXT_URL);
+  it("falls back to Nominatim when Photon has no answer", async () => {
+    const l = ladder({ photon: photonEmpty, nominatim: nominatimHit });
+    const out = await resolveWithProviders("Cantina Tirolese", { fetchImpl: l.fetchImpl });
+    expect(out).toEqual({
+      kind: "hit",
+      provider: "nominatim",
+      hit: { lat: 41.9, lng: 12.47 },
+    } satisfies GeocodeOutcome);
+    expect(l.urls[1]).toBe(nominatimSearchUrl("Cantina Tirolese"));
   });
 
-  it("reports a rejected gateway call as a fault, not as 'address not found'", async () => {
+  it("uses no credentials at all", async () => {
+    const l = ladder({ photon: () => photonHit(12.4, 41.8) });
+    await resolveWithProviders(PANTHEON, { fetchImpl: l.fetchImpl });
+    for (const url of l.urls) {
+      expect(url).not.toContain("key=");
+      expect(url).not.toContain("googleapis");
+    }
+  });
+
+  it("reports a rejected lookup as a fault, not as 'address not found'", async () => {
     const l = ladder({
       photon: () => new Response("nope", { status: 502 }),
-      google: () => new Response("denied", { status: 403 }),
+      nominatim: () => new Response("slow down", { status: 429 }),
     });
-    const out = await resolveWithProviders(PANTHEON, { apiKey: "conn", fetchImpl: l.fetchImpl });
-    expect(out).toEqual({ kind: "fault", provider: "google-places", reason: "http_403" });
+    const out = await resolveWithProviders(PANTHEON, { fetchImpl: l.fetchImpl });
+    expect(out).toEqual({ kind: "fault", provider: "nominatim", reason: "http_429" });
   });
 
-  it("keeps a genuine empty answer even when the paid fallback is misconfigured", async () => {
-    const l = ladder({ photon: photonEmpty });
-    const out = await resolveWithProviders("Somewhere unfindable", {
-      apiKey: undefined,
-      fetchImpl: l.fetchImpl,
-    });
+  it("keeps a genuine empty answer when the second provider faults", async () => {
+    const l = ladder({ photon: photonEmpty, nominatim: () => new Response("x", { status: 503 }) });
+    const out = await resolveWithProviders("Somewhere unfindable", { fetchImpl: l.fetchImpl });
     expect(out).toEqual({ kind: "empty", provider: "photon" });
+  });
+
+  it("reports empty when both providers genuinely find nothing", async () => {
+    const l = ladder({ photon: photonEmpty, nominatim: nominatimEmpty });
+    const out = await resolveWithProviders("Somewhere unfindable", { fetchImpl: l.fetchImpl });
+    expect(out.kind).toBe("empty");
   });
 });
 
@@ -111,10 +118,10 @@ describe("faults never poison the cache or the attempt ladder", () => {
   };
 
   it("leaves the stop untouched when every provider faults", async () => {
-    const h = harness(() => new Response("denied", { status: 403 }));
+    const h = harness(() => new Response("denied", { status: 503 }));
     let blocks: Block[] = [stop];
-    for (let save = 0; save < 5; save++) {
-      blocks = await enrichBlocksWithCoords(blocks, { apiKey: "conn", deps: h.deps });
+    for (let save = 0; save < 3; save++) {
+      blocks = await enrichBlocksWithCoords(blocks, { deps: h.deps });
     }
     const b = blocks[0] as PlaceBlock;
     expect(b.geocode).toBeUndefined();
@@ -122,8 +129,8 @@ describe("faults never poison the cache or the attempt ladder", () => {
   });
 
   it("still caches and counts a genuine empty answer", async () => {
-    const h = harness(() => new Response(JSON.stringify({ features: [], places: [] })));
-    const out = await enrichBlocksWithCoords([stop], { apiKey: "conn", deps: h.deps });
+    const h = harness(() => new Response(JSON.stringify({ features: [] })));
+    const out = await enrichBlocksWithCoords([stop], { deps: h.deps });
     const b = out[0] as PlaceBlock;
     expect(b.geocode?.status).toBe("pending");
     expect(b.geocode?.attempts).toBe(1);

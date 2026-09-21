@@ -59,7 +59,9 @@ export type Block =
        *  overwrites. */
       geocode?: {
         status: "resolved" | "pending" | "needs_review" | "failed" | "manual";
-        provider?: "google-places" | "photon" | "manual";
+        /** "google-places" only appears on rows written before the keyless
+         *  OpenStreetMap ladder replaced it. */
+        provider?: "photon" | "nominatim" | "google-places" | "manual";
         attempts: number;
         /** The text that was sent, shown to the owner when reviewing. */
         query?: string;
@@ -126,7 +128,9 @@ export type Block =
        */
       confidence?: number;
       /** Source of enrichment for transparency in the inspect popover. */
-      enrichmentSource?: "model" | "google-places" | "manual";
+      /** "google-places" only appears on rows written before the keyless
+       *  OpenStreetMap ladder replaced it. */
+      enrichmentSource?: "model" | "openstreetmap" | "google-places" | "manual";
       /** Fields that were auto-filled by an enricher (not the user). */
       enrichedFields?: string[];
       /**

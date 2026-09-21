@@ -21,6 +21,20 @@ import { alpha, isDark, mix } from "./color";
 export const OPENFREEMAP_TILES = "https://tiles.openfreemap.org/planet";
 export const OPENFREEMAP_GLYPHS = "https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf";
 export const OPENFREEMAP_SPRITE = "https://tiles.openfreemap.org/sprites/ofm_f384/ofm";
+/** Ready-made OpenFreeMap style, used when a deployment opts out of the
+ *  skin-tinted plate by setting VITE_MAP_STYLE_URL. */
+export const DEFAULT_MAP_STYLE_URL = "https://tiles.openfreemap.org/styles/liberty";
+
+/**
+ * A whole style URL to load instead of the generated plate, when the
+ * deployment sets one. Absent (the normal case) = the skin-tinted style.
+ */
+export function mapStyleUrlOverride(): string | null {
+  const raw = import.meta.env["VITE_MAP_STYLE_URL"];
+  const url = typeof raw === "string" ? raw.trim() : "";
+  if (!url) return null;
+  return url === "default" ? DEFAULT_MAP_STYLE_URL : url;
+}
 
 export type MapPalette = {
   dark: boolean;

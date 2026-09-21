@@ -27,7 +27,7 @@ import {
   type GeocodeHit,
 } from "@/lib/maps/geocode-cache.server";
 import {
-  GOOGLE_PROVIDER,
+  NOMINATIM_PROVIDER,
   PHOTON_PROVIDER,
   resolveWithProviders,
   type GeocodeProvider,
@@ -80,14 +80,13 @@ export function shouldAttemptGeocode(
  */
 export async function resolveGeocodeQuery(
   query: string,
-  apiKey: string | undefined,
   deps: GeocodeDeps = {},
 ): Promise<{ hit: GeocodeHit | null; cacheHit: boolean; fault: boolean; provider: GeocodeProvider }> {
   const readCache = deps.readCache ?? readGeocodeCache;
   const writeCache = deps.writeCache ?? writeGeocodeCache;
   const cached = await readCache(query);
   if (cached) {
-    const provider = cached.provider === PHOTON_PROVIDER ? PHOTON_PROVIDER : GOOGLE_PROVIDER;
+    const provider = cached.provider === NOMINATIM_PROVIDER ? NOMINATIM_PROVIDER : PHOTON_PROVIDER;
     void captureServer("geocode_resolved", "geocoder", {
       provider,
       cache_hit: true,
@@ -98,7 +97,6 @@ export async function resolveGeocodeQuery(
   }
 
   const outcome = await resolveWithProviders(query, {
-    apiKey,
     fetchImpl: deps.fetchImpl ?? fetch,
     timeoutMs: FETCH_TIMEOUT_MS,
   });
@@ -127,16 +125,12 @@ export async function enrichBlocksWithCoords(
   {
     budgetMs = 3_000,
     destination,
-    /** Connector connection key. Callers resolve the environment value; an
-     *  explicit `undefined` disables enrichment entirely. */
-    apiKey,
     deps = {},
     maxPerRun = MAX_PLACES_PER_RUN,
     retryNeedsReview = false,
   }: {
     budgetMs?: number;
     destination?: string | null;
-    apiKey?: string;
     deps?: GeocodeDeps;
     /** Per-call cap: 8 on autosave, more for an explicit owner request. */
     maxPerRun?: number;
@@ -144,7 +138,6 @@ export async function enrichBlocksWithCoords(
   } = {},
 ): Promise<Block[]> {
   try {
-    if (!apiKey) return blocks;
     const now = deps.now ?? Date.now;
 
     const targets: Array<{ index: number; query: string }> = [];
@@ -159,7 +152,7 @@ export async function enrichBlocksWithCoords(
     await Promise.race([
       Promise.allSettled(
         targets.slice(0, maxPerRun).map(async ({ index, query }) => {
-          const { hit, fault, provider } = await resolveGeocodeQuery(query, apiKey, deps);
+          const { hit, fault, provider } = await resolveGeocodeQuery(query, deps);
           // A fault is a problem with us, not with the address: record nothing,
           // spend no attempt, so the next pass can still resolve this stop.
           if (fault) return;
