@@ -115,6 +115,7 @@ const TABS: {
 import { tripRef } from "@/lib/trip-ref";
 import { ElevateTagline } from "@/components/brand/ElevateTagline";
 import { TemplateCarousel } from "./TemplateCarousel";
+import { useComposeProgress, type ComposePhase } from "./useComposeProgress";
 import {
   trackTemplatePicked,
   trackTemplateSwitched,
