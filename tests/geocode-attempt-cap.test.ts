@@ -53,9 +53,9 @@ describe("geocode backfill: attempt cap and shared cache", () => {
     expect(b.geocode?.status).toBe("needs_review");
     expect(b.geocode?.attempts).toBe(MAX_GEOCODE_ATTEMPTS);
     expect(b.geocode?.query).toBe("Nowhere Café, 1 Rua Inexistente, Lisboa");
-    // The first save asked OpenStreetMap; later saves hit the cached miss; after
-    // the cap nothing is attempted at all.
-    expect(h.calls).toHaveLength(1);
+    // The first save walked both rungs of the ladder (Photon, then Nominatim);
+    // later saves hit the cached miss, and after the cap nothing is attempted.
+    expect(h.calls).toHaveLength(2);
   });
 
   it("stores coordinates and a resolved status on a hit", async () => {
