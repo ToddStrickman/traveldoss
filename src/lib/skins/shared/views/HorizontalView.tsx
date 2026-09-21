@@ -6,6 +6,7 @@ import { TopScrollbar } from "./TopScrollbar";
 import { ActivityDndContext, DraggableActivity, DroppableBucket } from "./dnd";
 import { ShadowItinerary, PlanBCue } from "../ShadowItinerary";
 import { HotelsQuickRef } from "../HotelsQuickRef";
+import { CalendarQuickRef } from "../CalendarQuickRef";
 import { BlankDayScaffold, isScaffoldTriggered } from "../BlankDayScaffold";
 import { useEditing } from "../Editable";
 import {
@@ -83,7 +84,10 @@ export function HorizontalView({ trip, blocks }: { trip: TripView; blocks: Block
         />
       )}
 
-      <HotelsQuickRef blocks={blocks} />
+      <div className="tds-quickrefs">
+        <HotelsQuickRef blocks={blocks} />
+        <CalendarQuickRef blocks={blocks} />
+      </div>
 
 
       {showScaffold ? (

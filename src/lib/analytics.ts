@@ -228,3 +228,13 @@ export const trackStopLocationEdited = (p: {
 
 export const trackHotelsQuickRefOpened = (p: { hotel_count: number }) =>
   capture("hotels_quickref_opened", p);
+
+/* ---------------- Calendar quick reference
+ *
+ * First use of the calendar panel and each date jump. Counts only — never a
+ * date, stop name or any trip content. */
+
+export const trackCalendarQuickRefOpened = (p: { day_count: number; has_flights: boolean }) =>
+  capture("calendar_quickref_opened", p);
+
+export const trackCalendarDayJumped = () => capture("calendar_day_jumped", {});
