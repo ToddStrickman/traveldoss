@@ -6,6 +6,7 @@ import { ActivityDndContext, DraggableActivity, DroppableBucket } from "./dnd";
 import type { PartOfDay } from "../itinerary";
 import { ShadowItinerary, PlanBCue } from "../ShadowItinerary";
 import { BlankDayScaffold, isScaffoldTriggered } from "../BlankDayScaffold";
+import { HotelsQuickRef } from "../HotelsQuickRef";
 import { useEditing } from "../Editable";
 import { Pencil, Copy, Check, ChevronDown, ExternalLink, Images } from "lucide-react";
 import { FlightEditSheet } from "../ActivityEditSheet";
