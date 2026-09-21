@@ -349,6 +349,8 @@ export function GridView({ trip, blocks }: { trip: TripView; blocks: Block[] }) 
         </section>
       ) : null}
 
+      <HotelsQuickRef blocks={blocks} />
+
       {it.preface.length > 0 ? (
         <section className="tds-grid-section">
           <h2 className="tds-grid-h2">Essentials</h2>
