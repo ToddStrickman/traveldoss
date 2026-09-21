@@ -14,7 +14,7 @@ export function EditingStatusBar({
   return (
     <div
       data-print="hide"
-      className="fixed right-4 z-40 hidden items-center rounded-full border border-white/15 bg-paper/85 px-3 py-2 backdrop-blur-md md:inline-flex"
+      className="fixed right-4 z-40 hidden items-center md:inline-flex"
       style={{ top: "max(1rem, env(safe-area-inset-top))" }}
     >
       <SharedDossierCard slug={slug} />
