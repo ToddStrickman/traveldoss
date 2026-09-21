@@ -5,6 +5,7 @@ import { ActivityCard, FlightStrip, partOrder } from "./parts";
 import { TopScrollbar } from "./TopScrollbar";
 import { ActivityDndContext, DraggableActivity, DroppableBucket } from "./dnd";
 import { ShadowItinerary, PlanBCue } from "../ShadowItinerary";
+import { HotelsQuickRef } from "../HotelsQuickRef";
 import { BlankDayScaffold, isScaffoldTriggered } from "../BlankDayScaffold";
 import { useEditing } from "../Editable";
 import {
