@@ -50,9 +50,24 @@ export function buildItinerary(blocks: Block[]): Itinerary {
   let currentDay: ItineraryDay | null = null;
   let currentPart: PartOfDay | null = null;
 
+  /** Older trips (and AI-parsed ones) carry flights without a `direction`.
+   *  When none is marked inbound, the last flight is the return leg so both
+   *  legs still reach the summary strip instead of being dropped. */
+  const flightIndexes: number[] = [];
+  blocks.forEach((b, i) => {
+    if (b.kind === "flight") flightIndexes.push(i);
+  });
+  const hasMarkedInbound = flightIndexes.some(
+    (i) => (blocks[i] as FlightBlock).direction === "inbound",
+  );
+  const impliedInboundIndex =
+    !hasMarkedInbound && flightIndexes.length > 1
+      ? flightIndexes[flightIndexes.length - 1]
+      : -1;
+
   blocks.forEach((block, index) => {
     if (block.kind === "flight") {
-      if (block.direction === "inbound") {
+      if (block.direction === "inbound" || index === impliedInboundIndex) {
         flights.inbound = block;
         flights.inboundIndex = index;
       } else if (!flights.outbound) {
