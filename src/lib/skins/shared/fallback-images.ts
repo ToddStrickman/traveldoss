@@ -192,6 +192,21 @@ async function searchOpenverse(
   return out;
 }
 
+/** Funereal subjects are never an acceptable automatic travel photo. Commons
+ *  ranks cemetery/tomb files high for many city queries ("Savannah" →
+ *  Bonaventure Cemetery), so they are rejected unless the traveler's own
+ *  query actually asks for one. */
+const FUNEREAL =
+  /\b(cemeter(?:y|ies)|graveyard|graves?|gravestone|headstone|tombstone|tombs?|crypt|mausoleum|columbarium|burial|funeral|necropolis|ossuary)\b/i;
+
+export function isFunerealImage(
+  image: { alt?: string; sourcePageUrl?: string },
+  query: string,
+): boolean {
+  if (FUNEREAL.test(query)) return false;
+  return FUNEREAL.test(`${image.alt ?? ""} ${image.sourcePageUrl ?? ""}`);
+}
+
 /** Try ranked queries against Commons, then top up from Openverse. */
 async function resolveFallbackImages(
   queries: string[],
@@ -204,6 +219,7 @@ async function resolveFallbackImages(
     for (const im of imgs) {
       if (collected.length >= want) return;
       if (seen.has(im.src)) continue;
+      if (isFunerealImage(im, sourceQuery)) continue;
       seen.add(im.src);
       collected.push({ ...im, sourceQuery });
     }

@@ -10,6 +10,7 @@ import * as React from "react";
 import { Link2, Check } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { SandBorder } from "@/components/flow/SandBorder";
 import { SITE_URL } from "@/lib/site";
 
 export function copyDossierLink(slug: string) {
@@ -51,23 +52,32 @@ export function SharedDossierCard({
   };
 
   return (
-    <button
-      type="button"
-      onClick={onCopy}
-      data-print="hide"
-      title={`Share this dossier — ${url}`}
-      aria-label={`Copy shareable link to this dossier`}
+    /* One clean champagne-gold ring with drifting sand grains — the same
+       border language as the layout switcher. Purely local/decorative, so it
+       renders identically offline. */
+    <span
       className={cn(
-        "tap group inline-flex min-h-11 items-center gap-2 rounded-full border border-white/15 bg-paper/85 px-3 py-2 text-[10px] font-medium uppercase tracking-[0.32em] text-ink-soft outline outline-1 outline-offset-[3px] outline-white/15 backdrop-blur-md transition-colors hover:border-seal hover:outline-seal hover:text-seal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal",
+        "td-sand-shell relative inline-flex rounded-full p-px",
         className,
       )}
+      data-print="hide"
     >
-      {copied ? (
-        <Check className="h-3.5 w-3.5 text-seal" aria-hidden />
-      ) : (
-        <Link2 className="h-3.5 w-3.5" aria-hidden />
-      )}
-      {compact ? null : <span>{copied ? "Copied" : "Share"}</span>}
-    </button>
+      <SandBorder />
+      <button
+        type="button"
+        onClick={onCopy}
+        data-print="hide"
+        title={`Share this dossier — ${url}`}
+        aria-label={`Copy shareable link to this dossier`}
+        className="tap group relative inline-flex min-h-11 items-center gap-2 rounded-full bg-paper/85 px-4 py-2 text-[10px] font-medium uppercase tracking-[0.32em] text-ink-soft backdrop-blur-md transition-colors hover:bg-seal/5 hover:text-seal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal motion-reduce:transition-none"
+      >
+        {copied ? (
+          <Check className="h-3.5 w-3.5 text-seal" aria-hidden />
+        ) : (
+          <Link2 className="h-3.5 w-3.5" aria-hidden />
+        )}
+        {compact ? null : <span>{copied ? "Copied" : "Share"}</span>}
+      </button>
+    </span>
   );
 }

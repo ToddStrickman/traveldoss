@@ -16,7 +16,7 @@ import { EditableText, useEditing } from "../Editable";
 import { PlaceSheet, usePointerCoarse } from "@/components/mobile/PlaceSheet";
 import type { FlightBlock, ActivityBlock, PartOfDay } from "../itinerary";
 import { extractUrls, prettyDomain } from "@/lib/links";
-import { Pencil, Trash2, Sunrise, Sun, Moon } from "lucide-react";
+import { Pencil, Plus, Trash2, Sunrise, Sun, Moon } from "lucide-react";
 import { ActivityEditSheet, FlightEditSheet } from "../ActivityEditSheet";
 import { DayPhotoUploader, useDayPhotoUpload } from "./DayPhotoUploader";
 import { AddPhotoDialog } from "./AddPhotoDialog";
@@ -1179,17 +1179,70 @@ export function FlightStrip({
   inbound,
   outboundIndex,
   inboundIndex,
+  slots,
+  blocksLength,
 }: {
   outbound?: FlightBlock;
   inbound?: FlightBlock;
   outboundIndex?: number;
   inboundIndex?: number;
+  /** Which legs this strip is responsible for. While editing, a leg with no
+   *  flight yet shows an "add" row so both directions are always reachable. */
+  slots?: Array<"outbound" | "inbound">;
+  /** Total block count, so a new return flight lands at the end. */
+  blocksLength?: number;
 }) {
-  if (!outbound && !inbound) return null;
+  const { editing } = useEditing();
+  const shows = slots ?? (["outbound", "inbound"] as const).filter(
+    (s) => (s === "outbound" ? outbound : inbound) != null,
+  );
+  const showOutboundAdd = editing && shows.includes("outbound") && !outbound;
+  const showInboundAdd = editing && shows.includes("inbound") && !inbound;
+  if (!outbound && !inbound && !showOutboundAdd && !showInboundAdd) return null;
   return (
     <div className="tds-flightstrip" data-block="flightstrip" data-print="hide-empty">
       {outbound ? <FlightRow flight={outbound} label="Departure" index={outboundIndex} /> : null}
+      {showOutboundAdd ? <AddFlightRow direction="outbound" afterIndex={-1} /> : null}
       {inbound ? <FlightRow flight={inbound} label="Return" index={inboundIndex} /> : null}
+      {showInboundAdd ? (
+        <AddFlightRow direction="inbound" afterIndex={(blocksLength ?? 0) - 1} />
+      ) : null}
+    </div>
+  );
+}
+
+/** Editing-only row that creates the missing leg in place. */
+function AddFlightRow({
+  direction,
+  afterIndex,
+}: {
+  direction: "outbound" | "inbound";
+  afterIndex: number;
+}) {
+  const { onBlockAdd } = useEditing();
+  const label = direction === "outbound" ? "Departure" : "Return";
+  return (
+    <div className="tds-flightstrip-row" data-print="hide">
+      <div className="tds-flightstrip-leg">
+        <span className="tds-flightstrip-icon" aria-hidden>
+          <AirfareIcon />
+        </span>
+        <span className="tds-flightstrip-label">{label}</span>
+      </div>
+      <button
+        type="button"
+        className="tds-flightstrip-add tap"
+        onClick={() =>
+          onBlockAdd(afterIndex, "flight", {
+            kind: "flight",
+            direction,
+          } as Partial<Block>)
+        }
+      >
+        <Plus size={14} aria-hidden />
+        <span>Add {direction === "outbound" ? "departure" : "return"} flight</span>
+      </button>
+      <span />
     </div>
   );
 }

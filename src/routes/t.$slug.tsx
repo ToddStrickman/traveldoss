@@ -656,6 +656,8 @@ function DossierPage() {
             ? { kind: "section", title: "New section" }
             : kind === "note"
             ? { kind: "note", text: "" }
+            : kind === "flight"
+            ? { kind: "flight", direction: "outbound" }
             : { kind: "paragraph", text: "" };
         const fresh = { ...(base as object), ...(seed as object) } as Block;
         setSnap((s) => {

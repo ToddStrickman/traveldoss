@@ -60,7 +60,12 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
         <BlankDayScaffold blocks={blocks} />
       ) : (
         <>
-      <FlightStrip outbound={it.flights.outbound} outboundIndex={it.flights.outboundIndex} />
+      <FlightStrip
+        outbound={it.flights.outbound}
+        outboundIndex={it.flights.outboundIndex}
+        slots={["outbound"]}
+        blocksLength={blocks.length}
+      />
 
       {it.preface.length > 0 ? (
         <section className="tds-preface" aria-label="Trip essentials">
@@ -226,7 +231,12 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
 
       {editing ? <AddDayButton onAdd={addDay} /> : null}
 
-      <FlightStrip inbound={it.flights.inbound} inboundIndex={it.flights.inboundIndex} />
+      <FlightStrip
+        inbound={it.flights.inbound}
+        inboundIndex={it.flights.inboundIndex}
+        slots={["inbound"]}
+        blocksLength={blocks.length}
+      />
 
       <ShadowItinerary itinerary={it} />
         </>
