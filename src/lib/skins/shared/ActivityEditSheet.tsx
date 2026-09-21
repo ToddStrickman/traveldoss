@@ -12,8 +12,11 @@
  * block+field — a typing session is one undo step.
  */
 import * as React from "react";
-import { Trash2 } from "lucide-react";
+import { Trash2, MapPin, Loader2 } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
 import { TdSheet } from "@/components/mobile/TdSheet";
+import { locateOneStop } from "@/lib/maps/locate-stop.functions";
+import { trackStopLocationEdited, trackStopLocationLookupRequested } from "@/lib/analytics";
 import { useEditing } from "./Editable";
 import type { Block } from "../types";
 
