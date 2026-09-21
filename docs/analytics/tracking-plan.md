@@ -172,3 +172,17 @@ Lengths and counts only — never the query text, never a coordinate.
 `provider` on `geocode_resolved` is the free/paid split: it answers "is
 geocoding cheap?" directly. A fault is deliberately a separate event from a
 miss, because a fault costs nothing and means nothing about the address.
+
+### Stop location editor (client, `src/lib/skins/shared/ActivityEditSheet.tsx`)
+
+The escape hatch when automatic lookup misses. Outcomes and counts only —
+never an address, a place name or a coordinate.
+
+| Event                            | When                                                            | Properties                                                                   |
+| -------------------------------- | --------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `stop_location_lookup_requested` | The owner presses "Find this place" for a single stop            | `outcome` (`found` \| `not_found` \| `unavailable`), `had_address`, `surface` (`edit_sheet` \| `map`) |
+| `stop_location_edited`           | The owner sets a position by hand, clears it, or hides the stop  | `field` (`coords` \| `map_hidden`), `via` (`typed` \| `drag` \| `cleared`)    |
+
+`outcome: "not_found"` is the honest denominator for "how often does the free
+ladder leave a traveller stranded" — the number that decides whether pin
+dragging (Phase 3) is worth building beyond convenience.
