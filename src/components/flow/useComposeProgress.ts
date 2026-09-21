@@ -63,7 +63,7 @@ export function useComposeProgress(
       return;
     }
     const ceiling = CEILING[phase];
-    const tau = TAU[phase];
+    const tau = TAU[phase] * sizeFactor(sizeHint);
     const start = floor.current;
     const tick = () => {
       const elapsed = Date.now() - phaseStart.current;
