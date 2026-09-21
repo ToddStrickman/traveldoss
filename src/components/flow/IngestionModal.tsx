@@ -882,7 +882,7 @@ export function IngestionModal({
               </div>
 
               {/* Single textarea */}
-              <div onDragOver={(e) => e.preventDefault()} onDrop={onDrop}>
+              <div onDragOver={(e) => e.preventDefault()} onDrop={onDrop} className={parsing ? "hidden" : ""}>
                   <textarea
                     value={tab === "generate" ? genPrompt : text}
                     onChange={(e) =>
