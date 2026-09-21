@@ -36,9 +36,9 @@ export function BlankDayScaffold({ blocks }: { blocks: Block[] }) {
       { kind: "section", title: "Evening", partOfDay: "evening" },
     ];
     const next: Block[] = [];
-    if (opts.flight === "outbound") {
-      next.push({ kind: "flight", direction: "outbound" });
-    }
+    // Both legs exist by default on every real trip. A one-way traveler
+    // deletes the return leg from its edit sheet.
+    next.push({ kind: "flight", direction: "outbound" });
     next.push(day);
     for (const s of sections) {
       next.push(s);
@@ -46,9 +46,7 @@ export function BlankDayScaffold({ blocks }: { blocks: Block[] }) {
         next.push({ kind: "place", name: "", category: opts.place.category });
       }
     }
-    if (opts.flight === "inbound") {
-      next.push({ kind: "flight", direction: "inbound" });
-    }
+    next.push({ kind: "flight", direction: "inbound" });
     onBlocksReplace?.(next);
   }
 
