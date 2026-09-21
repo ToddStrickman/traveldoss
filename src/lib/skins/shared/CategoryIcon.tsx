@@ -89,7 +89,7 @@ export function SeeIcon(props: IconProps) {
   );
 }
 
-/** Transit — sedan profile for taxi / ferry / transfer / private car. */
+/** Transit — sedan profile for taxi / transfer / private car. */
 export function TransitIcon(props: IconProps) {
   return (
     <svg {...base} {...props}>
@@ -98,6 +98,112 @@ export function TransitIcon(props: IconProps) {
       <path d="M21 14v3h-2v-1" />
       <circle cx="7.5" cy="14.5" r="1.5" />
       <circle cx="16.5" cy="14.5" r="1.5" />
+    </svg>
+  );
+}
+
+/** Plane — side-profile jet for airport runs and flight legs. */
+export function PlaneIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M3 12.5 21 5l-4.5 7.5L21 20l-7-2.5-2.5 4-1.5-4.5L4 14z" transform="translate(0,-2) scale(0.9) translate(1.3,2.5)" />
+    </svg>
+  );
+}
+
+/** Train — front-view locomotive for rail legs. */
+export function TrainIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M5 4h14a1 1 0 0 1 1 1v10a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V5a1 1 0 0 1 1-1z" />
+      <path d="M4 11h16" />
+      <circle cx="8.5" cy="14.5" r="0.9" />
+      <circle cx="15.5" cy="14.5" r="0.9" />
+      <path d="m8 18-2 3M16 18l2 3" />
+    </svg>
+  );
+}
+
+/** Boat — ferry / water taxi / vaporetto hull on water. */
+export function BoatIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M3 15h18l-2.5 3.5h-13L3 15z" />
+      <path d="M7 15v-3.5h10V15" />
+      <path d="M11 11.5V8h2v3.5" />
+      <path d="M5 21c1.5 1 3.5 1 5 0M14 21c1.5 1 3.5 1 5 0" />
+    </svg>
+  );
+}
+
+/** Tram / metro — front car on rails with overhead pickup. */
+export function TramIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <rect x="5" y="5" width="14" height="12" rx="2.5" />
+      <path d="M5 11.5h14" />
+      <path d="M12 5V2.5M9 2.5h6" />
+      <circle cx="9" cy="14.5" r="0.9" />
+      <circle cx="15" cy="14.5" r="0.9" />
+      <path d="m8 17-1.5 3M16 17l1.5 3" />
+    </svg>
+  );
+}
+
+/** Bus / coach / shuttle — front view. */
+export function BusIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <rect x="4" y="4" width="16" height="13" rx="2.5" />
+      <path d="M4 10.5h16" />
+      <circle cx="8.5" cy="14" r="0.9" />
+      <circle cx="15.5" cy="14" r="0.9" />
+      <path d="M6.5 17v2M17.5 17v2" />
+    </svg>
+  );
+}
+
+/** Cocktail / aperitivo — coupe glass for bars and drinks stops. */
+export function CocktailIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M4 5h16l-8 8-8-8z" />
+      <path d="M12 13v6" />
+      <path d="M8.5 19h7" />
+      <path d="M15 3.5l1.5 1.5" />
+    </svg>
+  );
+}
+
+/** Beach / swim — umbrella over a shoreline. */
+export function BeachIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M12 3a7 7 0 0 1 7 7H5a7 7 0 0 1 7-7z" />
+      <path d="M12 10v7.5a2 2 0 0 0 4 0" />
+      <path d="M3 21h18" />
+    </svg>
+  );
+}
+
+/** Viewpoint / landmark — binoculars for overlooks and must-see spots. */
+export function LandmarkIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <circle cx="7" cy="16" r="3.2" />
+      <circle cx="17" cy="16" r="3.2" />
+      <path d="M10.2 16h3.6" />
+      <path d="M5 13 8 5h3l-1.5 6M19 13 16 5h-3l1.5 6" />
+    </svg>
+  );
+}
+
+/** Shopping — tote bag. */
+export function ShoppingIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M5 8h14l-1 12a2 2 0 0 1-2 1.8H8A2 2 0 0 1 6 20L5 8z" />
+      <path d="M8.5 8V6.5a3.5 3.5 0 0 1 7 0V8" />
     </svg>
   );
 }
