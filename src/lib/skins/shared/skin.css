@@ -70,6 +70,25 @@
   font-size: 13px;
 }
 .tds-flightstrip-row + .tds-flightstrip-row { border-top: 1px solid var(--tds-rule); }
+/* Editing-only "add this leg" row: reads as a dashed slot, never as data. */
+.tds-flightstrip-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px dashed var(--tds-rule);
+  border-radius: 999px;
+  background: transparent;
+  font-size: 12px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--tds-soft) 78%, var(--tds-ink));
+  cursor: pointer;
+  transition: border-color .2s ease, color .2s ease;
+}
+.tds-flightstrip-add:hover { border-color: var(--tds-accent); color: var(--tds-accent); }
+@media (prefers-reduced-motion: reduce) { .tds-flightstrip-add { transition: none; } }
 .tds-flightstrip-leg {
   display: inline-flex; align-items: center; gap: 10px;
 }

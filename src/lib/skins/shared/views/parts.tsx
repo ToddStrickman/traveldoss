@@ -16,7 +16,7 @@ import { EditableText, useEditing } from "../Editable";
 import { PlaceSheet, usePointerCoarse } from "@/components/mobile/PlaceSheet";
 import type { FlightBlock, ActivityBlock, PartOfDay } from "../itinerary";
 import { extractUrls, prettyDomain } from "@/lib/links";
-import { Pencil, Trash2, Sunrise, Sun, Moon } from "lucide-react";
+import { Pencil, Plus, Trash2, Sunrise, Sun, Moon } from "lucide-react";
 import { ActivityEditSheet, FlightEditSheet } from "../ActivityEditSheet";
 import { DayPhotoUploader, useDayPhotoUpload } from "./DayPhotoUploader";
 import { AddPhotoDialog } from "./AddPhotoDialog";
