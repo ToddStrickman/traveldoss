@@ -579,8 +579,11 @@ async function enrichPlacesViaWebSearch(
   // a shared community service, so a 60-stop paste must not fan out. Anything
   // past the cap is picked up by the save-time backfill (geo.server.ts) on the
   // next autosave. Concurrency stays at 2 out of courtesy to OSM.
-  const PER_RUN_CAP = 24;
-  const CONCURRENCY = 2;
+  // Tuned for wall-clock: the interactive parse only needs the first screenful
+  // of stops enriched — the rest backfill on the first autosave — so the cap
+  // is small and the fan-out wider. Worst case is now ~2 waves, not ~12.
+  const PER_RUN_CAP = 10;
+  const CONCURRENCY = 5;
   if (targets.length > PER_RUN_CAP) {
     console.warn(
       `[parse-ai] enriching ${PER_RUN_CAP}/${targets.length} places this run; the rest backfill on save`,
