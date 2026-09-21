@@ -3729,3 +3729,115 @@ button.tds-add-day[data-burst] .tds-add-day-plus {
   margin: 0; font-size: 12.5px; line-height: 1.6;
   color: color-mix(in oklab, var(--tds-soft) 78%, var(--tds-ink));
 }
+
+/* ------------------------------------------------------------------
+ * Calendar quick reference — month strip + agenda.
+ * Mobile-first; reserved marker row keeps the strip from shifting.
+ * ------------------------------------------------------------------ */
+.tds-calref { margin: var(--tds-s2) 0; }
+.tds-calref-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid var(--tds-rule);
+  border-radius: 999px;
+  background: var(--tds-card);
+  font-size: 11px;
+  letter-spacing: .32em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: color-mix(in oklab, var(--tds-soft) 78%, var(--tds-ink));
+  cursor: pointer;
+  transition: border-color .2s ease, color .2s ease;
+}
+.tds-calref-btn:hover { border-color: var(--tds-accent); color: var(--tds-accent); }
+@media (prefers-reduced-motion: reduce) { .tds-calref-btn { transition: none; } }
+.tds-calref-icon { color: var(--tds-accent); display: inline-flex; }
+.tds-calref-count {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 20px; height: 20px; padding: 0 5px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--tds-accent) 18%, transparent);
+  color: var(--tds-accent);
+  font-size: 10px; letter-spacing: .08em;
+}
+
+.tds-calref-panel { display: flex; flex-direction: column; min-height: 0; height: 100%; }
+.tds-calstrip {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  padding: 2px 0 12px;
+  -webkit-overflow-scrolling: touch;
+}
+.tds-calstrip-cell {
+  flex: none;
+  scroll-snap-align: start;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2px;
+  min-width: 52px; min-height: 64px;
+  padding: 6px 8px;
+  border: 1px solid var(--tds-rule);
+  border-radius: 12px;
+  background: rgb(255 255 255 / .03);
+  color: color-mix(in oklab, var(--tds-soft) 78%, var(--tds-ink));
+  cursor: pointer;
+  transition: border-color .2s ease, color .2s ease;
+}
+.tds-calstrip-cell:hover { border-color: var(--tds-accent); color: var(--tds-accent); }
+.tds-calstrip-cell[data-hotel] { background: color-mix(in oklab, var(--tds-accent) 8%, transparent); }
+@media (prefers-reduced-motion: reduce) { .tds-calstrip-cell { transition: none; } }
+.tds-calstrip-top { font-size: 9.5px; letter-spacing: .22em; text-transform: uppercase; }
+.tds-calstrip-bottom { font-size: 16px; line-height: 1; font-weight: 600; color: var(--tds-ink); }
+/* Reserved: markers depend on content resolving, so the height is fixed. */
+.tds-calstrip-marks {
+  display: flex; align-items: center; justify-content: center; gap: 3px;
+  height: 12px; color: var(--tds-accent);
+}
+.tds-calstrip-dot { width: 4px; height: 4px; border-radius: 999px; background: currentColor; }
+
+.tds-calagenda { overflow-y: auto; padding-bottom: 28px; display: grid; gap: 18px; }
+.tds-calday { display: grid; gap: 6px; }
+.tds-calday-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.tds-calday-head h3 {
+  margin: 0; font-size: 11px; letter-spacing: .3em; text-transform: uppercase;
+  color: var(--tds-accent);
+}
+.tds-calday-head p {
+  margin: 0; font-size: 11.5px;
+  color: color-mix(in oklab, var(--tds-soft) 78%, var(--tds-ink));
+}
+.tds-calday-empty {
+  margin: 0; font-size: 12px;
+  color: color-mix(in oklab, var(--tds-soft) 78%, var(--tds-ink));
+}
+.tds-calrow {
+  display: grid;
+  grid-template-columns: 52px 20px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 40px;
+  padding: 4px 0;
+  border-top: 1px solid rgb(255 255 255 / .06);
+  text-align: left;
+  font-size: 13px;
+  color: var(--tds-ink);
+}
+.tds-calrow-tap { min-height: 44px; cursor: pointer; background: none; }
+.tds-calrow-tap:hover .tds-calrow-body { color: var(--tds-accent); }
+.tds-calrow-time {
+  font-size: 11px; letter-spacing: .12em;
+  color: color-mix(in oklab, var(--tds-soft) 78%, var(--tds-ink));
+}
+.tds-calrow-icon { display: inline-flex; color: var(--tds-accent); }
+.tds-calrow-icon svg { width: 15px; height: 15px; }
+.tds-calrow-dot { width: 5px; height: 5px; border-radius: 999px; background: currentColor; }
+.tds-calrow-body { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (min-width: 768px) {
+  .tds-calrow { grid-template-columns: 64px 22px minmax(0, 1fr); font-size: 13.5px; }
+}
+.tds-quickrefs { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }

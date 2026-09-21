@@ -31,9 +31,9 @@ async function runParser(text: string): Promise<AiResult> {
   // Import lazily so the file can load even without the gateway helper
   // resolving its env at module init time.
   const mod = await import("../src/lib/itinerary/parse-ai.functions");
-  const fn = mod.parseItineraryAi;
-  // createServerFn returns a callable; invoke it directly in tests.
-  return (await fn({ data: { text, source: "text" } })) as AiResult;
+  // The createServerFn wrapper resolves to nothing outside a request
+  // context, so tests exercise the handler's core directly.
+  return (await mod.parseItineraryAiCore({ text, source: "text" })) as AiResult;
 }
 
 runOrSkip("AI parser: shuffled day order is renumbered chronologically", () => {

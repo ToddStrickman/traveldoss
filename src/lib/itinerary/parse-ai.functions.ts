@@ -7,6 +7,7 @@ import { lookupPlaceFacts, type PlaceFacts } from "@/lib/maps/place-lookup.serve
 import { parseDropInWithMeta, stripEmoji } from "@/lib/itinerary/parse";
 import { normalizeParsedShape } from "@/lib/itinerary/normalize-ai";
 import { isCreditsMessage, isRateLimitMessage } from "@/lib/itinerary/ai-errors";
+import { flagReconstructedPlaces } from "@/lib/itinerary/reconstructed";
 import type { DebugAttempt, DebugReport } from "@/lib/itinerary/debug-report";
 
 /**
@@ -233,6 +234,7 @@ export async function parseItineraryAiCore(data: ParseItineraryInput) {
     await enrichPlacesViaWebSearch(fallback.blocks, fallback.destination, gateway).catch(
       (enrichErr: unknown) => console.error("[parse-ai] fallback enrichment failed:", enrichErr),
     );
+    flagReconstructedPlaces(fallback.blocks, cleanText);
     const debugReport: DebugReport = {
       source: "parse-ai",
       createdAt: new Date().toISOString(),
@@ -262,6 +264,11 @@ export async function parseItineraryAiCore(data: ParseItineraryInput) {
       console.error("[parse-ai] enrichment fallback failed:", err);
     },
   );
+
+  // Enrichment can only raise confidence, and the model floors its own rating
+  // at 0.85 even for stops it invented — so mark the reconstructed ones here,
+  // against the traveler's own words.
+  flagReconstructedPlaces(blocks, cleanText);
 
   const result = {
     destination: parsed.destination ?? null,
