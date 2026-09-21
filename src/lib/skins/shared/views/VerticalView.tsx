@@ -71,6 +71,8 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
         blocksLength={blocks.length}
       />
 
+      <HotelsQuickRef blocks={blocks} />
+
       {it.preface.length > 0 ? (
         <section className="tds-preface" aria-label="Trip essentials">
           {it.preface.map(({ activity, index }) => (
