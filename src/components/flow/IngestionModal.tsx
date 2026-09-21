@@ -979,10 +979,26 @@ export function IngestionModal({
             <button
               onClick={submit}
               disabled={!template || parsing || !hasContent}
-              className={`group inline-flex items-center gap-4 rounded-md border border-seal/40 bg-seal/15 py-3 pl-5 pr-3 text-[11px] font-medium uppercase tracking-[0.4em] text-seal transition-elegant hover:border-seal hover:bg-seal hover:text-paper disabled:opacity-40 ${
+              {...(parsing
+                ? {
+                    role: "progressbar" as const,
+                    "aria-valuemin": 0,
+                    "aria-valuemax": 100,
+                    "aria-valuenow": composePct,
+                  }
+                : {})}
+              className={`group relative isolate overflow-hidden inline-flex items-center gap-4 rounded-md border border-seal/40 bg-seal/15 py-3 pl-5 pr-3 text-[11px] font-medium uppercase tracking-[0.4em] text-seal transition-elegant hover:border-seal hover:bg-seal hover:text-paper disabled:opacity-40 ${
                 cheers ? "td-cheers" : ""
               }`}
             >
+            {/* Shade fill: reserved layer, so no layout shift as it grows. */}
+            {parsing ? (
+              <span
+                aria-hidden
+                className="absolute inset-y-0 left-0 -z-10 bg-seal/25 motion-safe:transition-[width] motion-safe:duration-200 motion-safe:ease-linear"
+                style={{ width: `${composePct}%` }}
+              />
+            ) : null}
             <span>
               {parsing
                 ? tab === "generate"
@@ -992,8 +1008,11 @@ export function IngestionModal({
                 ? "Continue"
                 : "Mint Dossier"}
             </span>
-            <span aria-hidden className="inline-flex h-7 w-7 items-center justify-center rounded-sm border border-seal/40 transition-elegant group-hover:border-paper/40">
-              →
+            <span
+              aria-hidden
+              className="inline-flex h-7 min-w-7 items-center justify-center rounded-sm border border-seal/40 px-1 tabular-nums transition-elegant group-hover:border-paper/40"
+            >
+              {parsing ? `${composePct}%` : "→"}
             </span>
             </button>
           </div>
