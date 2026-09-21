@@ -78,6 +78,8 @@ export function DossierMapOverlay({
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const closeRef = useRef<HTMLButtonElement | null>(null);
   const canvasRef = useRef<MapCanvasHandle | null>(null);
+  const mapAreaRef = useRef<HTMLDivElement | null>(null);
+  const captionRef = useRef<HTMLDivElement | null>(null);
   const openedAt = useRef(Date.now());
   const selections = useRef(0);
   const [status, setStatus] = useState<MapStatus>("loading");
