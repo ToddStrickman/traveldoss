@@ -627,7 +627,7 @@ async function fillFromOpenStreetMap(
       : place.name;
   try {
     // Bounded: a slow lookup must never stall the whole parse.
-    const facts = await lookupPlaceFacts(query, { timeoutMs: 3_500 });
+    const facts = await lookupPlaceFacts(query, { timeoutMs: 2_500 });
     if (!facts) {
       // Record the miss so the save-time backfill's attempt cap counts it.
       if (place.lat == null && !place.geocode) {
