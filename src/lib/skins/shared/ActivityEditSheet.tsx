@@ -145,6 +145,7 @@ export function ActivityEditSheet({
             onChange={(e) => set({ address: e.target.value || undefined })}
           />
         </Field>
+        <LocationSection activity={activity} set={set} />
         <div className="grid grid-cols-2 gap-3">
           <Field label="Phone">
             <input
