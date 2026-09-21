@@ -203,3 +203,20 @@ export const trackMapLocateRequested = (p: {
   unresolved: number;
   configured: boolean;
 }) => capture("map_locate_requested", p);
+
+/* ---------------- Stop location editor (see docs/analytics/tracking-plan.md)
+ *
+ * The escape hatch for a stop no provider can find. Counts and outcomes only:
+ * never an address, a place name or a coordinate. */
+
+export const trackStopLocationLookupRequested = (p: {
+  outcome: "found" | "not_found" | "unavailable";
+  had_address: boolean;
+  surface: "edit_sheet" | "map";
+}) => capture("stop_location_lookup_requested", p);
+
+export const trackStopLocationEdited = (p: {
+  field: "coords" | "map_hidden";
+  /** How the owner set it: typed the numbers, dragged the pin, or cleared it. */
+  via: "typed" | "drag" | "cleared";
+}) => capture("stop_location_edited", p);

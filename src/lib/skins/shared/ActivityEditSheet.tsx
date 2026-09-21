@@ -12,8 +12,11 @@
  * block+field — a typing session is one undo step.
  */
 import * as React from "react";
-import { Trash2 } from "lucide-react";
+import { Trash2, MapPin, Loader2 } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
 import { TdSheet } from "@/components/mobile/TdSheet";
+import { locateOneStop } from "@/lib/maps/locate-stop.functions";
+import { trackStopLocationEdited, trackStopLocationLookupRequested } from "@/lib/analytics";
 import { useEditing } from "./Editable";
 import type { Block } from "../types";
 
@@ -74,6 +77,164 @@ function SheetFooter({
       >
         Done
       </button>
+    </div>
+  );
+}
+
+/**
+ * Location — the escape hatch for any stop the free lookup misses.
+ *
+ * "Find this place" runs the keyless Photon → Nominatim ladder for this one
+ * stop. Latitude and longitude stay editable by hand for the rare venue no
+ * service knows. Anything set here is marked `manual`, which every automatic
+ * pass (save-time backfill, locate pass, AI refine carry-over) leaves alone.
+ *
+ * The status line always occupies a row, so nothing shifts when it changes.
+ */
+function LocationSection({
+  activity,
+  set,
+}: {
+  activity: ActivityBlock;
+  set: (patch: Partial<ActivityBlock>) => void;
+}) {
+  const findPlace = useServerFn(locateOneStop);
+  const [busy, setBusy] = React.useState(false);
+  const [message, setMessage] = React.useState<string | null>(null);
+
+  const located = activity.lat != null && activity.lng != null;
+  const manual = activity.geocode?.status === "manual";
+
+  const status = message
+    ? message
+    : manual && located
+      ? "Position set by you — automatic lookups leave it alone."
+      : located
+        ? "Position found."
+        : activity.geocode?.status === "needs_review"
+          ? "Not found yet — add an address or type the position."
+          : "No position yet.";
+
+  /** One field at a time: a half-typed pair must not wipe the other number. */
+  const setCoords = (patch: { lat?: number | undefined } | { lng?: number | undefined }) => {
+    const next = { lat: activity.lat, lng: activity.lng, ...patch };
+    const complete = next.lat != null && next.lng != null;
+    set({
+      lat: next.lat,
+      lng: next.lng,
+      ...(complete
+        ? {
+            geocode: {
+              status: "manual" as const,
+              provider: "manual" as const,
+              attempts: activity.geocode?.attempts ?? 0,
+              at: new Date().toISOString(),
+            },
+          }
+        : {}),
+    });
+    trackStopLocationEdited({ field: "coords", via: complete ? "typed" : "cleared" });
+  };
+
+  const onFind = async () => {
+    setBusy(true);
+    setMessage(null);
+    try {
+      const res = await findPlace({
+        data: { name: activity.name, address: activity.address },
+      });
+      trackStopLocationLookupRequested({
+        outcome: res.status,
+        had_address: !!activity.address,
+        surface: "edit_sheet",
+      });
+      if (res.status === "found") {
+        set({
+          lat: res.lat,
+          lng: res.lng,
+          geocode: {
+            status: "resolved",
+            provider: res.provider === "nominatim" ? "nominatim" : "photon",
+            attempts: (activity.geocode?.attempts ?? 0) + 1,
+            query: res.query,
+            at: new Date().toISOString(),
+          },
+        });
+        setMessage("Found it — this stop is on the map.");
+      } else if (res.status === "not_found") {
+        setMessage("No match. Try a fuller address, or type the position below.");
+      } else {
+        setMessage("The lookup service didn't answer. Try again in a moment.");
+      }
+    } catch {
+      setMessage("The lookup service didn't answer. Try again in a moment.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const numeric = (raw: string): number | undefined => {
+    const n = Number(raw);
+    return raw.trim() !== "" && Number.isFinite(n) ? n : undefined;
+  };
+
+  return (
+    <div className="flex flex-col gap-2.5 rounded-md border border-white/10 p-3">
+      <div className="flex items-center justify-between gap-3">
+        <span className={labelCls}>Location</span>
+        <button
+          type="button"
+          onClick={onFind}
+          disabled={busy}
+          className="inline-flex min-h-11 items-center gap-2 rounded-full border border-white/15 px-4 text-[10px] font-medium uppercase tracking-[0.25em] text-ink transition-colors hover:border-seal disabled:opacity-60"
+        >
+          {busy ? (
+            <Loader2 size={13} aria-hidden className="motion-safe:animate-spin" />
+          ) : (
+            <MapPin size={13} aria-hidden />
+          )}
+          {busy ? "Finding" : "Find this place"}
+        </button>
+      </div>
+      <p
+        className="min-h-[2.25em] text-[11px] leading-snug"
+        style={{ color: "color-mix(in oklab, var(--tds-soft, var(--tds-accent)) 78%, var(--tds-ink))" }}
+        aria-live="polite"
+      >
+        {status}
+      </p>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Latitude">
+          <input
+            className={inputCls}
+            inputMode="decimal"
+            value={activity.lat ?? ""}
+            placeholder="41.8986"
+            onChange={(e) => setCoords({ lat: numeric(e.target.value) })}
+          />
+        </Field>
+        <Field label="Longitude">
+          <input
+            className={inputCls}
+            inputMode="decimal"
+            value={activity.lng ?? ""}
+            placeholder="12.4769"
+            onChange={(e) => setCoords({ lng: numeric(e.target.value) })}
+          />
+        </Field>
+      </div>
+      <label className="flex min-h-11 items-center gap-2.5 text-[11px] text-ink-soft">
+        <input
+          type="checkbox"
+          className="size-4 accent-[var(--tds-accent)]"
+          checked={!!activity.mapHidden}
+          onChange={(e) => {
+            set({ mapHidden: e.target.checked || undefined });
+            trackStopLocationEdited({ field: "map_hidden", via: "typed" });
+          }}
+        />
+        Keep this stop off the map
+      </label>
     </div>
   );
 }
@@ -142,6 +303,7 @@ export function ActivityEditSheet({
             onChange={(e) => set({ address: e.target.value || undefined })}
           />
         </Field>
+        <LocationSection activity={activity} set={set} />
         <div className="grid grid-cols-2 gap-3">
           <Field label="Phone">
             <input
