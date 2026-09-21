@@ -246,6 +246,16 @@ export function IngestionModal({
   type GenPhase = "idle" | "drafting" | "structuring" | "done";
   const [genPhase, setGenPhase] = useState<GenPhase>("idle");
 
+  // Percentage + shade fill on the compose button while work is in flight.
+  const composePhase: ComposePhase = !parsing
+    ? "idle"
+    : tab === "generate"
+      ? genPhase === "idle"
+        ? "drafting"
+        : genPhase
+      : "reading";
+  const composePct = useComposeProgress(parsing, composePhase);
+
   // ── Generate-tab state ───────────────────────────────────────────────
   const [genPrompt, setGenPrompt] = useState("");
   const [genDestination, setGenDestination] = useState("");
