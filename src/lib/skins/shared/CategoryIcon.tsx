@@ -1,4 +1,4 @@
-import type { SVGProps } from "react";
+import type { ComponentType, SVGProps } from "react";
 
 /**
  * Shared travel iconography for place categories. Each icon is a single-line,
@@ -290,7 +290,7 @@ const ICONS = {
 const REFINEMENTS: ReadonlyArray<{
   categories: ReadonlyArray<keyof typeof ICONS>;
   pattern: RegExp;
-  icon: (props: IconProps) => JSX.Element;
+  icon: ComponentType<IconProps>;
 }> = [
   // Transit modes
   { categories: ["transit", "airfare", "flight"], pattern: /\b(airport|flight|flights|fly|flying|plane|jfk|terminal)\b/i, icon: PlaneIcon },
@@ -317,7 +317,7 @@ const REFINEMENTS: ReadonlyArray<{
 export function resolveCategoryIcon(
   category?: string,
   text?: string,
-): ((props: IconProps) => JSX.Element) | null {
+): (ComponentType<IconProps>) | null {
   if (!category) return null;
   const broad = ICONS[category as keyof typeof ICONS];
   if (!broad) return null;
