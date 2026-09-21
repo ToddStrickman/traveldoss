@@ -220,3 +220,11 @@ export const trackStopLocationEdited = (p: {
   /** How the owner set it: typed the numbers, dragged the pin, or cleared it. */
   via: "typed" | "drag" | "cleared";
 }) => capture("stop_location_edited", p);
+
+/* ---------------- Hotels quick reference
+ *
+ * First use of the accommodation dashboard. A count only — never a hotel
+ * name, address or booking reference. */
+
+export const trackHotelsQuickRefOpened = (p: { hotel_count: number }) =>
+  capture("hotels_quickref_opened", p);

@@ -25,6 +25,7 @@ import { getTemporalPhase, phaseCopy } from "@/lib/itinerary/temporal";
 import { autofillDayDates, notifyDayDateAutofill, type DayDateAutofill } from "@/lib/itinerary/day-dates";
 import { EditingProvider, arrayMove } from "@/lib/skins/shared/Editable";
 import { moveActivity } from "@/lib/skins/shared/itinerary";
+import { TrustedViewerProvider } from "@/lib/skins/shared/trusted-viewer";
 import { IngestionModal } from "@/components/flow/IngestionModal";
 import { TripDocPreviews } from "@/components/flow/TripDocPreviews";
 import { DossierMastheadBar } from "@/components/mobile/DossierMastheadBar";
@@ -816,7 +817,11 @@ function DossierPage() {
           </button>
         </div>
       ) : null}
-      <skin.Render trip={view} blocks={blocks} view={layout} />
+      {/* Booking references render only in the owner's own view — a shared
+          dossier link is readable by anyone holding the URL. */}
+      <TrustedViewerProvider value={isOwner}>
+        <skin.Render trip={view} blocks={blocks} view={layout} />
+      </TrustedViewerProvider>
       <div className="mx-auto max-w-3xl px-6 pb-24" data-print="hide">
         <TripDocPreviews tripId={trip.id} />
       </div>

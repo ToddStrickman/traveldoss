@@ -6,6 +6,7 @@ import { ActivityDndContext, DraggableActivity, DroppableBucket } from "./dnd";
 import type { PartOfDay } from "../itinerary";
 import { ShadowItinerary, PlanBCue } from "../ShadowItinerary";
 import { BlankDayScaffold, isScaffoldTriggered } from "../BlankDayScaffold";
+import { HotelsQuickRef } from "../HotelsQuickRef";
 import { useEditing } from "../Editable";
 import { Pencil, Copy, Check, ChevronDown, ExternalLink, Images } from "lucide-react";
 import { FlightEditSheet } from "../ActivityEditSheet";
@@ -348,6 +349,8 @@ export function GridView({ trip, blocks }: { trip: TripView; blocks: Block[] }) 
           </div>
         </section>
       ) : null}
+
+      <HotelsQuickRef blocks={blocks} />
 
       {it.preface.length > 0 ? (
         <section className="tds-grid-section">

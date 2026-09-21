@@ -11,6 +11,7 @@ import {
 import { ActivityDndContext, DraggableActivity, DroppableBucket } from "./dnd";
 import { buildDayImagePlan } from "../fallback-images";
 import { ShadowItinerary, PlanBCue } from "../ShadowItinerary";
+import { HotelsQuickRef } from "../HotelsQuickRef";
 import { BlankDayScaffold, isScaffoldTriggered } from "../BlankDayScaffold";
 import { useCallback, useState } from "react";
 import type { PartOfDay } from "../itinerary";
@@ -70,6 +71,8 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
         slots={["outbound", "inbound"]}
         blocksLength={blocks.length}
       />
+
+      <HotelsQuickRef blocks={blocks} />
 
       {it.preface.length > 0 ? (
         <section className="tds-preface" aria-label="Trip essentials">

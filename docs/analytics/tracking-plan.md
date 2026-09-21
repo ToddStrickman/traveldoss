@@ -186,3 +186,15 @@ never an address, a place name or a coordinate.
 `outcome: "not_found"` is the honest denominator for "how often does the free
 ladder leave a traveller stranded" — the number that decides whether pin
 dragging (Phase 3) is worth building beyond convenience.
+
+## Hotels quick reference
+
+First use of the accommodation dashboard — the panel opened before Day 01.
+
+| Event                     | When                                          | Properties     |
+| ------------------------- | --------------------------------------------- | -------------- |
+| `hotels_quickref_opened`  | A viewer opens the Hotels quick-reference panel | `hotel_count`  |
+
+A count only: never a hotel name, address, phone number or booking reference.
+The button is absent when the trip has no accommodation, so the event doubles
+as "how many dossiers actually carry stays a traveller wants to re-check".
