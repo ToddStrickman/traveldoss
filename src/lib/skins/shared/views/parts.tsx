@@ -1358,7 +1358,7 @@ export function ActivityRow({
       ) : null}
       <div className="tds-act-time">{activity.time ?? ""}</div>
       <div className="tds-act-icon">
-        <CategoryIcon category={activity.category} className="tds-cat-icon" />
+        <CategoryIcon category={activity.category} text={[activity.name, activity.note].filter(Boolean).join(" ")} className="tds-cat-icon" />
       </div>
       <div className="tds-act-body">
         <div className="tds-act-title">
@@ -1448,7 +1448,7 @@ export function ActivityCard({ activity, index }: { activity: ActivityBlock; ind
   return (
     <div className="tds-act-card" data-block="activity-card" data-block-index={index}>
       <div className="tds-act-card-head">
-        <CategoryIcon category={activity.category} className="tds-cat-icon" />
+        <CategoryIcon category={activity.category} text={[activity.name, activity.note].filter(Boolean).join(" ")} className="tds-cat-icon" />
         {activity.time ? <span className="tds-act-card-time">{activity.time}</span> : null}
         <span className="tds-act-card-cat">{categoryLabel(activity.category)}</span>
         {editing ? (
@@ -1512,7 +1512,7 @@ export function ActivityCell({ activity, index }: { activity: ActivityBlock; ind
   return (
     <div className="tds-act-cell" data-block-index={index}>
       <div className="tds-act-cell-head">
-        <CategoryIcon category={activity.category} className="tds-cat-icon" />
+        <CategoryIcon category={activity.category} text={[activity.name, activity.note].filter(Boolean).join(" ")} className="tds-cat-icon" />
         {/* The name's own kind word wins; the generic category label is
             redundant with it ("Walk ·" vs WALK) and steps aside. */}
         <span className="tds-act-cell-cat">{kind ?? categoryLabel(activity.category)}</span>
