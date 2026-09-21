@@ -1012,7 +1012,7 @@ export function IngestionModal({
             </span>
             <span
               aria-hidden
-              className="inline-flex h-7 min-w-7 items-center justify-center rounded-sm border border-seal/40 px-1 tabular-nums transition-elegant group-hover:border-paper/40"
+              className="inline-flex h-7 min-w-8 items-center justify-center rounded-sm border border-seal/40 px-1.5 tabular-nums tracking-normal transition-elegant group-hover:border-paper/40"
             >
               {parsing ? `${composePct}%` : "→"}
             </span>
