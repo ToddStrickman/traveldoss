@@ -219,6 +219,7 @@ async function resolveFallbackImages(
     for (const im of imgs) {
       if (collected.length >= want) return;
       if (seen.has(im.src)) continue;
+      if (isFunerealImage(im, sourceQuery)) continue;
       seen.add(im.src);
       collected.push({ ...im, sourceQuery });
     }
