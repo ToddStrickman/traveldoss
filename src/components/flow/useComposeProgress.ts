@@ -75,7 +75,7 @@ export function useComposeProgress(
     return () => clearInterval(id);
     // `pct` is intentionally read, not tracked: it only seeds the floor.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active, phase]);
+  }, [active, phase, sizeHint]);
 
   return pct;
 }
