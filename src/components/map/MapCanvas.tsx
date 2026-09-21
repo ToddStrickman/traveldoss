@@ -79,6 +79,8 @@ export const MapCanvas = forwardRef<
     selectedKey: string | null;
     onSelect: (key: string | null) => void;
     onStatus: (status: MapStatus) => void;
+    /** Fires on every pan/zoom frame, so anchored overlays can follow pins. */
+    onViewChanged?: () => void;
   }
 >(function MapCanvas(
   { model, visible, tokens, palette, hiddenDays, showRoute, showOrder, selectedKey, onSelect, onStatus, onViewChanged },
@@ -94,6 +96,10 @@ export const MapCanvas = forwardRef<
   onSelectRef.current = onSelect;
   const onStatusRef = useRef(onStatus);
   onStatusRef.current = onStatus;
+  const onViewChangedRef = useRef(onViewChanged);
+  onViewChangedRef.current = onViewChanged;
+  const placesRef = useRef<MapModel["places"]>(model.places);
+  placesRef.current = model.places;
 
   const bounds = model.bounds;
   const single = model.places.length === 1 ? model.places[0] : null;
