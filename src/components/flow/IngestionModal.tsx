@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { parseDropInWithMeta } from "@/lib/itinerary/parse";
+import { CakeProgress } from "@/components/flow/CakeProgress";
 import { parseItineraryAi } from "@/lib/itinerary/parse-ai.functions";
 import { generateItineraryAi } from "@/lib/itinerary/generate.functions";
 import { useServerFn } from "@tanstack/react-start";
@@ -858,7 +859,10 @@ export function IngestionModal({
               <p className="text-[12px] leading-[1.5] text-ink-soft">
                 {TABS.find((t) => t.id === tab)?.sub}
               </p>
-              <div className="flex items-center justify-end">
+              {/* Import in progress: the dossier "bakes" — cake assembly with
+                  a live percentage, replacing the raw input while it runs. */}
+              {parsing ? <CakeProgress pct={composePct} /> : null}
+              <div className={`flex items-center justify-end ${parsing ? "hidden" : ""}`}>
                 <button
                   type="button"
                   onClick={() => fileRef.current?.click()}
@@ -878,7 +882,7 @@ export function IngestionModal({
               </div>
 
               {/* Single textarea */}
-              <div onDragOver={(e) => e.preventDefault()} onDrop={onDrop}>
+              <div onDragOver={(e) => e.preventDefault()} onDrop={onDrop} className={parsing ? "hidden" : ""}>
                   <textarea
                     value={tab === "generate" ? genPrompt : text}
                     onChange={(e) =>
@@ -920,7 +924,7 @@ export function IngestionModal({
                 </div>
               )}
 
-              <p className="text-[11.5px] leading-[1.55] text-ink-soft">
+              <p className={`text-[11.5px] leading-[1.55] text-ink-soft ${parsing ? "hidden" : ""}`}>
                 One field, three ways in. We'll only ask for dates, travelers, pace, budget, or
                 interests if the dossier can't infer them — directly on the draft, where they belong.
               </p>
