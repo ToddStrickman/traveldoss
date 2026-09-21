@@ -32,6 +32,8 @@ export type MapCanvasHandle = {
   fitAll: () => void;
   zoomIn: () => void;
   zoomOut: () => void;
+  /** Screen position (relative to the map container) of a place's pin. */
+  pinScreenPos: (key: string) => { x: number; y: number } | null;
 };
 
 export type MapStatus = "loading" | "ready" | "error";
@@ -77,9 +79,11 @@ export const MapCanvas = forwardRef<
     selectedKey: string | null;
     onSelect: (key: string | null) => void;
     onStatus: (status: MapStatus) => void;
+    /** Fires on every pan/zoom frame, so anchored overlays can follow pins. */
+    onViewChanged?: () => void;
   }
 >(function MapCanvas(
-  { model, visible, tokens, palette, hiddenDays, showRoute, showOrder, selectedKey, onSelect, onStatus },
+  { model, visible, tokens, palette, hiddenDays, showRoute, showOrder, selectedKey, onSelect, onStatus, onViewChanged },
   ref,
 ) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -92,6 +96,10 @@ export const MapCanvas = forwardRef<
   onSelectRef.current = onSelect;
   const onStatusRef = useRef(onStatus);
   onStatusRef.current = onStatus;
+  const onViewChangedRef = useRef(onViewChanged);
+  onViewChangedRef.current = onViewChanged;
+  const placesRef = useRef<MapModel["places"]>(model.places);
+  placesRef.current = model.places;
 
   const bounds = model.bounds;
   const single = model.places.length === 1 ? model.places[0] : null;
@@ -135,6 +143,7 @@ export const MapCanvas = forwardRef<
         // full text on wide plates, an expandable ⓘ under 640 px.
         map.addControl(new ml.AttributionControl({}), "bottom-right");
         map.on("click", () => onSelectRef.current(null));
+        map.on("move", () => onViewChangedRef.current?.());
         map.on("error", (e) => {
           errors++;
           if (import.meta.env.DEV) console.warn("[live-map]", e?.error?.message ?? e);
@@ -238,6 +247,14 @@ export const MapCanvas = forwardRef<
       },
       zoomIn: () => mapRef.current?.zoomIn(),
       zoomOut: () => mapRef.current?.zoomOut(),
+      pinScreenPos: (key) => {
+        const map = mapRef.current;
+        if (!map) return null;
+        const p = placesRef.current.find((x) => x.key === key);
+        if (!p) return null;
+        const pt = map.project([p.lng, p.lat]);
+        return { x: pt.x, y: pt.y };
+      },
     }),
     [bounds, single],
   );
