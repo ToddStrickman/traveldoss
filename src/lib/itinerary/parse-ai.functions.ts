@@ -621,6 +621,7 @@ async function enrichPlacesViaWebSearch(
 async function fillFromOpenStreetMap(
   place: PlaceBlock,
   destination: string | null,
+  inFlight?: Map<string, Promise<PlaceFacts | null>>,
 ): Promise<boolean> {
   // A stop's own address is the strongest signal; the broad trip destination
   // is only a fallback (matches geocodeQueryFor in geo.server.ts). Anchoring
@@ -631,8 +632,14 @@ async function fillFromOpenStreetMap(
       ? `${place.name}, ${destination}`
       : place.name;
   try {
-    // Bounded: a slow lookup must never stall the whole parse.
-    const facts = await lookupPlaceFacts(query, { timeoutMs: 2_500 });
+    // Bounded: a slow lookup must never stall the whole parse. Repeats of the
+    // same query share one round trip.
+    let pending = inFlight?.get(query);
+    if (!pending) {
+      pending = lookupPlaceFacts(query, { timeoutMs: 2_200 });
+      inFlight?.set(query, pending);
+    }
+    const facts = await pending;
     if (!facts) {
       // Record the miss so the save-time backfill's attempt cap counts it.
       if (place.lat == null && !place.geocode) {
