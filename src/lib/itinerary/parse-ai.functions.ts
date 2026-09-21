@@ -3,7 +3,7 @@ import { generateText, Output } from "ai";
 import { z, ZodError, type ZodIssue } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Block } from "@/lib/skins/types";
-import { lookupPlaceFacts } from "@/lib/maps/place-lookup.server";
+import { lookupPlaceFacts, type PlaceFacts } from "@/lib/maps/place-lookup.server";
 import { parseDropInWithMeta, stripEmoji } from "@/lib/itinerary/parse";
 import { normalizeParsedShape } from "@/lib/itinerary/normalize-ai";
 import { isCreditsMessage, isRateLimitMessage } from "@/lib/itinerary/ai-errors";
@@ -575,21 +575,25 @@ async function enrichPlacesViaWebSearch(
   );
   if (targets.length === 0) return;
 
-  // Bounded work with a per-run cap: the lookups are free now, but they hit
-  // a shared community service, so a 60-stop paste must not fan out. Anything
-  // past the cap is picked up by the save-time backfill (geo.server.ts) on the
-  // next autosave. Concurrency stays at 2 out of courtesy to OSM.
-  // Tuned for wall-clock: the interactive parse only needs the first screenful
-  // of stops enriched — the rest backfill on the first autosave — so the cap
-  // is small and the fan-out wider. Worst case is now ~2 waves, not ~12.
-  const PER_RUN_CAP = 10;
-  const CONCURRENCY = 5;
-  if (targets.length > PER_RUN_CAP) {
+  // Bounded by WALL CLOCK, not just by count. The lookups are free but hit a
+  // shared community service, so a 60-stop paste must not fan out forever —
+  // and the traveler must never wait on the tail. Workers stop pulling new
+  // targets once the budget is spent; everything still missing is picked up by
+  // the save-time backfill (geo.server.ts) on the first autosave.
+  const PER_RUN_CAP = 18;
+  const CONCURRENCY = 6;
+  const ENRICH_BUDGET_MS = 6_500;
+  const deadline = Date.now() + ENRICH_BUDGET_MS;
+  const capped = targets.slice(0, PER_RUN_CAP);
+  if (targets.length > capped.length) {
     console.warn(
-      `[parse-ai] enriching ${PER_RUN_CAP}/${targets.length} places this run; the rest backfill on save`,
+      `[parse-ai] enriching up to ${capped.length}/${targets.length} places this run; the rest backfill on save`,
     );
   }
-  const capped = targets.slice(0, PER_RUN_CAP);
+  // One lookup per distinct query: a hotel repeated across every night, or the
+  // same restaurant twice, used to cost one round trip each. On a large
+  // dossier this is where most of the wall clock went.
+  const inFlight = new Map<string, Promise<PlaceFacts | null>>();
   const enrichedFlags = new Array<boolean>(targets.length).fill(false);
   let cursor = 0;
   await Promise.all(
@@ -597,7 +601,8 @@ async function enrichPlacesViaWebSearch(
       for (;;) {
         const i = cursor++;
         if (i >= capped.length) return;
-        enrichedFlags[i] = await fillFromOpenStreetMap(capped[i], destination);
+        if (Date.now() >= deadline) return;
+        enrichedFlags[i] = await fillFromOpenStreetMap(capped[i], destination, inFlight);
       }
     }),
   );
@@ -616,6 +621,7 @@ async function enrichPlacesViaWebSearch(
 async function fillFromOpenStreetMap(
   place: PlaceBlock,
   destination: string | null,
+  inFlight?: Map<string, Promise<PlaceFacts | null>>,
 ): Promise<boolean> {
   // A stop's own address is the strongest signal; the broad trip destination
   // is only a fallback (matches geocodeQueryFor in geo.server.ts). Anchoring
@@ -626,8 +632,14 @@ async function fillFromOpenStreetMap(
       ? `${place.name}, ${destination}`
       : place.name;
   try {
-    // Bounded: a slow lookup must never stall the whole parse.
-    const facts = await lookupPlaceFacts(query, { timeoutMs: 2_500 });
+    // Bounded: a slow lookup must never stall the whole parse. Repeats of the
+    // same query share one round trip.
+    let pending = inFlight?.get(query);
+    if (!pending) {
+      pending = lookupPlaceFacts(query, { timeoutMs: 2_200 });
+      inFlight?.set(query, pending);
+    }
+    const facts = await pending;
     if (!facts) {
       // Record the miss so the save-time backfill's attempt cap counts it.
       if (place.lat == null && !place.geocode) {
