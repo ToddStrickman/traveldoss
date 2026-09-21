@@ -28,7 +28,22 @@ const TAU: Record<ComposePhase, number> = {
   done: 1,
 };
 
-export function useComposeProgress(active: boolean, phase: ComposePhase): number {
+/**
+ * Large dossiers legitimately take longer, so the ease is stretched in
+ * proportion to how much text was handed in. Without this the bar pinned near
+ * its ceiling early on a 40-stop paste and then sat there, which reads as
+ * stalled even though the work is progressing.
+ */
+function sizeFactor(sizeHint: number): number {
+  if (!Number.isFinite(sizeHint) || sizeHint <= 0) return 1;
+  return Math.min(2.5, 1 + sizeHint / 12_000);
+}
+
+export function useComposeProgress(
+  active: boolean,
+  phase: ComposePhase,
+  sizeHint = 0,
+): number {
   const [pct, setPct] = useState(0);
   // Progress never walks backwards, even when a new phase has a lower floor.
   const floor = useRef(0);
