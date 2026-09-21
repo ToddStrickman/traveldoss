@@ -115,23 +115,25 @@ function LocationSection({
           ? "Not found yet — add an address or type the position."
           : "No position yet.";
 
-  const setCoords = (lat: number | undefined, lng: number | undefined, via: "typed" | "cleared") => {
-    if (lat == null || lng == null) {
-      set({ lat: undefined, lng: undefined });
-      trackStopLocationEdited({ field: "coords", via: "cleared" });
-      return;
-    }
+  /** One field at a time: a half-typed pair must not wipe the other number. */
+  const setCoords = (patch: { lat?: number | undefined } | { lng?: number | undefined }) => {
+    const next = { lat: activity.lat, lng: activity.lng, ...patch };
+    const complete = next.lat != null && next.lng != null;
     set({
-      lat,
-      lng,
-      geocode: {
-        status: "manual",
-        provider: "manual",
-        attempts: activity.geocode?.attempts ?? 0,
-        at: new Date().toISOString(),
-      },
+      lat: next.lat,
+      lng: next.lng,
+      ...(complete
+        ? {
+            geocode: {
+              status: "manual" as const,
+              provider: "manual" as const,
+              attempts: activity.geocode?.attempts ?? 0,
+              at: new Date().toISOString(),
+            },
+          }
+        : {}),
     });
-    trackStopLocationEdited({ field: "coords", via });
+    trackStopLocationEdited({ field: "coords", via: complete ? "typed" : "cleared" });
   };
 
   const onFind = async () => {
@@ -217,10 +219,7 @@ function LocationSection({
             inputMode="decimal"
             value={activity.lng ?? ""}
             placeholder="12.4769"
-            onChange={(e) => {
-              const lng = numeric(e.target.value);
-              setCoords(lng == null ? undefined : activity.lat, lng, "typed");
-            }}
+            onChange={(e) => setCoords({ lng: numeric(e.target.value) })}
           />
         </Field>
       </div>
