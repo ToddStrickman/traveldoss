@@ -232,6 +232,41 @@ export function DossierMapOverlay({
     [model],
   );
 
+  // The selected-stop caption floats beside its pin (MapLibre mode) rather
+  // than parking in a screen corner; parchment keeps the default position.
+  const positionCaption = useCallback(() => {
+    const cap = captionRef.current;
+    const area = mapAreaRef.current;
+    if (!cap || !area) return;
+    if (!selectedKey || parchment) {
+      cap.style.removeProperty("left");
+      cap.style.removeProperty("top");
+      cap.style.removeProperty("right");
+      cap.style.removeProperty("bottom");
+      return;
+    }
+    const pos = canvasRef.current?.pinScreenPos(selectedKey);
+    if (!pos) return;
+    const w = cap.offsetWidth;
+    const h = cap.offsetHeight;
+    const rect = area.getBoundingClientRect();
+    const GAP = 14;
+    let top = pos.y - GAP - h;
+    if (top < 8) top = pos.y + GAP;
+    top = Math.min(Math.max(top, 8), Math.max(8, rect.height - h - 8));
+    const left = Math.min(Math.max(pos.x - w / 2, 12), Math.max(12, rect.width - w - 12));
+    cap.style.left = `${left}px`;
+    cap.style.top = `${top}px`;
+    cap.style.right = "auto";
+    cap.style.bottom = "auto";
+  }, [selectedKey, parchment]);
+
+  useEffect(() => {
+    positionCaption();
+    window.addEventListener("resize", positionCaption);
+    return () => window.removeEventListener("resize", positionCaption);
+  }, [positionCaption]);
+
   const toggleDay = useCallback(
     (day: number) => {
       setHiddenDays((prev) => {
@@ -421,7 +456,7 @@ export function DossierMapOverlay({
         </div>
       ) : null}
 
-      <div style={{ position: "relative", flex: 1, minHeight: 0 }}>
+      <div ref={mapAreaRef} style={{ position: "relative", flex: 1, minHeight: 0 }}>
         {empty ? (
           <div
             style={{
@@ -490,6 +525,7 @@ export function DossierMapOverlay({
             selectedKey={selectedKey}
             onSelect={onSelect}
             onStatus={onStatus}
+            onViewChanged={positionCaption}
           />
         )}
 
@@ -535,7 +571,7 @@ export function DossierMapOverlay({
         ) : null}
 
         {selected ? (
-          <div className="tds-map-caption" role="status">
+          <div ref={captionRef} className="tds-map-caption" role="status">
             <div style={{ minWidth: 0, flex: 1 }}>
               <div className="tds-map-caption-eyebrow">
                 {[
