@@ -1,11 +1,11 @@
 import { createContext, useContext } from "react";
 
 /**
- * True only for the trip owner's own authenticated view.
+ * True for an authenticated trip owner or co-planner.
  *
  * Booking references are private by default: a shared/public dossier link is
  * readable by anyone who has the URL, so confirmation numbers must never
- * render there. The dossier route provides `isOwner`; every other surface
+ * render there. The dossier route provides membership access; every other surface
  * (landing rails, gallery thumbnails, export/print of a shared link) keeps
  * the default `false`.
  */

@@ -86,6 +86,13 @@ function cityFromStay(stay: Extract<Block, { kind: "place" }> | undefined): stri
   return undefined;
 }
 
+function authoredStayDay(stay: Extract<Block, { kind: "place" }>, fallback: number, dayCount: number): number {
+  const text = [stay.reservation, stay.note].filter(Boolean).join(" ");
+  const match = /\bday\s+(\d+)\b/i.exec(text);
+  if (!match) return fallback;
+  return Math.max(0, Math.min(dayCount - 1, Number(match[1]) - 1));
+}
+
 /** Pure projection used by every logistics surface. Geometry is measured in
  * day-column units: 0.5 is noon on the first day, 1.5 noon on the second. */
 export function getTripLogistics(trip: TripView, blocks: Block[], now = new Date()): TripLogistics {
@@ -109,7 +116,7 @@ export function getTripLogistics(trip: TripView, blocks: Block[], now = new Date
     } else if (block.kind === "place" && block.category && STAY_CATEGORIES.has(block.category)) {
       const previous = rawStays.at(-1);
       if (previous?.hotel.name.trim().toLowerCase() !== block.name.trim().toLowerCase()) {
-        rawStays.push({ hotel: block, blockIndex, day: currentDay });
+        rawStays.push({ hotel: block, blockIndex, day: authoredStayDay(block, currentDay, days.length) });
       }
     }
   });
