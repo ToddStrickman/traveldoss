@@ -33,7 +33,7 @@ export async function beginGmail(
     httpOnly: true,
     secure: c.redirectUri.startsWith("https:"),
     sameSite: "lax",
-    path: "/api/adaptive/gmail/callback",
+    path: CALLBACK_PATH,
     maxAge: 600,
   });
   const params = new URLSearchParams({
@@ -53,7 +53,7 @@ export async function finishGmail(request: Request): Promise<Response> {
   const url = new URL(request.url),
     state = url.searchParams.get("state"),
     cookie = getCookie(COOKIE);
-  deleteCookie(COOKIE, { path: "/api/adaptive/gmail/callback" });
+  deleteCookie(COOKIE, { path: CALLBACK_PATH });
   const redirect = (path: string) =>
     new Response(null, {
       status: 303,
