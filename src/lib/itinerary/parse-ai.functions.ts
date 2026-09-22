@@ -108,11 +108,8 @@ const BlockSchema = z.object({
 
 const NULLABLE_STRING_SCHEMA = { type: ["string", "null"] } as const;
 const NULLABLE_NUMBER_SCHEMA = { type: ["number", "null"] } as const;
-const BLOCK_ITEM_PROPERTIES = {
-  kind: { type: "string", enum: ["day", "place", "flight", "paragraph", "note"] },
-  n: NULLABLE_NUMBER_SCHEMA,
-  label: NULLABLE_STRING_SCHEMA,
-  dayDate: NULLABLE_STRING_SCHEMA,
+const PLACE_PROPERTIES = {
+  kind: { type: "string", enum: ["place"] },
   name: NULLABLE_STRING_SCHEMA,
   tier: { type: ["string", "null"], enum: ["primary", "shadow", null] },
   category: { type: ["string", "null"], enum: ["transit", "restaurant", "walk", "event", "accommodation", "culture", "", null] },
@@ -123,11 +120,20 @@ const BLOCK_ITEM_PROPERTIES = {
   mustOrder: NULLABLE_STRING_SCHEMA, vendor: NULLABLE_STRING_SCHEMA, pickup: NULLABLE_STRING_SCHEMA,
   dropoff: NULLABLE_STRING_SCHEMA, venue: NULLABLE_STRING_SCHEMA, ticketRequirement: NULLABLE_STRING_SCHEMA,
   tourDetails: NULLABLE_STRING_SCHEMA, trailhead: NULLABLE_STRING_SCHEMA, distance: NULLABLE_STRING_SCHEMA,
-  duration: NULLABLE_STRING_SCHEMA, difficulty: NULLABLE_STRING_SCHEMA, airline: NULLABLE_STRING_SCHEMA,
+  duration: NULLABLE_STRING_SCHEMA, difficulty: NULLABLE_STRING_SCHEMA,
+} as const;
+const FLIGHT_PROPERTIES = {
+  kind: { type: "string", enum: ["flight"] }, airline: NULLABLE_STRING_SCHEMA,
   flightNumber: NULLABLE_STRING_SCHEMA, from: NULLABLE_STRING_SCHEMA, to: NULLABLE_STRING_SCHEMA,
   fromCity: NULLABLE_STRING_SCHEMA, toCity: NULLABLE_STRING_SCHEMA, departTime: NULLABLE_STRING_SCHEMA,
   arriveTime: NULLABLE_STRING_SCHEMA, date: NULLABLE_STRING_SCHEMA, arriveDate: NULLABLE_STRING_SCHEMA,
-  text: NULLABLE_STRING_SCHEMA,
+  note: NULLABLE_STRING_SCHEMA,
+} as const;
+const DAY_PROPERTIES = {
+  kind: { type: "string", enum: ["day"] },
+  n: NULLABLE_NUMBER_SCHEMA,
+  label: NULLABLE_STRING_SCHEMA,
+  dayDate: NULLABLE_STRING_SCHEMA,
 } as const;
 
 const BLOCK_OUTPUT_JSON_SCHEMA = {
@@ -137,10 +143,13 @@ const BLOCK_OUTPUT_JSON_SCHEMA = {
     blocks: {
       type: "array",
       items: {
-        type: "object",
-        properties: BLOCK_ITEM_PROPERTIES,
-        required: Object.keys(BLOCK_ITEM_PROPERTIES),
-        additionalProperties: false,
+        anyOf: [
+          { type: "object", properties: DAY_PROPERTIES, required: Object.keys(DAY_PROPERTIES), additionalProperties: false },
+          { type: "object", properties: PLACE_PROPERTIES, required: Object.keys(PLACE_PROPERTIES), additionalProperties: false },
+          { type: "object", properties: FLIGHT_PROPERTIES, required: Object.keys(FLIGHT_PROPERTIES), additionalProperties: false },
+          { type: "object", properties: { kind: { type: "string", enum: ["paragraph"] }, text: NULLABLE_STRING_SCHEMA }, required: ["kind", "text"], additionalProperties: false },
+          { type: "object", properties: { kind: { type: "string", enum: ["note"] }, text: NULLABLE_STRING_SCHEMA }, required: ["kind", "text"], additionalProperties: false },
+        ],
       },
     },
   },
@@ -373,8 +382,26 @@ async function parseBlocksWithAi(
   }
   return {
     destination: parsedChunks.find((chunk) => chunk.destination)?.destination ?? null,
-    blocks: parsedChunks.flatMap((chunk) => chunk.blocks),
+    blocks: orderDayGroups(parsedChunks.flatMap((chunk) => chunk.blocks)),
   };
+}
+
+function orderDayGroups(blocks: z.infer<typeof BlockSchema>["blocks"]) {
+  const preamble: typeof blocks = [];
+  const groups: Array<{ n: number; ordinal: number; blocks: typeof blocks }> = [];
+  let current: (typeof groups)[number] | null = null;
+  for (const block of blocks) {
+    if (block.kind === "day" && typeof block.n === "number") {
+      current = { n: block.n, ordinal: groups.length, blocks: [block] };
+      groups.push(current);
+    } else if (current) {
+      current.blocks.push(block);
+    } else {
+      preamble.push(block);
+    }
+  }
+  groups.sort((a, b) => a.n - b.n || a.ordinal - b.ordinal);
+  return [...preamble, ...groups.flatMap((group) => group.blocks)];
 }
 
 const MAX_AI_CHUNK_CHARS = 12_000;
@@ -419,7 +446,8 @@ async function parseChunkWithAi(
         instructions: `${SYSTEM_PROMPT}\n\nReturn only the requested structured object. Every schema field is required; use null when it does not apply.`,
         input: prompt,
         schemaName: "itinerary_chunk",
-        schema: BLOCK_OUTPUT_JSON_SCHEMA,
+        schema: BLOCK_OUTPUT_JSON_SCHEMA as unknown as Record<string, unknown>,
+        reasoningEffort: "low",
       });
       raw = JSON.stringify(result.value);
       const normalized = normalizeParsedShape(result.value);
