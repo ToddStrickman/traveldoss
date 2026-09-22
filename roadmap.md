@@ -10,8 +10,8 @@
 - [ ] Insights Feed + detectors D1–D13 (later phase)
 
 ## In progress
-- [ ] Fix invitation acceptance with canonical emails and atomic membership activation
-- [ ] Make long itinerary parsing bounded, streaming, and non-truncating
+- [x] Fix invitation acceptance with canonical emails and atomic membership activation
+- [x] Make long itinerary parsing bounded, streaming, and non-truncating
 - [x] Conversion funnel rendered as an actual tapering funnel shape (desktop),
       bar list retained for mobile
 - [x] Phase 3 Horizontal Board: shared logistics selector/cards, Transit and Stay lanes,
