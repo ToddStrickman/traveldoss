@@ -6,6 +6,15 @@ I checked: none of it exists in this project. No adaptive files, no adaptive tab
 
 So this is a rebuild here, against this codebase, in the order that gets value soonest with the fewest outside accounts. No demo route.
 
+### About the folders on your Drive
+
+`G:\My Drive\TravelDOSS\traveldoss-repository\src\components\adaptive` and `...\src\lib\adaptive` are on your own computer — I have no way to read them from here. Two ways forward:
+
+- **Fastest: send them to me.** Zip those two folders (plus the migration file and any adaptive tests) and attach the zip in chat. I'll merge the files in, adapt them to this project's conventions, apply the migration here, and get the suite and typecheck clean. That skips most of Slices 1 and 4 below.
+- **Or I rebuild.** The plan below stands on its own if you'd rather not move files around.
+
+Either way the build order and the sync rule below are the same.
+
 ## How it fits the app you have
 
 - Your trips already store their design in `trips.content` as blocks. That stays exactly as it is — a designed, shareable document.
