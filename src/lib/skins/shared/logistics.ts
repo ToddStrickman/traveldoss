@@ -79,7 +79,8 @@ function dayOffset(days: LogisticsDay[], value: string | undefined, fallback: nu
   return Math.max(0, Math.min(days.length - 1, Math.round((target - first) / DAY_MS)));
 }
 
-function cityFromStay(stay: Extract<Block, { kind: "place" }>): string | undefined {
+function cityFromStay(stay: Extract<Block, { kind: "place" }> | undefined): string | undefined {
+  if (!stay) return undefined;
   const address = stay.address?.split(",").map((part) => part.trim()).filter(Boolean);
   if (address && address.length > 1) return address[address.length - 2] ?? address.at(-1);
   return undefined;
@@ -159,7 +160,7 @@ export function getTripLogistics(trip: TripView, blocks: Block[], now = new Date
   for (const day of days) {
     const stay = stays.find((item) => item.fromDay <= day.index && item.toDay > day.index);
     const arriving = flights.find((item) => item.arrivalDay <= day.index && item.flight.toCity);
-    day.city = cityFromStay(stay?.hotel as Extract<Block, { kind: "place" }>) ?? arriving?.flight.toCity;
+    day.city = cityFromStay(stay?.hotel) ?? arriving?.flight.toCity;
     const previous = days[day.index - 1]?.city;
     day.cityChanged = !!day.city && day.city !== previous;
   }
@@ -176,6 +177,6 @@ export function getTripLogistics(trip: TripView, blocks: Block[], now = new Date
     flights,
     stays,
     gaps,
-    homeCity: flights[0]?.flight.fromCity ?? cityFromStay(stays[0]?.hotel as Extract<Block, { kind: "place" }>),
+    homeCity: flights[0]?.flight.fromCity ?? cityFromStay(stays[0]?.hotel),
   };
 }

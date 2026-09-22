@@ -282,3 +282,8 @@ export const trackHistoryPanelOpened = (p: { change_count: number }) =>
 
 export const trackChangeRestored = (p: { mode: "single" | "point_in_time" }) =>
   capture("change_restored", p);
+
+/* ---------------- View-native logistics (Directive 09, Amendment 1)
+ * Enum only: never a carrier, property, route, date, or booking reference. */
+export const trackLaneItemExpanded = (kind: "flight" | "stay") =>
+  capture("lane_item_expanded", { kind });

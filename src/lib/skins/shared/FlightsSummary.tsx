@@ -1,6 +1,8 @@
 import type { Block } from "../types";
 import { AirfareIcon } from "./CategoryIcon";
 import { LinkifiedText } from "./views/parts";
+import { flightDuration } from "./airportTz";
+import { useTrustedViewer } from "./trusted-viewer";
 
 type Flight = Extract<Block, { kind: "flight" }>;
 
@@ -101,8 +103,10 @@ function SmartRow({ label, value, warn }: { label: string; value?: string; warn?
   );
 }
 
-function FlightCard({ flight: f }: { flight: Flight }) {
+export function FlightCard({ flight: f }: { flight: Flight }) {
   const route = [f.from, f.to].filter(Boolean).join(" → ");
+  const trusted = useTrustedViewer();
+  const duration = flightDuration(f.date, f.departTime, f.arriveTime, f.from, f.to, f.arriveDate);
   return (
     <article className="tds-flight-card">
       <header className="tds-flight-head">
@@ -118,7 +122,7 @@ function FlightCard({ flight: f }: { flight: Flight }) {
 
       <div className="tds-flight-section">
         <div className="tds-flight-sec-label">Core</div>
-        <SmartRow label="Confirmation" value={f.confirmation} warn />
+        {trusted ? <SmartRow label="Confirmation" value={f.confirmation} warn /> : null}
         <SmartRow label="Flight #" value={f.flightNumber} warn />
         <SmartRow label="Airline" value={f.airline} />
         <SmartRow
@@ -138,6 +142,7 @@ function FlightCard({ flight: f }: { flight: Flight }) {
           }
         />
         <SmartRow label="Date" value={f.date} />
+        <SmartRow label="Duration" value={duration} />
         <SmartRow label="Gate" value={f.gate} />
       </div>
 
