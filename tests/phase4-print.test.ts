@@ -15,5 +15,7 @@ describe("A5 print composition", () => {
     const config = readFileSync("vite.config.ts", "utf8");
     expect(config).toContain('/^\\/t\\/[^/]+\\/?$/.test(url.pathname)');
     expect(config).toContain('cacheName: "td-html"');
+    expect(config).toContain('/^\\/app\\//');
+    expect(config).toContain('/^\\/invite\\//');
   });
 });

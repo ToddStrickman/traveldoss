@@ -52,8 +52,11 @@ export default defineConfig({
           navigateFallbackDenylist: [
             /^\/~oauth/,
             /^\/api\//,
-            /^\/app\/dossier\//,
+            /^\/app\//,
             /^\/auth\//,
+            /^\/invite\//,
+            /^\/login/,
+            /^\/signup/,
             /^\/sitemap\.xml/,
           ],
           // Built static assets.
