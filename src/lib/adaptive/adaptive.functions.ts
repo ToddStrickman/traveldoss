@@ -22,6 +22,7 @@ import { monitorUser, syncAccount } from "./worker.server";
 import { lifecycle } from "./live";
 import { eraseImportedAccount } from "./privacy";
 import { stageLegacy } from "./legacy";
+import { autoShareIfEnabled } from "./share.functions";
 import type { Block } from "@/lib/skins/types";
 
 const tripInput = z.object({ tripId: z.string().uuid() });
@@ -89,6 +90,12 @@ export const syncAdaptive = createServerFn({ method: "POST" })
     ))
       await syncAccount(context.userId, account.id);
     await monitorUser(context.userId);
+    // Keeps the shared dossier current only when the traveler chose "always".
+    await autoShareIfEnabled(
+      context.userId,
+      context.supabase as unknown as import("@supabase/supabase-js").SupabaseClient,
+      data.tripId,
+    );
     return (await readState(context.userId)).state;
   });
 export const manageEmailAccount = createServerFn({ method: "POST" })

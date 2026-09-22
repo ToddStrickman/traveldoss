@@ -198,3 +198,19 @@ First use of the accommodation dashboard — the panel opened before Day 01.
 A count only: never a hotel name, address, phone number or booking reference.
 The button is absent when the trip has no accommodation, so the event doubles
 as "how many dossiers actually carry stays a traveller wants to re-check".
+
+## Private workspace sharing
+
+The traveler's one decision about whether confirmed reservations from the
+private workspace appear on the shared trip page.
+
+| Event                   | When                                                       | Properties                                    |
+| ----------------------- | ---------------------------------------------------------- | --------------------------------------------- |
+| `dossier_share_chosen`  | The traveler answers the sharing prompt                    | `mode` (`once` \| `always` \| `off`)          |
+| `dossier_share_applied` | A share finishes writing to the shared trip page            | `added`, `updated` (counts of blocks)         |
+| `dossier_share_undone`  | The traveler undoes the last share                          | none                                          |
+
+Counts only: never a property name, airline, confirmation number, address or
+any email content. `mode: "off"` is the honest measure of how many travelers
+want the workspace to stay entirely private, and `dossier_share_undone` over
+`dossier_share_applied` is the regret rate for the merge rules.
