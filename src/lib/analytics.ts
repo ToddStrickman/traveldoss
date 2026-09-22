@@ -287,3 +287,9 @@ export const trackChangeRestored = (p: { mode: "single" | "point_in_time" }) =>
  * Enum only: never a carrier, property, route, date, or booking reference. */
 export const trackLaneItemExpanded = (kind: "flight" | "stay") =>
   capture("lane_item_expanded", { kind });
+
+/** Offline outcome and count only — never the dossier URL or slug. */
+export const trackOfflineDossierSaved = (p: {
+  outcome: "saved" | "partial" | "failed";
+  view_count: number;
+}) => capture("offline_dossier_saved", p);

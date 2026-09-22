@@ -290,7 +290,7 @@
 
 /* ---- Print / PDF export ---- */
 @media print {
-  @page { margin: 18mm; }
+  @page { size: A5 portrait; margin: 10mm 9mm 12mm; }
   body { background: #fff !important; color: #111 !important; }
   body.td-print-mode aside,
   body.td-print-mode .fixed,
@@ -299,7 +299,39 @@
   body.td-print-mode .tds { background: #fff !important; color: #111 !important; }
   body.td-print-mode a { color: #1a4fb2 !important; text-decoration: underline; }
   body.td-print-mode [data-print="only"] { display: block !important; }
+  body.td-print-mode > * { visibility: visible; }
+  body.td-print-mode .tds:not(.td-print-dossier) { display: none !important; }
+  .td-print-dossier { display: block !important; background: #fff !important; color: #111 !important; font-size: 8.5pt; }
+  .td-print-cover { min-height: 170mm; break-after: page; display: grid; align-content: end; position: relative; overflow: hidden; border-bottom: 2px solid var(--tds-accent); }
+  .td-print-cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: grayscale(.15); }
+  .td-print-cover-copy { position: relative; z-index: 1; padding: 12mm 8mm; background: linear-gradient(transparent, rgba(255,255,255,.96) 35%); }
+  .td-print-cover-copy p { margin: 0 0 4mm; color: var(--tds-accent); font-size: 7pt; letter-spacing: .35em; text-transform: uppercase; }
+  .td-print-cover-copy h1 { margin: 0; font: 34pt/.9 var(--tds-fontDisplay); }
+  .td-print-cover-copy div { margin-top: 3mm; font: italic 12pt/1.3 var(--tds-fontDisplay); }
+  .td-print-cover-copy small { display: block; margin-top: 7mm; letter-spacing: .14em; }
+  .td-print-day { break-before: page; }
+  .td-print-day-head { border-bottom: 1.5px solid var(--tds-accent); padding-bottom: 3mm; margin-bottom: 4mm; }
+  .td-print-day-head > span { color: var(--tds-accent); font-size: 7pt; font-weight: 700; letter-spacing: .3em; text-transform: uppercase; }
+  .td-print-day-head h2 { margin: 1mm 0; font: 22pt/1 var(--tds-fontDisplay); }
+  .td-print-day-head p { margin: 0; color: var(--tds-soft); }
+  .td-print-markers { display: flex; flex-wrap: wrap; gap: 1.5mm; margin-bottom: 4mm; }
+  .td-print-markers span { border: 1px solid var(--tds-rule); padding: 1.3mm 2mm; font-size: 6.5pt; font-weight: 650; }
+  .td-print-part { break-inside: avoid; margin: 5mm 0 0; }
+  .td-print-part h3 { margin: 0 0 2mm; color: var(--tds-accent); font-size: 7pt; letter-spacing: .28em; text-transform: uppercase; }
+  .td-print-stop { display: grid; grid-template-columns: 16mm 1fr; gap: 3mm; break-inside: avoid; padding: 2.2mm 0; border-top: 1px solid var(--tds-rule); }
+  .td-print-stop time { color: var(--tds-soft); font-variant-numeric: tabular-nums; }
+  .td-print-stop strong, .td-print-stop span { display: block; }
+  .td-print-stop strong { font: 11pt/1.15 var(--tds-fontDisplay); }
+  .td-print-stop span, .td-print-stop p { margin: .7mm 0 0; color: var(--tds-soft); font-size: 7pt; line-height: 1.35; }
+  .td-print-dossier .tds-flight-card, .td-print-dossier .tds-hotelcard { break-inside: avoid; margin: 4mm 0; padding: 3mm; border-radius: 0; }
+  .td-print-dossier .tds-flight-title { font-size: 13pt; }
+  .td-print-dossier .tds-flight-row { grid-template-columns: 25mm 1fr; padding: .4mm 0; font-size: 7pt; line-height: 1.35; }
+  .td-print-dossier .tds-flight-section:nth-of-type(n+3), .td-print-dossier .tds-hotelcard-plate { display: none !important; }
+  .td-print-dossier a { color: inherit !important; text-decoration: none !important; }
 }
+
+@media screen { [data-print="only"] { display: none; } }
+.td-offline-banner { position: sticky; top: 56px; z-index: 39; padding: 7px 16px; background: #1a1813; color: #f3efe7; text-align: center; font-size: 10px; letter-spacing: .16em; text-transform: uppercase; }
 
 /* Scoped "reduce motion" — applied only inside the itinerary generator UI
    when the user toggles it. Keeps the rest of the app untouched. */

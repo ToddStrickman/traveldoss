@@ -14,7 +14,7 @@
       bar list retained for mobile
 - [x] Phase 3 Horizontal Board: shared logistics selector/cards, Transit and Stay lanes,
       inline expansion, fixtures, and responsive verification
-- [ ] Phase 4: A5 print layout, browser PDF export, offline dossier reading,
+- [x] Phase 4: A5 print layout, browser PDF export, offline dossier reading,
       and view-native Now and next placements
 
 ## Templates

@@ -23,7 +23,8 @@ import {
 import { locateTripPlaces } from "@/lib/maps/locate.functions";
 import { ExportMenu } from "@/components/studio/ExportMenu";
 import { AccessAuditTrail } from "@/components/studio/AccessAuditTrail";
-import { PrintScheduleGrid } from "@/components/studio/PrintScheduleGrid";
+import { PrintDossier } from "@/components/studio/PrintDossier";
+import { OfflineDossierBanner } from "@/components/mobile/OfflineDossierBanner";
 import { CompanionToday } from "@/components/studio/CompanionToday";
 import { getTemporalPhase, phaseCopy } from "@/lib/itinerary/temporal";
 import { autofillDayDates, notifyDayDateAutofill, type DayDateAutofill } from "@/lib/itinerary/day-dates";
@@ -804,6 +805,7 @@ function DossierPage() {
         mapOpen={mapRequest.open}
         mapAvailable={canEdit || blocks.some((b) => b.kind === "place" && b.lat != null && b.lng != null && !b.mapHidden)}
       />
+      <OfflineDossierBanner />
       <div
         aria-hidden
         className="md:hidden"
@@ -968,7 +970,9 @@ function DossierPage() {
           />
         </>
       )}
-      <PrintScheduleGrid trip={view} blocks={blocks} />
+      <TrustedViewerProvider value={canEdit}>
+        <PrintDossier trip={view} blocks={blocks} tokens={skin.tokens} />
+      </TrustedViewerProvider>
       <IngestionModal
         open={mintOpen}
         onOpenChange={setMintOpen}
