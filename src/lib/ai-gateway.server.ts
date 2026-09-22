@@ -1,5 +1,4 @@
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import { createOpenAI } from "@ai-sdk/openai";
 
 const RUN_ID_HEADER = "X-Lovable-AIG-Run-ID";
 
@@ -53,19 +52,83 @@ export function createLovableAiGatewayProvider(apiKey: string) {
   });
 }
 
-export function createLovableResponsesProvider(apiKey: string, initialRunId?: string) {
-  const runIdFetch = createLovableAiGatewayRunIdFetch(initialRunId);
-  const provider = createOpenAI({
-    baseURL: "https://ai.gateway.lovable.dev/v1",
-    apiKey,
+export class LovableAiResponseError extends Error {
+  constructor(public readonly status: number, message: string) {
+    super(message);
+  }
+}
+
+export async function streamLovableJsonResponse<T>({
+  apiKey,
+  input,
+  instructions,
+  schemaName,
+  schema,
+  reasoningEffort = "medium",
+}: {
+  apiKey: string;
+  input: string;
+  instructions: string;
+  schemaName: string;
+  schema: Record<string, unknown>;
+  reasoningEffort?: "low" | "medium" | "high";
+}): Promise<{ value: T; runId?: string }> {
+  const response = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
+    method: "POST",
     headers: {
+      "Content-Type": "application/json",
       "Lovable-API-Key": apiKey,
-      "X-Lovable-AIG-SDK": "vercel-ai-sdk",
+      "X-Lovable-AIG-SDK": "fetch",
     },
-    fetch: runIdFetch.fetch,
+    body: JSON.stringify({
+      model: "openai/gpt-6-astra",
+      input,
+      instructions,
+      stream: true,
+      store: false,
+      reasoning: { effort: reasoningEffort, summary: "auto" },
+      include: ["reasoning.encrypted_content"],
+      text: { format: { type: "json_schema", name: schemaName, strict: true, schema } },
+    }),
   });
-  return {
-    model: provider.responses("openai/gpt-6-astra"),
-    getRunId: runIdFetch.getRunId,
-  };
+  const runId = response.headers.get(RUN_ID_HEADER) ?? undefined;
+  if (!response.ok) {
+    const message = (await response.text()).slice(0, 600) || `AI request failed (${response.status})`;
+    throw new LovableAiResponseError(response.status, message);
+  }
+  if (!response.body) throw new LovableAiResponseError(502, "AI response stream was empty.");
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let output = "";
+  let completed = false;
+  for (;;) {
+    const chunk = await reader.read();
+    if (chunk.done) break;
+    buffer += decoder.decode(chunk.value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+    for (const line of lines) {
+      if (!line.startsWith("data: ")) continue;
+      let event: { type?: string; delta?: string; error?: { message?: string } };
+      try {
+        event = JSON.parse(line.slice(6)) as typeof event;
+      } catch {
+        continue;
+      }
+      if (event.type === "response.output_text.delta") output += event.delta ?? "";
+      if (event.type === "response.completed") completed = true;
+      if (event.type === "response.failed" || event.type === "error") {
+        throw new LovableAiResponseError(502, event.error?.message ?? "AI response failed.");
+      }
+    }
+  }
+  if (!completed) throw new LovableAiResponseError(502, "AI response ended before completion.");
+  if (!output.trim()) throw new LovableAiResponseError(502, "AI response completed without an answer.");
+  try {
+    return { value: JSON.parse(output) as T, runId };
+  } catch {
+    throw new LovableAiResponseError(502, "AI response was not valid JSON.");
+  }
 }

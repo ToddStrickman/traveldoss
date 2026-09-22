@@ -1,5 +1,4 @@
 import { createServerFn } from "@tanstack/react-start";
-import { streamText, Output, type LanguageModel } from "ai";
 import { z, ZodError, type ZodIssue } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Block } from "@/lib/skins/types";
@@ -213,14 +212,13 @@ export async function parseItineraryAiCore(data: ParseItineraryInput) {
   // Strip emojis BEFORE the model sees them. Cheaper tokens; no echo risk.
   const cleanText = stripEmoji(data.text);
 
-  const { createLovableAiGatewayProvider, createLovableResponsesProvider } = await import("@/lib/ai-gateway.server");
+  const { createLovableAiGatewayProvider } = await import("@/lib/ai-gateway.server");
   const gateway = createLovableAiGatewayProvider(key);
-  const responses = createLovableResponsesProvider(key);
 
   const attempts: DebugAttempt[] = [];
   let parsed: z.infer<typeof BlockSchema>;
   try {
-    parsed = await parseBlocksWithAi(responses.model, cleanText, data.source, attempts);
+    parsed = await parseBlocksWithAi(key, cleanText, data.source, attempts);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     if (isCreditsMessage(msg)) {
@@ -302,7 +300,7 @@ export const parseItineraryAi = createServerFn({ method: "POST" })
 /* ─── helpers ───────────────────────────────────────────────────────── */
 
 async function parseBlocksWithAi(
-  model: LanguageModel,
+  apiKey: string,
   cleanText: string,
   source: "text" | "transcript" | "ai",
   attempts?: DebugAttempt[],
@@ -312,7 +310,7 @@ async function parseBlocksWithAi(
   for (let index = 0; index < chunks.length; index++) {
     const chunk = chunks[index];
     const prompt = `Source type: ${source}\nChunk ${index + 1} of ${chunks.length}. Preserve the stated day numbers and source order.\n\n---\n${chunk}\n---\n\nReturn one JSON object with destination and blocks.`;
-    parsedChunks.push(await parseChunkWithAi(model, prompt, index + 1, attempts));
+    parsedChunks.push(await parseChunkWithAi(apiKey, prompt, index + 1, attempts));
   }
   return {
     destination: parsedChunks.find((chunk) => chunk.destination)?.destination ?? null,
@@ -347,7 +345,7 @@ export function splitItineraryForAi(text: string, maxChars = MAX_AI_CHUNK_CHARS)
 }
 
 async function parseChunkWithAi(
-  model: LanguageModel,
+  apiKey: string,
   prompt: string,
   chunkNumber: number,
   attempts?: DebugAttempt[],
@@ -356,22 +354,16 @@ async function parseChunkWithAi(
   for (let attempt = 1; attempt <= MAX_TRANSIENT_ATTEMPTS; attempt++) {
     let raw = "";
     try {
-      const result = streamText({
-        model,
-        system: `${SYSTEM_PROMPT}\n\nReturn ONLY valid JSON. Missing optional fields may be omitted. No prose, markdown, or code fences.`,
-        prompt,
-        providerOptions: {
-          openai: {
-            forceReasoning: true,
-            reasoningEffort: "medium",
-            reasoningSummary: "auto",
-            store: false,
-            include: ["reasoning.encrypted_content"],
-          },
-        },
+      const { streamLovableJsonResponse } = await import("@/lib/ai-gateway.server");
+      const result = await streamLovableJsonResponse<unknown>({
+        apiKey,
+        instructions: `${SYSTEM_PROMPT}\n\nReturn only the requested structured object.`,
+        input: prompt,
+        schemaName: "itinerary_chunk",
+        schema: BLOCK_OUTPUT_JSON_SCHEMA,
       });
-      raw = (await result.text).trim();
-      const normalized = normalizeParsedShape(JSON.parse(extractJsonObject(raw)));
+      raw = JSON.stringify(result.value);
+      const normalized = normalizeParsedShape(result.value);
       const safe = BlockSchema.safeParse(normalized);
       if (safe.success) return safe.data;
       const issue = summarizeIssues(safe.error.issues);
@@ -379,8 +371,8 @@ async function parseChunkWithAi(
       throw new Error(issue);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      const status = typeof error === "object" && error !== null && "statusCode" in error
-        ? Number((error as { statusCode?: unknown }).statusCode)
+      const status = typeof error === "object" && error !== null && "status" in error
+        ? Number((error as { status?: unknown }).status)
         : undefined;
       const retryable = status === 429 || (status !== undefined && status >= 500);
       if (!retryable || attempt === MAX_TRANSIENT_ATTEMPTS) {
@@ -712,26 +704,16 @@ async function fillEditorialNotes(
 
   const key = process.env.LOVABLE_API_KEY;
   if (!key) return;
-  const { createLovableResponsesProvider } = await import("@/lib/ai-gateway.server");
-  const responses = createLovableResponsesProvider(key);
-  const result = streamText({
-    model: responses.model,
-    system:
-      "You write single-sentence editorial notes for a luxury travel itinerary. Each note must be UNDER 15 WORDS, factual, and add genuine insight (atmosphere, specialty, what to expect). No fluff, no marketing copy. Return null if you have no real knowledge of the venue — never fabricate.",
-    prompt: `Destination: ${destination ?? "unknown"}\n\nWrite one note per entry below. Reply with the JSON object only.\n\n${list}`,
-    output: Output.object({ schema: NotesSchema }),
-    providerOptions: {
-      openai: {
-        forceReasoning: true,
-        reasoningEffort: "low",
-        reasoningSummary: "auto",
-        store: false,
-        include: ["reasoning.encrypted_content"],
-      },
-    },
+  const { streamLovableJsonResponse } = await import("@/lib/ai-gateway.server");
+  const result = await streamLovableJsonResponse<unknown>({
+    apiKey: key,
+    instructions: "Write one factual editorial note under 15 words per venue. Use null when uncertain. Never fabricate.",
+    input: `Destination: ${destination ?? "unknown"}\n\n${list}`,
+    schemaName: "editorial_notes",
+    schema: NOTES_OUTPUT_JSON_SCHEMA,
+    reasoningEffort: "low",
   });
-
-  const output = await result.output;
+  const output = NotesSchema.parse(result.value);
   for (const { index, note } of output.notes) {
     const p = places[index];
     if (!p || !note) continue;
