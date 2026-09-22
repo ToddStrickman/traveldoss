@@ -1176,7 +1176,7 @@ export type Database = {
     }
     Functions: {
       accept_trip_invite: {
-        Args: { p_token_hash: string }
+        Args: { p_actor: string; p_token_hash: string }
         Returns: {
           already_accepted: boolean
           created_at: string
@@ -1214,6 +1214,7 @@ export type Database = {
       }
       create_trip_invite: {
         Args: {
+          p_actor: string
           p_email: string
           p_expires_at: string
           p_token_hash: string
