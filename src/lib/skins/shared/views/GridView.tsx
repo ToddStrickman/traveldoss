@@ -15,6 +15,7 @@ import { AirfareIcon } from "../CategoryIcon";
 import { useCallback, useRef, useState, type ReactNode } from "react";
 import { airportTzLabel, flightDuration } from "../airportTz";
 import { FlightCard } from "../FlightsSummary";
+import { NowNext } from "../NowNext";
 import {
   EditableHero,
   EditableDayHeader,
@@ -309,6 +310,7 @@ export function GridView({ trip, blocks }: { trip: TripView; blocks: Block[] }) 
   return (
     <div className="tds-grid-view">
       <EditableHero trip={trip} className="tds-hero tds-grid-head" />
+      <NowNext trip={trip} blocks={blocks} placement="grid" />
 
       {showScaffold ? (
         <BlankDayScaffold blocks={blocks} />

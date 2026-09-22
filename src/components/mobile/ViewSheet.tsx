@@ -7,10 +7,13 @@
  * budget) opening a sheet with the three layouts.
  */
 import * as React from "react";
-import { LayoutGrid, Rows3, Columns3, Check, ChevronDown } from "lucide-react";
+import { LayoutGrid, Rows3, Columns3, Check, ChevronDown, CloudDownload } from "lucide-react";
 import { TdSheet } from "@/components/mobile/TdSheet";
 import type { SkinView } from "@/lib/skins/types";
 import { cn } from "@/lib/utils";
+import { keepDossierOffline } from "@/lib/pwa/offline";
+import { trackOfflineDossierSaved } from "@/lib/analytics";
+import { toast } from "sonner";
 
 const OPTIONS: Array<{
   value: SkinView;
@@ -36,6 +39,7 @@ export function ViewPill({
   variant?: "floating" | "inline";
 }) {
   const [open, setOpen] = React.useState(false);
+  const [savingOffline, setSavingOffline] = React.useState(false);
   const active = OPTIONS.find((o) => o.value === value) ?? OPTIONS[0];
 
   return (
@@ -111,6 +115,27 @@ export function ViewPill({
               </button>
             );
           })}
+          <button
+            type="button"
+            disabled={savingOffline}
+            onClick={async () => {
+              setSavingOffline(true);
+              try {
+                const result = await keepDossierOffline(window.location.href);
+                const outcome = result.failed === 0 ? "saved" : result.saved > 0 ? "partial" : "failed";
+                trackOfflineDossierSaved({ outcome, view_count: result.saved });
+                if (outcome === "saved") toast.success("Dossier saved for offline reading");
+                else if (outcome === "partial") toast.warning("Some views could not be saved");
+                else toast.error("Could not save this dossier offline");
+              } finally {
+                setSavingOffline(false);
+              }
+            }}
+            className="flex w-full items-center gap-4 border-t border-white/5 py-4 text-left text-ink transition-colors hover:text-seal disabled:opacity-50"
+          >
+            <CloudDownload className="h-5 w-5 shrink-0" aria-hidden />
+            <span><span className="block text-base">{savingOffline ? "Saving…" : "Keep offline"}</span><span className="mt-0.5 block text-xs text-ink-soft">Save every layout on this device</span></span>
+          </button>
         </div>
       </TdSheet>
     </>

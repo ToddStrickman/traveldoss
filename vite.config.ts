@@ -28,7 +28,7 @@ export default defineConfig({
         devOptions: { enabled: false },
         registerType: "autoUpdate",
         filename: "sw.js",
-        includeAssets: ["favicon.ico", "favicon.png", "robots.txt"],
+        includeAssets: ["favicon.ico", "favicon.png", "icon-192.png", "icon-512.png", "icon-maskable-512.png", "robots.txt"],
         manifest: {
           name: "TravelDoss",
           short_name: "TravelDoss",
@@ -40,8 +40,9 @@ export default defineConfig({
           start_url: "/",
           scope: "/",
           icons: [
-            { src: "/favicon.png", sizes: "192x192", type: "image/png" },
-            { src: "/favicon.png", sizes: "512x512", type: "image/png", purpose: "any maskable" },
+            { src: "/icon-192.png", sizes: "192x192", type: "image/png" },
+            { src: "/icon-512.png", sizes: "512x512", type: "image/png" },
+            { src: "/icon-maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
           ],
         },
         workbox: {
@@ -64,10 +65,7 @@ export default defineConfig({
               // HTML navigations — always try the network first so users get
               // fresh trip content when online, but fall back to cache offline.
               urlPattern: ({ request, url }) =>
-                request.mode === "navigate" &&
-                !url.pathname.startsWith("/api/") &&
-                !url.pathname.startsWith("/app/dossier/") &&
-                !url.pathname.startsWith("/auth/"),
+                request.mode === "navigate" && /^\/t\/[^/]+\/?$/.test(url.pathname),
               handler: "NetworkFirst",
               options: {
                 cacheName: "td-html",

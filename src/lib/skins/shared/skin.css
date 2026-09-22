@@ -48,6 +48,17 @@
   grid-template-columns: none;
 }
 
+/* Now-and-next uses the same logistics projection as the horizontal lanes. */
+.tds-now-next { border: 1px solid var(--tds-rule); background: var(--tds-card); color: var(--tds-ink); }
+.tds-now-next--grid { max-width: 520px; margin: 0 0 var(--tds-s3); padding: 16px 18px; }
+.tds-now-next--vertical { position: sticky; top: 12px; z-index: 8; display: flex; align-items: center; gap: 18px; margin-bottom: var(--tds-s2); padding: 10px 14px; backdrop-filter: blur(12px); }
+.tds-now-next div { display: flex; flex-direction: column; min-width: 0; }
+.tds-now-next span { color: var(--tds-accent); font-size: 9px; font-weight: 700; letter-spacing: .26em; text-transform: uppercase; }
+.tds-now-next strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 17px/1.2 var(--tds-fontDisplay); }
+.tds-now-next p { margin: 0; color: var(--tds-soft); font-size: 11px; }
+.tds-now-next button { margin-left: auto; border: 0; background: transparent; color: var(--tds-accent); font-size: 9px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; }
+@media (max-width: 640px) { .tds-now-next--vertical { top: calc(56px + env(safe-area-inset-top, 0px)); } }
+
 /* =============================================================
    FLIGHT STRIP — appears at the top of all three views.
    ============================================================= */

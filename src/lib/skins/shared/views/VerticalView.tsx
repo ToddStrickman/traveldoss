@@ -13,6 +13,7 @@ import { buildDayImagePlan } from "../fallback-images";
 import { ShadowItinerary, PlanBCue } from "../ShadowItinerary";
 import { HotelsQuickRef } from "../HotelsQuickRef";
 import { CalendarQuickRef } from "../CalendarQuickRef";
+import { NowNext } from "../NowNext";
 import { BlankDayScaffold, isScaffoldTriggered } from "../BlankDayScaffold";
 import { useCallback, useState } from "react";
 import type { PartOfDay } from "../itinerary";
@@ -57,6 +58,7 @@ export function VerticalView({ trip, blocks }: { trip: TripView; blocks: Block[]
   return (
     <div className="tds-vertical">
       <EditableHero trip={trip} />
+      <NowNext trip={trip} blocks={blocks} placement="vertical" />
 
       {showScaffold ? (
         <BlankDayScaffold blocks={blocks} />

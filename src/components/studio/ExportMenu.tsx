@@ -1,4 +1,4 @@
-import { CalendarPlus, FileText, Printer } from "lucide-react";
+import { CalendarPlus, CloudDownload, FileText, Printer } from "lucide-react";
 import { toast } from "sonner";
 import type { Block, TripView } from "@/lib/skins/types";
 import { buildItineraryIcs, downloadIcs } from "@/lib/ics";
@@ -9,6 +9,8 @@ import { exportItineraryToGoogleDoc } from "@/lib/itinerary/export.functions";
 import { logTripExport } from "@/lib/access-log.functions";
 import { useState } from "react";
 import { withRetry } from "@/lib/retry";
+import { keepDossierOffline } from "@/lib/pwa/offline";
+import { trackOfflineDossierSaved } from "@/lib/analytics";
 
 export function ExportMenu({
   slug,
@@ -31,13 +33,33 @@ export function ExportMenu({
   };
   const [exporting, setExporting] = useState(false);
   const [exportAttempt, setExportAttempt] = useState(0);
-  function printPdf() {
+  async function printPdf() {
     audit("export_pdf");
     document.body.classList.add("td-print-mode");
-    setTimeout(() => {
+    try {
+      await document.fonts?.ready;
+      const pending = Array.from(document.images)
+        .filter((image) => !image.complete)
+        .map((image) => new Promise<void>((resolve) => {
+          image.addEventListener("load", () => resolve(), { once: true });
+          image.addEventListener("error", () => resolve(), { once: true });
+        }));
+      await Promise.race([
+        Promise.all(pending),
+        new Promise((resolve) => window.setTimeout(resolve, 2500)),
+      ]);
       window.print();
+    } finally {
       document.body.classList.remove("td-print-mode");
-    }, 50);
+    }
+  }
+  async function saveOffline() {
+    const result = await keepDossierOffline(window.location.href);
+    const outcome = result.failed === 0 ? "saved" : result.saved > 0 ? "partial" : "failed";
+    trackOfflineDossierSaved({ outcome, view_count: result.saved });
+    if (outcome === "saved") toast.success("Dossier saved for offline reading");
+    else if (outcome === "partial") toast.warning("Some dossier views could not be saved");
+    else toast.error("Could not save this dossier offline");
   }
   async function exportToGoogleDoc() {
     if (exporting) return;
@@ -181,6 +203,7 @@ export function ExportMenu({
           />
         </>
       )}
+      <ExportButton onClick={() => void saveOffline()} icon={<CloudDownload className="h-3.5 w-3.5" />} label="Keep offline" />
       <ExportButton onClick={printPdf} icon={<Printer className="h-3.5 w-3.5" />} label="PDF" />
     </div>
   );

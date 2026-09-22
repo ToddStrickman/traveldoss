@@ -238,6 +238,15 @@ invitation gets before it is used. `change_restored` with
 
 ## View-native logistics (Directive 09, Amendment 1)
 
+## Offline dossiers
+
+| Event | When | Properties |
+| --- | --- | --- |
+| `offline_dossier_saved` | A viewer finishes warming the three public dossier views | `outcome` (`saved` \| `partial` \| `failed`), `view_count` |
+
+No URL, slug, destination, date, or dossier content is captured. A partial or
+failed outcome measures service-worker/cache failures without identifying a trip.
+
 | Event                  | When                                              | Properties                         |
 | ---------------------- | ------------------------------------------------- | ---------------------------------- |
 | `lane_item_expanded`   | A flight tab or stay band opens on the board      | `kind` (`flight` \| `stay`)       |
