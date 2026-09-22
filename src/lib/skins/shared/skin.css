@@ -408,6 +408,8 @@
 .tds-board-lane-item,
 .tds-board-lane-gap {
   position: absolute;
+  left: calc(var(--tds-lane-start) * (var(--tds-board-column) + var(--tds-board-gap)));
+  width: max(44px, calc(var(--tds-lane-span) * (var(--tds-board-column) + var(--tds-board-gap)) - var(--tds-board-gap)));
   top: 24px;
   height: 28px;
   min-width: 44px;

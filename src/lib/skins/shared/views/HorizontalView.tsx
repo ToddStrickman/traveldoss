@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import type { Block, TripView } from "../../types";
 import { buildItinerary, type PartOfDay } from "../itinerary";
-import { ActivityCard, partOrder } from "./parts";
+import { ActivityCard, FlightStrip, partOrder } from "./parts";
 import { TopScrollbar } from "./TopScrollbar";
 import { ActivityDndContext, DraggableActivity, DroppableBucket } from "./dnd";
 import { ShadowItinerary, PlanBCue } from "../ShadowItinerary";
@@ -115,6 +115,18 @@ export function HorizontalView({ trip, blocks }: { trip: TripView; blocks: Block
   return (
     <div className="tds-horizontal">
       <EditableHero trip={trip} className="tds-hero tds-board-head" />
+      {editing && !showScaffold ? (
+        <div data-print="hide">
+          <FlightStrip
+            outbound={it.flights.outbound}
+            inbound={it.flights.inbound}
+            outboundIndex={it.flights.outboundIndex}
+            inboundIndex={it.flights.inboundIndex}
+            slots={["outbound", "inbound"]}
+            blocksLength={blocks.length}
+          />
+        </div>
+      ) : null}
       {showScaffold ? (
         <BlankDayScaffold blocks={blocks} />
       ) : (
@@ -144,7 +156,7 @@ export function HorizontalView({ trip, blocks }: { trip: TripView; blocks: Block
       <TopScrollbar targetRef={scrollerRef} ariaLabel="Scroll across days" />
 
       <ActivityDndContext blocks={blocks}>
-        <div className="tds-board" ref={scrollerRef}>
+        <div className="tds-board" ref={scrollerRef} role="list" aria-label="Trip days and logistics">
           <div
             className="tds-board-track"
             style={{ "--tds-board-days": Math.max(1, it.days.length) } as CSSProperties}
@@ -277,9 +289,9 @@ function LogisticsLane({
             aria-expanded={expandedId === item.id}
             onClick={() => onToggle(item.id)}
             style={{
-              left: `${(item.start / count) * 100}%`,
-              width: `${Math.max(1.8, ((item.end - item.start) / count) * 100)}%`,
-            }}
+              "--tds-lane-start": item.start,
+              "--tds-lane-span": Math.max(1 / 24, item.end - item.start),
+            } as CSSProperties}
           >
             <span className="tds-board-lane-item-text">{title}{arrival}</span>
           </button>
@@ -289,7 +301,7 @@ function LogisticsLane({
         <div
           key={gap.id}
           className="tds-board-lane-gap"
-          style={{ left: `${(gap.start / count) * 100}%`, width: `${((gap.end - gap.start) / count) * 100}%` }}
+          style={{ "--tds-lane-start": gap.start, "--tds-lane-span": gap.end - gap.start } as CSSProperties}
         >
           {trusted ? "No stay booked" : null}
         </div>
@@ -327,16 +339,19 @@ function Bucket({
   onAdd: (dayIndex: number, part: PartOfDay, seed: Partial<Extract<Block, { kind: "place" }>>) => void;
   suggestContext?: SuggestContext;
 }) {
+  const visibleEntries = editing
+    ? entries
+    : entries.filter(({ activity }) => !activity.category || !["accommodation", "stay", "hotel"].includes(activity.category));
   return (
     <DroppableBucket dayIndex={dayIndex} part={part} className="tds-board-bucket">
       <PartHeaderRow part={part} dayN={dayN} showCollapse={false} />
       <div className="tds-board-bucket-list">
-        {entries.map(({ activity, index }) => (
+        {visibleEntries.map(({ activity, index }) => (
           <DraggableActivity key={index} index={index}>
             <ActivityCard activity={activity} index={index} />
           </DraggableActivity>
         ))}
-        {entries.length === 0 && !editing ? <div className="tds-board-empty">—</div> : null}
+        {visibleEntries.length === 0 && !editing ? <div className="tds-board-empty">—</div> : null}
         {editing ? (
           <AddActivitySlot
             dayIndex={dayIndex}

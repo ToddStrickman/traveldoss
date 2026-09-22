@@ -148,17 +148,17 @@ export function FlightCard({ flight: f }: { flight: Flight }) {
 
       <div className="tds-flight-section">
         <div className="tds-flight-sec-label">Passenger &amp; seat</div>
-        <SmartRow label="Passenger" value={f.passenger} />
-        <SmartRow label="Seat" value={f.seat} />
-        <SmartRow label="Boarding group" value={f.boardingGroup} />
-        <SmartRow label="Boarding time" value={f.boardingTime} />
+        {trusted ? <SmartRow label="Passenger" value={f.passenger} /> : null}
+        {trusted ? <SmartRow label="Seat" value={f.seat} /> : null}
+        {trusted ? <SmartRow label="Boarding group" value={f.boardingGroup} /> : null}
+        {trusted ? <SmartRow label="Boarding time" value={f.boardingTime} /> : null}
       </div>
 
       <div className="tds-flight-section">
         <div className="tds-flight-sec-label">Fare &amp; baggage</div>
-        <SmartRow label="Fare class" value={f.fareClass} />
-        <SmartRow label="Baggage" value={f.baggage} />
-        <SmartRow label="Price" value={f.price} />
+        {trusted ? <SmartRow label="Fare class" value={f.fareClass} /> : null}
+        {trusted ? <SmartRow label="Baggage" value={f.baggage} /> : null}
+        {trusted ? <SmartRow label="Price" value={f.price} /> : null}
       </div>
 
       {f.note ? (
