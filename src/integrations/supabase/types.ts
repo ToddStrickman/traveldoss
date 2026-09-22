@@ -14,6 +14,141 @@ export type Database = {
   }
   public: {
     Tables: {
+      adaptive_email_accounts: {
+        Row: {
+          email: string
+          encrypted_tokens: string | null
+          id: string
+          lease_id: string | null
+          lease_until: string | null
+          provider: string
+          status: string
+          sync: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          email: string
+          encrypted_tokens?: string | null
+          id?: string
+          lease_id?: string | null
+          lease_until?: string | null
+          provider: string
+          status?: string
+          sync: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          email?: string
+          encrypted_tokens?: string | null
+          id?: string
+          lease_id?: string | null
+          lease_until?: string | null
+          provider?: string
+          status?: string
+          sync?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      adaptive_oauth_states: {
+        Row: {
+          encrypted_verifier: string
+          expires_at: string
+          return_trip_id: string | null
+          scope: string
+          state_hash: string
+          user_id: string
+        }
+        Insert: {
+          encrypted_verifier: string
+          expires_at?: string
+          return_trip_id?: string | null
+          scope: string
+          state_hash: string
+          user_id: string
+        }
+        Update: {
+          encrypted_verifier?: string
+          expires_at?: string
+          return_trip_id?: string | null
+          scope?: string
+          state_hash?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "adaptive_oauth_states_return_trip_id_fkey"
+            columns: ["return_trip_id"]
+            isOneToOne: false
+            referencedRelation: "admin_trip_engagement"
+            referencedColumns: ["trip_id"]
+          },
+          {
+            foreignKeyName: "adaptive_oauth_states_return_trip_id_fkey"
+            columns: ["return_trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      adaptive_push_subscriptions: {
+        Row: {
+          created_at: string
+          endpoint: string
+          id: string
+          subscription: Json
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          endpoint: string
+          id?: string
+          subscription: Json
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          endpoint?: string
+          id?: string
+          subscription?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
+      adaptive_workspaces: {
+        Row: {
+          lease_id: string | null
+          lease_until: string | null
+          next_run_at: string
+          revision: number
+          state: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          lease_id?: string | null
+          lease_until?: string | null
+          next_run_at?: string
+          revision?: number
+          state: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          lease_id?: string | null
+          lease_until?: string | null
+          next_run_at?: string
+          revision?: number
+          state?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       admin_snapshots: {
         Row: {
           created_at: string
@@ -872,6 +1007,34 @@ export type Database = {
       }
     }
     Functions: {
+      adaptive_claim_account: {
+        Args: { p_id: string; p_lease: string; p_user_id: string }
+        Returns: boolean
+      }
+      adaptive_claim_jobs: {
+        Args: { p_limit: number }
+        Returns: {
+          lease_id: string
+          user_id: string
+        }[]
+      }
+      adaptive_compare_and_swap: {
+        Args: { p_revision: number; p_state: Json; p_user_id: string }
+        Returns: number
+      }
+      adaptive_connect_account: {
+        Args: {
+          p_email: string
+          p_sync: Json
+          p_tokens: string
+          p_user_id: string
+        }
+        Returns: boolean
+      }
+      adaptive_lock_account: {
+        Args: { p_id: string; p_lease: string; p_user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
