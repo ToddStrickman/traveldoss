@@ -29,6 +29,9 @@ import {
 } from "@/lib/maps/use-map-param";
 import { ViewPill } from "@/components/mobile/ViewSheet";
 import { StudioBar } from "@/components/studio/StudioBar";
+import { ExportMenu } from "@/components/studio/ExportMenu";
+import { PrintDossier } from "@/components/studio/PrintDossier";
+import { OfflineDossierBanner } from "@/components/mobile/OfflineDossierBanner";
 import { IngestionModal } from "@/components/flow/IngestionModal";
 import { EditingProvider, arrayMove, type EditingCtx } from "@/lib/skins/shared/Editable";
 import { moveActivity } from "@/lib/skins/shared/itinerary";
@@ -223,6 +226,7 @@ function DossierHarness() {
         mapOpen={mapRequest.open}
         mapAvailable={snap.blocks.some((b) => b.kind === "place" && b.lat != null && b.lng != null)}
       />
+      <OfflineDossierBanner />
       <ViewSwitch
         value={layout}
         onChange={setLayout}
@@ -264,6 +268,8 @@ function DossierHarness() {
       ) : (
         <ViewPill value={layout} onChange={setLayout} />
       )}
+      <ExportMenu slug={snap.trip.slug} trip={snap.trip} blocks={snap.blocks} isOwner={false} />
+      <PrintDossier trip={snap.trip} blocks={snap.blocks} tokens={skin.tokens} />
       <IngestionModal
         open={mintOpen}
         onOpenChange={setMintOpen}
