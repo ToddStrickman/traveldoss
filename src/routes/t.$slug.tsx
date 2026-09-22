@@ -8,6 +8,10 @@ import { FALLBACK_SKIN, getSkin } from "@/lib/skins/registry";
 import type { Block, SkinView, TripView } from "@/lib/skins/types";
 import { supabase } from "@/integrations/supabase/client";
 import { StudioBar } from "@/components/studio/StudioBar";
+import { Clock, Users } from "lucide-react";
+import { TripTeamPanel } from "@/components/studio/TripTeamPanel";
+import { TripHistoryPanel } from "@/components/studio/TripHistoryPanel";
+import { trackTeamPanelOpened } from "@/lib/analytics";
 import { ViewSwitch } from "@/components/ViewSwitch";
 import {
   openMap,
@@ -217,6 +221,10 @@ function DossierPage() {
   const { state: snap, set: setSnap, undo, redo, canUndo, canRedo } = history;
   const { blocks, templateId, destination, subtitle, startDate, endDate, meta } = snap;
   const [isOwner, setIsOwner] = useState(false);
+  /** Active co-planner (Directive 08): edits content, but not trip settings. */
+  const [isMember, setIsMember] = useState(false);
+  const [teamOpen, setTeamOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(false);
@@ -234,15 +242,23 @@ function DossierPage() {
     let cancelled = false;
     supabase.auth.getSession().then(({ data }) => {
       if (!data.session) {
-        if (!cancelled) setIsOwner(false);
+        if (!cancelled) {
+          setIsOwner(false);
+          setIsMember(false);
+        }
         return;
       }
       checkOwner({ data: { slug: trip.slug } })
         .then((r) => {
-          if (!cancelled) setIsOwner(!!r.isOwner);
+          if (cancelled) return;
+          setIsOwner(!!r.isOwner);
+          setIsMember(!!r.isMember && !r.isOwner);
         })
         .catch(() => {
-          if (!cancelled) setIsOwner(false);
+          if (!cancelled) {
+            setIsOwner(false);
+            setIsMember(false);
+          }
         });
     });
     return () => {
@@ -273,7 +289,9 @@ function DossierPage() {
   }, [search.mint, search.mode, trip.slug, navigate]);
 
   const phase = getTemporalPhase(trip.start_date, trip.end_date);
-  const canEdit = isOwner && phase !== "archive" && !expired;
+  // Co-planners edit on the same terms as the creator, and go read-only with
+  // them when the trip is archived or expired (R5).
+  const canEdit = (isOwner || isMember) && phase !== "archive" && !expired;
 
   // Global Lock/Unlock — mobile locks by default so a stray finger can't
   // grab a card. Desktop has no lock concept — clicking into any field
@@ -863,19 +881,24 @@ function DossierPage() {
       <EditingStatusBar slug={trip.slug} />
       {canEdit && (
         <>
-          <TemplateMenu
-            templateId={templateId}
-            onTemplateChange={onTemplateChange}
-            onRegenerate={() => {
-              if (blocks.length > 0) {
-                const ok = window.confirm(
-                  "Regenerate this dossier from a new source? Your current blocks will be overwritten. (Undo with ⌘Z afterwards.)",
-                );
-                if (!ok) return;
-              }
-              setMintOpen(true);
-            }}
-          />
+          {/* Template and regenerate are creator-only (R4); co-planners edit
+              content but never change the dossier's identity. */}
+          {isOwner && (
+            <TemplateMenu
+              templateId={templateId}
+              onTemplateChange={onTemplateChange}
+              onRegenerate={() => {
+                if (blocks.length > 0) {
+                  const ok = window.confirm(
+                    "Regenerate this dossier from a new source? Your current blocks will be overwritten. (Undo with ⌘Z afterwards.)",
+                  );
+                  if (!ok) return;
+                }
+                setMintOpen(true);
+              }}
+            />
+          )}
+
           <AnimatePresence>
             {isEditing ? (
               <StudioBar
@@ -904,6 +927,47 @@ function DossierPage() {
         </div>
       )}
       {isOwner && <AccessAuditTrail slug={trip.slug} />}
+      {/* Creator-only: who's on the trip, and everything that changed. */}
+      {isOwner && (
+        <>
+          <div
+            data-print="hide"
+            className="fixed bottom-4 left-4 z-40 flex flex-col items-start gap-2"
+            style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+          >
+            <button
+              type="button"
+              onClick={() => {
+                trackTeamPanelOpened();
+                setTeamOpen(true);
+              }}
+              className="tap inline-flex min-h-[44px] items-center gap-2 rounded-full border border-seal/40 bg-surface/90 px-4 text-xs uppercase tracking-[0.2em] text-ink backdrop-blur"
+            >
+              <Users className="h-4 w-4" aria-hidden />
+              Trip team
+            </button>
+            <button
+              type="button"
+              onClick={() => setHistoryOpen(true)}
+              className="tap inline-flex min-h-[44px] items-center gap-2 rounded-full border border-white/10 bg-surface/90 px-4 text-xs uppercase tracking-[0.2em] text-ink-soft backdrop-blur"
+            >
+              <Clock className="h-4 w-4" aria-hidden />
+              History
+            </button>
+          </div>
+          <TripTeamPanel
+            tripId={trip.id}
+            open={teamOpen}
+            onOpenChange={setTeamOpen}
+          />
+          <TripHistoryPanel
+            tripId={trip.id}
+            open={historyOpen}
+            onOpenChange={setHistoryOpen}
+            onRestored={() => window.location.reload()}
+          />
+        </>
+      )}
       <PrintScheduleGrid trip={view} blocks={blocks} />
       <IngestionModal
         open={mintOpen}

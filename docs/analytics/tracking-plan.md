@@ -214,3 +214,24 @@ Counts only: never a property name, airline, confirmation number, address or
 any email content. `mode: "off"` is the honest measure of how many travelers
 want the workspace to stay entirely private, and `dossier_share_undone` over
 `dossier_share_applied` is the regret rate for the merge rules.
+
+## Shared editing (Directive 08, Phase 2)
+
+Invitations, the members panel, and the owner's history with restore and roll
+back. Every property is an enum value, a count, or a day interval.
+
+| Event                   | When                                                          | Properties                                                    |
+| ----------------------- | ------------------------------------------------------------- | ------------------------------------------------------------- |
+| `team_panel_opened`     | The creator opens the trip team panel                         | none                                                          |
+| `invite_sent`           | Invitations are created after the creator's confirmation tap   | `source` (`creator` \| `member` \| `named_traveler`), `count` |
+| `invite_revoked`        | The creator withdraws a pending invitation                     | none                                                          |
+| `invite_accepted`       | A recipient accepts and becomes a co-planner                   | `source`, `days_to_accept`                                    |
+| `member_removed`        | The creator removes a co-planner                               | none                                                          |
+| `history_panel_opened`  | The creator opens the history panel                            | `change_count`                                                |
+| `change_restored`       | A single item is restored, or the trip is rolled back          | `mode` (`single` \| `point_in_time`)                          |
+
+Never an email address, a person's name, a trip title, or any block content —
+`invite_sent` carries how many people, never who. `invite_accepted` over
+`invite_sent` is the acceptance rate; `days_to_accept` is how stale an
+invitation gets before it is used. `change_restored` with
+`mode: "point_in_time"` is the signal that shared editing lost someone work.

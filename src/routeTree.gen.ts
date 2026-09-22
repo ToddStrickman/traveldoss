@@ -24,6 +24,7 @@ import { Route as GuidesIndexRouteImport } from './routes/guides.index'
 import { Route as TermsUpdateRouteImport } from './routes/terms_.update'
 import { Route as TemplatesIdRouteImport } from './routes/templates_.$id'
 import { Route as TSlugRouteImport } from './routes/t.$slug'
+import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as GuidesSlugRouteImport } from './routes/guides.$slug'
 import { Route as E2eReviewRouteImport } from './routes/e2e.review'
 import { Route as E2eKanbanRouteImport } from './routes/e2e.kanban'
@@ -112,6 +113,11 @@ const TemplatesIdRoute = TemplatesIdRouteImport.update({
 const TSlugRoute = TSlugRouteImport.update({
   id: '/t/$slug',
   path: '/t/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InviteTokenRoute = InviteTokenRouteImport.update({
+  id: '/invite/$token',
+  path: '/invite/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GuidesSlugRoute = GuidesSlugRouteImport.update({
@@ -214,6 +220,7 @@ export interface FileRoutesByFullPath {
   '/e2e/kanban': typeof E2eKanbanRoute
   '/e2e/review': typeof E2eReviewRoute
   '/guides/$slug': typeof GuidesSlugRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/t/$slug': typeof TSlugRoute
   '/templates/$id': typeof TemplatesIdRoute
   '/terms/update': typeof TermsUpdateRoute
@@ -245,6 +252,7 @@ export interface FileRoutesByTo {
   '/e2e/kanban': typeof E2eKanbanRoute
   '/e2e/review': typeof E2eReviewRoute
   '/guides/$slug': typeof GuidesSlugRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/t/$slug': typeof TSlugRoute
   '/templates/$id': typeof TemplatesIdRoute
   '/terms/update': typeof TermsUpdateRoute
@@ -278,6 +286,7 @@ export interface FileRoutesById {
   '/e2e/kanban': typeof E2eKanbanRoute
   '/e2e/review': typeof E2eReviewRoute
   '/guides/$slug': typeof GuidesSlugRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/t/$slug': typeof TSlugRoute
   '/templates_/$id': typeof TemplatesIdRoute
   '/terms_/update': typeof TermsUpdateRoute
@@ -311,6 +320,7 @@ export interface FileRouteTypes {
     | '/e2e/kanban'
     | '/e2e/review'
     | '/guides/$slug'
+    | '/invite/$token'
     | '/t/$slug'
     | '/templates/$id'
     | '/terms/update'
@@ -342,6 +352,7 @@ export interface FileRouteTypes {
     | '/e2e/kanban'
     | '/e2e/review'
     | '/guides/$slug'
+    | '/invite/$token'
     | '/t/$slug'
     | '/templates/$id'
     | '/terms/update'
@@ -374,6 +385,7 @@ export interface FileRouteTypes {
     | '/e2e/kanban'
     | '/e2e/review'
     | '/guides/$slug'
+    | '/invite/$token'
     | '/t/$slug'
     | '/templates_/$id'
     | '/terms_/update'
@@ -406,6 +418,7 @@ export interface RootRouteChildren {
   E2eKanbanRoute: typeof E2eKanbanRoute
   E2eReviewRoute: typeof E2eReviewRoute
   GuidesSlugRoute: typeof GuidesSlugRoute
+  InviteTokenRoute: typeof InviteTokenRoute
   TSlugRoute: typeof TSlugRoute
   TemplatesIdRoute: typeof TemplatesIdRoute
   TermsUpdateRoute: typeof TermsUpdateRoute
@@ -522,6 +535,13 @@ declare module '@tanstack/react-router' {
       path: '/t/$slug'
       fullPath: '/t/$slug'
       preLoaderRoute: typeof TSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invite/$token': {
+      id: '/invite/$token'
+      path: '/invite/$token'
+      fullPath: '/invite/$token'
+      preLoaderRoute: typeof InviteTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/guides/$slug': {
@@ -668,6 +688,7 @@ const rootRouteChildren: RootRouteChildren = {
   E2eKanbanRoute: E2eKanbanRoute,
   E2eReviewRoute: E2eReviewRoute,
   GuidesSlugRoute: GuidesSlugRoute,
+  InviteTokenRoute: InviteTokenRoute,
   TSlugRoute: TSlugRoute,
   TemplatesIdRoute: TemplatesIdRoute,
   TermsUpdateRoute: TermsUpdateRoute,
