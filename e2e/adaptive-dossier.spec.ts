@@ -104,6 +104,6 @@ test("review correction, manual reservation edit, history restore and map cancel
   await expect(page.getByText("2 mapped", { exact: false })).toBeVisible();
 });
 test("unauthenticated background job requests fail closed", async ({ request }) => {
-  const response = await request.post("/api/adaptive/jobs");
+  const response = await request.post("/api/public/adaptive/jobs");
   expect(response.status()).toBe(401);
 });

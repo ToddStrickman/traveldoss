@@ -52,7 +52,7 @@ Application writes stop safely at 11 MB of aggregate JSON; the database has a 12
 ## Gmail setup
 
 1. Enable Gmail API in a Google Cloud project. Configure the OAuth consent screen, authorized users/testing status and the appropriate production verification process for the requested access.
-2. Create a **Web application** OAuth client. Register the exact production redirect URI: https://YOUR_HOST/api/adaptive/gmail/callback.
+2. Create a **Web application** OAuth client. Register the exact production redirect URI: https://YOUR_HOST/api/public/adaptive/gmail/callback.
 3. Set GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, GMAIL_REDIRECT_URI, ADAPTIVE_TOKEN_KEY and the Supabase server keys. ADAPTIVE_TOKEN_KEY must be 32 cryptographically random bytes encoded as base64. Keep it stable and securely backed up: replacing it makes stored tokens unreadable unless they are re-encrypted.
 4. Open a private dossier → Settings → choose Last 30 days, Last 90 days, All travel history or New emails only → Connect Gmail.
 5. Grant the Gmail read-only scope. Choose Sync now, or allow the configured worker to process pages.
@@ -69,7 +69,7 @@ References: [Google web-server OAuth](https://developers.google.com/workspace/gm
 
 ## Background processing
 
-Configure a trusted scheduler to POST to https://YOUR_HOST/api/adaptive/jobs with:
+Configure a trusted scheduler to POST to https://YOUR_HOST/api/public/adaptive/jobs with:
 
 - Authorization: Bearer followed by ADAPTIVE_JOB_SECRET (at least 32 random characters).
 - A five-minute interval to start; increase throughput with a durable queue as the account count grows.
