@@ -143,7 +143,7 @@ export function HotelsQuickRef({ blocks }: { blocks: Block[] }) {
       >
         <div className="tds-hotelcards">
           {stays.map((stay) => (
-            <HotelCard key={stay.index} stay={stay} />
+            <StayCard key={stay.index} stay={stay} />
           ))}
         </div>
       </TdSheet>
@@ -181,7 +181,7 @@ function StayWindow({ stay }: { stay: HotelStay }) {
 }
 
 /** One stay. Image on top (or a refined plate), then the reference rows. */
-function HotelCard({ stay }: { stay: HotelStay }) {
+export function StayCard({ stay }: { stay: HotelStay }) {
   const h = stay.hotel;
   const trusted = useTrustedViewer();
   const [failed, setFailed] = useState(false);

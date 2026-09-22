@@ -235,3 +235,12 @@ Never an email address, a person's name, a trip title, or any block content —
 `invite_sent` is the acceptance rate; `days_to_accept` is how stale an
 invitation gets before it is used. `change_restored` with
 `mode: "point_in_time"` is the signal that shared editing lost someone work.
+
+## View-native logistics (Directive 09, Amendment 1)
+
+| Event                  | When                                              | Properties                         |
+| ---------------------- | ------------------------------------------------- | ---------------------------------- |
+| `lane_item_expanded`   | A flight tab or stay band opens on the board      | `kind` (`flight` \| `stay`)       |
+
+The event records only the item kind. It never includes a route, airline,
+property, date, time, confirmation code, or other itinerary content.

@@ -1,6 +1,8 @@
 import type { Block } from "../types";
 import { AirfareIcon } from "./CategoryIcon";
 import { LinkifiedText } from "./views/parts";
+import { flightDuration } from "./airportTz";
+import { useTrustedViewer } from "./trusted-viewer";
 
 type Flight = Extract<Block, { kind: "flight" }>;
 
@@ -101,8 +103,10 @@ function SmartRow({ label, value, warn }: { label: string; value?: string; warn?
   );
 }
 
-function FlightCard({ flight: f }: { flight: Flight }) {
+export function FlightCard({ flight: f }: { flight: Flight }) {
   const route = [f.from, f.to].filter(Boolean).join(" → ");
+  const trusted = useTrustedViewer();
+  const duration = flightDuration(f.date, f.departTime, f.arriveTime, f.from, f.to, f.arriveDate);
   return (
     <article className="tds-flight-card">
       <header className="tds-flight-head">
@@ -118,7 +122,7 @@ function FlightCard({ flight: f }: { flight: Flight }) {
 
       <div className="tds-flight-section">
         <div className="tds-flight-sec-label">Core</div>
-        <SmartRow label="Confirmation" value={f.confirmation} warn />
+        {trusted ? <SmartRow label="Confirmation" value={f.confirmation} warn /> : null}
         <SmartRow label="Flight #" value={f.flightNumber} warn />
         <SmartRow label="Airline" value={f.airline} />
         <SmartRow
@@ -138,22 +142,23 @@ function FlightCard({ flight: f }: { flight: Flight }) {
           }
         />
         <SmartRow label="Date" value={f.date} />
+        <SmartRow label="Duration" value={duration} />
         <SmartRow label="Gate" value={f.gate} />
       </div>
 
       <div className="tds-flight-section">
         <div className="tds-flight-sec-label">Passenger &amp; seat</div>
-        <SmartRow label="Passenger" value={f.passenger} />
-        <SmartRow label="Seat" value={f.seat} />
-        <SmartRow label="Boarding group" value={f.boardingGroup} />
-        <SmartRow label="Boarding time" value={f.boardingTime} />
+        {trusted ? <SmartRow label="Passenger" value={f.passenger} /> : null}
+        {trusted ? <SmartRow label="Seat" value={f.seat} /> : null}
+        {trusted ? <SmartRow label="Boarding group" value={f.boardingGroup} /> : null}
+        {trusted ? <SmartRow label="Boarding time" value={f.boardingTime} /> : null}
       </div>
 
       <div className="tds-flight-section">
         <div className="tds-flight-sec-label">Fare &amp; baggage</div>
-        <SmartRow label="Fare class" value={f.fareClass} />
-        <SmartRow label="Baggage" value={f.baggage} />
-        <SmartRow label="Price" value={f.price} />
+        {trusted ? <SmartRow label="Fare class" value={f.fareClass} /> : null}
+        {trusted ? <SmartRow label="Baggage" value={f.baggage} /> : null}
+        {trusted ? <SmartRow label="Price" value={f.price} /> : null}
       </div>
 
       {f.note ? (

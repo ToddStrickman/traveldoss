@@ -1,12 +1,15 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import type { Block, TripView } from "../../types";
 import { buildItinerary, type PartOfDay } from "../itinerary";
 import { ActivityCard, FlightStrip, partOrder } from "./parts";
 import { TopScrollbar } from "./TopScrollbar";
 import { ActivityDndContext, DraggableActivity, DroppableBucket } from "./dnd";
 import { ShadowItinerary, PlanBCue } from "../ShadowItinerary";
-import { HotelsQuickRef } from "../HotelsQuickRef";
-import { CalendarQuickRef } from "../CalendarQuickRef";
+import { StayCard, type HotelStay } from "../HotelsQuickRef";
+import { getTripLogistics, type LogisticsFlight, type LogisticsStay } from "../logistics";
+import { FlightCard } from "../FlightsSummary";
+import { useTrustedViewer } from "../trusted-viewer";
+import { trackLaneItemExpanded } from "@/lib/analytics";
 import { BlankDayScaffold, isScaffoldTriggered } from "../BlankDayScaffold";
 import { useEditing } from "../Editable";
 import {
@@ -31,6 +34,8 @@ type ActivityEntry = { activity: Extract<Block, { kind: "place" }>; index: numbe
  *  intentionally doesn't have. Full inline editing everywhere. */
 export function HorizontalView({ trip, blocks }: { trip: TripView; blocks: Block[] }) {
   const it = buildItinerary(blocks);
+  const logistics = useMemo(() => getTripLogistics(trip, blocks), [trip, blocks]);
+  const trusted = useTrustedViewer();
   const { editing } = useEditing();
   const showScaffold = editing && isScaffoldTriggered(blocks);
   const addActivity = useAddActivity(blocks);
@@ -41,6 +46,7 @@ export function HorizontalView({ trip, blocks }: { trip: TripView; blocks: Block
   // Mobile pager: which day column is centered right now.
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const [activeDay, setActiveDay] = useState(0);
+  const [expanded, setExpanded] = useState<{ kind: "flight" | "stay"; id: string } | null>(null);
   // Per-day truncation: a collapsed board column shrinks to its header
   // (which keeps the map opener and the toggle for re-expanding).
   const [collapsedDays, setCollapsedDays] = useState<Set<number>>(() => new Set());
@@ -55,7 +61,11 @@ export function HorizontalView({ trip, blocks }: { trip: TripView; blocks: Block
   const onScroll = useCallback(() => {
     const el = scrollerRef.current;
     if (!el) return;
-    const idx = Math.round(el.scrollLeft / Math.max(1, el.clientWidth));
+    const columns = Array.from(el.querySelectorAll<HTMLElement>(".tds-board-col"));
+    const idx = columns.reduce((nearest, column, index) =>
+      Math.abs(column.offsetLeft - el.scrollLeft) < Math.abs((columns[nearest]?.offsetLeft ?? 0) - el.scrollLeft)
+        ? index
+        : nearest, 0);
     setActiveDay((prev) => (prev === idx ? prev : Math.min(idx, Math.max(0, it.days.length - 1))));
   }, [it.days.length]);
   useEffect(() => {
@@ -64,32 +74,59 @@ export function HorizontalView({ trip, blocks }: { trip: TripView; blocks: Block
     el.addEventListener("scroll", onScroll, { passive: true });
     return () => el.removeEventListener("scroll", onScroll);
   }, [onScroll]);
+  useEffect(() => {
+    const today = logistics.days.findIndex((day) => day.today);
+    if (today < 0) return;
+    const el = scrollerRef.current;
+    const column = el?.querySelectorAll<HTMLElement>(".tds-board-col")[today];
+    if (el && column) {
+      el.scrollTo({ left: column.offsetLeft, behavior: "auto" });
+      setActiveDay(today);
+    }
+  }, [logistics.days]);
+  useEffect(() => {
+    if (!expanded) return;
+    const close = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setExpanded(null);
+    };
+    window.addEventListener("keydown", close);
+    return () => window.removeEventListener("keydown", close);
+  }, [expanded]);
   const jumpToDay = (i: number) => {
     const el = scrollerRef.current;
     if (!el) return;
-    el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" });
+    const column = el.querySelectorAll<HTMLElement>(".tds-board-col")[i];
+    if (column) el.scrollTo({ left: column.offsetLeft, behavior: "smooth" });
   };
+  const toggleExpanded = (kind: "flight" | "stay", id: string) => {
+    setExpanded((current) => {
+      if (current?.kind === kind && current.id === id) return null;
+      trackLaneItemExpanded(kind);
+      return { kind, id };
+    });
+  };
+  const expandedFlight = expanded?.kind === "flight"
+    ? logistics.flights.find((item) => item.id === expanded.id)
+    : undefined;
+  const expandedStay = expanded?.kind === "stay"
+    ? logistics.stays.find((item) => item.id === expanded.id)
+    : undefined;
 
   return (
     <div className="tds-horizontal">
       <EditableHero trip={trip} className="tds-hero tds-board-head" />
-      {showScaffold ? null : (
-        <FlightStrip
-          outbound={it.flights.outbound}
-          inbound={it.flights.inbound}
-          outboundIndex={it.flights.outboundIndex}
-          inboundIndex={it.flights.inboundIndex}
-          slots={["outbound", "inbound"]}
-          blocksLength={blocks.length}
-        />
-      )}
-
-      <div className="tds-quickrefs">
-        <HotelsQuickRef blocks={blocks} />
-        <CalendarQuickRef blocks={blocks} />
-      </div>
-
-
+      {editing && !showScaffold ? (
+        <div data-print="hide">
+          <FlightStrip
+            outbound={it.flights.outbound}
+            inbound={it.flights.inbound}
+            outboundIndex={it.flights.outboundIndex}
+            inboundIndex={it.flights.inboundIndex}
+            slots={["outbound", "inbound"]}
+            blocksLength={blocks.length}
+          />
+        </div>
+      ) : null}
       {showScaffold ? (
         <BlankDayScaffold blocks={blocks} />
       ) : (
@@ -119,7 +156,33 @@ export function HorizontalView({ trip, blocks }: { trip: TripView; blocks: Block
       <TopScrollbar targetRef={scrollerRef} ariaLabel="Scroll across days" />
 
       <ActivityDndContext blocks={blocks}>
-        <div className="tds-board" role="list" ref={scrollerRef}>
+        <div className="tds-board" ref={scrollerRef} role="list" aria-label="Trip days and logistics">
+          <div
+            className="tds-board-track"
+            style={{ "--tds-board-days": Math.max(1, it.days.length) } as CSSProperties}
+          >
+            <LogisticsLane
+              label="Transit"
+              count={it.days.length}
+              items={logistics.flights}
+              expandedId={expanded?.kind === "flight" ? expanded.id : undefined}
+              onToggle={(id) => toggleExpanded("flight", id)}
+            />
+            <LogisticsLane
+              label="Stays"
+              count={it.days.length}
+              items={logistics.stays}
+              gaps={logistics.gaps}
+              trusted={trusted}
+              expandedId={expanded?.kind === "stay" ? expanded.id : undefined}
+              onToggle={(id) => toggleExpanded("stay", id)}
+            />
+            {expandedFlight || expandedStay ? (
+              <div className="tds-board-lane-panel">
+                {expandedFlight ? <FlightCard flight={expandedFlight.flight} /> : null}
+                {expandedStay ? <StayCard stay={toHotelStay(expandedStay)} /> : null}
+              </div>
+            ) : null}
           {it.days.map((d, dPos) => (
             <section
               key={d.dayIndex}
@@ -127,7 +190,11 @@ export function HorizontalView({ trip, blocks }: { trip: TripView; blocks: Block
               role="listitem"
               data-block="day"
               data-collapsed={collapsedDays.has(d.dayIndex) || undefined}
+              data-today={logistics.days[dPos]?.today || undefined}
             >
+              {logistics.days[dPos]?.cityChanged ? (
+                <div className="tds-board-city">{logistics.days[dPos]?.city}</div>
+              ) : null}
               <EditableDayHeader
                 d={d}
                 className="tds-board-col-head"
@@ -164,6 +231,7 @@ export function HorizontalView({ trip, blocks }: { trip: TripView; blocks: Block
               ) : null}
             </section>
           ))}
+          </div>
         </div>
       </ActivityDndContext>
       {editing ? <AddDayButton onAdd={addDay} /> : null}
@@ -172,6 +240,86 @@ export function HorizontalView({ trip, blocks }: { trip: TripView; blocks: Block
       )}
     </div>
   );
+}
+
+type LaneItem = LogisticsFlight | LogisticsStay;
+
+function LogisticsLane({
+  label,
+  count,
+  items,
+  gaps = [],
+  trusted = false,
+  expandedId,
+  onToggle,
+}: {
+  label: string;
+  count: number;
+  items: LaneItem[];
+  gaps?: Array<{ id: string; start: number; end: number }>;
+  trusted?: boolean;
+  expandedId?: string;
+  onToggle: (id: string) => void;
+}) {
+  if (count === 0) return null;
+  return (
+    <section className="tds-board-lane" aria-label={`${label} lane`}>
+      <div className="tds-board-lane-label">{label}</div>
+      <div className="tds-board-lane-cells" aria-hidden>
+        {Array.from({ length: count }, (_, index) => <span key={index} />)}
+      </div>
+      {items.map((item) => {
+        const flight = "flight" in item ? item : undefined;
+        const stay = "hotel" in item ? item : undefined;
+        const title = flight
+          ? [flight.flight.from, flight.flight.to].filter(Boolean).join(" → ") || flight.flight.flightNumber || "Flight"
+          : `${stay?.hotel.name ?? "Stay"} · ${stay?.nights ?? 1} ${(stay?.nights ?? 1) === 1 ? "night" : "nights"}`;
+        const arrival = flight?.fallback
+          ? ` · arrives ${[flight.flight.arriveDate ?? flight.flight.date, flight.flight.arriveTime].filter(Boolean).join(" ")}`
+          : "";
+        return (
+          <button
+            key={item.id}
+            type="button"
+            className="tds-board-lane-item tap"
+            data-kind={flight ? "flight" : "stay"}
+            data-shade={stay?.shadeIndex}
+            data-fallback={flight?.fallback || undefined}
+            data-expanded={expandedId === item.id || undefined}
+            aria-expanded={expandedId === item.id}
+            onClick={() => onToggle(item.id)}
+            style={{
+              "--tds-lane-start": item.start,
+              "--tds-lane-span": Math.max(1 / 24, item.end - item.start),
+            } as CSSProperties}
+          >
+            <span className="tds-board-lane-item-text">{title}{arrival}</span>
+          </button>
+        );
+      })}
+      {gaps.map((gap) => (
+        <div
+          key={gap.id}
+          className="tds-board-lane-gap"
+          style={{ "--tds-lane-start": gap.start, "--tds-lane-span": gap.end - gap.start } as CSSProperties}
+        >
+          {trusted ? "No stay booked" : null}
+        </div>
+      ))}
+    </section>
+  );
+}
+
+function toHotelStay(stay: LogisticsStay): HotelStay {
+  return {
+    hotel: stay.hotel,
+    index: stay.blockIndex,
+    fromDay: stay.fromDay + 1,
+    toDay: stay.toDay + 1,
+    checkInDate: stay.checkInDate,
+    checkOutDate: stay.checkOutDate,
+    nights: stay.nights,
+  };
 }
 
 function Bucket({
@@ -191,16 +339,19 @@ function Bucket({
   onAdd: (dayIndex: number, part: PartOfDay, seed: Partial<Extract<Block, { kind: "place" }>>) => void;
   suggestContext?: SuggestContext;
 }) {
+  const visibleEntries = editing
+    ? entries
+    : entries.filter(({ activity }) => !activity.category || !["accommodation", "stay", "hotel"].includes(activity.category));
   return (
     <DroppableBucket dayIndex={dayIndex} part={part} className="tds-board-bucket">
       <PartHeaderRow part={part} dayN={dayN} showCollapse={false} />
       <div className="tds-board-bucket-list">
-        {entries.map(({ activity, index }) => (
+        {visibleEntries.map(({ activity, index }) => (
           <DraggableActivity key={index} index={index}>
             <ActivityCard activity={activity} index={index} />
           </DraggableActivity>
         ))}
-        {entries.length === 0 && !editing ? <div className="tds-board-empty">—</div> : null}
+        {visibleEntries.length === 0 && !editing ? <div className="tds-board-empty">—</div> : null}
         {editing ? (
           <AddActivitySlot
             dayIndex={dayIndex}

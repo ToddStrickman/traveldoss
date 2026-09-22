@@ -14,6 +14,7 @@ import { FlightEditSheet } from "../ActivityEditSheet";
 import { AirfareIcon } from "../CategoryIcon";
 import { useCallback, useRef, useState, type ReactNode } from "react";
 import { airportTzLabel, flightDuration } from "../airportTz";
+import { FlightCard } from "../FlightsSummary";
 import {
   EditableHero,
   EditableDayHeader,
@@ -168,14 +169,7 @@ function FlightTableRow({
     {hasDetails && open ? (
       <tr className="tds-flight-details-row">
         <td colSpan={7}>
-          <dl className="tds-flight-details">
-            {details.map(({ label, value }) => (
-              <div key={label} className="tds-flight-detail">
-                <dt>{label}</dt>
-                <dd>{value}</dd>
-              </div>
-            ))}
-          </dl>
+          <FlightCard flight={f} />
         </td>
       </tr>
     ) : null}
