@@ -167,6 +167,7 @@ function Dashboard() {
                   <Link
                     to="/app/dossier/$tripId"
                     params={{ tripId: t.id }}
+                    search={{ gmail: undefined }}
                     className="tap mt-2 inline-flex items-center gap-2 px-1 td-eyebrow text-ink/45 transition-colors hover:text-seal"
                   >
                     Reservations &amp; Live Trip
