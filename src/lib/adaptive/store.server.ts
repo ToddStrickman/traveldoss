@@ -1,4 +1,5 @@
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
   emptyDossier,
   defaultPreferences,
@@ -7,18 +8,14 @@ import {
 } from "./types";
 import { stable } from "./normalize";
 
-let client: SupabaseClient | undefined;
+/**
+ * Private adaptive state is written only by this server-only module, through the
+ * project's generated service-role client. The adaptive tables and routines are
+ * not in the generated types, so the client is used untyped here; every call
+ * site below is owner-scoped explicitly.
+ */
 export function adaptiveDb(): SupabaseClient {
-  if (!client) {
-    const url = process.env.SUPABASE_URL,
-      key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (!url || !key)
-      throw new Error(
-        "Adaptive Dossier requires the server-side Supabase service key and migration. Your existing dossier is still available.",
-      );
-    client = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
-  }
-  return client;
+  return supabaseAdmin as unknown as SupabaseClient;
 }
 export function checked<T>(result: { data: T; error: { message: string } | null }): T {
   if (result.error) throw new Error(`Adaptive storage: ${result.error.message}`);

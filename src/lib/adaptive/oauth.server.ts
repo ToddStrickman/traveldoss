@@ -5,6 +5,8 @@ import { exchangeCode, GMAIL_SCOPE, gmailConfig, GmailAdapter } from "./gmail.se
 import type { ScanScope } from "./types";
 
 const COOKIE = "td_gmail_state";
+/** Only /api/public/* bypasses published-site auth, so Google returns there. */
+const CALLBACK_PATH = "/api/public/adaptive/gmail/callback";
 export async function beginGmail(
   userId: string,
   tripId: string,
