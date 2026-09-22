@@ -106,6 +106,65 @@ const BlockSchema = z.object({
     .describe("Ordered list of itinerary blocks"),
 });
 
+const NULLABLE_STRING_SCHEMA = { type: ["string", "null"] } as const;
+const NULLABLE_NUMBER_SCHEMA = { type: ["number", "null"] } as const;
+const BLOCK_ITEM_PROPERTIES = {
+  kind: { type: "string", enum: ["day", "place", "flight", "paragraph", "note"] },
+  n: NULLABLE_NUMBER_SCHEMA,
+  label: NULLABLE_STRING_SCHEMA,
+  dayDate: NULLABLE_STRING_SCHEMA,
+  name: NULLABLE_STRING_SCHEMA,
+  tier: { type: ["string", "null"], enum: ["primary", "shadow", null] },
+  category: { type: ["string", "null"], enum: ["transit", "restaurant", "walk", "event", "accommodation", "culture", "", null] },
+  address: NULLABLE_STRING_SCHEMA, phone: NULLABLE_STRING_SCHEMA, website: NULLABLE_STRING_SCHEMA,
+  hours: NULLABLE_STRING_SCHEMA, time: NULLABLE_STRING_SCHEMA, reservation: NULLABLE_STRING_SCHEMA,
+  note: NULLABLE_STRING_SCHEMA, confidence: NULLABLE_NUMBER_SCHEMA, checkIn: NULLABLE_STRING_SCHEMA,
+  checkOut: NULLABLE_STRING_SCHEMA, amenities: NULLABLE_STRING_SCHEMA, dressCode: NULLABLE_STRING_SCHEMA,
+  mustOrder: NULLABLE_STRING_SCHEMA, vendor: NULLABLE_STRING_SCHEMA, pickup: NULLABLE_STRING_SCHEMA,
+  dropoff: NULLABLE_STRING_SCHEMA, venue: NULLABLE_STRING_SCHEMA, ticketRequirement: NULLABLE_STRING_SCHEMA,
+  tourDetails: NULLABLE_STRING_SCHEMA, trailhead: NULLABLE_STRING_SCHEMA, distance: NULLABLE_STRING_SCHEMA,
+  duration: NULLABLE_STRING_SCHEMA, difficulty: NULLABLE_STRING_SCHEMA, airline: NULLABLE_STRING_SCHEMA,
+  flightNumber: NULLABLE_STRING_SCHEMA, from: NULLABLE_STRING_SCHEMA, to: NULLABLE_STRING_SCHEMA,
+  fromCity: NULLABLE_STRING_SCHEMA, toCity: NULLABLE_STRING_SCHEMA, departTime: NULLABLE_STRING_SCHEMA,
+  arriveTime: NULLABLE_STRING_SCHEMA, date: NULLABLE_STRING_SCHEMA, arriveDate: NULLABLE_STRING_SCHEMA,
+  text: NULLABLE_STRING_SCHEMA,
+} as const;
+
+const BLOCK_OUTPUT_JSON_SCHEMA = {
+  type: "object",
+  properties: {
+    destination: NULLABLE_STRING_SCHEMA,
+    blocks: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: BLOCK_ITEM_PROPERTIES,
+        required: Object.keys(BLOCK_ITEM_PROPERTIES),
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ["destination", "blocks"],
+  additionalProperties: false,
+} as const;
+
+const NOTES_OUTPUT_JSON_SCHEMA = {
+  type: "object",
+  properties: {
+    notes: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: { index: { type: "number" }, note: NULLABLE_STRING_SCHEMA },
+        required: ["index", "note"],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ["notes"],
+  additionalProperties: false,
+} as const;
+
 const SYSTEM_PROMPT = `You are an expert travel researcher, itinerary architect, logistics planner, and narrative editor for TravelDoss, a luxury travel platform.
 
 Your mission: transform messy, incomplete, fragmented, unstructured travel inputs (notes, voice transcripts, AI drafts, bullets, partial itineraries, random thoughts) into a complete, accurate, beautifully organized itinerary. Do NOT just organize what's given — reconstruct the trip and intelligently fill in missing dates, destinations, accommodations, transportation, meals, and activity timing so the result feels crafted by an elite advisor.
@@ -357,7 +416,7 @@ async function parseChunkWithAi(
       const { streamLovableJsonResponse } = await import("@/lib/ai-gateway.server");
       const result = await streamLovableJsonResponse<unknown>({
         apiKey,
-        instructions: `${SYSTEM_PROMPT}\n\nReturn only the requested structured object.`,
+        instructions: `${SYSTEM_PROMPT}\n\nReturn only the requested structured object. Every schema field is required; use null when it does not apply.`,
         input: prompt,
         schemaName: "itinerary_chunk",
         schema: BLOCK_OUTPUT_JSON_SCHEMA,
