@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import type {} from "@tanstack/react-start";
 import { digest } from "@/lib/adaptive/crypto.server";
 import { runAdaptiveJobs } from "@/lib/adaptive/worker.server";
-export const Route = createFileRoute("/api/adaptive/jobs")({
+export const Route = createFileRoute("/api/public/adaptive/jobs")({
   server: {
     handlers: {
       POST: async ({ request }) => {
