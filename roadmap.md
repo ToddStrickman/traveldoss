@@ -12,7 +12,7 @@
 ## In progress
 - [x] Conversion funnel rendered as an actual tapering funnel shape (desktop),
       bar list retained for mobile
-- [ ] Phase 3 Horizontal Board: shared logistics selector/cards, Transit and Stay lanes,
+- [x] Phase 3 Horizontal Board: shared logistics selector/cards, Transit and Stay lanes,
       inline expansion, fixtures, and responsive verification
 
 ## Templates
