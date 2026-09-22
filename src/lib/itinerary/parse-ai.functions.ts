@@ -232,7 +232,7 @@ The text may contain markdown tables or ASCII separators.
 • For a real data row (\`| Morning | Arrive in Bologna | EUR 40 |\`), map the time cell to "time", the activity cell to the place name, and keep every remaining cell's content in "note".
 • Never emit a place whose name is only punctuation, dashes, or pipes.
 
-DESTINATION: the primary city/region for the trip overall, taken from the source. Null if the source does not say.
+DESTINATION: the primary city, region, or country for the trip overall. Naming it from the places the source mentions is classification, not invention — e.g. stops in Tokyo and Kyoto give "Japan". Null only when the source names no recognisable place at all.
 
 Return ONLY the structured object.`;
 
