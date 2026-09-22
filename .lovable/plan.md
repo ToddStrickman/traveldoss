@@ -1,68 +1,63 @@
-# Adaptive Trip Dossier — how it lands in this app
+# Adaptive Trip Dossier — integration plan
 
-## What's actually here today
+The code you sent is a real, finished feature, not a sketch. So this plan replaces the earlier "rebuild from scratch" plan: we merge your package into this app, adapt the handful of places where it disagrees with the current code, and switch it on one capability at a time.
 
-I checked: none of it exists in this project. No adaptive files, no adaptive tables, no private dossier route, and `http://localhost:8080/e2e/adaptive` returns 404 — that page is running in the other copy of the app, not this one. The old Gmail import was deliberately removed in the 2026-08-31 hardening pass because it read one shared workspace inbox for every user.
+## What I confirmed
 
-So this is a rebuild here, against this codebase, in the order that gets value soonest with the fewest outside accounts. No demo route.
+- Your package carries 43 feature files: the private dossier screen, reservation and preference forms, a map panel, the whole adaptive engine (extract, normalize, reconcile, live trip, Gmail, push, privacy), two HTTP routes, tests, a database migration and the docs.
+- None of it exists in this project yet. Nothing to undo, nothing to delete.
+- It was built from an older copy of the app, so three shared files in the package are **stale** and must not be copied over. Compared line by line, their only genuinely new content is:
+  - your trips list: one "Open Adaptive Dossier" link on each trip card,
+  - the dossier page `/t/<slug>`: one owner-only banner linking to the private workspace,
+  - analytics: private paths and redirect parameters stripped before anything is sent, and session replay switched off.
+  Everything else in those three files is your older version and gets left alone (it would otherwise roll back the trusted-viewer masking, flight blocks, hotels and calendar panels shipped since).
+- No new package dependencies are needed. The two extra entries in the package's dependency list belong to an unrelated markdown change.
 
-### About the folders on your Drive
+## How the two halves relate
 
-`G:\My Drive\TravelDOSS\traveldoss-repository\src\components\adaptive` and `...\src\lib\adaptive` are on your own computer — I have no way to read them from here. Two ways forward:
+Your trips keep working exactly as they do now: `trips.content` blocks, skins, sharing, `/t/<slug>`. The adaptive workspace is a **separate private record per owner** — canonical bookings, the email evidence behind them, version history, a Review queue and live-trip state. Collaborators and public viewers never see it. The shared dossier only ever changes through the sync rule below.
 
-- **Fastest: send them to me.** Zip those two folders (plus the migration file and any adaptive tests) and attach the zip in chat. I'll merge the files in, adapt them to this project's conventions, apply the migration here, and get the suite and typecheck clean. That skips most of Slices 1 and 4 below.
-- **Or I rebuild.** The plan below stands on its own if you'd rather not move files around.
+**The traveler-best sync rule** (unchanged from the approved plan, still my recommendation):
 
-Either way the build order and the sync rule below are the same.
-
-## How it fits the app you have
-
-- Your trips already store their design in `trips.content` as blocks. That stays exactly as it is — a designed, shareable document.
-- The adaptive side is a **separate private workspace per owner**: canonical bookings, the email evidence behind them, version history, and a Review queue for anything uncertain. Collaborators and public viewers never see it.
-- Existing pieces get reused rather than duplicated: the MapLibre canvas, `CategoryIcon`, the flights and hotels logic, `getTemporalPhase` for trip phase, the versioned legal documents for the privacy disclosure, and the existing analytics modules.
-- Everything server-side runs as server functions plus two HTTP routes (scheduler, OAuth callback). No edge functions.
-
-## Shared dossier: the traveler-best rule
-
-Neither extreme is right. What serves the traveler:
-
-- A booking already in the dossier that **changes** (flight time, gate, hotel check-in) updates in place, automatically, with a small "updated from your confirmation" marker and one-tap undo. That is the whole point of an adaptive dossier — a stale time in a shared document is the failure everyone remembers.
-- A booking **not yet** in the dossier is offered, never inserted: "Add this flight to your dossier?" You keep authorship of the document.
-- Nothing uncertain ever touches the shared dossier. It goes to Review first.
-- Every automatic edit is recorded and reversible, and edits you made by hand are never overwritten.
+- A booking already in the dossier that *changes* updates in place, with an "updated from your confirmation" marker and one-tap undo.
+- A booking *not yet* in the dossier is offered, never inserted.
+- Anything uncertain goes to Review and never touches the shared dossier.
+- Every automatic edit is recorded and reversible; hand edits are never overwritten.
 
 ## Build order
 
-**Slice 1 — the private workspace (no outside accounts needed)**
-Migration for `adaptive_workspaces` (owner-scoped, revisioned, RLS + grants, compare-and-swap writes through service-only functions). Domain types, conservative normaliser, identity matching, reconciliation with cancellation and rebooking links, Review queue, version history and restore. Owner route `/_authenticated/app_.dossier.$tripId`, opened from a trip card and the owner banner. Manual reservation entry, plus "review existing dossier items" to promote current place blocks into canonical records with explicit dates and timezones.
+**Step 1 — foundation and private workspace (no outside accounts)**
 
-**Slice 2 — the sync bridge**
-The traveler-best rule above, both directions: canonical record → dossier block, with markers, undo and an audit entry. This is where the feature starts paying off, so it comes before any email plumbing.
+Apply the migration; merge the adaptive engine, components, styles, the owner route `/app/dossier/<trip-id>`, both test files and the docs; add the three small shared-file edits above. Outcome: you can open a trip's private workspace, enter reservations by hand, promote existing dossier items into canonical records, see version history and restore. Manual-entry path only — no inbox, no scheduler.
 
-**Slice 3 — Gmail, per user**
-Per-user OAuth with PKCE and one-time state, read-only scope, refresh tokens encrypted with a new server key, scoped historical scan (30 / 90 days / all / new only), incremental history with retry-safe cursors, pause / disconnect / erase. Extraction stays conservative: recognised providers and clearly labelled fields only; prose, PDFs and missing timezones go to Review rather than being guessed. The Google client id and secret are already configured; I'll need one new token-encryption key.
+**Step 2 — the sync bridge**
 
-**Slice 4 — live trip and weather**
-Automatic activation before the first item, manual pause / end / extend, operational values kept separate from the original booking, impact and dependency assessment, history and restore. Weather via Open-Meteo (no key, opt-in). A scheduler route at `/api/public/adaptive/jobs` behind a bearer secret, driven by the database scheduler this project already uses for the doc-export sweep — so it runs unattended without you configuring anything external.
+Wire the traveler-best rule in both directions, with the update marker, undo and an audit entry. This is where the feature starts paying off.
 
-**Slice 5 — vendor feeds (only when you have one)**
-The flight / transit / local gateway contract, validated, HTTPS-only, sending no traveller names or booking references. Built and tested against the contract; switched on when you supply a gateway.
+**Step 3 — Gmail, per user**
 
-**Slice 6 — push (optional, last)**
-Browser subscription, preferences, quiet hours, outbox with idempotency keys. Requires a Web Push relay and a VAPID key pair; until then updates surface in the dossier itself.
+Per-user consent with PKCE and one-time state, read-only scope, refresh tokens encrypted with a new server key, scoped scan (30 / 90 days / all / new only), incremental cursors, pause / disconnect / erase. Extraction stays conservative — prose and missing timezones go to Review rather than being guessed. Needs from you: an encryption key (I generate it) and permission to add the Gmail read-only scope plus the callback address to the Google sign-in credentials already configured here. Privacy and consent wording gets a new version through the existing legal-document process before this goes live.
+
+**Step 4 — live trip, weather and the scheduler**
+
+Automatic activation before the first item, manual pause / end / extend, disruption and dependency assessment, weather via Open-Meteo (no key, opt-in). The unattended job endpoint goes behind a bearer secret; I confirm how recurring jobs are actually scheduled in this project before committing to a mechanism.
+
+**Step 5 — vendor feeds** (only when you have one) and **Step 6 — push** (needs a Web Push relay and key pair). Both are contract-only until you supply the service; until then updates surface in the workspace itself.
+
+I'd stop after Step 2 for your review — together they are the whole feature minus the inbox.
 
 ## Technical notes
 
-- Every new table: RLS plus explicit grants, owner-only reads, no client-side mutation of adaptive state; service-role writes only. Reservation, evidence, history and outbox changes commit together; the email cursor advances only after reconciliation persists.
-- The aggregate-JSON model is bounded — writes stop safely below the row ceiling and the plan notes the move to per-item tables before that matters.
-- Private routes excluded from service-worker HTML caching; server functions return `no-store`; the private path scrubbed in analytics; no email bodies rendered as HTML.
-- Rule 9 analytics ship with each slice (import connected, first reservation imported, review resolved, dossier synced, disruption surfaced, notification suppressed — counts and ids only, never content), documented in `docs/analytics/tracking-plan.md` in the same change.
-- Per house rules: no per-skin file edits, mobile-first, CLS 0 and accessibility unchanged on `/t/<slug>`, `bun test` and `npx tsgo --noEmit` clean before each slice closes.
-- Before Gmail goes live: the privacy and consent disclosures get a new version through the existing versioned legal-document process.
+- Two HTTP routes in the package sit at `/api/adaptive/jobs` and `/api/adaptive/gmail/callback`. On a published site only `/api/public/*` bypasses site auth, so both move under `src/routes/api/public/adaptive/` and keep their own checks: constant-time bearer comparison on the job route, one-time state and PKCE verifier on the callback.
+- `store.server.ts` builds its own service-role client; it is rewired to this project's generated admin client, imported inside handlers so it never reaches the browser. Server functions keep `requireSupabaseAuth` and return `private, no-store`.
+- Migration reviewed and kept as written: owner-only read on the workspace row, no client write policies anywhere, explicit grants, all mutations through service-role-only functions, compare-and-swap so reservation + evidence + history + outbox commit together, leases so a sync and a privacy operation cannot race, and a size ceiling well below the row limit. The email cursor advances only after reconciliation persists.
+- Service-worker config from the package is merged rather than replaced: the private dossier path and auth paths excluded from HTML caching, push script imported only once push exists.
+- The package's environment names are aligned to what this project already holds (Google client id/secret) so nothing is duplicated; new secrets are only the token-encryption key and the job secret.
+- Rule 9 analytics ship with each step — inbox connected, first reservation imported, review resolved, dossier synced, disruption surfaced, notification suppressed — counts and ids only, never content, documented in `docs/analytics/tracking-plan.md` in the same change.
+- House rules hold: no per-skin file edits, mobile-first, accessibility and zero layout shift on `/t/<slug>` unchanged, `bun test` and `npx tsgo --noEmit` clean before each step closes. The package's own two test files and the migration/service-worker check scripts come along.
+- The development demo route in the package is optional. Say the word and I include it (disabled outside development); otherwise I leave it out.
 
 ## What I need from you
 
-- One new secret, a 32-byte random key for encrypting stored email tokens — I can generate it.
-- Confirmation that the Google OAuth client already configured here may add the Gmail read-only scope and the callback URL, when we reach Slice 3.
-
-I'd start with Slice 1 and 2 and stop there for your review, since together they are the whole feature minus the inbox.
+- Go-ahead for Step 1 and 2.
+- Later, at Step 3: permission to add the Gmail read-only scope to the existing Google credentials.
