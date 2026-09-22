@@ -7,6 +7,8 @@ import { parseDropInWithMeta, stripEmoji } from "@/lib/itinerary/parse";
 import { normalizeParsedShape } from "@/lib/itinerary/normalize-ai";
 import { isCreditsMessage, isRateLimitMessage } from "@/lib/itinerary/ai-errors";
 import { flagReconstructedPlaces } from "@/lib/itinerary/reconstructed";
+import { buildCoverageLedger } from "@/lib/itinerary/coverage";
+
 import type { DebugAttempt, DebugReport } from "@/lib/itinerary/debug-report";
 
 /**
@@ -63,8 +65,9 @@ const BlockSchema = z.object({
         time: nullableString().describe("Clock time like '14:30' if mentioned"),
         reservation: nullableString(),
         note: nullableString().describe(
-          "ONE concise editorial sentence (<15 words) combining the source context with a factual insight about the vendor. Empty if the model has no insight.",
+          "Every detail the source gave about this stop that has no other field: prices, currencies, booking references, caveats, who-said-what, instructions. Copy the source wording; do not summarise it away. Null only when the source said nothing beyond the name.",
         ),
+
         confidence: nullableNumber().describe(
           "Self-rated confidence in the enriched fields (address/phone/website/hours/note) for this place, on a 0–1 scale. Use <0.85 whenever you are not certain the vendor identification or enrichment is correct. Null for non-place blocks.",
         ),
@@ -174,84 +177,65 @@ const NOTES_OUTPUT_JSON_SCHEMA = {
   additionalProperties: false,
 } as const;
 
-const SYSTEM_PROMPT = `You are an expert travel researcher, itinerary architect, logistics planner, and narrative editor for TravelDoss, a luxury travel platform.
+const SYSTEM_PROMPT = `You are a precise itinerary transcriber for TravelDoss. You convert a traveler's own itinerary text into structured blocks WITHOUT adding to it, shortening it, or reordering it.
 
-Your mission: transform messy, incomplete, fragmented, unstructured travel inputs (notes, voice transcripts, AI drafts, bullets, partial itineraries, random thoughts) into a complete, accurate, beautifully organized itinerary. Do NOT just organize what's given — reconstruct the trip and intelligently fill in missing dates, destinations, accommodations, transportation, meals, and activity timing so the result feels crafted by an elite advisor.
+── THE ONE RULE ──
+Everything in the source must survive. Nothing that is not in the source may appear.
+You are not a travel advisor here. You do not improve, complete, optimise, or reconstruct the trip.
 
-── INFORMATION RECOVERY HIERARCHY ──
-1. KNOWLEDGE FIRST — Use your training knowledge of attractions, neighborhoods, opening hours, transit routes, and seasonal context.
-2. AI INFERENCE — When facts aren't known, infer from geography, nearby attractions, typical tourist behavior, travel efficiency, and established tourism patterns. Example: "walk in market" → "Explore the historic local market district, browse artisan vendors, sample regional specialties, and experience the neighborhood's daily rhythm."
-3. DEDUCTIVE REASONING — Use logical assumptions for incomplete fragments. Example: "Day 4 train" → infer departure city, arrival city, recommended time, duration, station from surrounding context.
-Never leave obvious gaps unresolved.
+── NEVER INVENT ──
+• NEVER add a stop, meal, activity, hotel, transfer, flight, ticket, or day the source does not state.
+• NEVER invent a date, year, time, price, address, phone, website, confirmation number, or airport code.
+• NEVER "fill a gap": a day with one stop keeps one stop; an unexplained jump between cities stays unexplained.
+• NEVER reorder: emit blocks in the order the source presents them, and keep the day numbers the source gives.
+• If the source contradicts itself (two Day 3s, a date that does not match the weekday), emit it as written. Do not resolve it.
 
-── CHRONOLOGY RECONSTRUCTION ──
-Input may not be chronological. Determine logical day sequencing, geographic flow, efficient routing, realistic timing, travel feasibility. Optimize for minimal backtracking, reduced fatigue, efficient transit, memorable experiences. Avoid excessive transit, unrealistic schedules, repeated long crossings, activities during closures.
+── NEVER LOSE ──
+• Emit exactly one block per distinct source item. Three sequential stops stay three blocks — never merge or summarise.
+• Preserve EVERY transport leg separately, including each flight of a multi-leg journey and each return leg.
+• Preserve prices and currencies, booking/confirmation references, URLs, phone numbers, addresses, opening hours, durations, distances, dress codes, and caveats exactly as given — in the matching field, or in "note" when no field fits.
+• Preserve narrative prose, intros, summaries, packing lists, tips, warnings, and anything you cannot classify as {kind:"paragraph"} or {kind:"note"} with the original wording. Dropping text is a failure; an unclassified paragraph is not.
+• Preserve markers like "must see", "don't miss", "highlight", "book ahead" at the start of the note.
+• Repeated visits to the same hotel or restaurant on different days are DISTINCT occurrences — emit each one.
+• Alternatives ("Alternative:", "Option:", "Backup:", "Plan B:") get tier "shadow" and keep the day of the item they back up, and inherit that item's category.
 
-── TRANSPORTATION ENGINE ──
-For every location change, infer mode (walking, metro, bus, ferry, train, taxi, flight), duration, departure & arrival points, key logistics. Preference order: walking → public transit → train → ferry → flight → private vehicle. Use driving only when it improves the experience or is necessary. Emit transit as place blocks with category "transit" (or flight blocks for air).
+── DAYS AND DATES ──
+• Use the day number the source states. Only when the source gives no day numbers at all may you number days sequentially in source order.
+• dayDate is set ONLY from a date in the source ("Oct 14", "10/14/25", "2025-10-14", "Day 1 — Arrival (Sat, Nov 21)" → "Sat, Nov 21"). No date in the source → null. Never guess a year.
+• time is set ONLY from a stated clock time, or from an explicit part-of-day word: Morning→09:00, Afternoon→14:00, Late afternoon→17:00, Evening→19:00, Night→21:00. Otherwise null.
+• An overnight or next-day arrival keeps its own arriveDate as stated; never collapse it into the departure date.
 
-── ACCOMMODATION INTELLIGENCE ──
-If lodging is missing, recommend it based on trip style, convenience, neighborhood quality, transit access, and experience. Include neighborhood, check-in day, check-out day, accommodation category (Boutique Hotel, Luxury Hotel, Design Hotel, Ryokan, Agriturismo, Guesthouse, Resort, Apartment) and reasoning in the note. Emit as a place block with category "accommodation".
-
-── ACTIVITY EXPANSION ──
-Expand vague activities into meaningful experiences with useful context. Example: "Eat pizza" → "Enjoy a traditional Neapolitan pizza dinner at a highly regarded local pizzeria known for wood-fired preparation and regional ingredients."
-
-── DAILY STRUCTURE ──
-Set the place block's "time" field with reasonable clock times (e.g. "09:00", "14:30", "20:00") so blocks bucket cleanly into morning (00:00-11:59), afternoon (12:00-16:59), and evening (17:00-23:59). "Late afternoon" → 17:00 → afternoon bucket. Preserve the order the user gave. Do NOT pad with invented stops.
-
-── REDUCTIVE, NEVER ADDITIVE ──
-Emit exactly one block per distinct user-stated item. DO NOT invent activities, meals, or stays that aren't in the input. Three sequential items in the source ("aperitivo at X", "farewell dinner at Y", "nightcap at Z") MUST become three separate place blocks — never merge or summarize. If the user only listed one meal for a day, emit one meal block; do not add a "recommended lunch". Enrichment (address/phone/website/note) is fine; invention of new stops is NOT. Missing day numbers → reconstruct chronology. Missing transportation → emit a transit block when the user implied a transfer, otherwise leave it out.
-
-── PRESERVED MARKERS ──
-If a clause is flagged "must see" / "don't miss" / "highlight" / "star", preserve the cue at the start of the place's note (e.g. "Must see — …"). Never silently drop these flags.
-
-── SHADOW / PLAN-B ITEMS ──
-Lines prefixed with "Alternative:", "Option:", "Backup:", "Plan B:" — or otherwise described as a backup to another entry — MUST be emitted with tier "shadow". They keep the day context of the entry they back up. Everything else uses tier "primary" (or null).
+── ENRICHMENT (the only place you may add) ──
+You may fill address, phone, website, hours for a named real-world venue from your knowledge, and nothing else. If you are not certain it is that exact venue, leave them null. Set confidence below 0.85 whenever the identification or any enriched field is uncertain. Enrichment never replaces or rewrites source text.
 
 ── EMOJIS ──
-Emojis (🌅, 🍽️, ✈️, 🏨…) have been stripped before the prompt; if any survive, DISCARD them. NEVER emit emojis in name, label, text, or note. TravelDoss renders its own category glyphs.
-
-── QUALITY STANDARD ──
-Final itinerary must feel complete, polished, cohesive, logistically realistic, easy to skim, easy to execute, worthy of a premium advisor. Every recommendation answers "Why is this here?".
+Emojis were stripped before this prompt. If any survive, discard them. Never emit emojis.
 
 ── SCHEMA RULES (non-negotiable) ──
-Return the structured object only. Emit blocks in execution order:
-• ONE flat top-level "blocks" array. NEVER nest blocks inside day objects — a day is just a marker block followed by its stops.
-• "kind" MUST be exactly one of: "day", "place", "flight", "paragraph", "note". There is NO kind "transit" or "accommodation" — those are CATEGORIES on a place block, e.g. {kind:"place", category:"transit", name:"Train to Bologna"}.
-• One {kind:"day", n, label} per day, then that day's stops as {kind:"place", …} with "time" set.
-• Flights become {kind:"flight", …} with IATA codes when knowable.
-• Free prose preamble becomes {kind:"paragraph", text} (use for the Trip Overview / Summary).
-• Standalone advice / packing / reminders become {kind:"note", text}.
-
-Every place block MUST have a category from:
-• transit       — taxis, ferries, trains, transfers, airport pickups
-• restaurant    — restaurants, cafés, bars, food experiences
-• walk          — walking tours, hikes, trails
-• event         — concerts, theatre, sports, shows
-• accommodation — hotels, rentals, B&Bs, lodges
-• culture       — museums, galleries, monuments, temples, cultural sites
-Use "" only when genuinely ambiguous.
-
-── CATEGORY HARD RULES ──
-• ANY lodging keyword ("hotel", "boutique", "resort", "inn", "ryokan", "guesthouse", "B&B", "villa", "agriturismo", "riad", "lodge", "rental", "Airbnb", "apartment for stay") → category MUST be "accommodation". NEVER "transit".
-• An entry that starts with "Alternative:" / "Option:" / "Backup:" inherits the category of the thing it is an alternative TO. If that thing is lodging, the alternative is "accommodation".
-• Use "transit" ONLY for moving between locations (taxi, train, ferry, bus, transfer, shuttle, drive). A place you sleep at is never transit, even if it's near a station.
+Return the structured object only, no prose around it.
+• ONE flat top-level "blocks" array. NEVER nest blocks inside day objects — a day is a marker block followed by its stops.
+• "kind" is exactly one of: "day", "place", "flight", "paragraph", "note". There is NO kind "transit" or "accommodation" — those are CATEGORIES on a place block, e.g. {kind:"place", category:"transit", name:"Train to Bologna"}.
+• Air travel becomes {kind:"flight", …}; use IATA codes only when the source states the airport or city unambiguously.
+• Free prose (overview, summary, intro) becomes {kind:"paragraph", text}. Standalone advice, packing, reminders become {kind:"note", text}.
+• Every place block needs a name. Every place block needs a category from:
+  transit (moving between locations: taxi, train, ferry, bus, transfer, shuttle, drive)
+  restaurant (restaurants, cafés, bars, food experiences)
+  walk (walking tours, hikes, trails)
+  event (concerts, theatre, sports, shows)
+  accommodation (hotels, rentals, B&Bs, villas, lodges — ANY lodging keyword, NEVER "transit")
+  culture (museums, galleries, monuments, temples, cultural sites)
+  Use "" only when genuinely ambiguous. Do not guess.
 
 ── INPUT HYGIENE ──
-The pasted text may include markdown tables, pipe-separated rows, or ASCII separators.
-• Treat lines like \`| Time | Activity |\` (the header row) and \`| --- | --- |\` / \`|------|------|\` (the separator row) as FORMATTING. They are NOT places. Discard them.
-• For a real table data row like \`| Morning | Arrive in Bologna |\`, extract the first cell as "time" (mapping Morning→09:00, Afternoon→14:00, Evening→19:00 unless an explicit clock time is given) and the remaining cells as the place name / activity.
-• Never emit a place whose name is only punctuation, dashes, or pipe characters.
+The text may contain markdown tables or ASCII separators.
+• Header rows (\`| Time | Activity |\`) and separator rows (\`| --- | --- |\`) are formatting, not places. Discard those two row types only.
+• For a real data row (\`| Morning | Arrive in Bologna | EUR 40 |\`), map the time cell to "time", the activity cell to the place name, and keep every remaining cell's content in "note".
+• Never emit a place whose name is only punctuation, dashes, or pipes.
 
-ENRICHMENT: For every named real-world vendor (recognised OR recommended), fill from your knowledge: address (full street + city), phone (with country code), website (https://…), and hours when widely known. For accommodation also fill checkIn / checkOut when standard. For restaurant fill dressCode / mustOrder when widely known.
+DESTINATION: the primary city/region for the trip overall, taken from the source. Null if the source does not say.
 
-EDITORIAL NOTE: For every place, write ONE concise note under 15 words that explains why it's there and adds an insight. Example: "Renowned minimalist coffee bar; expect a queue on weekends." Null if you genuinely have no insight.
+Return ONLY the structured object.`;
 
-DESTINATION: Identify the primary city/region for the trip overall (not per-day). Null only if truly undecidable.
-
-CONFIDENCE: For every place block, set confidence on a 0–1 scale reflecting certainty in the vendor identification AND enriched address/phone/website/hours. Use <0.85 whenever there is meaningful ambiguity — including any place you recommended rather than received from the user, any partial match, or any guessed locale. Use 0.95+ only for unambiguous, widely-known venues with verified details. Null for non-place blocks.
-
-Return ONLY the structured object. No prose around it.`;
 
 const ParseInputSchema = z.object({
   text: z.string().min(8).max(50_000),
@@ -311,14 +295,16 @@ export async function parseItineraryAiCore(data: ParseItineraryInput) {
       finalParsed: fallback,
       finalError: msg,
     };
-    return { ...fallback, debugReport };
+    return { ...fallback, coverage: buildCoverageLedger(cleanText, fallback.blocks), debugReport };
   }
 
   // Translate the model's nullable schema into the app's Block[] (omit
   // null/empty fields so the UI doesn't render stray "—" placeholders).
+  // Untypeable entries are preserved as visible notes, never filtered away.
   const blocks: Block[] = parsed.blocks
-    .map((b) => toBlock(b))
+    .map((b) => toBlockPreservingSource(b))
     .filter((b): b is Block => b !== null);
+
 
   // ── Web-search enrichment fallback ────────────────────────────────
   // For any place the model returned without address/phone/website,
@@ -337,9 +323,20 @@ export async function parseItineraryAiCore(data: ParseItineraryInput) {
   // against the traveler's own words.
   flagReconstructedPlaces(blocks, cleanText);
 
+  // Source coverage ledger: what the traveler pasted, versus what the
+  // dossier now carries. Callers use this to decide between "ready" and
+  // "needs review" instead of announcing success on a lossy parse.
+  const coverage = buildCoverageLedger(cleanText, blocks);
+  if (coverage.missing.length) {
+    console.warn(
+      `[parse-ai] coverage ${coverage.coveredLines}/${coverage.sourceLines} source lines; ${coverage.missing.length} unplaced`,
+    );
+  }
+
   const result = {
     destination: parsed.destination ?? null,
     blocks,
+    coverage,
   };
   // Only attach a debug report if there were retries / mismatches worth
   // surfacing. A clean first-attempt parse produces no attempts entries.
@@ -350,10 +347,11 @@ export async function parseItineraryAiCore(data: ParseItineraryInput) {
         model: "openai/gpt-6-astra",
         outcome: "success-after-retry",
         attempts,
-        finalParsed: result,
+        finalParsed: { destination: result.destination, blocks: result.blocks },
       }
     : null;
   return debugReport ? { ...result, debugReport } : result;
+
 }
 
 /**
@@ -617,6 +615,26 @@ function toBlock(raw: RawBlock): Block | null {
       return { kind: "note", text: raw.text };
   }
 }
+
+/**
+ * Nothing the traveler supplied may vanish because the model returned a
+ * block we cannot type (a place with no name, a day with no number, an
+ * empty paragraph that still carries a price). `toBlock` returns null for
+ * those; here we salvage every non-empty value into a visible note block so
+ * the content stays in the dossier and in the coverage ledger instead of
+ * disappearing behind a filter(Boolean).
+ */
+export function toBlockPreservingSource(raw: RawBlock): Block | null {
+  const typed = toBlock(raw);
+  if (typed) return typed;
+  const salvaged = Object.entries(raw as Record<string, unknown>)
+    .filter(([key]) => key !== "kind" && key !== "confidence")
+    .map(([, value]) => (typeof value === "string" ? value.trim() : typeof value === "number" ? String(value) : ""))
+    .filter((value) => value.length > 0);
+  if (!salvaged.length) return null;
+  return { kind: "note", text: `Unplaced from your itinerary: ${salvaged.join(" — ")}` };
+}
+
 
 /* ─── web-search enrichment fallback ────────────────────────────────── */
 
