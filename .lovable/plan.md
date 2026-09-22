@@ -1,42 +1,59 @@
-# Directive 09 logistics: how the amendment maps onto what exists today
+# Adaptive Trip Dossier — how it lands in this app
 
-Directive 09 itself is still not on file — only Amendment 1 is (`docs/directives/09-amendment-1-view-native-logistics.md`). So this plan derives the base pieces the amendment leans on (the selector and the Manifest) from the amendment's own text, and reconciles them with the code already in the dossier.
+## What's actually here today
 
-## What already exists (verified in the code)
+I checked: none of it exists in this project. No adaptive files, no adaptive tables, no private dossier route, and `http://localhost:8080/e2e/adaptive` returns 404 — that page is running in the other copy of the app, not this one. The old Gmail import was deliberately removed in the 2026-08-31 hardening pass because it read one shared workspace inbox for every user.
 
-- `buildItinerary` (`src/lib/skins/shared/itinerary.ts`) groups blocks into days and part-of-day buckets, and **lifts both flights out of the stream** into `flights.outbound` / `flights.inbound`.
-- `collectHotelStays` (`HotelsQuickRef.tsx`) already infers stay windows: a stay runs until the next different hotel, repeats of the same hotel collapse, nights come from ISO day dates or day-number difference.
-- `collectFlights` + `FlightStrip` / `FlightTableRow` render flight detail (duration, gate, seat, baggage) per view.
-- `CalendarQuickRef` already groups flights + hotel + stops per day.
-- Stays are ordinary `place` blocks with `category` accommodation/stay/hotel, plus optional `checkIn` / `checkOut` time strings. Day dates live on `day.date` (ISO or free-form). Blocks have no stable id — everything is index-identified.
+So this is a rebuild here, against this codebase, in the order that gets value soonest with the fewest outside accounts. No demo route.
 
-So the trip has all the raw facts; what it lacks is one shared, view-agnostic reading of them.
+## How it fits the app you have
 
-## The reconciliation, in short
+- Your trips already store their design in `trips.content` as blocks. That stays exactly as it is — a designed, shareable document.
+- The adaptive side is a **separate private workspace per owner**: canonical bookings, the email evidence behind them, version history, and a Review queue for anything uncertain. Collaborators and public viewers never see it.
+- Existing pieces get reused rather than duplicated: the MapLibre canvas, `CategoryIcon`, the flights and hotels logic, `getTemporalPhase` for trip phase, the versioned legal documents for the privacy disclosure, and the existing analytics modules.
+- Everything server-side runs as server functions plus two HTTP routes (scheduler, OAuth callback). No edge functions.
 
-1. **One selector, built from the two collectors that already work.** `getTripLogistics(blocks)` replaces the ad-hoc per-view logic. It reuses `collectHotelStays`' window inference and `collectFlights`, then adds what the amendment asks for: city per trip day, night index + trip total, alternating stay shade index, a 0–1 time fraction per check-in / check-out / departure / arrival (using the 15:00 / 11:00 defaults for positioning only, never displayed as known), and the home city from the first flight's origin (falling back to the first stay).
-2. **One visual vocabulary.** `FlightCard` and `StayCard` in `src/lib/skins/shared/logistics/`, built from the field lists the existing flight row and hotel card already render, so Grid, Vertical chapter breaks, Horizontal panels and print all share one implementation.
-3. **Existing panels stay until their view's phase lands.** The amendment's no-duplication rule bites on the three summary surfaces already shipped. Proposal: in Grid, the Manifest supersedes `FlightStrip` and `HotelsQuickRef`, and `CalendarQuickRef` stays (it is a per-day agenda, not a logistics summary). Vertical and Horizontal keep their current strip and panels untouched in Phase 1, and lose them in Phases 2 and 3 when the Stay Rail and Stay Lanes replace them.
-4. **Masking lives in the selector only.** Gap-night labels, confirmation numbers and the "No stay booked" wording are resolved once, against the existing `useTrustedViewer` signal, so no view can leak a private fact.
+## Shared dossier: the traveler-best rule
 
-## Data gaps worth naming up front
+Neither extreme is right. What serves the traveler:
 
-- **Nights are inferred, not booked.** Stay windows come from day adjacency, so a stay's real check-out date is only as good as the day dates. Undated itineraries get night indexes by day position and no time fractions — the Stay Rail still tints, the Horizontal bands fall back to full-column width.
-- **Flights are lifted out of days today.** The selector reads raw blocks (like `CalendarQuickRef` does) rather than `buildItinerary`, so a flight keeps its own day and local time. Mid-trip flights, which `buildItinerary` currently drops from the strip, become first-class.
-- **Ground moves between cities** have no block kind, so the dotted ground connector is drawn wherever consecutive stays change city with no flight between them.
+- A booking already in the dossier that **changes** (flight time, gate, hotel check-in) updates in place, automatically, with a small "updated from your confirmation" marker and one-tap undo. That is the whole point of an adaptive dossier — a stale time in a shared document is the failure everyone remembers.
+- A booking **not yet** in the dossier is offered, never inserted: "Add this flight to your dossier?" You keep authorship of the document.
+- Nothing uncertain ever touches the shared dossier. It goes to Review first.
+- Every automatic edit is recorded and reversible, and edits you made by hand are never overwritten.
 
-## Scope of this plan: Phase 1 only
+## Build order
 
-- `src/lib/skins/shared/logistics/selector.ts` — `getTripLogistics`, pure, unit-tested against the amendment's fixtures (7 nights / 2 cities, 14 nights / 5 cities, stays only, flights only, gap night, overnight flight, same-day handoff).
-- `src/lib/skins/shared/logistics/FlightCard.tsx` and `StayCard.tsx` — skin-token only, mobile-first, reserved space so CLS stays 0, tap targets ≥44px, small text through the approved `color-mix` contrast rule.
-- `TripManifest.tsx` — the Grid dashboard: flights and stays as one glanceable block, expanding into the shared cards.
-- Wire the Manifest into `GridView` in place of `FlightStrip` + `HotelsQuickRef`; Vertical and Horizontal untouched.
-- Selector + card tests, `bun test` green and `npx tsgo --noEmit` clean.
-- Analytics (Rule 9): `manifest_item_expanded {kind}` for Phase 1; `route_stop_tapped`, `context_bar_today_tapped`, `lane_item_expanded` ship with Phases 2 and 3. `docs/analytics/tracking-plan.md` updated in the same change.
-- Screenshots in three skins at 360 / 390 / 768 / 1440px.
+**Slice 1 — the private workspace (no outside accounts needed)**
+Migration for `adaptive_workspaces` (owner-scoped, revisioned, RLS + grants, compare-and-swap writes through service-only functions). Domain types, conservative normaliser, identity matching, reconciliation with cancellation and rebooking links, Review queue, version history and restore. Owner route `/_authenticated/app_.dossier.$tripId`, opened from a trip card and the owner banner. Manual reservation entry, plus "review existing dossier items" to promote current place blocks into canonical records with explicit dates and timezones.
 
-Phases 2 (Stay Rail, Route Line, context bar), 3 (lanes) and 4 (print, PDF, offline, now-and-next) follow as separate builds on the same selector.
+**Slice 2 — the sync bridge**
+The traveler-best rule above, both directions: canonical record → dossier block, with markers, undo and an audit entry. This is where the feature starts paying off, so it comes before any email plumbing.
 
-## One thing I need from you
+**Slice 3 — Gmail, per user**
+Per-user OAuth with PKCE and one-time state, read-only scope, refresh tokens encrypted with a new server key, scoped historical scan (30 / 90 days / all / new only), incremental history with retry-safe cursors, pause / disconnect / erase. Extraction stays conservative: recognised providers and clearly labelled fields only; prose, PDFs and missing timezones go to Review rather than being guessed. The Google client id and secret are already configured; I'll need one new token-encryption key.
 
-Directive 09's own text would settle two things this plan currently decides for itself: the exact contents and ordering of the Trip Manifest, and which of the existing summary panels it is meant to absorb. If you paste it, I'll fold it in before building; otherwise I'll build to the reading above.
+**Slice 4 — live trip and weather**
+Automatic activation before the first item, manual pause / end / extend, operational values kept separate from the original booking, impact and dependency assessment, history and restore. Weather via Open-Meteo (no key, opt-in). A scheduler route at `/api/public/adaptive/jobs` behind a bearer secret, driven by the database scheduler this project already uses for the doc-export sweep — so it runs unattended without you configuring anything external.
+
+**Slice 5 — vendor feeds (only when you have one)**
+The flight / transit / local gateway contract, validated, HTTPS-only, sending no traveller names or booking references. Built and tested against the contract; switched on when you supply a gateway.
+
+**Slice 6 — push (optional, last)**
+Browser subscription, preferences, quiet hours, outbox with idempotency keys. Requires a Web Push relay and a VAPID key pair; until then updates surface in the dossier itself.
+
+## Technical notes
+
+- Every new table: RLS plus explicit grants, owner-only reads, no client-side mutation of adaptive state; service-role writes only. Reservation, evidence, history and outbox changes commit together; the email cursor advances only after reconciliation persists.
+- The aggregate-JSON model is bounded — writes stop safely below the row ceiling and the plan notes the move to per-item tables before that matters.
+- Private routes excluded from service-worker HTML caching; server functions return `no-store`; the private path scrubbed in analytics; no email bodies rendered as HTML.
+- Rule 9 analytics ship with each slice (import connected, first reservation imported, review resolved, dossier synced, disruption surfaced, notification suppressed — counts and ids only, never content), documented in `docs/analytics/tracking-plan.md` in the same change.
+- Per house rules: no per-skin file edits, mobile-first, CLS 0 and accessibility unchanged on `/t/<slug>`, `bun test` and `npx tsgo --noEmit` clean before each slice closes.
+- Before Gmail goes live: the privacy and consent disclosures get a new version through the existing versioned legal-document process.
+
+## What I need from you
+
+- One new secret, a 32-byte random key for encrypting stored email tokens — I can generate it.
+- Confirmation that the Google OAuth client already configured here may add the Gmail read-only scope and the callback URL, when we reach Slice 3.
+
+I'd start with Slice 1 and 2 and stop there for your review, since together they are the whole feature minus the inbox.
