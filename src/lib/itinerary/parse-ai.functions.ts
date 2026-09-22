@@ -314,7 +314,7 @@ export async function parseItineraryAiCore(data: ParseItineraryInput) {
   // ── Web-search enrichment fallback ────────────────────────────────
   // For any place the model returned without address/phone/website,
   // hit Google Places (Text Search v1) to fill them in. Then run a
-  // single batched Gemini call to write a <15-word editorial note
+  // single batched AI call to write a <15-word editorial note
   // for every freshly enriched place that still lacks one.
   await enrichPlacesViaWebSearch(blocks, parsed.destination ?? null, gateway).catch(
     (err: unknown) => {
@@ -600,7 +600,7 @@ type GatewayProvider = ReturnType<
 /**
  * Mutates `blocks` in place: for each `place` missing address/phone/website,
  * asks OpenStreetMap (keyless, see place-lookup.server.ts) for hard facts,
- * then asks Gemini to write a single <15-word editorial note per freshly
+ * then asks AI to write a single <15-word editorial note per freshly
  * enriched place.
  */
 async function enrichPlacesViaWebSearch(
