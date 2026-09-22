@@ -330,7 +330,7 @@
   .td-print-dossier a { color: inherit !important; text-decoration: none !important; }
 }
 
-[data-print="only"] { display: none; }
+@media screen { [data-print="only"] { display: none; } }
 .td-offline-banner { position: sticky; top: 56px; z-index: 39; padding: 7px 16px; background: #1a1813; color: #f3efe7; text-align: center; font-size: 10px; letter-spacing: .16em; text-transform: uppercase; }
 
 /* Scoped "reduce motion" — applied only inside the itinerary generator UI
