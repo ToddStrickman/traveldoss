@@ -1,15 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import type { Block, TripView } from "../../types";
 import { buildItinerary, type PartOfDay } from "../itinerary";
-import { ActivityCard, FlightStrip, partOrder } from "./parts";
+import { ActivityCard, partOrder } from "./parts";
 import { TopScrollbar } from "./TopScrollbar";
 import { ActivityDndContext, DraggableActivity, DroppableBucket } from "./dnd";
 import { ShadowItinerary, PlanBCue } from "../ShadowItinerary";
-import { HotelsQuickRef } from "../HotelsQuickRef";
-import { CalendarQuickRef } from "../CalendarQuickRef";
+import { StayCard, type HotelStay } from "../HotelsQuickRef";
 import { getTripLogistics, type LogisticsFlight, type LogisticsStay } from "../logistics";
 import { FlightCard } from "../FlightsSummary";
-import { StayCard, type HotelStay } from "../HotelsQuickRef";
 import { useTrustedViewer } from "../trusted-viewer";
 import { trackLaneItemExpanded } from "@/lib/analytics";
 import { BlankDayScaffold, isScaffoldTriggered } from "../BlankDayScaffold";
@@ -117,23 +115,6 @@ export function HorizontalView({ trip, blocks }: { trip: TripView; blocks: Block
   return (
     <div className="tds-horizontal">
       <EditableHero trip={trip} className="tds-hero tds-board-head" />
-      {showScaffold ? null : (
-        <FlightStrip
-          outbound={it.flights.outbound}
-          inbound={it.flights.inbound}
-          outboundIndex={it.flights.outboundIndex}
-          inboundIndex={it.flights.inboundIndex}
-          slots={["outbound", "inbound"]}
-          blocksLength={blocks.length}
-        />
-      )}
-
-      <div className="tds-quickrefs">
-        <HotelsQuickRef blocks={blocks} />
-        <CalendarQuickRef blocks={blocks} />
-      </div>
-
-
       {showScaffold ? (
         <BlankDayScaffold blocks={blocks} />
       ) : (
@@ -166,7 +147,7 @@ export function HorizontalView({ trip, blocks }: { trip: TripView; blocks: Block
         <div className="tds-board" ref={scrollerRef}>
           <div
             className="tds-board-track"
-            style={{ "--tds-board-days": Math.max(1, it.days.length) } as React.CSSProperties}
+            style={{ "--tds-board-days": Math.max(1, it.days.length) } as CSSProperties}
           >
             <LogisticsLane
               label="Transit"
