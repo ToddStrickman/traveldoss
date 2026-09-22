@@ -224,7 +224,7 @@ Return the structured object only, no prose around it.
   event (concerts, theatre, sports, shows)
   accommodation (hotels, rentals, B&Bs, villas, lodges — ANY lodging keyword, NEVER "transit")
   culture (museums, galleries, monuments, temples, cultural sites)
-  Use "" only when genuinely ambiguous. Do not guess.
+  Classifying a stop into one of these six is your job, not invention: always choose the closest category for a named stop. Use "" only when the entry gives no clue at all what kind of thing it is.
 
 ── INPUT HYGIENE ──
 The text may contain markdown tables or ASCII separators.
