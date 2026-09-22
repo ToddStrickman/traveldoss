@@ -7,6 +7,7 @@
 import type { PostHog } from "posthog-js";
 import { gtagEvent } from "./analytics/gtag";
 import { recordFirstParty } from "./analytics/first-party";
+import { scrubPath, scrubUrl } from "./analytics/scrub";
 
 type Props = Record<string, string | number | boolean | null | undefined>;
 
@@ -42,6 +43,18 @@ async function ensureClient(): Promise<PostHog | null> {
         capture_pageview: false,
         person_profiles: "identified_only",
         autocapture: false,
+        // Private reservation and email evidence must never enter session replay.
+        disable_session_recording: true,
+        before_send: (event) => {
+          if (!event) return event;
+          for (const field of ["$current_url", "$referrer"]) {
+            if (typeof event.properties[field] === "string")
+              event.properties[field] = scrubUrl(event.properties[field]);
+          }
+          if (typeof event.properties.$pathname === "string")
+            event.properties.$pathname = scrubPath(event.properties.$pathname);
+          return event;
+        },
       });
       client = posthog;
       return client;
