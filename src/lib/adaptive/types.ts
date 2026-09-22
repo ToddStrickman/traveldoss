@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { Block } from "@/lib/skins/types";
 
 export const ItemType = z.enum([
   "flight",
@@ -176,6 +177,12 @@ export type TripMonitoringPreference = {
   activationHours: number;
   preparation: boolean;
   location: LocationPermissionState;
+  /**
+   * Whether confirmed reservations are copied to the shared dossier page.
+   * "ask" = the traveler has not been asked yet, "auto" = keep the shared page
+   * updated from now on, "off" = the workspace stays entirely private.
+   */
+  sharing: "ask" | "auto" | "off";
   notifications: NotificationPreference;
 };
 export type LiveTripSession = {
@@ -358,6 +365,11 @@ export type TravelDossier = {
   lastBackgroundAt?: string;
   trips: Trip[];
   items: CanonicalItineraryItem[];
+  /**
+   * One undo snapshot per trip: the shared dossier's blocks as they were
+   * immediately before the last share ran. Never more than one per trip.
+   */
+  shares?: { tripId: string; at: string; previousBlocks: Block[] }[];
   sources: ItineraryItemEmailSource[];
   versions: ItineraryItemVersion[];
   changes: ItineraryChangeEvent[];
@@ -377,6 +389,8 @@ export const PreferenceSchema = z.object({
   activationHours: z.number().int().min(1).max(168),
   preparation: z.boolean(),
   location: z.enum(["unknown", "granted", "denied", "disabled"]),
+  // Defaulted so dossiers saved before sharing existed keep validating.
+  sharing: z.enum(["ask", "auto", "off"]).default("ask"),
   notifications: z.object({
     push: z.boolean(),
     tiers: z.object({ critical: z.boolean(), important: z.boolean(), helpful: z.boolean() }),
@@ -404,6 +418,7 @@ export function defaultPreferences(): TripMonitoringPreference {
     activationHours: 24,
     preparation: true,
     location: "unknown",
+    sharing: "ask",
     notifications: {
       push: false,
       tiers: { critical: true, important: true, helpful: false },

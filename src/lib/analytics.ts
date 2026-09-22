@@ -251,3 +251,12 @@ export const trackCalendarQuickRefOpened = (p: { day_count: number; has_flights:
   capture("calendar_quickref_opened", p);
 
 export const trackCalendarDayJumped = () => capture("calendar_day_jumped", {});
+
+/** Sharing decision in the private workspace. No reservation content, counts only. */
+export const trackDossierShareChosen = (p: { mode: "once" | "always" | "off" }) =>
+  capture("dossier_share_chosen", p);
+
+export const trackDossierShareApplied = (p: { added: number; updated: number }) =>
+  capture("dossier_share_applied", p);
+
+export const trackDossierShareUndone = () => capture("dossier_share_undone", {});

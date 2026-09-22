@@ -29,6 +29,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { activeItems, effectiveStart, effectiveEnd, pulse, signalFresh } from "@/lib/adaptive/live";
+import { trackDossierShareChosen, trackDossierShareUndone } from "@/lib/analytics";
 import { instant } from "@/lib/adaptive/normalize";
 import type { AdaptiveCommand } from "@/lib/adaptive/commands";
 import type {
@@ -66,6 +67,12 @@ export type DossierScreenProps = {
   ) => Promise<void>;
   onImport: () => Promise<void>;
   onNotifications: () => Promise<void>;
+  /** Copies confirmed reservations onto the shared trip page. */
+  onShare?: (mode: "once" | "always") => Promise<void>;
+  /** Records the traveler's answer without copying anything. */
+  onSharingChoice?: (sharing: "ask" | "auto" | "off") => Promise<void>;
+  /** Puts the shared trip page back as it was before the last copy. */
+  onUndoShare?: () => Promise<void>;
   demo?: boolean;
   clock?: string;
   demoControls?: React.ReactNode;
@@ -188,6 +195,87 @@ export function DossierScreen(props: DossierScreenProps) {
     .filter((c) => c.tripId === tripId || (!c.tripId && c.kind === "privacy"))
     .slice()
     .reverse();
+  // Sharing: confirmed reservations can be copied onto the public trip page.
+  // Private detail (evidence, confirmation numbers, live status) never travels.
+  const confirmed = state.items.filter(
+    (i) => i.tripId === tripId && i.reservation.status === "confirmed",
+  );
+  const sharing = trip.preferences.sharing ?? "ask";
+  const undoable = (state.shares ?? []).some((s) => s.tripId === tripId);
+  const sharingCard =
+    props.onShare && confirmed.length ? (
+      <section className="ad-card">
+        <div className="ad-section-title">
+          <div>
+            <span className="ad-eyebrow">Shared trip page</span>
+            <h2>
+              {sharing === "auto"
+                ? "Kept up to date"
+                : sharing === "off"
+                  ? "Private to you"
+                  : "Add these to your trip page?"}
+            </h2>
+          </div>
+        </div>
+        <p className="ad-muted">
+          {confirmed.length} confirmed reservation{confirmed.length === 1 ? "" : "s"}.{" "}
+          {sharing === "auto"
+            ? "Flights and stays appear on your trip page as they are confirmed."
+            : sharing === "off"
+              ? "Nothing here appears on your trip page."
+              : "Only the flight and stay details appear — never emails or confirmation numbers."}
+        </p>
+        <div className="ad-actions">
+          {sharing !== "auto" && (
+            <Button
+              disabled={busy}
+              onClick={() => {
+                trackDossierShareChosen({ mode: "always" });
+                return run(() => props.onShare!("always"));
+              }}
+            >
+              Keep it up to date
+            </Button>
+          )}
+          {sharing === "ask" && (
+            <>
+              <Button
+                variant="outline"
+                disabled={busy}
+                onClick={() => {
+                  trackDossierShareChosen({ mode: "once" });
+                  return run(() => props.onShare!("once"));
+                }}
+              >
+                Add them once
+              </Button>
+              <Button
+                variant="ghost"
+                disabled={busy}
+                onClick={() => {
+                  trackDossierShareChosen({ mode: "off" });
+                  return run(() => props.onSharingChoice!("off"));
+                }}
+              >
+                Keep private
+              </Button>
+            </>
+          )}
+          {undoable && props.onUndoShare && (
+            <Button
+              variant="ghost"
+              disabled={busy}
+              onClick={() => {
+                trackDossierShareUndone();
+                return run(props.onUndoShare!);
+              }}
+            >
+              Undo
+            </Button>
+          )}
+        </div>
+      </section>
+    ) : null;
   async function run(work: () => Promise<void>, rethrow = false) {
     if (busy) return;
     setBusy(true);
@@ -655,6 +743,7 @@ export function DossierScreen(props: DossierScreenProps) {
               </p>
             </section>
             <aside className="ad-stack">
+              {sharingCard}
               <section className="ad-card ad-navy">
                 <Mail size={21} />
                 <h2>Your inbox, organized.</h2>

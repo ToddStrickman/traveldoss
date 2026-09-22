@@ -11,6 +11,12 @@ import {
   savePushSubscription,
   syncAdaptive,
 } from "@/lib/adaptive/adaptive.functions";
+import {
+  setSharingPreference,
+  shareConfirmedToDossier,
+  undoLastShare,
+} from "@/lib/adaptive/share.functions";
+import { trackDossierShareApplied } from "@/lib/analytics";
 import type { AdaptiveCommand } from "@/lib/adaptive/commands";
 
 export const Route = createFileRoute("/_authenticated/app_/dossier/$tripId")({
@@ -41,6 +47,9 @@ function AdaptivePage() {
     account = useServerFn(manageEmailAccount),
     importPlans = useServerFn(importExistingPlans),
     savePush = useServerFn(savePushSubscription);
+  const share = useServerFn(shareConfirmedToDossier),
+    sharingChoice = useServerFn(setSharingPreference),
+    undoShare = useServerFn(undoLastShare);
   const key = ["adaptive", tripId];
   const query = useQuery({
     queryKey: key,
@@ -136,6 +145,19 @@ function AdaptivePage() {
           await client.invalidateQueries({ queryKey: key });
         }}
         onNotifications={notifications}
+        onShare={async (mode) => {
+          const result = await share({ data: { tripId, mode } });
+          trackDossierShareApplied({ added: result.added, updated: result.updated });
+          await client.invalidateQueries({ queryKey: key });
+        }}
+        onSharingChoice={async (value) => {
+          await sharingChoice({ data: { tripId, sharing: value } });
+          await client.invalidateQueries({ queryKey: key });
+        }}
+        onUndoShare={async () => {
+          await undoShare({ data: { tripId } });
+          await client.invalidateQueries({ queryKey: key });
+        }}
       />
     </>
   );
