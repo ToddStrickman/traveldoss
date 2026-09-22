@@ -23,6 +23,6 @@ describe("long itinerary AI chunking", () => {
     const chunks = splitItineraryForAi(source, 2_000);
 
     expect(chunks.length).toBeGreaterThan(1);
-    expect(chunks.join("")).toBe(source.trim());
+    expect(chunks.join("")).toBe(source);
   });
 });

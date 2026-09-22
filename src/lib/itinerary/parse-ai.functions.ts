@@ -385,7 +385,7 @@ export function splitItineraryForAi(text: string, maxChars = MAX_AI_CHUNK_CHARS)
   const chunks: string[] = [];
   let current = "";
   const push = (value: string) => {
-    if (value.trim()) chunks.push(value.trim());
+    if (value.trim()) chunks.push(value);
   };
   for (const section of sections) {
     if (section.length > maxChars) {
