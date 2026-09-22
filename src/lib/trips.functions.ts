@@ -110,11 +110,19 @@ export const isTripOwner = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     const { data: row, error } = await context.supabase
       .from("trips")
-      .select("id")
+      .select("id, user_id")
       .eq("slug", data.slug)
       .maybeSingle();
     if (error) throw new Error(error.message);
-    return { isOwner: !!row };
+    // RLS now also lets active co-planners read the row, so a hit alone no
+    // longer proves ownership: creator-only controls key off isOwner, editing
+    // rights off isMember.
+    const hit = row as { id: string; user_id: string } | null;
+    return {
+      isOwner: !!hit && hit.user_id === context.userId,
+      isMember: !!hit,
+      tripId: hit?.id ?? null,
+    };
   });
 
 /**

@@ -728,6 +728,63 @@ export type Database = {
           },
         ]
       }
+      trip_changes: {
+        Row: {
+          action: string
+          actor_id: string | null
+          actor_kind: string
+          added_count: number
+          after: Json | null
+          before: Json | null
+          created_at: string
+          id: string
+          removed_count: number
+          restores_change_id: string | null
+          trip_id: string
+        }
+        Insert: {
+          action?: string
+          actor_id?: string | null
+          actor_kind?: string
+          added_count?: number
+          after?: Json | null
+          before?: Json | null
+          created_at?: string
+          id?: string
+          removed_count?: number
+          restores_change_id?: string | null
+          trip_id: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          actor_kind?: string
+          added_count?: number
+          after?: Json | null
+          before?: Json | null
+          created_at?: string
+          id?: string
+          removed_count?: number
+          restores_change_id?: string | null
+          trip_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_changes_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "admin_trip_engagement"
+            referencedColumns: ["trip_id"]
+          },
+          {
+            foreignKeyName: "trip_changes_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trip_doc_previews: {
         Row: {
           created_at: string
@@ -817,6 +874,114 @@ export type Database = {
           },
           {
             foreignKeyName: "trip_entitlements_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trip_invites: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string
+          revoked_at: string | null
+          token_hash: string
+          trip_id: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          invited_by: string
+          revoked_at?: string | null
+          token_hash: string
+          trip_id: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string
+          revoked_at?: string | null
+          token_hash?: string
+          trip_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_invites_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "admin_trip_engagement"
+            referencedColumns: ["trip_id"]
+          },
+          {
+            foreignKeyName: "trip_invites_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trip_members: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          invited_by: string | null
+          joined_at: string | null
+          role: string
+          source: string
+          status: string
+          trip_id: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          invited_by?: string | null
+          joined_at?: string | null
+          role?: string
+          source?: string
+          status?: string
+          trip_id: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          invited_by?: string | null
+          joined_at?: string | null
+          role?: string
+          source?: string
+          status?: string
+          trip_id?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_members_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "admin_trip_engagement"
+            referencedColumns: ["trip_id"]
+          },
+          {
+            foreignKeyName: "trip_members_trip_id_fkey"
             columns: ["trip_id"]
             isOneToOne: false
             referencedRelation: "trips"
@@ -1042,6 +1207,11 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_trip_member: {
+        Args: { _roles?: string[]; _trip_id: string }
+        Returns: boolean
+      }
+      is_trip_owner: { Args: { _trip_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"

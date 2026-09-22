@@ -260,3 +260,25 @@ export const trackDossierShareApplied = (p: { added: number; updated: number }) 
   capture("dossier_share_applied", p);
 
 export const trackDossierShareUndone = () => capture("dossier_share_undone", {});
+
+/**
+ * Shared editing (Directive 08). Counts and enum values only — never an
+ * address, a name, or any block content.
+ */
+export const trackInviteSent = (p: { source: "creator" | "member" | "named_traveler"; count: number }) =>
+  capture("invite_sent", p);
+
+export const trackInviteRevoked = () => capture("invite_revoked", {});
+
+export const trackInviteAccepted = (p: { source: "creator" | "member" | "named_traveler"; days_to_accept: number }) =>
+  capture("invite_accepted", p);
+
+export const trackMemberRemoved = () => capture("member_removed", {});
+
+export const trackTeamPanelOpened = () => capture("team_panel_opened", {});
+
+export const trackHistoryPanelOpened = (p: { change_count: number }) =>
+  capture("history_panel_opened", p);
+
+export const trackChangeRestored = (p: { mode: "single" | "point_in_time" }) =>
+  capture("change_restored", p);
