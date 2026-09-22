@@ -1,4 +1,5 @@
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
+import { createOpenAI } from "@ai-sdk/openai";
 
 const RUN_ID_HEADER = "X-Lovable-AIG-Run-ID";
 
@@ -50,4 +51,21 @@ export function createLovableAiGatewayProvider(apiKey: string) {
       "X-Lovable-AIG-SDK": "vercel-ai-sdk",
     },
   });
+}
+
+export function createLovableResponsesProvider(apiKey: string, initialRunId?: string) {
+  const runIdFetch = createLovableAiGatewayRunIdFetch(initialRunId);
+  const provider = createOpenAI({
+    baseURL: "https://ai.gateway.lovable.dev/v1",
+    apiKey,
+    headers: {
+      "Lovable-API-Key": apiKey,
+      "X-Lovable-AIG-SDK": "vercel-ai-sdk",
+    },
+    fetch: runIdFetch.fetch,
+  });
+  return {
+    model: provider.responses("openai/gpt-6-astra"),
+    getRunId: runIdFetch.getRunId,
+  };
 }
