@@ -46,7 +46,15 @@ export default defineConfig({
         },
         workbox: {
           // Don't ever serve a cached HTML for OAuth callbacks.
-          navigateFallbackDenylist: [/^\/~oauth/, /^\/api\//, /^\/sitemap\.xml/],
+          // The private adaptive workspace and auth pages must never be served
+          // from cache: they show owner-only reservations and email evidence.
+          navigateFallbackDenylist: [
+            /^\/~oauth/,
+            /^\/api\//,
+            /^\/app\/dossier\//,
+            /^\/auth\//,
+            /^\/sitemap\.xml/,
+          ],
           // Built static assets.
           globPatterns: ["**/*.{js,css,html,svg,png,ico,webp,woff2}"],
           // Skip outsized assets from precache.
@@ -55,7 +63,11 @@ export default defineConfig({
             {
               // HTML navigations — always try the network first so users get
               // fresh trip content when online, but fall back to cache offline.
-              urlPattern: ({ request }) => request.mode === "navigate",
+              urlPattern: ({ request, url }) =>
+                request.mode === "navigate" &&
+                !url.pathname.startsWith("/api/") &&
+                !url.pathname.startsWith("/app/dossier/") &&
+                !url.pathname.startsWith("/auth/"),
               handler: "NetworkFirst",
               options: {
                 cacheName: "td-html",

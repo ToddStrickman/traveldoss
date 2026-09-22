@@ -14,7 +14,11 @@ import { execSync } from "node:child_process";
 const FORBIDDEN = [
   "deviceorientation",
   "DeviceMotionEvent",
-  "requestPermission",
+  // The retired API is the *motion* permission dialog. A bare `requestPermission`
+  // also matches unrelated web APIs (notifications), so the needle names the
+  // motion interfaces explicitly — `deviceorientation` and `DeviceMotionEvent`
+  // above still catch any other route back to device tilt.
+  String.raw`(DeviceMotionEvent|DeviceOrientationEvent)\s*\.\s*requestPermission`,
   "useDeviceTilt",
   "MobileBubbles",
   "GyroWallpaper",

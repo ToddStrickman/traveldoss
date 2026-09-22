@@ -9,6 +9,8 @@
  */
 
 const RULES: Array<[RegExp, string]> = [
+  // The private adaptive workspace is owner-only: its trip id never leaves the app.
+  [/^\/app\/dossier\/[^/]+/, "/app/dossier/:id"],
   [/^\/t\/[^/]+/, "/t/:slug"],
   [/^\/guides\/[^/]+/, "/guides/:slug"],
   [/^\/templates\/[^/]+/, "/templates/:id"],
@@ -43,6 +45,11 @@ const SENSITIVE_PARAM_KEYS = new Set([
   "provider_refresh_token",
   "provider_token",
   "refresh_token",
+  // Return-path parameters can carry a private workspace path.
+  "redirect",
+  "redirect_to",
+  "returnto",
+  "next",
   "secret",
   "session",
   "state",

@@ -36,6 +36,9 @@ import { Route as AdminSTokenRouteImport } from './routes/admin.s.$token'
 import { Route as AuthenticatedAppAdminRouteImport } from './routes/_authenticated/app_.admin'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
+import { Route as ApiPublicAdaptiveJobsRouteImport } from './routes/api.public.adaptive.jobs'
+import { Route as AuthenticatedAppDossierTripIdRouteImport } from './routes/_authenticated/app_.dossier.$tripId'
+import { Route as ApiPublicAdaptiveGmailCallbackRouteImport } from './routes/api.public.adaptive.gmail.callback'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
@@ -174,6 +177,23 @@ const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
   path: '/.lovable/oauth/consent',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicAdaptiveJobsRoute = ApiPublicAdaptiveJobsRouteImport.update({
+  id: '/api/public/adaptive/jobs',
+  path: '/api/public/adaptive/jobs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedAppDossierTripIdRoute =
+  AuthenticatedAppDossierTripIdRouteImport.update({
+    id: '/app_/dossier/$tripId',
+    path: '/app/dossier/$tripId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const ApiPublicAdaptiveGmailCallbackRoute =
+  ApiPublicAdaptiveGmailCallbackRouteImport.update({
+    id: '/api/public/adaptive/gmail/callback',
+    path: '/api/public/adaptive/gmail/callback',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -202,6 +222,9 @@ export interface FileRoutesByFullPath {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/app/admin': typeof AuthenticatedAppAdminRoute
   '/admin/s/$token': typeof AdminSTokenRoute
+  '/app/dossier/$tripId': typeof AuthenticatedAppDossierTripIdRoute
+  '/api/public/adaptive/jobs': typeof ApiPublicAdaptiveJobsRoute
+  '/api/public/adaptive/gmail/callback': typeof ApiPublicAdaptiveGmailCallbackRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -230,6 +253,9 @@ export interface FileRoutesByTo {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/app/admin': typeof AuthenticatedAppAdminRoute
   '/admin/s/$token': typeof AdminSTokenRoute
+  '/app/dossier/$tripId': typeof AuthenticatedAppDossierTripIdRoute
+  '/api/public/adaptive/jobs': typeof ApiPublicAdaptiveJobsRoute
+  '/api/public/adaptive/gmail/callback': typeof ApiPublicAdaptiveGmailCallbackRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -260,6 +286,9 @@ export interface FileRoutesById {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/_authenticated/app_/admin': typeof AuthenticatedAppAdminRoute
   '/admin/s/$token': typeof AdminSTokenRoute
+  '/_authenticated/app_/dossier/$tripId': typeof AuthenticatedAppDossierTripIdRoute
+  '/api/public/adaptive/jobs': typeof ApiPublicAdaptiveJobsRoute
+  '/api/public/adaptive/gmail/callback': typeof ApiPublicAdaptiveGmailCallbackRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -290,6 +319,9 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/app/admin'
     | '/admin/s/$token'
+    | '/app/dossier/$tripId'
+    | '/api/public/adaptive/jobs'
+    | '/api/public/adaptive/gmail/callback'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -318,6 +350,9 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/app/admin'
     | '/admin/s/$token'
+    | '/app/dossier/$tripId'
+    | '/api/public/adaptive/jobs'
+    | '/api/public/adaptive/gmail/callback'
   id:
     | '__root__'
     | '/'
@@ -347,6 +382,9 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/_authenticated/app_/admin'
     | '/admin/s/$token'
+    | '/_authenticated/app_/dossier/$tripId'
+    | '/api/public/adaptive/jobs'
+    | '/api/public/adaptive/gmail/callback'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -375,6 +413,8 @@ export interface RootRouteChildren {
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   AdminSTokenRoute: typeof AdminSTokenRoute
+  ApiPublicAdaptiveJobsRoute: typeof ApiPublicAdaptiveJobsRoute
+  ApiPublicAdaptiveGmailCallbackRoute: typeof ApiPublicAdaptiveGmailCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -568,17 +608,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DotlovableOauthConsentRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/adaptive/jobs': {
+      id: '/api/public/adaptive/jobs'
+      path: '/api/public/adaptive/jobs'
+      fullPath: '/api/public/adaptive/jobs'
+      preLoaderRoute: typeof ApiPublicAdaptiveJobsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/app_/dossier/$tripId': {
+      id: '/_authenticated/app_/dossier/$tripId'
+      path: '/app/dossier/$tripId'
+      fullPath: '/app/dossier/$tripId'
+      preLoaderRoute: typeof AuthenticatedAppDossierTripIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/api/public/adaptive/gmail/callback': {
+      id: '/api/public/adaptive/gmail/callback'
+      path: '/api/public/adaptive/gmail/callback'
+      fullPath: '/api/public/adaptive/gmail/callback'
+      preLoaderRoute: typeof ApiPublicAdaptiveGmailCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 interface AuthenticatedRouteChildren {
   AuthenticatedAppRoute: typeof AuthenticatedAppRoute
   AuthenticatedAppAdminRoute: typeof AuthenticatedAppAdminRoute
+  AuthenticatedAppDossierTripIdRoute: typeof AuthenticatedAppDossierTripIdRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAppRoute: AuthenticatedAppRoute,
   AuthenticatedAppAdminRoute: AuthenticatedAppAdminRoute,
+  AuthenticatedAppDossierTripIdRoute: AuthenticatedAppDossierTripIdRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
@@ -612,6 +675,8 @@ const rootRouteChildren: RootRouteChildren = {
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   AdminSTokenRoute: AdminSTokenRoute,
+  ApiPublicAdaptiveJobsRoute: ApiPublicAdaptiveJobsRoute,
+  ApiPublicAdaptiveGmailCallbackRoute: ApiPublicAdaptiveGmailCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
