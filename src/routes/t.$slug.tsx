@@ -823,6 +823,19 @@ function DossierPage() {
         <skin.Render trip={view} blocks={blocks} view={layout} />
       </TrustedViewerProvider>
       <div className="mx-auto max-w-3xl px-6 pb-24" data-print="hide">
+        {/* Owner-only doorway to the private workspace. Never rendered for a
+            shared link: reservations and email evidence stay out of the dossier. */}
+        {canEdit && (
+          <Link
+            to="/app/dossier/$tripId"
+            params={{ tripId: trip.id }}
+            search={{ gmail: undefined }}
+            className="tap mb-8 flex items-center justify-between gap-3 rounded-md border border-ink/15 px-4 py-3 text-[10px] uppercase tracking-[0.3em] text-ink-soft transition-colors hover:border-seal hover:text-seal"
+          >
+            <span>Reservations, email evidence, and Live Trip assistance</span>
+            <span aria-hidden>→</span>
+          </Link>
+        )}
         <TripDocPreviews tripId={trip.id} />
       </div>
       <Link
