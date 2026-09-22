@@ -163,6 +163,15 @@ function Dashboard() {
                       />
                     </div>
                   </Link>
+                  {/* The private reservations workspace — owner only, never shared. */}
+                  <Link
+                    to="/app/dossier/$tripId"
+                    params={{ tripId: t.id }}
+                    className="tap mt-2 inline-flex items-center gap-2 px-1 td-eyebrow text-ink/45 transition-colors hover:text-seal"
+                  >
+                    Reservations &amp; Live Trip
+                    <ArrowUpRight className="h-3 w-3 shrink-0" strokeWidth={1.5} />
+                  </Link>
                 </li>
               ))}
             </ul>
