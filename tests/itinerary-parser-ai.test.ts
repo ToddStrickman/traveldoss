@@ -55,7 +55,7 @@ runOrSkip("AI parser: shuffled day order is renumbered chronologically", () => {
         expect(days[i]!).toBeGreaterThan(days[i - 1]!);
       }
     },
-    60_000,
+    120_000,
   );
 });
 
@@ -72,7 +72,7 @@ runOrSkip("AI parser: missing destination is inferred from body", () => {
       expect(out.destination).not.toBeNull();
       expect(out.destination!.toLowerCase()).toMatch(/japan|tokyo|kyoto/);
     },
-    60_000,
+    120_000,
   );
 });
 
@@ -102,7 +102,7 @@ runOrSkip("AI parser: missing dates still produce structured days with categorie
         expect(placeByDay[n]).toBeGreaterThan(0);
       }
     },
-    60_000,
+    120_000,
   );
 });
 
@@ -124,6 +124,6 @@ runOrSkip("AI parser: AI-recommended places carry < 0.85 confidence", () => {
       );
       expect(lowConf.length).toBeGreaterThan(0);
     },
-    60_000,
+    120_000,
   );
 });

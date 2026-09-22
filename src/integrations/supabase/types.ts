@@ -884,6 +884,7 @@ export type Database = {
       trip_invites: {
         Row: {
           accepted_at: string | null
+          accepted_by: string | null
           created_at: string
           email: string
           expires_at: string
@@ -895,6 +896,7 @@ export type Database = {
         }
         Insert: {
           accepted_at?: string | null
+          accepted_by?: string | null
           created_at?: string
           email: string
           expires_at: string
@@ -906,6 +908,7 @@ export type Database = {
         }
         Update: {
           accepted_at?: string | null
+          accepted_by?: string | null
           created_at?: string
           email?: string
           expires_at?: string
@@ -1172,6 +1175,15 @@ export type Database = {
       }
     }
     Functions: {
+      accept_trip_invite: {
+        Args: { p_actor: string; p_token_hash: string }
+        Returns: {
+          already_accepted: boolean
+          created_at: string
+          slug: string
+          trip_id: string
+        }[]
+      }
       adaptive_claim_account: {
         Args: { p_id: string; p_lease: string; p_user_id: string }
         Returns: boolean
@@ -1199,6 +1211,21 @@ export type Database = {
       adaptive_lock_account: {
         Args: { p_id: string; p_lease: string; p_user_id: string }
         Returns: boolean
+      }
+      create_trip_invite: {
+        Args: {
+          p_actor: string
+          p_email: string
+          p_expires_at: string
+          p_token_hash: string
+          p_trip_id: string
+        }
+        Returns: {
+          email: string
+          expires_at: string
+          invite_id: string
+          member_id: string
+        }[]
       }
       has_role: {
         Args: {

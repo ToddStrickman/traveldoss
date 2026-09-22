@@ -1,5 +1,4 @@
 import { createServerFn } from "@tanstack/react-start";
-import { generateText, Output } from "ai";
 import { z, ZodError, type ZodIssue } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Block } from "@/lib/skins/types";
@@ -106,6 +105,74 @@ const BlockSchema = z.object({
     )
     .describe("Ordered list of itinerary blocks"),
 });
+
+const NULLABLE_STRING_SCHEMA = { type: ["string", "null"] } as const;
+const NULLABLE_NUMBER_SCHEMA = { type: ["number", "null"] } as const;
+const PLACE_PROPERTIES = {
+  kind: { type: "string", enum: ["place"] },
+  name: NULLABLE_STRING_SCHEMA,
+  tier: { type: ["string", "null"], enum: ["primary", "shadow", null] },
+  category: { type: ["string", "null"], enum: ["transit", "restaurant", "walk", "event", "accommodation", "culture", "", null] },
+  address: NULLABLE_STRING_SCHEMA, phone: NULLABLE_STRING_SCHEMA, website: NULLABLE_STRING_SCHEMA,
+  hours: NULLABLE_STRING_SCHEMA, time: NULLABLE_STRING_SCHEMA, reservation: NULLABLE_STRING_SCHEMA,
+  note: NULLABLE_STRING_SCHEMA, confidence: NULLABLE_NUMBER_SCHEMA, checkIn: NULLABLE_STRING_SCHEMA,
+  checkOut: NULLABLE_STRING_SCHEMA, amenities: NULLABLE_STRING_SCHEMA, dressCode: NULLABLE_STRING_SCHEMA,
+  mustOrder: NULLABLE_STRING_SCHEMA, vendor: NULLABLE_STRING_SCHEMA, pickup: NULLABLE_STRING_SCHEMA,
+  dropoff: NULLABLE_STRING_SCHEMA, venue: NULLABLE_STRING_SCHEMA, ticketRequirement: NULLABLE_STRING_SCHEMA,
+  tourDetails: NULLABLE_STRING_SCHEMA, trailhead: NULLABLE_STRING_SCHEMA, distance: NULLABLE_STRING_SCHEMA,
+  duration: NULLABLE_STRING_SCHEMA, difficulty: NULLABLE_STRING_SCHEMA,
+} as const;
+const FLIGHT_PROPERTIES = {
+  kind: { type: "string", enum: ["flight"] }, airline: NULLABLE_STRING_SCHEMA,
+  flightNumber: NULLABLE_STRING_SCHEMA, from: NULLABLE_STRING_SCHEMA, to: NULLABLE_STRING_SCHEMA,
+  fromCity: NULLABLE_STRING_SCHEMA, toCity: NULLABLE_STRING_SCHEMA, departTime: NULLABLE_STRING_SCHEMA,
+  arriveTime: NULLABLE_STRING_SCHEMA, date: NULLABLE_STRING_SCHEMA, arriveDate: NULLABLE_STRING_SCHEMA,
+  note: NULLABLE_STRING_SCHEMA,
+} as const;
+const DAY_PROPERTIES = {
+  kind: { type: "string", enum: ["day"] },
+  n: NULLABLE_NUMBER_SCHEMA,
+  label: NULLABLE_STRING_SCHEMA,
+  dayDate: NULLABLE_STRING_SCHEMA,
+} as const;
+
+const BLOCK_OUTPUT_JSON_SCHEMA = {
+  type: "object",
+  properties: {
+    destination: NULLABLE_STRING_SCHEMA,
+    blocks: {
+      type: "array",
+      items: {
+        anyOf: [
+          { type: "object", properties: DAY_PROPERTIES, required: Object.keys(DAY_PROPERTIES), additionalProperties: false },
+          { type: "object", properties: PLACE_PROPERTIES, required: Object.keys(PLACE_PROPERTIES), additionalProperties: false },
+          { type: "object", properties: FLIGHT_PROPERTIES, required: Object.keys(FLIGHT_PROPERTIES), additionalProperties: false },
+          { type: "object", properties: { kind: { type: "string", enum: ["paragraph"] }, text: NULLABLE_STRING_SCHEMA }, required: ["kind", "text"], additionalProperties: false },
+          { type: "object", properties: { kind: { type: "string", enum: ["note"] }, text: NULLABLE_STRING_SCHEMA }, required: ["kind", "text"], additionalProperties: false },
+        ],
+      },
+    },
+  },
+  required: ["destination", "blocks"],
+  additionalProperties: false,
+} as const;
+
+const NOTES_OUTPUT_JSON_SCHEMA = {
+  type: "object",
+  properties: {
+    notes: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: { index: { type: "number" }, note: NULLABLE_STRING_SCHEMA },
+        required: ["index", "note"],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ["notes"],
+  additionalProperties: false,
+} as const;
 
 const SYSTEM_PROMPT = `You are an expert travel researcher, itinerary architect, logistics planner, and narrative editor for TravelDoss, a luxury travel platform.
 
@@ -219,7 +286,7 @@ export async function parseItineraryAiCore(data: ParseItineraryInput) {
   const attempts: DebugAttempt[] = [];
   let parsed: z.infer<typeof BlockSchema>;
   try {
-    parsed = await parseBlocksWithAi(gateway, cleanText, data.source, attempts);
+    parsed = await parseBlocksWithAi(key, cleanText, data.source, attempts);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     if (isCreditsMessage(msg)) {
@@ -238,7 +305,7 @@ export async function parseItineraryAiCore(data: ParseItineraryInput) {
     const debugReport: DebugReport = {
       source: "parse-ai",
       createdAt: new Date().toISOString(),
-      model: "google/gemini-2.5-flash",
+      model: "openai/gpt-6-astra",
       outcome: "local-fallback",
       attempts,
       finalParsed: fallback,
@@ -256,7 +323,7 @@ export async function parseItineraryAiCore(data: ParseItineraryInput) {
   // ── Web-search enrichment fallback ────────────────────────────────
   // For any place the model returned without address/phone/website,
   // hit Google Places (Text Search v1) to fill them in. Then run a
-  // single batched Gemini call to write a <15-word editorial note
+  // single batched AI call to write a <15-word editorial note
   // for every freshly enriched place that still lacks one.
   await enrichPlacesViaWebSearch(blocks, parsed.destination ?? null, gateway).catch(
     (err: unknown) => {
@@ -280,7 +347,7 @@ export async function parseItineraryAiCore(data: ParseItineraryInput) {
     ? {
         source: "parse-ai",
         createdAt: new Date().toISOString(),
-        model: "google/gemini-2.5-flash",
+        model: "openai/gpt-6-astra",
         outcome: "success-after-retry",
         attempts,
         finalParsed: result,
@@ -301,115 +368,108 @@ export const parseItineraryAi = createServerFn({ method: "POST" })
 /* ─── helpers ───────────────────────────────────────────────────────── */
 
 async function parseBlocksWithAi(
-  gateway: GatewayProvider,
+  apiKey: string,
   cleanText: string,
   source: "text" | "transcript" | "ai",
   attempts?: DebugAttempt[],
 ): Promise<z.infer<typeof BlockSchema>> {
-  const basePrompt = `Source type: ${source}\n\n---\n${cleanText}\n---\n\nReturn the structured itinerary now.`;
-  const MAX_ATTEMPTS = 4;
-  let lastRaw = "";
-  let lastIssue = "";
-
-  const recordAttempt = (entry: DebugAttempt) => {
-    if (attempts) attempts.push(entry);
+  const chunks = splitItineraryForAi(cleanText);
+  const parsedChunks: Array<z.infer<typeof BlockSchema>> = [];
+  for (let index = 0; index < chunks.length; index++) {
+    const chunk = chunks[index];
+    const prompt = `Source type: ${source}\nChunk ${index + 1} of ${chunks.length}. Preserve the stated day numbers and source order.\n\n---\n${chunk}\n---\n\nReturn one JSON object with destination and blocks.`;
+    parsedChunks.push(await parseChunkWithAi(apiKey, prompt, index + 1, attempts));
+  }
+  return {
+    destination: parsedChunks.find((chunk) => chunk.destination)?.destination ?? null,
+    blocks: orderDayGroups(parsedChunks.flatMap((chunk) => chunk.blocks)),
   };
+}
 
-  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    try {
-      const repairNote = lastIssue
-        ? `\n\nYour previous response failed validation (${lastIssue}). Return one JSON object only. Include a top-level "destination" and "blocks" array. Do not include prose or code fences.`
-        : "";
-      const result = await generateText({
-        model: gateway("google/gemini-2.5-flash"),
-        system: `${SYSTEM_PROMPT}\n\nReturn ONLY a JSON object matching the requested schema. Missing optional fields may be omitted. No prose, no markdown, no code fences.${repairNote}`,
-        prompt: basePrompt,
-        // Output tokens are ~83% of AI cost and this call was previously
-        // unbounded. 8192 comfortably fits a 30-day itinerary (the hard
-        // duration cap) while making a runaway generation impossible.
-        maxOutputTokens: 8192,
-      });
-      lastRaw = result.text.trim();
-      let parsedJson: unknown;
-      try {
-        parsedJson = JSON.parse(extractJsonObject(lastRaw));
-      } catch (jsonErr) {
-        const snippet = lastRaw.slice(0, 600).replace(/\s+/g, " ");
-        console.error(
-          `[parse-ai] attempt ${attempt}/${MAX_ATTEMPTS} JSON.parse failed: ${(jsonErr as Error).message}\n  raw[0..600]: ${snippet}`,
-        );
-        lastIssue = `invalid JSON syntax: ${(jsonErr as Error).message.slice(0, 120)}`;
-        recordAttempt({
-          attempt,
-          rawResponse: lastRaw,
-          jsonParseError: (jsonErr as Error).message,
-        });
-        if (attempt < MAX_ATTEMPTS) {
-          await new Promise((r) => setTimeout(r, 600 * 2 ** (attempt - 1)));
-        }
-        continue;
-      }
-      // Coerce known model deviations (kind:"transit", nested days[],
-      // free-text categories) before validation — the first attempt
-      // should succeed even when Gemini drifts from the schema.
-      const normalized = normalizeParsedShape(parsedJson);
-      const safe = BlockSchema.safeParse(normalized);
-      if (safe.success) return safe.data;
-      logZodDiagnostics("parse-ai", attempt, MAX_ATTEMPTS, safe.error, normalized, lastRaw);
-      lastIssue = summarizeIssues(safe.error.issues);
-      recordAttempt({
-        attempt,
-        rawResponse: lastRaw,
-        parsedJson,
-        zodIssues: safe.error.issues,
-        zodIssueSummary: lastIssue,
-      });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      if (isCreditsMessage(msg) || isRateLimitMessage(msg)) throw err;
-      console.error(`[parse-ai] attempt ${attempt}/${MAX_ATTEMPTS} threw:`, err);
-      if (lastRaw) {
-        try {
-          const reparsed: unknown = normalizeParsedShape(JSON.parse(extractJsonObject(lastRaw)));
-          const safe = BlockSchema.safeParse(reparsed);
-          if (safe.success) return safe.data;
-          logZodDiagnostics("parse-ai", attempt, MAX_ATTEMPTS, safe.error, reparsed, lastRaw);
-          lastIssue = summarizeIssues(safe.error.issues);
-          recordAttempt({
-            attempt,
-            rawResponse: lastRaw,
-            parsedJson: reparsed,
-            zodIssues: safe.error.issues,
-            zodIssueSummary: lastIssue,
-            threwError: msg,
-          });
-        } catch {
-          lastIssue = "invalid JSON syntax";
-          recordAttempt({
-            attempt,
-            rawResponse: lastRaw,
-            jsonParseError: "invalid JSON syntax",
-            threwError: msg,
-          });
-        }
-      } else {
-        lastIssue = msg.slice(0, 160);
-        recordAttempt({
-          attempt,
-          rawResponse: "",
-          threwError: msg,
-        });
-      }
-    }
-
-    if (attempt < MAX_ATTEMPTS) {
-      await new Promise((r) => setTimeout(r, 600 * 2 ** (attempt - 1)));
+function orderDayGroups(blocks: z.infer<typeof BlockSchema>["blocks"]) {
+  const preamble: typeof blocks = [];
+  const groups: Array<{ n: number; ordinal: number; blocks: typeof blocks }> = [];
+  let current: (typeof groups)[number] | null = null;
+  for (const block of blocks) {
+    if (block.kind === "day" && typeof block.n === "number") {
+      current = { n: block.n, ordinal: groups.length, blocks: [block] };
+      groups.push(current);
+    } else if (current) {
+      current.blocks.push(block);
+    } else {
+      preamble.push(block);
     }
   }
+  groups.sort((a, b) => a.n - b.n || a.ordinal - b.ordinal);
+  return [...preamble, ...groups.flatMap((group) => group.blocks)];
+}
 
-  throw new Error(
-    `AI parser could not produce valid blocks after ${MAX_ATTEMPTS} attempts (${lastIssue}).`,
-  );
+const MAX_AI_CHUNK_CHARS = 12_000;
+
+export function splitItineraryForAi(text: string, maxChars = MAX_AI_CHUNK_CHARS): string[] {
+  if (text.length <= maxChars) return [text];
+  const sections = text.split(/(?=^\s*(?:#{1,6}\s*)?day\s+\d+\b)/gim).filter((part) => part.trim());
+  const chunks: string[] = [];
+  let current = "";
+  const push = (value: string) => {
+    if (value.trim()) chunks.push(value);
+  };
+  for (const section of sections) {
+    if (section.length > maxChars) {
+      push(current);
+      current = "";
+      for (let start = 0; start < section.length; start += maxChars) push(section.slice(start, start + maxChars));
+    } else if (current && current.length + section.length > maxChars) {
+      push(current);
+      current = section;
+    } else {
+      current += section;
+    }
+  }
+  push(current);
+  return chunks.length ? chunks : [text];
+}
+
+async function parseChunkWithAi(
+  apiKey: string,
+  prompt: string,
+  chunkNumber: number,
+  attempts?: DebugAttempt[],
+): Promise<z.infer<typeof BlockSchema>> {
+  const MAX_TRANSIENT_ATTEMPTS = 3;
+  for (let attempt = 1; attempt <= MAX_TRANSIENT_ATTEMPTS; attempt++) {
+    let raw = "";
+    try {
+      const { streamLovableJsonResponse } = await import("@/lib/ai-gateway.server");
+      const result = await streamLovableJsonResponse<unknown>({
+        apiKey,
+        instructions: `${SYSTEM_PROMPT}\n\nReturn only the requested structured object. Every schema field is required; use null when it does not apply.`,
+        input: prompt,
+        schemaName: "itinerary_chunk",
+        schema: BLOCK_OUTPUT_JSON_SCHEMA as unknown as Record<string, unknown>,
+        reasoningEffort: "low",
+      });
+      raw = JSON.stringify(result.value);
+      const normalized = normalizeParsedShape(result.value);
+      const safe = BlockSchema.safeParse(normalized);
+      if (safe.success) return safe.data;
+      const issue = summarizeIssues(safe.error.issues);
+      attempts?.push({ attempt: chunkNumber, rawResponse: "", zodIssues: safe.error.issues, zodIssueSummary: issue });
+      throw new Error(issue);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const status = typeof error === "object" && error !== null && "status" in error
+        ? Number((error as { status?: unknown }).status)
+        : undefined;
+      const retryable = status === 429 || (status !== undefined && status >= 500);
+      if (!retryable || attempt === MAX_TRANSIENT_ATTEMPTS) {
+        attempts?.push({ attempt: chunkNumber, rawResponse: "", threwError: message.slice(0, 240) });
+        throw error;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 500 * 2 ** (attempt - 1) + Math.floor(Math.random() * 250)));
+    }
+  }
+  throw new Error("AI parser stopped before completing the itinerary chunk.");
 }
 
 function extractJsonObject(text: string): string {
@@ -568,7 +628,7 @@ type GatewayProvider = ReturnType<
 /**
  * Mutates `blocks` in place: for each `place` missing address/phone/website,
  * asks OpenStreetMap (keyless, see place-lookup.server.ts) for hard facts,
- * then asks Gemini to write a single <15-word editorial note per freshly
+ * then asks AI to write a single <15-word editorial note per freshly
  * enriched place.
  */
 async function enrichPlacesViaWebSearch(
@@ -729,18 +789,19 @@ async function fillEditorialNotes(
     )
     .join("\n");
 
-  const result = await generateText({
-    model: gateway("google/gemini-2.5-flash"),
-    system:
-      "You write single-sentence editorial notes for a luxury travel itinerary. Each note must be UNDER 15 WORDS, factual, and add genuine insight (atmosphere, specialty, what to expect). No fluff, no marketing copy. Return null if you have no real knowledge of the venue — never fabricate.",
-    prompt: `Destination: ${destination ?? "unknown"}\n\nWrite one note per entry below. Reply with the JSON object only.\n\n${list}`,
-    experimental_output: Output.object({ schema: NotesSchema }),
-    // At most PER_RUN_CAP (24) notes of under 15 words each — 1500 is
-    // generous. Previously unbounded.
-    maxOutputTokens: 1500,
+  const key = process.env.LOVABLE_API_KEY;
+  if (!key) return;
+  const { streamLovableJsonResponse } = await import("@/lib/ai-gateway.server");
+  const result = await streamLovableJsonResponse<unknown>({
+    apiKey: key,
+    instructions: "Write one factual editorial note under 15 words per venue. Use null when uncertain. Never fabricate.",
+    input: `Destination: ${destination ?? "unknown"}\n\n${list}`,
+    schemaName: "editorial_notes",
+    schema: NOTES_OUTPUT_JSON_SCHEMA,
+    reasoningEffort: "low",
   });
-
-  for (const { index, note } of result.experimental_output.notes) {
+  const output = NotesSchema.parse(result.value);
+  for (const { index, note } of output.notes) {
     const p = places[index];
     if (!p || !note) continue;
     const trimmed = note.trim();

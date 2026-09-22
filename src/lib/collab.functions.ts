@@ -156,27 +156,15 @@ export const inviteToTrip = createServerFn({ method: "POST" })
       if (email === normalizeEmail(inviterEmail)) continue;
       const token = newInviteToken();
       const tokenHash = await hashInviteToken(token);
-      await supabaseAdmin
-        .from("trip_members")
-        .upsert(
-          {
-            trip_id: data.tripId,
-            email,
-            role: "editor",
-            status: "invited",
-            source: "creator_invite",
-            invited_by: userId,
-          },
-          { onConflict: "trip_id,email" },
-        );
-      const { error: invErr } = await supabaseAdmin.from("trip_invites").insert({
-        trip_id: data.tripId,
-        email,
-        token_hash: tokenHash,
-        invited_by: userId,
-        expires_at: expiresAt,
+      const { data: committed, error: inviteError } = await supabaseAdmin.rpc("create_trip_invite", {
+        p_actor: userId,
+        p_trip_id: data.tripId,
+        p_email: email,
+        p_token_hash: tokenHash,
+        p_expires_at: expiresAt,
       });
-      if (invErr) throw new Error(invErr.message);
+      if (inviteError) throw new Error(inviteError.message);
+      if (!committed?.length) throw new Error("The invitation could not be created.");
       const link = inviteUrl(SITE_URL, token);
       const mail = await sendInviteEmail({
         to: email,
@@ -200,7 +188,8 @@ export const revokeTripInvite = createServerFn({ method: "POST" })
       .from("trip_invites")
       .update({ revoked_at: new Date().toISOString() })
       .eq("id", data.inviteId)
-      .eq("trip_id", data.tripId);
+      .eq("trip_id", data.tripId)
+      .is("accepted_at", null);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -377,61 +366,19 @@ export const acceptTripInvite = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ token: z.string().min(10).max(64) }).parse(input))
   .handler(async ({ data, context }) => {
-    const { userId, claims } = context;
-    const email = normalizeEmail((claims as { email?: string }).email ?? "");
+    const { userId } = context;
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const tokenHash = await hashInviteToken(data.token);
-    const { data: invite } = await supabaseAdmin
-      .from("trip_invites")
-      .select("id, trip_id, email, expires_at, accepted_at, revoked_at, created_at")
-      .eq("token_hash", tokenHash)
-      .maybeSingle();
-    const row = invite as {
-      id: string;
-      trip_id: string;
-      email: string;
-      expires_at: string;
-      accepted_at: string | null;
-      revoked_at: string | null;
-      created_at: string;
-    } | null;
-    if (!row) throw new Error("This invitation link isn't valid.");
-    if (row.revoked_at) throw new Error("This invitation was withdrawn.");
-    if (row.accepted_at) throw new Error("This invitation has already been used.");
-    if (new Date(row.expires_at).getTime() < Date.now()) throw new Error("This invitation has expired.");
-    if (normalizeEmail(row.email) !== email) {
-      throw new Error(`This invitation was sent to ${row.email}. Sign in with that address to accept it.`);
-    }
-    const now = new Date().toISOString();
-    const { error: memberErr } = await supabaseAdmin
-      .from("trip_members")
-      .upsert(
-        {
-          trip_id: row.trip_id,
-          email: normalizeEmail(row.email),
-          user_id: userId,
-          role: "editor",
-          status: "active",
-          source: "creator_invite",
-          joined_at: now,
-        },
-        { onConflict: "trip_id,email" },
-      );
-    if (memberErr) throw new Error(memberErr.message);
-    const { error: inviteErr } = await supabaseAdmin
-      .from("trip_invites")
-      .update({ accepted_at: now })
-      .eq("id", row.id)
-      .is("accepted_at", null);
-    if (inviteErr) throw new Error(inviteErr.message);
-    const { data: trip } = await supabaseAdmin
-      .from("trips")
-      .select("slug")
-      .eq("id", row.trip_id)
-      .maybeSingle();
+    const { data: accepted, error } = await supabaseAdmin.rpc("accept_trip_invite", {
+      p_actor: userId,
+      p_token_hash: tokenHash,
+    });
+    if (error) throw new Error(error.message);
+    const row = accepted?.[0];
+    if (!row) throw new Error("This invitation could not be accepted.");
     const days = Math.max(
       0,
       Math.round((Date.now() - new Date(row.created_at).getTime()) / 86_400_000),
     );
-    return { ok: true, slug: (trip as { slug?: string } | null)?.slug ?? null, daysToAccept: days };
+    return { ok: true, slug: row.slug ?? null, daysToAccept: days, alreadyAccepted: row.already_accepted };
   });
