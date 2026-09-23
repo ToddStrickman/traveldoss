@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { parseDropInWithMeta } from "@/lib/itinerary/parse";
-import { CakeProgress } from "@/components/flow/CakeProgress";
+import {
+  DossierProgressPreview,
+  type DossierProgressPreviewData,
+} from "@/components/flow/DossierProgressPreview";
+import { buildDossierProgressPreview } from "@/lib/itinerary/progress-preview";
 import { parseItineraryAi } from "@/lib/itinerary/parse-ai.functions";
 import { generateItineraryAi } from "@/lib/itinerary/generate.functions";
 import { useServerFn } from "@tanstack/react-start";
@@ -123,6 +127,7 @@ import {
   trackMintInputReady,
   trackMintLoginRequired,
   trackMintParseFailed,
+  trackMintPreviewShown,
   trackMintSubmitted,
 } from "@/lib/analytics";
 import {
@@ -204,6 +209,8 @@ export function IngestionModal({
   const [reviewLabel, setReviewLabel] = useState("Reading your dossier…");
   const [reviewDestination, setReviewDestination] = useState<string | null>(null);
   const [parsing, setParsing] = useState(false);
+  const [progressPreview, setProgressPreview] = useState<DossierProgressPreviewData | null>(null);
+  const previewTracked = useRef(false);
   const parseAi = useServerFn(parseItineraryAi);
   const navigate = useNavigate();
   const location = useLocation();
@@ -259,6 +266,15 @@ export function IngestionModal({
   // A long paste takes legitimately longer; the bar's pace follows its length
   // so the percentage keeps climbing on large dossiers instead of flatlining.
   const composePct = useComposeProgress(parsing, composePhase, text.length);
+  const progressPreviewReady = !!progressPreview?.destination || !!progressPreview?.dateLine;
+  const showProgressPreview = parsing && progressPreviewReady && composePct >= 25;
+  const progressPreviewHasDates = !!progressPreview?.dateLine;
+
+  useEffect(() => {
+    if (!showProgressPreview || !template || previewTracked.current) return;
+    previewTracked.current = true;
+    trackMintPreviewShown(template.meta.id, tab, composePct, progressPreviewHasDates);
+  }, [composePct, progressPreviewHasDates, showProgressPreview, tab, template]);
 
   // ── Generate-tab state ───────────────────────────────────────────────
   const [genPrompt, setGenPrompt] = useState("");
@@ -401,8 +417,20 @@ export function IngestionModal({
       return;
     }
     setParsing(true);
-    let blocks: Block[] = [];
-    let destination: string | null = null;
+    previewTracked.current = false;
+    const local = parseDropInWithMeta(
+      trimmed,
+      tab === "transcript" ? "transcript" : "text",
+    );
+    setProgressPreview(
+      buildDossierProgressPreview({
+        blocks: local.blocks,
+        destination: local.destination,
+        fallbackTitle: "Dossier taking shape",
+      }),
+    );
+    let blocks: Block[] = local.blocks;
+    let destination: string | null = local.destination;
     try {
       const r = await parseAi({
         data: {
@@ -412,6 +440,13 @@ export function IngestionModal({
       });
       blocks = r.blocks;
       destination = r.destination;
+      setProgressPreview(
+        buildDossierProgressPreview({
+          blocks,
+          destination,
+          fallbackTitle: "Dossier taking shape",
+        }),
+      );
       offerDebugReport(
         (r as { debugReport?: DebugReport }).debugReport,
         "Parsed with fallback",
@@ -434,12 +469,8 @@ export function IngestionModal({
           onClick: () => void submit(),
         },
       });
-      const r = parseDropInWithMeta(
-        trimmed,
-        tab === "transcript" ? "transcript" : "text",
-      );
-      blocks = r.blocks;
-      destination = r.destination;
+      blocks = local.blocks;
+      destination = local.destination;
     } finally {
       setParsing(false);
     }
@@ -490,6 +521,15 @@ export function IngestionModal({
       return;
     }
     setParsing(true);
+    previewTracked.current = false;
+    setProgressPreview(
+      buildDossierProgressPreview({
+        blocks: [],
+        destination: genDestination.trim() || parseDropInWithMeta(genPrompt).destination,
+        dates: { startDate: genStartDate.trim() || null, endDate: null },
+        fallbackTitle: genDestination.trim() || "Dossier taking shape",
+      }),
+    );
     setGenPhase("drafting");
     const run = ++genRun.current;
     const stale = () => genRun.current !== run;
@@ -553,14 +593,24 @@ export function IngestionModal({
       setGenPhase("done");
       setClarifyQs([]);
       setClarifyAs([]);
+      const resolvedDates = (gen as { resolvedDates?: { startDate: string | null; endDate: string | null } })
+        .resolvedDates;
+      const resolvedDestination = parsed.destination || genDestination.trim() || null;
+      setProgressPreview(
+        buildDossierProgressPreview({
+          blocks: parsed.blocks,
+          destination: resolvedDestination,
+          dates: resolvedDates,
+          fallbackTitle: "Dossier taking shape",
+        }),
+      );
       onGenerate(
         parsed.blocks,
         "Drafting your dossier…",
         // `??` kept empty strings alive ("" is not nullish) — downstream
         // guards only masked it by luck.
-        parsed.destination || genDestination.trim() || null,
-        (gen as { resolvedDates?: { startDate: string | null; endDate: string | null } })
-          .resolvedDates,
+        resolvedDestination,
+        resolvedDates,
       );
       handleOpenChange(false);
     } catch (err) {
@@ -606,6 +656,8 @@ export function IngestionModal({
     if (!v) {
       setStage("source");
       setReviewBlocks([]);
+      setProgressPreview(null);
+      previewTracked.current = false;
     }
     onOpenChange(v);
   }
@@ -859,9 +911,19 @@ export function IngestionModal({
               <p className="text-[12px] leading-[1.5] text-ink-soft">
                 {TABS.find((t) => t.id === tab)?.sub}
               </p>
-              {/* Import in progress: the dossier "bakes" — cake assembly with
-                  a live percentage, replacing the raw input while it runs. */}
-              {parsing ? <CakeProgress pct={composePct} /> : null}
+              {showProgressPreview && progressPreview ? (
+                <DossierProgressPreview preview={progressPreview} pct={composePct} />
+              ) : parsing ? (
+                <div className="rounded-md border border-ink/10 bg-paper/35 px-4 py-5 text-center" aria-live="polite">
+                  <div className="mx-auto mb-3 h-px w-full max-w-xs overflow-hidden bg-ink/10" aria-hidden>
+                    <span
+                      className="block h-full rounded-full bg-seal motion-safe:transition-[width] motion-safe:duration-200 motion-safe:ease-linear"
+                      style={{ width: `${composePct}%` }}
+                    />
+                  </div>
+                  <p className="td-eyebrow text-ink/45">Identifying destination and dates</p>
+                </div>
+              ) : null}
               <div className={`flex items-center justify-end ${parsing ? "hidden" : ""}`}>
                 <button
                   type="button"

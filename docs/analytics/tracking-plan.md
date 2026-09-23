@@ -37,6 +37,7 @@ has exactly one event name.
 | -------------------- | --------------------------------------------------------------- | --------------------------------------------------------- |
 | `mint_input_ready`   | The Mint Dossier button first becomes enabled                   | `template_id`, `tab`, `input_length`                      |
 | `mint_submitted`     | Mint Dossier is pressed                                         | `template_id`, `tab`, `input_length`                      |
+| `mint_preview_shown` | The early dossier preview first appears during import/create     | `template_id`, `tab`, `progress_pct`, `has_dates`         |
 | `mint_login_required`| The composer draft is stashed and the user is sent to the wall   | `template_id`, `tab`                                      |
 | `mint_parse_failed`  | AI parse throws, or no blocks could be read                     | `template_id`, `tab`, `reason`                            |
 | `mint_completed`     | The dossier row exists (client mirror of the server event)       | `template_id`, `trip_id`, `block_count`, `day_count`       |

@@ -42,6 +42,10 @@ import { toast } from "sonner";
 import { SITE_URL } from "@/lib/site";
 import { clearPendingComposer, peekPendingComposer } from "@/lib/mint-pending";
 import { trackComposeOpened, trackMintCompleted, trackMintFailed } from "@/lib/analytics";
+import {
+  buildDossierProgressPreview,
+  type DossierProgressPreview,
+} from "@/lib/itinerary/progress-preview";
 
 /** Day blocks only — the funnel's "how big was this dossier" measure. */
 function dayCount(blocks: Block[]): number {
@@ -104,6 +108,8 @@ function Landing() {
   }, [modalOpen]);
   const [initialTab, setInitialTab] = useState<"paste" | "transcript">("paste");
   const [minting, setMinting] = useState(false);
+  const [mintPreview, setMintPreview] = useState<DossierProgressPreview | null>(null);
+  const [mintProgressSize, setMintProgressSize] = useState(0);
   const [pendingSlug, setPendingSlug] = useState<string | null>(null);
   const create = useServerFn(createTripFromIngestion);
   const navigate = useNavigate();
@@ -292,6 +298,8 @@ function Landing() {
       return;
     }
     setModalOpen(false);
+    setMintPreview(buildDossierProgressPreview({ blocks, destination, dates }));
+    setMintProgressSize(blocks.length);
     setMinting(true);
     try {
       const r = await create({
@@ -310,6 +318,8 @@ function Landing() {
       trackMintFailed(picked.meta.id, e instanceof Error ? e.message : String(e));
       toast.error("Couldn't create your dossier", { description: String(e) });
       setMinting(false);
+      setMintPreview(null);
+      setMintProgressSize(0);
     }
   }
 
@@ -654,7 +664,13 @@ function Landing() {
         </Suspense>
       )}
 
-      <GenerationLoader open={minting} label="Composing your dossier" />
+      <GenerationLoader
+        open={minting}
+        label="Composing your dossier"
+        preview={mintPreview}
+        initialPct={25}
+        progressSizeHint={mintProgressSize}
+      />
 
       <ActionDock
         onCompose={() => openDock("paste")}

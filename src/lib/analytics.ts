@@ -150,6 +150,19 @@ export const trackMintInputReady = (
 export const trackMintSubmitted = (templateId: string, tab: MintTab, inputLength: number) =>
   capture("mint_submitted", { template_id: templateId, tab, input_length: inputLength });
 
+export const trackMintPreviewShown = (
+  templateId: string,
+  tab: MintTab,
+  progressPct: number,
+  hasDates: boolean,
+) =>
+  capture("mint_preview_shown", {
+    template_id: templateId,
+    tab,
+    progress_pct: progressPct,
+    has_dates: hasDates,
+  });
+
 export const trackMintLoginRequired = (templateId: string, tab: MintTab) =>
   capture("mint_login_required", { template_id: templateId, tab });
 

@@ -978,3 +978,94 @@
     transition: none;
   }
 }
+
+/* ================= Hourglass dossier progress =================
+   A compact, title-side indicator: top sand drains while the lower chamber
+   fills, and a single grain stream falls while work remains. */
+.td-hourglass-icon {
+  position: relative;
+  display: inline-block;
+  width: 24px;
+  height: 30px;
+  flex: 0 0 auto;
+}
+
+.td-hourglass-frame {
+  position: absolute;
+  inset: 0;
+  border-top: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+}
+
+.td-hourglass-frame::before,
+.td-hourglass-frame::after {
+  content: "";
+  position: absolute;
+  top: 1px;
+  bottom: 1px;
+  width: 1.5px;
+  border-radius: 999px;
+  background: currentColor;
+  transform-origin: center;
+}
+
+.td-hourglass-frame::before {
+  left: 4px;
+  transform: rotate(-19deg);
+}
+
+.td-hourglass-frame::after {
+  right: 4px;
+  transform: rotate(19deg);
+}
+
+.td-hourglass-sand {
+  position: absolute;
+  left: 7px;
+  right: 7px;
+  border-radius: 999px 999px 3px 3px;
+  background: currentColor;
+  opacity: 0.9;
+}
+
+.td-hourglass-sand-top {
+  top: 5px;
+  height: 9px;
+  clip-path: polygon(0 0, 100% 0, 54% 100%, 46% 100%);
+  transform: scaleY(var(--td-hourglass-remaining));
+  transform-origin: top center;
+}
+
+.td-hourglass-sand-bottom {
+  bottom: 5px;
+  height: 9px;
+  clip-path: polygon(46% 0, 54% 0, 100% 100%, 0 100%);
+  transform: scaleY(var(--td-hourglass-progress));
+  transform-origin: bottom center;
+}
+
+.td-hourglass-stream {
+  position: absolute;
+  left: 50%;
+  top: 12px;
+  width: 2px;
+  height: 7px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: calc(0.2 + (var(--td-hourglass-remaining) * 0.65));
+  transform: translateX(-50%);
+  animation: td-hourglass-fall 950ms linear infinite;
+}
+
+@keyframes td-hourglass-fall {
+  0% { transform: translate(-50%, -4px); opacity: 0; }
+  22% { opacity: calc(0.25 + (var(--td-hourglass-remaining) * 0.55)); }
+  100% { transform: translate(-50%, 5px); opacity: 0.08; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .td-hourglass-stream {
+    animation: none;
+    opacity: calc(0.18 + (var(--td-hourglass-remaining) * 0.45));
+  }
+}
