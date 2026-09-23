@@ -10,7 +10,7 @@
 - [ ] Insights Feed + detectors D1–D13 (later phase)
 
 ## In progress
-- [ ] Show an early dossier preview during import/create with hourglass progress
+- [x] Show an early dossier preview during import/create with hourglass progress
 - [x] Fix invitation acceptance with canonical emails and atomic membership activation
 - [x] Make long itinerary parsing bounded, streaming, and non-truncating
 - [x] Conversion funnel rendered as an actual tapering funnel shape (desktop),
