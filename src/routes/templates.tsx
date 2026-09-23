@@ -23,6 +23,10 @@ import { PRICE_WORDS, SITE_URL } from "@/lib/site";
 import { peekPendingComposer } from "@/lib/mint-pending";
 import { capture, trackMintCompleted, trackMintFailed } from "@/lib/analytics";
 import { MintTermsGate, type MintTermsGateHandle } from "@/components/legal/MintTermsGate";
+import {
+  buildDossierProgressPreview,
+  type DossierProgressPreview,
+} from "@/lib/itinerary/progress-preview";
 
 /** Day blocks only — the funnel's "how big was this dossier" measure. */
 function dayCount(blocks: Block[]): number {
@@ -161,6 +165,8 @@ function TemplatesPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalSkin, setModalSkin] = useState<SkinModule | null>(null);
   const [minting, setMinting] = useState(false);
+  const [mintPreview, setMintPreview] = useState<DossierProgressPreview | null>(null);
+  const [mintProgressSize, setMintProgressSize] = useState(0);
   const [pendingSlug, setPendingSlug] = useState<string | null>(null);
   const termsGateRef = useRef<MintTermsGateHandle>(null);
 
@@ -314,6 +320,8 @@ function TemplatesPage() {
     const ok = await termsGateRef.current?.ensureAccepted();
     if (!ok) return;
     setModalOpen(false);
+    setMintPreview(buildDossierProgressPreview({ blocks, destination, dates }));
+    setMintProgressSize(blocks.length);
     setPicking(modalSkin.meta.id);
     setMinting(true);
     try {
@@ -335,6 +343,8 @@ function TemplatesPage() {
         description: e instanceof Error ? e.message : String(e),
       });
       setMinting(false);
+      setMintPreview(null);
+      setMintProgressSize(0);
       setPicking(null);
     }
   };
@@ -536,7 +546,13 @@ function TemplatesPage() {
         onTemplateChange={setModalSkin}
       />
 
-      <GenerationLoader open={minting} label="Composing your dossier" />
+      <GenerationLoader
+        open={minting}
+        label="Composing your dossier"
+        preview={mintPreview}
+        initialPct={25}
+        progressSizeHint={mintProgressSize}
+      />
       <MintTermsGate ref={termsGateRef} />
     </div>
   );

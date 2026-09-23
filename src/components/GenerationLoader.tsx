@@ -1,5 +1,10 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
+import {
+  DossierProgressPreview,
+  type DossierProgressPreviewData,
+} from "@/components/flow/DossierProgressPreview";
+import { useComposeProgress } from "@/components/flow/useComposeProgress";
 
 /**
  * Full-surface mint loader — honest by construction. The mint is ONE server
@@ -12,9 +17,15 @@ import { useEffect, useState } from "react";
 export function GenerationLoader({
   open,
   label = "Composing your dossier",
+  preview = null,
+  initialPct = 0,
+  progressSizeHint = 0,
 }: {
   open: boolean;
   label?: string;
+  preview?: DossierProgressPreviewData | null;
+  initialPct?: number;
+  progressSizeHint?: number;
 }) {
   const DETAILS = [
     "extracting days and places",
@@ -23,6 +34,8 @@ export function GenerationLoader({
     "setting the type",
   ];
   const [detail, setDetail] = useState(0);
+  const progressPct = useComposeProgress(open, open ? "structuring" : "idle", progressSizeHint);
+  const previewPct = Math.max(initialPct, progressPct);
 
   useEffect(() => {
     if (!open) {
@@ -51,6 +64,8 @@ export function GenerationLoader({
             <div className="text-[10px] font-medium uppercase tracking-[0.45em] text-ink-soft">
               Preparing your dossier
             </div>
+
+            {preview ? <DossierProgressPreview preview={preview} pct={previewPct} className="w-full" /> : null}
 
             <div className="flex items-center gap-3">
               <motion.span

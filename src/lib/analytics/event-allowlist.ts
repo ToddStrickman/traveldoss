@@ -20,6 +20,7 @@ export const FIRST_PARTY_EVENTS = [
   "template_browse_mode_changed",
   "mint_input_ready",
   "mint_submitted",
+  "mint_preview_shown",
   "mint_login_required",
   "mint_parse_failed",
   "mint_completed",

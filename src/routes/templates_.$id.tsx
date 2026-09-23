@@ -26,6 +26,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { SITE_URL } from "@/lib/site";
 import { MintTermsGate, type MintTermsGateHandle } from "@/components/legal/MintTermsGate";
+import {
+  buildDossierProgressPreview,
+  type DossierProgressPreview,
+} from "@/lib/itinerary/progress-preview";
 
 /** Day blocks only — the funnel's "how big was this dossier" measure. */
 function dayCount(blocks: Block[]): number {
@@ -81,6 +85,8 @@ function TemplateSpread() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [minting, setMinting] = useState(false);
+  const [mintPreview, setMintPreview] = useState<DossierProgressPreview | null>(null);
+  const [mintProgressSize, setMintProgressSize] = useState(0);
   const [pendingSlug, setPendingSlug] = useState<string | null>(null);
   const [view, setView] = useState<SkinView>("vertical");
   const termsGateRef = useRef<MintTermsGateHandle>(null);
@@ -152,6 +158,8 @@ function TemplateSpread() {
     const ok = await termsGateRef.current?.ensureAccepted();
     if (!ok) return;
     setModalOpen(false);
+    setMintPreview(buildDossierProgressPreview({ blocks, destination, dates }));
+    setMintProgressSize(blocks.length);
     setMinting(true);
     try {
       const r = await create({
@@ -172,6 +180,8 @@ function TemplateSpread() {
         description: e instanceof Error ? e.message : String(e),
       });
       setMinting(false);
+      setMintPreview(null);
+      setMintProgressSize(0);
     }
   }
 
@@ -294,7 +304,13 @@ function TemplateSpread() {
         template={skin}
         onGenerate={handleGenerate}
       />
-      <GenerationLoader open={minting} label="Composing your dossier" />
+      <GenerationLoader
+        open={minting}
+        label="Composing your dossier"
+        preview={mintPreview}
+        initialPct={25}
+        progressSizeHint={mintProgressSize}
+      />
       <MintTermsGate ref={termsGateRef} />
     </div>
   );
