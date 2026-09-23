@@ -11,7 +11,7 @@ import { StudioBar } from "@/components/studio/StudioBar";
 import { Clock, Users } from "lucide-react";
 import { TripTeamPanel } from "@/components/studio/TripTeamPanel";
 import { TripHistoryPanel } from "@/components/studio/TripHistoryPanel";
-import { trackTeamPanelOpened } from "@/lib/analytics";
+import { trackTeamPanelOpened, trackTripDatesEdited } from "@/lib/analytics";
 import { ViewSwitch } from "@/components/ViewSwitch";
 import {
   openMap,
@@ -224,6 +224,7 @@ function DossierPage() {
   const [isOwner, setIsOwner] = useState(false);
   /** Active co-planner (Directive 08): edits content, but not trip settings. */
   const [isMember, setIsMember] = useState(false);
+  const [creatorName, setCreatorName] = useState<string | null>(null);
   const [teamOpen, setTeamOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
@@ -246,6 +247,7 @@ function DossierPage() {
         if (!cancelled) {
           setIsOwner(false);
           setIsMember(false);
+          setCreatorName(null);
         }
         return;
       }
@@ -254,11 +256,13 @@ function DossierPage() {
           if (cancelled) return;
           setIsOwner(!!r.isOwner);
           setIsMember(!!r.isMember && !r.isOwner);
+          setCreatorName(r.creatorName ?? null);
         })
         .catch(() => {
           if (!cancelled) {
             setIsOwner(false);
             setIsMember(false);
+            setCreatorName(null);
           }
         });
     });
@@ -726,6 +730,11 @@ function DossierPage() {
           },
           { coalesceKey: "trip:dates" },
         );
+        trackTripDatesEdited({
+          source: "hero",
+          has_start: !!start.trim(),
+          has_end: !!end.trim(),
+        });
         notifyDayDateAutofill(fill, start);
       },
       onMetaChange: (patch: Partial<import("@/lib/skins/types").TripMeta>) => {
@@ -749,6 +758,7 @@ function DossierPage() {
     start_date: startDate || null,
     end_date: endDate || null,
     hero_image_url: trip.hero_image_url,
+      creator_name: creatorName,
     meta,
   };
 

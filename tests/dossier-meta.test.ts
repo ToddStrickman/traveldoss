@@ -15,10 +15,12 @@ describe("DossierMetaSchema", () => {
   test("keeps hardenedAt through validation", () => {
     const parsed = DossierMetaSchema.parse({
       travelers: "2 adults",
+      travelersHidden: false,
       hardenedAt: "2026-08-31T12:00:00.000Z",
     });
     expect(parsed.hardenedAt).toBe("2026-08-31T12:00:00.000Z");
     expect(parsed.travelers).toBe("2 adults");
+    expect(parsed.travelersHidden).toBe(false);
   });
 
   test("still rejects values outside the enums", () => {
@@ -47,6 +49,13 @@ describe("mergeDossierMeta", () => {
 
   test("an explicit empty string still clears a field", () => {
     expect(mergeDossierMeta({ travelers: "2 adults" }, { travelers: "" }).travelers).toBe("");
+  });
+
+  test("preserves the traveler-field visibility flag", () => {
+    expect(mergeDossierMeta({ travelers: "Alex" }, { travelersHidden: true })).toEqual({
+      travelers: "Alex",
+      travelersHidden: true,
+    });
   });
 
   test("tolerates missing or malformed stored meta", () => {

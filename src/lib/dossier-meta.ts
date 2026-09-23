@@ -14,6 +14,7 @@ import type { TripMeta } from "@/lib/skins/types";
  */
 export const DossierMetaSchema = z.object({
   travelers: z.string().max(80).optional(),
+  travelersHidden: z.boolean().optional(),
   pace: z.enum(["relaxed", "balanced", "packed"]).optional(),
   budget: z.enum(["shoestring", "moderate", "elevated", "luxury"]).optional(),
   interests: z.array(z.string().max(40)).max(20).optional(),

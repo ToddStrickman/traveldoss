@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { Plus, Sun, ChevronUp, ChevronDown, Trash2, MapPin } from "lucide-react";
+import { Plus, Sun, ChevronUp, ChevronDown, Trash2, MapPin, Check, X } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { suggestLocation, type LocationSuggestion } from "@/lib/itinerary/suggest-location.functions";
 import { useDayMap } from "../day-map-context";
 import { toast } from "sonner";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { trackTravelersFieldChanged } from "@/lib/analytics";
 import type { Block, TripView, TripMeta } from "../../types";
 import { buildItinerary, type PartOfDay } from "../itinerary";
 import { EditableText, useEditing } from "../Editable";
@@ -29,6 +31,8 @@ export function EditableHero({
   const { editing, onMetaChange, onTripDatesChange, onTripChange } = useEditing();
   const meta = trip.meta ?? {};
   const dateValue = { start: trip.start_date ?? "", end: trip.end_date ?? "" };
+  const travelers = typeof meta.travelers === "string" ? meta.travelers : "";
+  const travelersHidden = meta.travelersHidden === true;
   return (
     <header className={className ?? "tds-hero"} data-hero-compact={compact || undefined}>
       <h1 className="tds-title tds-trip-title">
@@ -78,13 +82,14 @@ export function EditableHero({
             onTripDatesChange(r.start, r.end);
           }}
         />
-        <MetaChip
-          label="Travelers"
-          value={meta.travelers}
-          emptyLabel="Add travelers"
-          editor={{ kind: "text", placeholder: "e.g. 2 adults" }}
+        <TravelersField
+          value={travelers}
+          creatorName={trip.creator_name ?? null}
+          hidden={travelersHidden}
           editable={editing && !!onMetaChange}
-          onChange={(v) => onMetaChange?.({ travelers: typeof v === "string" ? v : "" })}
+          onSave={(next) => onMetaChange?.({ travelers: next, travelersHidden: false })}
+          onRemove={() => onMetaChange?.({ travelersHidden: true })}
+          onRestore={() => onMetaChange?.({ travelersHidden: false })}
         />
         {/* Pace / budget / interests chips removed from the editor (owner
             ruling, 2026-07-23): they only feed AI generation and offered the
@@ -92,6 +97,130 @@ export function EditableHero({
             generation flow. */}
       </div>
     </header>
+  );
+}
+
+function defaultTravelerName(creatorName?: string | null): string {
+  const trimmed = creatorName?.trim();
+  return trimmed || "Trip creator";
+}
+
+function TravelersField({
+  value,
+  creatorName,
+  hidden,
+  editable,
+  onSave,
+  onRemove,
+  onRestore,
+}: {
+  value: string;
+  creatorName?: string | null;
+  hidden: boolean;
+  editable: boolean;
+  onSave: (next: string) => void;
+  onRemove: () => void;
+  onRestore: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState(value.trim() || defaultTravelerName(creatorName));
+  const shown = value.trim() || defaultTravelerName(creatorName);
+
+  useEffect(() => {
+    if (open) setDraft(value.trim() || defaultTravelerName(creatorName));
+  }, [creatorName, open, value]);
+
+  if (hidden) {
+    if (!editable) return null;
+    return (
+      <button
+        type="button"
+        className="tds-travelers-add tap"
+        onClick={() => {
+          onRestore();
+          trackTravelersFieldChanged({ action: "restored", had_value: !!value.trim() });
+        }}
+      >
+        <Plus size={12} aria-hidden />
+        <span>Add travelers</span>
+      </button>
+    );
+  }
+
+  if (!editable) {
+    if (!shown.trim()) return null;
+    return (
+      <span className="tds-travelers-field tds-travelers-field--static">
+        <span className="tds-travelers-label">Travelers</span>
+        <span className="tds-travelers-value">{shown}</span>
+      </span>
+    );
+  }
+
+  return (
+    <span className="tds-travelers-field">
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <button type="button" className="tds-travelers-main tap">
+            <span className="tds-travelers-label">Travelers</span>
+            <span className="tds-travelers-value">{shown}</span>
+          </button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-72 border-ink/10 bg-paper text-ink">
+          <form
+            className="flex flex-col gap-3"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const next = draft.trim();
+              onSave(next);
+              trackTravelersFieldChanged({ action: "saved", had_value: !!next });
+              setOpen(false);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                e.preventDefault();
+                setOpen(false);
+              }
+            }}
+          >
+            <div className="td-eyebrow text-ink/55">Travelers</div>
+            <input
+              autoFocus
+              className="w-full rounded-md border border-ink/15 bg-paper/60 px-2.5 py-1.5 text-[12.5px] text-ink outline-none placeholder:text-ink/35 focus:border-seal"
+              placeholder="Creator, plus additional travelers"
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+            />
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="td-eyebrow min-h-8 px-2 text-ink/45 hover:text-ink"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="inline-flex min-h-8 items-center gap-1 rounded-md border border-seal/40 bg-seal/15 px-2.5 py-1 text-[10px] uppercase tracking-[0.3em] text-seal transition-elegant hover:bg-seal hover:text-paper"
+              >
+                <Check className="h-3 w-3" aria-hidden /> Save
+              </button>
+            </div>
+          </form>
+        </PopoverContent>
+      </Popover>
+      <button
+        type="button"
+        className="tds-travelers-remove tap"
+        onClick={() => {
+          onRemove();
+          trackTravelersFieldChanged({ action: "removed", had_value: !!value.trim() });
+        }}
+        aria-label="Remove Travelers field"
+      >
+        <X size={12} aria-hidden />
+      </button>
+    </span>
   );
 }
 

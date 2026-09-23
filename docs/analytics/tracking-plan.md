@@ -12,6 +12,8 @@
 | Event                 | Where                                                  | Properties                 |
 | --------------------- | ------------------------------------------------------ | -------------------------- |
 | `access_trail_opened` | client — owner expands the access trail on `/t/<slug>` | `trip_slug`, `event_count` |
+| `trip_dates_edited` | client — owner/member saves header trip dates | `source`, `has_start`, `has_end` |
+| `travelers_field_changed` | client — owner/member saves, removes, or restores the header traveler field | `action`, `had_value` |
 
 Dossier views and exports themselves are recorded in the `trip_access_events`
 table server-side (`getDossierBySlug`, `logTripExport`), not in PostHog: the

@@ -38,6 +38,8 @@ export const FIRST_PARTY_EVENTS = [
 
   // Dossier surfaces
   "access_trail_opened",
+  "trip_dates_edited",
+  "travelers_field_changed",
   "offline_dossier_saved",
 
   // Contact
