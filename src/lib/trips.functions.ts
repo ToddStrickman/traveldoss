@@ -19,6 +19,21 @@ function randomSuffix(len = 6) {
   return out;
 }
 
+function safeDisplayName(input: unknown): string | null {
+  if (typeof input !== "string") return null;
+  const trimmed = input.trim();
+  if (!trimmed || trimmed.includes("@")) return null;
+  return trimmed.slice(0, 80);
+}
+
+function displayNameFromClaims(claims: unknown): string | null {
+  const c = claims && typeof claims === "object" ? (claims as Record<string, unknown>) : {};
+  const meta = c.user_metadata && typeof c.user_metadata === "object"
+    ? (c.user_metadata as Record<string, unknown>)
+    : {};
+  return safeDisplayName(meta.full_name) ?? safeDisplayName(meta.name);
+}
+
 export const listTrips = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -118,10 +133,24 @@ export const isTripOwner = createServerFn({ method: "GET" })
     // longer proves ownership: creator-only controls key off isOwner, editing
     // rights off isMember.
     const hit = row as { id: string; user_id: string } | null;
+    let creatorName: string | null = null;
+    if (hit) {
+      const { supabaseAdmin: admin } = await import("@/integrations/supabase/client.server");
+      const { data: profile } = await admin
+        .from("profiles")
+        .select("display_name")
+        .eq("user_id", hit.user_id)
+        .maybeSingle();
+      creatorName = safeDisplayName((profile as { display_name?: string | null } | null)?.display_name);
+      if (!creatorName && hit.user_id === context.userId) {
+        creatorName = displayNameFromClaims(context.claims);
+      }
+    }
     return {
       isOwner: !!hit && hit.user_id === context.userId,
       isMember: !!hit,
       tripId: hit?.id ?? null,
+      creatorName,
     };
   });
 

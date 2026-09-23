@@ -10,7 +10,7 @@
 - [ ] Insights Feed + detectors D1–D13 (later phase)
 
 ## In progress
-- [ ] Header trip dates remain editable and traveler field defaults to creator with add/remove controls
+- [x] Header trip dates remain editable and traveler field defaults to creator with add/remove controls
 - [x] Show an early dossier preview during import/create with hourglass progress
 - [x] Fix invitation acceptance with canonical emails and atomic membership activation
 - [x] Make long itinerary parsing bounded, streaming, and non-truncating

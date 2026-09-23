@@ -208,6 +208,7 @@ export type TripView = {
   slug: string;
   start_date?: string | null;
   end_date?: string | null;
+  creator_name?: string | null;
   hero_image_url?: string | null;
   days?: number;
   /** Optional dossier-level preferences shown as inline chips. */
@@ -216,6 +217,7 @@ export type TripView = {
 
 export type TripMeta = {
   travelers?: string;
+  travelersHidden?: boolean;
   pace?: "relaxed" | "balanced" | "packed";
   budget?: "shoestring" | "moderate" | "elevated" | "luxury";
   interests?: string[];

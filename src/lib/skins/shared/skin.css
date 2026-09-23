@@ -533,6 +533,87 @@
   display: flex; flex-wrap: wrap; gap: 6px;
   margin-top: 12px;
 }
+.tds-travelers-field,
+.tds-travelers-add {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  min-height: 28px;
+  border: 1px solid color-mix(in oklab, var(--tds-accent) 38%, var(--tds-rule));
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--tds-accent) 9%, var(--tds-bg));
+  color: color-mix(in oklab, var(--tds-soft) 78%, var(--tds-ink));
+}
+.tds-travelers-field {
+  gap: 2px;
+  padding: 0 4px 0 10px;
+}
+.tds-travelers-main,
+.tds-travelers-add {
+  min-height: 28px;
+  align-items: center;
+  gap: 6px;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+}
+.tds-travelers-main {
+  display: inline-flex;
+  min-width: 0;
+  padding: 0 4px 0 0;
+}
+.tds-travelers-add {
+  padding: 0 10px;
+  font-size: 11px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+.tds-travelers-field--static {
+  gap: 6px;
+  padding: 4px 10px;
+}
+.tds-travelers-label {
+  flex: 0 0 auto;
+  font-size: 10px;
+  letter-spacing: .28em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--tds-soft) 78%, var(--tds-ink));
+}
+.tds-travelers-value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  letter-spacing: .03em;
+  color: var(--tds-ink);
+}
+.tds-travelers-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: color-mix(in oklab, var(--tds-soft) 78%, var(--tds-ink));
+  cursor: pointer;
+}
+.tds-travelers-main:focus-visible,
+.tds-travelers-add:focus-visible,
+.tds-travelers-remove:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--tds-accent) 58%, transparent);
+  outline-offset: 2px;
+}
+.tds-travelers-main:hover .tds-travelers-value,
+.tds-travelers-add:hover,
+.tds-travelers-remove:hover {
+  color: var(--tds-accent);
+}
 
 /* ----- Open slot placeholder (always-visible for empty parts) -------- */
 .tds-open-slot {

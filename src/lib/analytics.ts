@@ -265,6 +265,12 @@ export const trackCalendarQuickRefOpened = (p: { day_count: number; has_flights:
 
 export const trackCalendarDayJumped = () => capture("calendar_day_jumped", {});
 
+export const trackTripDatesEdited = (p: { source: "hero"; has_start: boolean; has_end: boolean }) =>
+  capture("trip_dates_edited", p);
+
+export const trackTravelersFieldChanged = (p: { action: "saved" | "removed" | "restored"; had_value: boolean }) =>
+  capture("travelers_field_changed", p);
+
 /** Sharing decision in the private workspace. No reservation content, counts only. */
 export const trackDossierShareChosen = (p: { mode: "once" | "always" | "off" }) =>
   capture("dossier_share_chosen", p);
